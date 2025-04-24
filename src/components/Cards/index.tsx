@@ -7,7 +7,6 @@ import { useStore } from '@/store';
 
 const Cards = () => {
     const { selectedGameId, setSelectedGameId } = useStore();
-    // const [selectedCard, setSelectedCard] = useState("");
     const [menuPosition, setMenuPosition] = useState<{
         mouseX: number;
         mouseY: number;

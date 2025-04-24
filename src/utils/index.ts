@@ -14,6 +14,11 @@ return currentDate;
 
 }
 
+export const getLocalDateString=(timestamp?: number): string =>{
+  const date = timestamp ? new Date(timestamp * 1000) : new Date();
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
 // export const Buttontheme = createTheme({
 //   components: {
 //     MuiButton: {

@@ -9,7 +9,6 @@ import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import TodayIcon from '@mui/icons-material/Today';
 import BackupIcon from '@mui/icons-material/Backup';
-import { CircularProgress } from '@mui/material';
 import type { GameTimeStats } from '@/types';
 import { LineChart } from '@mui/x-charts/LineChart';
 import { useLocation } from 'react-router';
@@ -27,7 +26,6 @@ interface InfoBoxProps {
 // 封装的统计信息组件 - 简化为演示结构，等待重构
 const InfoBox: React.FC<InfoBoxProps> = ({ game }) => {
     const { t } = useTranslation();
-    const [loading, setLoading] = useState(false);
     const { loadGameStats, runningGameIds } = useGamePlayStore();
     const [stats, setStats] = useState<GameTimeStats | null>(null);
     const gameId = game.id as number;
@@ -36,18 +34,12 @@ const InfoBox: React.FC<InfoBoxProps> = ({ game }) => {
     const prevRunningRef = useRef(false);
 
     // 定义并保存 fetchStats 函数
-    const fetchStats = useCallback(async (silent = false) => {
-        if (!silent) {
-            setLoading(true);
-        }
+    const fetchStats = useCallback(async () => {
         try {
             const gameStats = await loadGameStats(gameId, true); // 强制刷新
             setStats(gameStats);
         } catch (error) {
             console.error('加载游戏统计失败:', error);
-        } finally {
-            // 修复重复设置loading状态的问题
-            setLoading(false);
         }
     }, [gameId, loadGameStats]);
 
@@ -65,7 +57,7 @@ const InfoBox: React.FC<InfoBoxProps> = ({ game }) => {
         if (prevRunningRef.current && !isCurrentGameRunning) {
             // 游戏刚刚关闭，延迟一点执行以确保后端数据已更新
             const timer = setTimeout(() => {
-                fetchStats(true);// 静默更新
+                fetchStats();// 静默更新d
             }, 500);
             return () => clearTimeout(timer); // 清理定时器
         }
@@ -152,42 +144,36 @@ const InfoBox: React.FC<InfoBoxProps> = ({ game }) => {
                 </Typography>
 
                 <div className="grid grid-cols-4 gap-4">
-                    {loading ? (
-                        <div className="flex justify-center w-full py-4 col-span-full">
-                            <CircularProgress size={24} />
-                        </div>
-                    ) : (
-                        statItems.map((item) => {
-                            return (
-                                <Paper
-                                    key={item.title}
-                                    elevation={0}
-                                    className={`
+                    {statItems.map((item) => {
+                        return (
+                            <Paper
+                                key={item.title}
+                                elevation={0}
+                                className={`
                                 p-4 rounded-lg overflow-hidden
                                 transition-all duration-200
                                 hover:shadow-md hover:scale-[1.02]
                                 ${item.color === 'primary' ? 'bg-blue-50/40 border border-blue-100/40' : 'bg-green-50/40 border border-green-100/40'}
                             `}
-                                >
-                                    <div className="flex items-center space-x-2 mb-2">
-                                        <span className="text-[#1976d2] flex-shrink-0 flex items-center">
-                                            {item.icon}
-                                        </span>
-                                        <Typography
-                                            variant="body2"
-                                            className="font-medium text-gray-600 truncate"
-                                            title={item.title}
-                                        >
-                                            {item.title}
-                                        </Typography>
-                                    </div>
-                                    <Typography variant="h6" className="font-bold">
-                                        {item.value}
+                            >
+                                <div className="flex items-center space-x-2 mb-2">
+                                    <span className="text-[#1976d2] flex-shrink-0 flex items-center">
+                                        {item.icon}
+                                    </span>
+                                    <Typography
+                                        variant="body2"
+                                        className="font-medium text-gray-600 truncate"
+                                        title={item.title}
+                                    >
+                                        {item.title}
                                     </Typography>
-                                </Paper>
-                            );
-                        })
-                    )}
+                                </div>
+                                <Typography variant="h6" className="font-bold">
+                                    {item.value}
+                                </Typography>
+                            </Paper>
+                        );
+                    })}
                 </div>
             </Box>
             {
@@ -200,10 +186,11 @@ const InfoBox: React.FC<InfoBoxProps> = ({ game }) => {
                     }]}
                     yAxis={[{
                         min: 0,
-                        max: Math.max(...chartData.map(item => item.playtime)) + 5,
+                        max: chartData.every(item => item.playtime === 0) ? 10 : undefined,
                         label: t('pages.Detail.playTimeMinutes'),
                         // 确保绘图区域从0开始
-                        scaleType: 'linear'
+                        scaleType: 'linear',
+                        tickMinStep: 1 // 确保刻度间隔至少为1
                     }]}
                     series={[{ dataKey: 'playtime', color: '#1976d2' }]}
                     height={300}
@@ -219,13 +206,10 @@ export const Detail: React.FC = () => {
     const { t } = useTranslation();
     const { getGameById, setSelectedGameId } = useStore();
     const [game, setGame] = useState<GameData>();
-    const [loading, setLoading] = useState<boolean>(true);
     const id = Number(useLocation().pathname.split('/').pop());
-
 
     // 加载游戏数据
     useEffect(() => {
-        setLoading(true);
         getGameById(id)
             .then(data => {
                 setGame(data);
@@ -235,10 +219,8 @@ export const Detail: React.FC = () => {
             .catch(error => {
                 console.error('获取游戏数据失败:', error);
             })
-            .finally(() => setLoading(false));
     }, [id, getGameById, setSelectedGameId]);
 
-    if (loading) return <div>{t('pages.Detail.loading')}</div>;
     if (!game) return <div>{t('pages.Detail.notFound')}</div>;
 
     return (

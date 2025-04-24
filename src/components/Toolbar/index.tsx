@@ -183,7 +183,7 @@ const MoreButton = () => {
             >
                 <MenuItem
                     component={Link}
-                    to={`/edit/${id}`}
+                    to={`edit/${id}`}
                     onClick={() => {
                         handleClose();
                     }}>
@@ -236,6 +236,8 @@ export const Buttongroup = ({ isLibraries, isDetail }: ButtonGroupProps) => {
                     <OpenFolder id={id} getGameById={getGameById} canUse={canUse} />
                     <DeleteModal id={id} />
                     <MoreButton />
+                    <ThemeSwitcher />
+
                 </>
             }
             {isLibraries &&
@@ -258,7 +260,7 @@ export const Toolbars = () => {
     return (
         <Stack direction="row">
             <Buttongroup isLibraries={isLibraries} isDetail={isDetail} />
-            {!isLibraries && <ToLibraries />}
+            {!isLibraries && !isDetail && <ToLibraries />}
         </Stack>
     );
 }

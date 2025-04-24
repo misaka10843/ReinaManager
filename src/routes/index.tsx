@@ -52,12 +52,9 @@ export const routes: RouteGroup[] = [
             {
                 title: 'edit',
                 path: 'edit',
-                component: Edit,
                 children: [
-                    { title: 'default', index: true, component: Edit },
-                    { title: 'detail', path: ':id', component: Edit },
+                    { title: 'edit', path: ':id', component: Edit },
                 ]
-
             },
             {
                 title: 'settings',

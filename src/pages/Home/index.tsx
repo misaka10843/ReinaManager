@@ -121,7 +121,7 @@ async function getGameActivities(games: GameData[]): Promise<{
             gameId: game.id as number,
             gameTitle: game.name_cn || game.name,
             imageUrl: game.image || '',
-            time: timestamp  // 使用正确的时间戳
+            time: timestamp
         };
         addItems.push(item);
 
@@ -146,7 +146,7 @@ async function getGameActivities(games: GameData[]): Promise<{
     return {
         sessions: sessions.slice(0, 4),
         added: added.slice(0, 4),
-        activities: allActivities
+        activities: allActivities.slice(0, 10)
     };
 }
 

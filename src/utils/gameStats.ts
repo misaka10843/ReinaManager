@@ -2,16 +2,11 @@ import { listen } from '@tauri-apps/api/event';
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import { getDb } from './database';
 import type { GameSession, GameStatistics, GameTimeStats } from '../types';
-import { formatPlayTime } from '@/utils';
+import { formatPlayTime,getLocalDateString } from '@/utils';
 
 // 类型定义
 export type TimeUpdateCallback = (gameId: number, minutes: number) => void;
 export type SessionEndCallback = (gameId: number, minutes: number) => void;
-
-function getLocalDateString(timestamp?: number): string {
-  const date = timestamp ? new Date(timestamp * 1000) : new Date();
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-}
 
 // 记录游戏会话 - 直接使用内部ID
 export async function recordGameSession(
@@ -248,7 +243,6 @@ export async function getTodayGameTime(gameId: number): Promise<number> {
   if (!stats || !stats.daily_stats) {
     return 0;
   }
-  
   // 在数组中查找今天的记录
   const todayRecord = stats.daily_stats.find(record => record.date === today);
   return todayRecord?.playtime || 0;

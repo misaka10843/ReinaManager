@@ -9,6 +9,7 @@ import {
 } from '@/utils/gameStats';
 import type { GameSession, GameTimeStats } from '@/types';
 import { useStore } from '@/store';
+import { getLocalDateString } from '@/utils';
 
 
 interface LaunchGameResult {
@@ -303,7 +304,7 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
   getTodayPlayTime: async () => {
     const { games } = useStore.getState();
     let total = 0;
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     for (const game of games) {
       if (!game.id) continue;
       const stats = await getGameStatistics(game.id);

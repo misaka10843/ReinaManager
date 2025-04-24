@@ -22,7 +22,7 @@ export const Settings: React.FC = () => {
     }
     return (
         <PageContainer sx={{ maxWidth: '100% !important' }}>
-            <div className="p-4 space-y-4">
+            <div className=" space-y-4">
                 <div className="space-y-2">
                     <span>{t('pages.Settings.bgmToken')}</span>
                     <input
