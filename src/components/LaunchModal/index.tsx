@@ -1,3 +1,22 @@
+/**
+ * @file LaunchModal 组件
+ * @description 游戏启动弹窗组件，负责判断游戏是否可启动、是否正在运行，并提供启动按钮，适配 Tauri 桌面环境，支持国际化。
+ * @module src/components/LaunchModal/index
+ * @author ReinaManager
+ * @copyright AGPL-3.0
+ *
+ * 主要导出：
+ * - LaunchModal：游戏启动弹窗组件
+ *
+ * 依赖：
+ * - @mui/material
+ * - @mui/icons-material
+ * - @/store
+ * - @/store/gamePlayStore
+ * - @tauri-apps/api/core
+ * - react-i18next
+ */
+
 import Button from '@mui/material/Button';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import TimerIcon from '@mui/icons-material/Timer';
@@ -6,10 +25,21 @@ import { useGamePlayStore } from '@/store/gamePlayStore';
 import { isTauri } from '@tauri-apps/api/core';
 import { useTranslation } from 'react-i18next';
 
+/**
+ * LaunchModal 组件属性类型
+ */
 interface LaunchModalProps {
     game_id?: number;
 }
 
+/**
+ * LaunchModal 组件
+ * 判断游戏是否可启动、是否正在运行，并渲染启动按钮。
+ * 仅本地游戏且未运行时可启动，适配 Tauri 桌面环境。
+ *
+ * @param {LaunchModalProps} props 组件属性
+ * @returns {JSX.Element} 启动按钮或运行中提示
+ */
 export const LaunchModal = ({ game_id }: LaunchModalProps) => {
     const { t } = useTranslation();
     const { selectedGameId, getGameById, useIsLocalGame } = useStore();
@@ -21,7 +51,10 @@ export const LaunchModal = ({ game_id }: LaunchModalProps) => {
     // 检查这个特定游戏是否在运行
     const isThisGameRunning = isGameRunning(effectiveGameId === null ? undefined : effectiveGameId);
 
-    // 确定是否可以启动游戏
+    /**
+     * 判断当前游戏是否可以启动
+     * @returns {boolean} 是否可启动
+     */
     const canUse = (): boolean => {
         // 如果不是Tauri环境，无法启动游戏
         if (!isTauri()) return false;
@@ -36,6 +69,9 @@ export const LaunchModal = ({ game_id }: LaunchModalProps) => {
         return useIsLocalGame(effectiveGameId);
     };
 
+    /**
+     * 启动游戏按钮点击事件
+     */
     const handleStartGame = async () => {
         if (!effectiveGameId) return;
 
@@ -53,7 +89,6 @@ export const LaunchModal = ({ game_id }: LaunchModalProps) => {
         }
     };
 
-    // 使用 Box 组件包裹按钮，解决样式问题
     // 渲染不同状态的按钮
     if (isThisGameRunning) {
         return (

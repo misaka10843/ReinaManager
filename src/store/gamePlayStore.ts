@@ -1,3 +1,23 @@
+/**
+ * @file gamePlayStore
+ * @description 管理游戏运行状态、游玩统计、会话记录、实时状态等，支持 Tauri 桌面环境下的游戏启动与时间跟踪。
+ * @module src/store/gamePlayStore
+ * @author ReinaManager
+ * @copyright AGPL-3.0
+ *
+ * 主要导出：
+ * - useGamePlayStore：Zustand 状态管理，包含游戏运行、统计、会话等方法
+ * - initializeGamePlayTracking：初始化游戏时间跟踪
+ *
+ * 依赖：
+ * - zustand
+ * - @tauri-apps/api/core
+ * - @/utils/gameStats
+ * - @/store
+ * - @/types
+ * - @/utils
+ */
+
 import { create } from 'zustand';
 import { isTauri } from '@tauri-apps/api/core';
 import { 
@@ -11,14 +31,18 @@ import type { GameSession, GameTimeStats } from '@/types';
 import { useStore } from '@/store';
 import { getLocalDateString } from '@/utils';
 
-
+/**
+ * 游戏启动结果类型
+ */
 interface LaunchGameResult {
   success: boolean;
   message: string;
   process_id?: number;
 }
 
-// 游戏实时状态接口
+/**
+ * 游戏实时状态接口
+ */
 interface GameRealTimeState {
   isRunning: boolean;
   currentSessionMinutes: number;
@@ -27,14 +51,17 @@ interface GameRealTimeState {
   processId?: number;
 }
 
+/**
+ * 游戏游玩状态全局管理
+ */
 interface GamePlayState {
-  runningGameIds: Set<number>;
-  isTrackingInitialized: boolean;
-  gameTimeStats: Record<string, GameTimeStats>;
-  recentSessions: Record<string, GameSession[]>;
-  // trendData: Record<string, GameTimeChartData[]>;
-  gameRealTimeStates: Record<string, GameRealTimeState>;
-  
+  runningGameIds: Set<number>; // 正在运行的游戏ID集合
+  isTrackingInitialized: boolean; // 是否已初始化时间跟踪
+  gameTimeStats: Record<string, GameTimeStats>; // 游戏统计缓存
+  recentSessions: Record<string, GameSession[]>; // 最近会话缓存
+  // trendData: Record<string, GameTimeChartData[]>; // 预留趋势数据
+  gameRealTimeStates: Record<string, GameRealTimeState>; // 实时状态
+
   // 方法
   isGameRunning: (gameId?: number) => boolean;
   launchGame: (gamePath: string, gameId: number, args?: string[]) => Promise<LaunchGameResult>;
@@ -48,6 +75,10 @@ interface GamePlayState {
   getTodayPlayTime: () => Promise<number>;
 }
 
+/**
+ * useGamePlayStore
+ * 管理游戏运行、统计、会话、实时状态等，支持 Tauri 桌面环境。
+ */
 export const useGamePlayStore = create<GamePlayState>((set, get) => ({
   runningGameIds: new Set<number>(),
   isTrackingInitialized: false,
@@ -56,17 +87,31 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
   trendData: {},
   gameRealTimeStates: {},
   
+  /**
+   * 判断指定游戏是否正在运行
+   * @param gameId 游戏ID（可选，未传则判断是否有任意游戏在运行）
+   */
   isGameRunning: (gameId?: number) => {
     const runningGames = get().runningGameIds;
     if (!gameId) return runningGames.size > 0;
     return runningGames.has(gameId);
   },
   
+  /**
+   * 获取指定游戏的实时状态
+   * @param gameId 游戏ID
+   */
   getGameRealTimeState: (gameId: number) => {
     const state = get().gameRealTimeStates[gameId];
     return state || null;
   },
   
+  /**
+   * 启动游戏并跟踪运行状态
+   * @param gamePath 游戏路径
+   * @param gameId 游戏ID
+   * @param args 启动参数
+   */
   launchGame: async (gamePath: string, gameId: number, args?: string[]): Promise<LaunchGameResult> => {
     if (!isTauri()) {
       return { success: false, message: '游戏启动功能仅在桌面应用中可用' };
@@ -107,7 +152,7 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
       const result = await launchGameWithTracking(gamePath, gameId, args);
       
       if (!result.success) {
-        // 恢复状态
+        // 启动失败，恢复状态
         set(state => {
           const newRunningGames = new Set(state.runningGameIds);
           newRunningGames.delete(gameId);
@@ -121,7 +166,7 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
           };
         });
       } else {
-        // 更新进程 ID
+        // 启动成功，更新进程 ID
         set(state => {
           const newRealTimeStates = {
             ...state.gameRealTimeStates,
@@ -136,7 +181,7 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
       
       return result;
     } catch (error) {
-      // 恢复状态
+      // 启动异常，恢复状态
       set(state => {
         const newRunningGames = new Set(state.runningGameIds);
         newRunningGames.delete(gameId);
@@ -155,6 +200,11 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
     }
   },
   
+  /**
+   * 加载指定游戏的统计数据
+   * @param gameId 游戏ID
+   * @param forceRefresh 是否强制刷新
+   */
   loadGameStats: async (gameId: number, forceRefresh = false): Promise<GameTimeStats | null> => {
     try {
       if (!isTauri()) return null;
@@ -183,6 +233,11 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
     }
   },
   
+  /**
+   * 加载指定游戏的最近会话
+   * @param gameId 游戏ID
+   * @param limit 数量限制
+   */
   loadRecentSessions: async (gameId: number, limit = 5): Promise<GameSession[] | null> => {
     try {
       if (!isTauri()) return null;
@@ -205,6 +260,10 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
     }
   },
   
+  /**
+   * 初始化游戏时间跟踪（仅限 Tauri 桌面环境）
+   * 设置事件监听，自动管理运行状态与实时时长
+   */
   initTimeTracking: () => {
     if (!isTauri() || get().isTrackingInitialized) return;
     
@@ -264,12 +323,19 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
     }
   },
   
+  /**
+   * 清除所有运行中游戏状态
+   */
   clearActiveGame: () => {
     set({ 
       runningGameIds: new Set<number>(),
       gameRealTimeStates: {} 
     });
   },
+
+  /**
+   * 获取所有游戏的总游玩时长（分钟）
+   */
   getTotalPlayTime: async () => {
     const { games } = useStore.getState();
     let total = 0;
@@ -282,6 +348,10 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
     }
     return total;
   },
+
+  /**
+   * 获取本周所有游戏的总游玩时长（分钟）
+   */
   getWeekPlayTime: async () => {
     const { games } = useStore.getState();
     let total = 0;
@@ -301,6 +371,10 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
     }
     return total;
   },
+
+  /**
+   * 获取今天所有游戏的总游玩时长（分钟）
+   */
   getTodayPlayTime: async () => {
     const { games } = useStore.getState();
     let total = 0;
@@ -319,7 +393,10 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
   },
 }));
 
-// 在应用启动时初始化时间跟踪
+/**
+ * initializeGamePlayTracking
+ * 在应用启动时初始化时间跟踪（Tauri 环境下）
+ */
 export const initializeGamePlayTracking = (): void => {
   useGamePlayStore.getState().initTimeTracking();
 };

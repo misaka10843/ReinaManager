@@ -1,3 +1,22 @@
+/**
+ * @file Settings 页面
+ * @description 应用设置页，支持 Bangumi Token 设置、语言切换等功能。
+ * @module src/pages/Settings/index
+ * @author ReinaManager
+ * @copyright AGPL-3.0
+ *
+ * 主要导出：
+ * - Settings：设置页面主组件
+ * - LanguageSelect：语言选择组件
+ *
+ * 依赖：
+ * - @mui/material
+ * - @toolpad/core
+ * - @/store
+ * - @/utils
+ * - react-i18next
+ */
+
 import { useEffect, useState } from 'react';
 import { useStore } from '@/store';
 import { openurl } from '@/utils';
@@ -8,6 +27,13 @@ import Select, { type SelectChangeEvent } from '@mui/material/Select';
 import { useTranslation } from 'react-i18next';
 import { PageContainer } from '@toolpad/core';
 
+/**
+ * Settings 组件
+ * 应用设置页面，支持 Bangumi Token 设置与保存、获取 Token 链接、语言切换等功能。
+ *
+ * @component
+ * @returns {JSX.Element} 设置页面
+ */
 export const Settings: React.FC = () => {
     const { t } = useTranslation();
     const { bgmToken, setBgmToken } = useStore();
@@ -17,6 +43,9 @@ export const Settings: React.FC = () => {
         setInputToken(bgmToken);
     }, [bgmToken]);
 
+    /**
+     * 打开 Bangumi Token 获取页面
+     */
     const handleOpen = () => {
         openurl("https://next.bgm.tv/demo/access-token/create");
     }
@@ -43,10 +72,16 @@ export const Settings: React.FC = () => {
                 </div>
             </div>
         </PageContainer>
-
     );
 };
 
+/**
+ * LanguageSelect 组件
+ * 语言选择下拉框，支持中、英、日多语言切换。
+ *
+ * @component
+ * @returns {JSX.Element} 语言选择器
+ */
 export const LanguageSelect = () => {
     const { t, i18n } = useTranslation(); // 使用i18n实例和翻译函数
     const [language, setLanguage] = useState(i18n.language); // 使用当前语言初始化状态
@@ -64,6 +99,10 @@ export const LanguageSelect = () => {
         setLanguage(i18n.language);
     }, [i18n.language]);
 
+    /**
+     * 处理语言切换
+     * @param {SelectChangeEvent} event
+     */
     const handleChange = (event: SelectChangeEvent) => {
         const newLang = event.target.value;
         setLanguage(newLang);

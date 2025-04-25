@@ -1,3 +1,25 @@
+/**
+ * @file 全局状态管理
+ * @description 使用 Zustand 管理应用全局状态，包括游戏列表、排序、筛选、BGM Token、搜索、UI 状态等，适配 Tauri 与 Web 环境。
+ * @module src/store/index
+ * @author ReinaManager
+ * @copyright AGPL-3.0
+ *
+ * 主要导出：
+ * - useStore：Zustand 全局状态管理
+ * - initializeStores：初始化全局状态
+ *
+ * 依赖：
+ * - zustand
+ * - zustand/middleware
+ * - @/types
+ * - @/utils/repository
+ * - @/utils/localStorage
+ * - @/utils/settingsConfig
+ * - @tauri-apps/api/core
+ * - @/store/gamePlayStore
+ */
+
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { GameData } from '@/types';
@@ -6,8 +28,8 @@ import {
   insertGame as insertGameRepository,
   getGameById as getGameByIdRepository,
   deleteGame as deleteGameRepository,
-searchGames as searchGamesRepository ,
-filterGamesByType as filterGamesByTypeRepository 
+  searchGames as searchGamesRepository,
+  filterGamesByType as filterGamesByTypeRepository 
 } from '@/utils/repository';
 import { 
   getGames as getGamesLocal, 
@@ -17,14 +39,16 @@ import {
   setBgmTokenLocal,
   getGameByIdLocal,
   searchGamesLocal,
-   filterGamesByTypeLocal
+  filterGamesByTypeLocal
 } from '@/utils/localStorage';
 import { getBgmTokenRepository, setBgmTokenRepository } from '@/utils/settingsConfig';
 import { isTauri } from '@tauri-apps/api/core';
 // import { getGamePlatformId } from '@/utils';
 import { initializeGamePlayTracking } from './gamePlayStore';
 
-// 定义应用全局状态类型
+/**
+ * AppState 全局状态类型定义
+ */
 export interface AppState {
   updateSort(option: string, sortOrder: string): Promise<void>;
   // 游戏相关状态与方法
@@ -39,7 +63,7 @@ export interface AppState {
   selectedGameId: number | null;
   
   // 游戏操作方法
-  fetchGames: (sortOption?: string, sortOrder?: 'asc' | 'desc',resetSearch?:boolean) => Promise<void>;
+  fetchGames: (sortOption?: string, sortOrder?: 'asc' | 'desc', resetSearch?: boolean) => Promise<void>;
   addGame: (game: GameData) => Promise<void>;
   deleteGame: (gameId: number) => Promise<void>;
   getGameById: (gameId: number) => Promise<GameData>;
@@ -53,19 +77,20 @@ export interface AppState {
   setBgmToken: (token: string) => Promise<void>;
   
   // UI 操作方法
-  setSelectedGameId: (id: number | null|undefined) => void;
+  setSelectedGameId: (id: number | null | undefined) => void;
   
   // 初始化
   initialize: () => Promise<void>;
 
+  // 搜索相关
   searchKeyword: string;
-  
   setSearchKeyword: (keyword: string) => void;
   searchGames: (keyword: string) => Promise<void>;
 
-  // 添加通用刷新方法
+  // 通用刷新方法
   refreshGameData: (customSortOption?: string, customSortOrder?: 'asc' | 'desc') => Promise<void>;
 
+  // 筛选相关
   gameFilterType: 'all' | 'local' | 'online';
   setGameFilterType: (type: 'all' | 'local' | 'online') => void;
   useIsLocalGame: (gameId: number) => boolean;
@@ -400,7 +425,10 @@ useIsLocalGame(gameId: number  ): boolean {
   )
 );
 
-// 初始化函数保持不变，但内部调用了新的方法
+/**
+ * initializeStores
+ * 初始化全局状态，加载游戏数据与 BGM Token，并初始化游戏时间跟踪（Tauri 环境下）。
+ */
 export const initializeStores = async (): Promise<void> => {
   await useStore.getState().initialize();
 };
