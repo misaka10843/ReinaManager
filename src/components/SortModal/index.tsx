@@ -1,3 +1,20 @@
+/**
+ * @file SortModal 组件
+ * @description 游戏排序弹窗组件，支持按添加时间、发售时间、排名、最近游玩等方式排序，支持升降序切换，集成国际化。
+ * @module src/components/SortModal/index
+ * @author ReinaManager
+ * @copyright AGPL-3.0
+ *
+ * 主要导出：
+ * - SortModal：游戏排序弹窗组件
+ *
+ * 依赖：
+ * - @mui/material
+ * - @mui/icons-material
+ * - @/store
+ * - react-i18next
+ */
+
 import { useEffect, useState } from 'react';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
@@ -12,6 +29,13 @@ import Switch from '@mui/material/Switch';
 import { useStore } from '@/store';
 import { useTranslation } from 'react-i18next';
 
+/**
+ * SortModal 组件
+ * 游戏排序弹窗，支持多种排序方式和升降序切换。
+ *
+ * @component
+ * @returns {JSX.Element} 排序弹窗
+ */
 const SortModal: React.FC = () => {
     const { t } = useTranslation();
     const { isopen, handleOpen, handleClose } = useModal();
@@ -22,7 +46,9 @@ const SortModal: React.FC = () => {
     const [localSortOption, setLocalSortOption] = useState(sortOption);
     const [localSortOrder, setLocalSortOrder] = useState(sortOrder);
 
-    // 每次打开对话框时，重置本地状态
+    /**
+     * 每次打开对话框时，重置本地状态
+     */
     useEffect(() => {
         if (isopen) {
             setLocalSortOption(sortOption);
@@ -30,7 +56,10 @@ const SortModal: React.FC = () => {
         }
     }, [isopen, sortOption, sortOrder]);
 
-    // 在 SortModal 组件中使用我们优化的排序更新函数
+    /**
+     * 提交排序设置，应用到全局 store
+     * @param {React.FormEvent<HTMLFormElement>} event 表单提交事件
+     */
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
@@ -78,6 +107,16 @@ const SortModal: React.FC = () => {
         </>
     );
 }
+
+/**
+ * SortOption 组件
+ * 排序方式选择下拉框
+ *
+ * @param {object} props
+ * @param {string} props.value 当前排序方式
+ * @param {(value: string) => void} props.onChange 排序方式变更回调
+ * @returns {JSX.Element}
+ */
 const SortOption = ({ value, onChange }: { value: string, onChange: (value: string) => void }) => {
     const { t } = useTranslation();
     const handleChange = (event: SelectChangeEvent) => {
@@ -95,6 +134,16 @@ const SortOption = ({ value, onChange }: { value: string, onChange: (value: stri
         </div>
     );
 }
+
+/**
+ * UpDownSwitches 组件
+ * 升序/降序切换开关
+ *
+ * @param {object} props
+ * @param {string} props.value 当前排序顺序（'asc' 或 'desc'）
+ * @param {(value: string) => void} props.onChange 排序顺序变更回调
+ * @returns {JSX.Element}
+ */
 const UpDownSwitches = ({ value, onChange }: { value: string, onChange: (value: string) => void }) => {
     const { t } = useTranslation();
     // 使用 asc/desc 而不是布尔值
@@ -116,4 +165,5 @@ const UpDownSwitches = ({ value, onChange }: { value: string, onChange: (value: 
         </div>
     );
 }
+
 export default SortModal;

@@ -1,3 +1,25 @@
+/**
+ * @file Home 页面
+ * @description 应用首页，展示游戏统计信息、动态、最近游玩、最近添加等内容，支持国际化。
+ * @module src/pages/Home/index
+ * @author ReinaManager
+ * @copyright AGPL-3.0
+ *
+ * 主要导出：
+ * - Home：主页主组件
+ *
+ * 依赖：
+ * - @mui/material
+ * - @mui/icons-material
+ * - @/store
+ * - @/store/gamePlayStore
+ * - @/utils/gameStats
+ * - @/utils
+ * - @/types
+ * - react-i18next
+ * - react-router
+ */
+
 import React, { useEffect, useState } from 'react';
 import {
     Box,
@@ -32,6 +54,9 @@ import { formatRelativeTime, formatPlayTime } from '@/utils';
 import type { GameData } from '@/types';
 import { useTranslation } from 'react-i18next';
 
+/**
+ * 最近游玩会话类型
+ */
 interface RecentSession {
     session_id: number;
     game_id: number;
@@ -39,12 +64,18 @@ interface RecentSession {
     gameTitle: string;
     imageUrl: string;
 }
+/**
+ * 最近添加游戏类型
+ */
 interface RecentGame {
     id: number;
     title: string;
     imageUrl: string;
     time: Date;
 }
+/**
+ * 动态项类型
+ */
 interface ActivityItem {
     id: string;
     type: 'add' | 'play';
@@ -55,7 +86,11 @@ interface ActivityItem {
     duration?: number; // 仅游玩记录有
 }
 
-// 获取最近游玩数据
+/**
+ * 获取最近游玩、最近添加、动态数据
+ * @param games 游戏列表
+ * @returns 包含 sessions、added、activities 的对象
+ */
 async function getGameActivities(games: GameData[]): Promise<{
     sessions: RecentSession[];
     added: RecentGame[];
@@ -157,6 +192,7 @@ export const Home: React.FC = () => {
     const [weekTime, setWeekTime] = useState(0);
     const [todayTime, setTodayTime] = useState(0);
     const [recentSessions, setRecentSessions] = useState<RecentSession[]>([]);
+
     const [recentAdded, setRecentAdded] = useState<RecentGame[]>([]);
     const [activities, setActivities] = useState<ActivityItem[]>([]);
     const { t } = useTranslation();
@@ -283,6 +319,7 @@ export const Home: React.FC = () => {
                                                     {activity.type === 'add'
                                                         ? t('home.activity.added', { title: activity.gameTitle })
                                                         : t('home.activity.played', { title: activity.gameTitle })}
+
                                                 </Typography>
 
                                                 <Typography variant="body2" color="text.secondary">

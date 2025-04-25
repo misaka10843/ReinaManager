@@ -1,3 +1,19 @@
+/**
+ * @file AlertBox 组件
+ * @description 通用弹窗提示组件，支持普通确认/取消弹窗和带加载状态的删除确认弹窗，适用于全局提示、删除确认等场景，支持国际化。
+ * @module src/components/AlertBox/index
+ * @author ReinaManager
+ * @copyright AGPL-3.0
+ *
+ * 主要导出：
+ * - AlertBox：通用提示框组件
+ * - AlertDeleteBox：带加载状态的删除确认弹窗
+ *
+ * 依赖：
+ * - @mui/material
+ * - react-i18next
+ */
+
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -7,7 +23,9 @@ import DialogContentText from '@mui/material/DialogContentText';
 import CircularProgress from '@mui/material/CircularProgress';
 import { useTranslation } from 'react-i18next';
 
-// 通用提示框属性
+/**
+ * 通用提示框属性类型
+ */
 interface AlertBoxProps {
     open: boolean;
     setOpen: (value: boolean) => void;
@@ -21,7 +39,9 @@ interface AlertBoxProps {
     autoCloseOnConfirm?: boolean;  // 确认后是否自动关闭
 }
 
-// 删除提示框专用属性
+/**
+ * 删除提示框专用属性类型
+ */
 interface AlertDeleteBoxProps {
     open: boolean;
     setOpen: (value: boolean) => void;
@@ -30,7 +50,12 @@ interface AlertDeleteBoxProps {
     customMessage?: string; // 自定义删除消息
 }
 
-// 通用提示框组件
+/**
+ * 通用提示框组件
+ *
+ * @param {AlertBoxProps} props 组件属性
+ * @returns {JSX.Element} 通用弹窗
+ */
 export function AlertBox({
     open,
     setOpen,
@@ -45,10 +70,16 @@ export function AlertBox({
 }: AlertBoxProps) {
     const { t } = useTranslation();
 
+    /**
+     * 关闭弹窗
+     */
     const handleClose = () => {
         setOpen(false);
     };
 
+    /**
+     * 确认操作
+     */
     const handleConfirm = () => {
         onConfirm();
         if (autoCloseOnConfirm) {
@@ -92,7 +123,12 @@ export function AlertBox({
     );
 }
 
-// 删除提示框组件
+/**
+ * 删除提示框组件，带加载状态
+ *
+ * @param {AlertDeleteBoxProps} props 组件属性
+ * @returns {JSX.Element} 删除确认弹窗
+ */
 export const AlertDeleteBox: React.FC<AlertDeleteBoxProps> = ({
     open,
     setOpen,
@@ -102,7 +138,9 @@ export const AlertDeleteBox: React.FC<AlertDeleteBoxProps> = ({
 }) => {
     const { t } = useTranslation();
 
-    // 删除操作不会立即关闭对话框，而是等待操作完成
+    /**
+     * 删除确认操作，不自动关闭弹窗，由父组件控制
+     */
     const handleDeleteConfirm = () => {
         onConfirm();
         // 不在这里关闭对话框，等待操作完成后由父组件关闭

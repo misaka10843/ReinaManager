@@ -1,3 +1,14 @@
+/**
+ * @file 类型定义
+ * @description 定义全局使用的核心数据类型，包括游戏数据、会话、统计等。
+ * @module src/types/index
+ * @author ReinaManager
+ * @copyright AGPL-3.0
+ */
+
+/**
+ * 游戏数据结构
+ */
 export interface GameData {
     id?: number;
     date?: string;
@@ -6,36 +17,42 @@ export interface GameData {
     name: string;
     name_cn?: string;
     tags?: string[];
-    rank?: number|null;
+    rank?: number | null;
     score?: number;
-    bgm_id?: string|null;
-    vndb_id?: string|null;
-    id_type?: string|'bgm' | 'vndb' | 'mixed' | 'custom';
+    bgm_id?: string | null;
+    vndb_id?: string | null;
+    id_type?: string | 'bgm' | 'vndb' | 'mixed' | 'custom';
     time: Date;
     localpath?: string;
-    developer?: string|null;
+    developer?: string | null;
     all_titles?: string[];
     aveage_hours?: number;
 }
 
-
+/**
+ * 操作游戏相关属性类型
+ */
 export interface HanleGamesProps  {
-    id: number|undefined|null;
+    id: number | undefined | null;
     getGameById: (id: number) => Promise<GameData>;
     canUse?: () => boolean;
 }
 
-// 游戏会话记录
+/**
+ * 游戏会话记录
+ */
 export interface GameSession {
   session_id: number; // 会话的唯一标识符
-  game_id: number; // 游戏的唯一标识符
+  game_id: number;    // 游戏的唯一标识符
   start_time: number;
   end_time?: number;
-  duration?: number; // 分钟
+  duration?: number;  // 分钟
   date: string;
 }
 
-// 游戏统计数据
+/**
+ * 游戏统计数据（原始）
+ */
 export interface GameStatistics {
   game_id: number; // 游戏的唯一标识符
   total_time: number; // 分钟
@@ -44,7 +61,9 @@ export interface GameStatistics {
   daily_stats?: Array<{date: string; playtime: number}>; // 新格式: [{date: "YYYY-MM-DD", playtime: minutes}, ...]
 }
 
-// 格式化后的游戏时间统计
+/**
+ * 格式化后的游戏时间统计
+ */
 export interface GameTimeStats {
   totalPlayTime: string; // 格式化的总时间，如"10小时20分钟"
   totalMinutes: number;  // 总分钟数
@@ -55,7 +74,17 @@ export interface GameTimeStats {
   daily_stats?: Array<{date: string; playtime: number}>; // 新格式: [{date: "YYYY-MM-DD", playtime: minutes}, ...]
 }
 
-// 回调函数类型
+/**
+ * 游戏时间更新回调类型
+ * @param gameId 游戏ID
+ * @param minutes 已游玩分钟数
+ */
 export type TimeUpdateCallback = (gameId: number, minutes: number) => void;
+
+/**
+ * 游戏会话结束回调类型
+ * @param gameId 游戏ID
+ * @param minutes 本次会话时长（分钟）
+ */
 export type SessionEndCallback = (gameId: number, minutes: number) => void;
 

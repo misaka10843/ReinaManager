@@ -1,8 +1,16 @@
+/**
+ * @file App.css
+ * @description 应用全局样式，包含侧边栏菜单文字滚动动画、基础布局等。
+ * @author ReinaManager
+ * @copyright AGPL-3.0
+ */
+
+/* 禁用弹性滚动，防止页面回弹 */
 html, body {
   overscroll-behavior: none; /* 禁用弹性滚动 */
 }
 
-/* 默认状态下：限制溢出，并显示为省略号 */
+/* 侧边栏菜单项文字：默认溢出省略号显示 */
 .MuiDrawer-paper .MuiListItemText-root .MuiTypography-root  {
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -11,13 +19,12 @@ html, body {
   position: relative;
 }
 
-/* 鼠标悬停时，让文字开始横向滚动 */
+/* 鼠标悬停时，菜单项文字横向滚动动画 */
 .MuiDrawer-paper .MuiCollapse-vertical .MuiListItemText-root:hover .MuiTypography-root  {
   animation: marquee 5s linear infinite;
 }
 
-/* 关键帧动画：从0滚动到负方向100%（这里100%表示全部内容宽度），
-   注意：如果内容宽度变化较大，你可能需要调整结束时的 transform 值 */
+/* 横向滚动关键帧动画 */
 @keyframes marquee {
   0% {
     transform: translateX(0);

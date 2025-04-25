@@ -1,3 +1,10 @@
+/**
+ * @file main.tsx
+ * @description 应用入口文件，初始化全局状态，设置全局事件监听，挂载根组件。
+ * @author ReinaManager
+ * @copyright AGPL-3.0
+ */
+
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router'
@@ -6,6 +13,7 @@ import './index.css'
 import 'virtual:uno.css'
 import { initializeStores } from './store';
 
+// 禁止拖拽、右键菜单和部分快捷键，提升桌面体验
 document.addEventListener("drop", (e) => e.preventDefault());
 document.addEventListener("dragover", (e) => e.preventDefault(),);
 document.addEventListener('contextmenu', (e) => e.preventDefault())
@@ -19,6 +27,7 @@ document.addEventListener('keydown', (e) => {
   }
 })
 
+// 初始化全局状态后，挂载 React 应用
 initializeStores().then(() => {
   createRoot(document.getElementById('root') as HTMLElement).render(
     <StrictMode>
