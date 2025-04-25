@@ -25,3 +25,6 @@ dist-ssr
 
 #test
 test
+
+#ignore
+/.cargo
