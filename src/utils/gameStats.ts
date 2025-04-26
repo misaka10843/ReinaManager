@@ -399,16 +399,6 @@ const unlistenEnd = listen<{gameId: number; totalMinutes: number; totalSeconds: 
       // 记录游戏会话
       await recordGameSession(gameId, minutesToRecord, startTime, endTime);
       
-      // 增加会话计数
-      const db = await getDb();
-      await db.execute(
-        `UPDATE game_statistics 
-         SET session_count = session_count + 1,
-             last_played = ?
-         WHERE game_id = ?;`,
-        [endTime, gameId]
-      );
-      
       // 调用回调函数
       if (onSessionEnd) {
         onSessionEnd(gameId, minutesToRecord);

@@ -159,7 +159,7 @@ const InfoBox: React.FC<InfoBoxProps> = ({ game }) => {
     return (
         <>
             {/* 统计信息卡片 */}
-            <Box className="mt-16 mb-12">
+            <Box className="mt-16 mb-4">
                 <Typography variant="h6" fontWeight="bold" gutterBottom>
                     {t('pages.Detail.gameStats')}
                 </Typography>

@@ -173,7 +173,7 @@ const RightMenu: React.FC<RightMenuProps> = ({ isopen, anchorPosition, setAnchor
                 <div className="h-[1px] bg-gray-200 dark:bg-gray-700 my-1" />
                 {/* 打开游戏文件夹 */}
                 <div
-                    className={`flex items-center px-4 py-2 text-black dark:text-white ${isTauri()
+                    className={`flex items-center px-4 py-2 text-black dark:text-white ${isTauri() && id !== undefined && id !== null && useIsLocalGame(id)
                         ? 'hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer'
                         : 'opacity-50 cursor-not-allowed'
                         }`}

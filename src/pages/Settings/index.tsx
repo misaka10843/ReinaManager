@@ -26,6 +26,9 @@ import MenuItem from '@mui/material/MenuItem';
 import Select, { type SelectChangeEvent } from '@mui/material/Select';
 import { useTranslation } from 'react-i18next';
 import { PageContainer } from '@toolpad/core';
+import TextField from '@mui/material/TextField';
+import Button from '@mui/material/Button';
+import Stack from '@mui/material/Stack';
 
 /**
  * Settings 组件
@@ -51,25 +54,37 @@ export const Settings: React.FC = () => {
     }
     return (
         <PageContainer sx={{ maxWidth: '100% !important' }}>
-            <div className=" space-y-4">
-                <div className="space-y-2">
-                    <span>{t('pages.Settings.bgmToken')}</span>
-                    <input
-                        type="password"
-                        placeholder={t('pages.Settings.tokenPlaceholder')}
-                        value={inputToken}
-                        onChange={(e) => setInputToken(e.target.value)}
-                    />
-                    <button type="button" onClick={() => setBgmToken(inputToken)}>
-                        {t('pages.Settings.saveBtn')}
-                    </button>
-                    <span className="text-blue-400 hover:cursor-pointer" onClick={handleOpen}>
-                        {t('pages.Settings.getToken')}
-                    </span>
-                </div>
+            <div className="space-y-6">
+                <Stack spacing={2}>
+                    <InputLabel>{t('pages.Settings.bgmToken')}</InputLabel>
+                    <Stack direction="row" spacing={2} alignItems="center">
+                        <TextField
+                            type="password"
+                            placeholder={t('pages.Settings.tokenPlaceholder')}
+                            value={inputToken}
+                            onChange={(e) => setInputToken(e.target.value)}
+                            variant="outlined"
+                            size="small"
+                            sx={{ maxWidth: 180 }}
+                        />
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={() => setBgmToken(inputToken)}
+                        >
+                            {t('pages.Settings.saveBtn')}
+                        </Button>
+                        <Button
+                            variant="text"
+                            color="info"
+                            onClick={handleOpen}
+                            sx={{ textTransform: 'none' }}
+                        >
+                            {t('pages.Settings.getToken')}
+                        </Button>
+                    </Stack>
+                </Stack>
                 <LanguageSelect />
-                <div>
-                </div>
             </div>
         </PageContainer>
     );
