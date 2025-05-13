@@ -23,7 +23,7 @@ import axios, { type AxiosError } from 'axios';
  *
  * @returns {import('axios').AxiosInstance} 配置好的 Axios 实例，用于发送 HTTP 请求。
  */
-export const createHttp = () => {
+export const createHttp = ()=> {
     const http = axios.create({});
 
     // 添加响应拦截器，处理常见的 HTTP 错误
@@ -34,14 +34,17 @@ export const createHttp = () => {
          * @param {AxiosError} error - Axios 错误对象
          * @returns {string|void} 错误提示字符串或控制台输出
          */
-        (error: AxiosError) => {
+       (error: AxiosError) => {
             if (error.response?.status === 401) {
-                return "认证失败，请检查你的BGM_TOKEN是否正确";
+                // 抛出自定义错误对象
+                return Promise.reject(new Error("认证失败，请检查你的BGM_TOKEN是否正确"));
             }
             if (error.response?.status === 400) {
-                return console.error('请求错误，请检查你的网络连接');
+                // 抛出自定义错误对象
+                return Promise.reject(new Error("未找到相关条目,请确认ID或游戏名字后重试"));
             }
-            return "未找到相关条目,请确认游戏名字后重试或网络连接错误";
+            // 其他错误
+            return Promise.reject(new Error("请求错误，请检查你的网络连接"));
         }
     );
 

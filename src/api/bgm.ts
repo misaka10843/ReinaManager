@@ -14,7 +14,6 @@
  */
 
 import http from './http'
-import { time_now } from '@/utils';
 
 /**
  * 过滤掉包含敏感关键词的标签。
@@ -81,7 +80,7 @@ export async function fetchFromBgm(
     bgm_id: String(BGMdata.id),
     vndb_id: null,
     id_type: 'bgm',
-    time: time_now(),
     developer: BGMdata.infobox.find((k: { key: string }) => k.key === '开发')?.value ?? '',
   }
 }
+

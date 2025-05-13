@@ -211,3 +211,45 @@ export async function filterGamesByType(
   const rows = await db.select<GameData[]>(query);
   return processGameRows(rows);
 }
+
+// 更新游戏数据
+export const updateGame = async (id: number, game: GameData) => {
+  const db = await getDb();
+
+  await db.execute(
+    `
+    UPDATE games
+    SET bgm_id = ?, vndb_id = ?, id_type = ?, date = ?, image = ?, summary = ?, name = ?, name_cn = ?, tags = ?, rank = ?, score = ?,  developer = ?, all_titles = ?, aveage_hours = ?
+    WHERE id = ?;
+    `,
+    [
+      game.bgm_id,
+      game.vndb_id,
+      game.id_type,
+      game.date,
+      game.image,
+      game.summary,
+      game.name,
+      game.name_cn,
+      JSON.stringify(game.tags),
+      game.rank,
+      game.score,
+      game.developer,
+      JSON.stringify(game.all_titles),
+      game.aveage_hours,
+      id
+    ]
+  );
+};
+
+export const updateGameLocalPath = async (id: number, localpath: string) => {
+  const db = await getDb();
+  await db.execute(
+    `
+    UPDATE games
+    SET localpath = ?
+    WHERE id = ?;
+    `,
+    [localpath, id]
+  );
+}

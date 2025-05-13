@@ -22,7 +22,7 @@ export interface GameData {
     bgm_id?: string | null;
     vndb_id?: string | null;
     id_type?: string | 'bgm' | 'vndb' | 'mixed' | 'custom';
-    time: Date;
+    time?: Date;
     localpath?: string;
     developer?: string | null;
     all_titles?: string[];

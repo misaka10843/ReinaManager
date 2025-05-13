@@ -15,7 +15,6 @@
  */
 
 import http from './http'
-import { time_now } from "@/utils";
 
 /**
  * VNDB 标题对象接口。
@@ -51,7 +50,7 @@ export async function fetchFromVNDB(name: string, id?: string) {
         'Content-Type': 'application/json'
       }
     })).data.results[0];
-    if(!VNDBdata) return "未找到相关条目，请确认游戏名字后重试";
+    if(!VNDBdata) return "未找到相关条目，请确认ID或游戏名字后重试";
     
     // 处理标题信息
     const titles = VNDBdata.titles.map((title:VNDB_title) => ({
@@ -86,12 +85,11 @@ export async function fetchFromVNDB(name: string, id?: string) {
       .map(({ name }) => name),
       rank: null,
       score: Number((VNDBdata.rating/10).toFixed(2)),
-      time: time_now(),
       developer: VNDBdata.developers?.[0]?.name || null,
       aveage_hours: Number((VNDBdata.length_minutes / 60).toFixed(1)),
     };
   } catch (error) {
-    console.error("VNDB API 调用失败:", error);
+       Promise.reject(new Error("VNDB API 调用失败"));
     if (error instanceof Error) {
       console.error("错误消息:", error.message);
     }

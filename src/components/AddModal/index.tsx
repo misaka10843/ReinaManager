@@ -33,13 +33,12 @@ import { fetchFromBgm } from '@/api/bgm';
 import { fetchFromVNDB } from '@/api/vndb';
 import Alert from '@mui/material/Alert';
 import { useStore } from '@/store/';
-import { open } from '@tauri-apps/plugin-dialog';
 import CircularProgress from '@mui/material/CircularProgress';
 import { isTauri } from '@tauri-apps/api/core';
 import Switch from '@mui/material/Switch';
 import { time_now } from '@/utils';
 import { useTranslation } from 'react-i18next';
-import { getGamePlatformId } from '@/utils';
+import { getGamePlatformId, handleDirectory } from '@/utils';
 
 /**
  * AddModal 组件用于添加新游戏条目。
@@ -62,6 +61,7 @@ const AddModal: React.FC = () => {
     const [path, setPath] = useState('');
     const [customMode, setCustomMode] = useState(false);
     const [isVNDB, setIsVNDB] = useState(false);
+    const [isID, setisID] = useState(false);
 
     /**
      * 当路径变化时，自动提取文件夹名作为游戏名。
@@ -79,27 +79,24 @@ const AddModal: React.FC = () => {
      * - 其他模式下通过 API 获取游戏信息并添加。
      */
     const handleSubmit = async () => {
-        if (loading) return;
-        if (customMode && !path) {
-            setError(t('components.AddModal.noExecutableSelected'));
-            setTimeout(() => {
-                setError('');
-            }, 5000);
-            return;
-        }
-        if (customMode) {
-            await addGame({ id_type: 'custom', localpath: path, name: formText, name_cn: '', image: "/images/default.png", time: time_now() });
-            setFormText('');
-            setPath('');
-            handleClose();
-            return;
-        }
         try {
             setLoading(true);
-
+            if (customMode && !path) {
+                setError(t('components.AddModal.noExecutableSelected'));
+                setTimeout(() => {
+                    setError('');
+                }, 5000);
+                return;
+            }
+            if (customMode) {
+                await addGame({ id_type: 'custom', localpath: path, name: formText, name_cn: '', image: "/images/default.png", time: time_now() });
+                setFormText('');
+                setPath('');
+                handleClose();
+                return;
+            }
             // 根据 isVNDB 状态选择数据源
-            const res = isVNDB ? (await fetchFromVNDB(formText)) : (await fetchFromBgm(formText, bgmToken));
-
+            const res = isVNDB ? (await fetchFromVNDB(formText, isID ? formText : undefined)) : (await fetchFromBgm(formText, bgmToken, isID ? formText : undefined));
             // 错误处理
             if (typeof res === 'string') {
                 setError(res);
@@ -108,8 +105,9 @@ const AddModal: React.FC = () => {
                 }, 5000);
                 return null;
             }
+            const gameWithPath = { ...res, localpath: path, time: time_now() };
             // 检查是否已存在相同游戏
-            if (games.find((game) => getGamePlatformId(game) === getGamePlatformId(res) || (game.name === res.name || game.date === res.date))) {
+            if (games.find((game) => getGamePlatformId(game) === getGamePlatformId(gameWithPath) || (game.name === res.name || game.date === res.date))) {
                 setError(t('components.AddModal.gameExists'));
                 setTimeout(() => {
                     setError('');
@@ -117,33 +115,22 @@ const AddModal: React.FC = () => {
                 return null;
             }
             // 添加新游戏
-            const gameWithPath = { ...res, localpath: path };
             await addGame(gameWithPath);
             setFormText('');
             setPath('');
             handleClose();
         } catch (error) {
-            console.error(error);
+            // 捕获自定义错误并显示
+            const errorMessage = error instanceof Error
+                ? error.message
+                : t('components.AddModal.unknownError');
+            setError(errorMessage);
+            setTimeout(() => {
+                setError('');
+            }, 5000);
         } finally {
             setLoading(false);
         }
-    }
-
-    /**
-     * 打开文件选择对话框，选择本地可执行文件路径。
-     * @returns {Promise<string | null>} 选择的文件路径或 null
-     */
-    const handleDirectory = async () => {
-        const path = await open({
-            multiple: false,
-            directory: false,
-            filters: [{
-                name: t('components.AddModal.executable'),
-                extensions: ["exe"]
-            }]
-        });
-        if (path === null) return null;
-        return path
     }
 
     /**
@@ -197,6 +184,12 @@ const AddModal: React.FC = () => {
                             }} />
                             <span>{t('components.AddModal.enableVNDB')}</span>
                         </div>
+                        <div>
+                            <Switch checked={isID} onChange={() => {
+                                setisID(!isID)
+                            }} />
+                            <span>{t('components.AddModal.idSearch')}</span>
+                        </div>
                     </div>
                     {/* 游戏名称输入框 */}
                     <TextField
@@ -204,7 +197,7 @@ const AddModal: React.FC = () => {
                         margin="dense"
                         id="name"
                         name="game-name"
-                        label={t('components.AddModal.gameName')}
+                        label={!isID ? t('components.AddModal.gameName') : t('components.AddModal.gameID')}
                         type="text"
                         fullWidth
                         variant="standard"

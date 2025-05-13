@@ -35,7 +35,7 @@ import { createBrowserRouter, createHashRouter, type RouteObject } from 'react-r
 import React from 'react';
 import Layout from '@/components/Layout';
 import App from '@/App';
-import { Edit } from '@/pages/Edit';
+import { Edit } from '@/pages/Detail/Edit';
 import { isTauri } from '@tauri-apps/api/core';
 
 /**

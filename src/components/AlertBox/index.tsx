@@ -22,6 +22,8 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import CircularProgress from '@mui/material/CircularProgress';
 import { useTranslation } from 'react-i18next';
+import type { ReactNode } from 'react';
+import type { GameData } from '@/types';
 
 /**
  * 通用提示框属性类型
@@ -30,13 +32,15 @@ interface AlertBoxProps {
     open: boolean;
     setOpen: (value: boolean) => void;
     title?: string;
-    message?: string;
+    message?: ReactNode; // 修改类型以支持 JSX 元素
     onConfirm: () => void;
     confirmText?: string;
     cancelText?: string;
     confirmColor?: 'primary' | 'error' | 'success' | 'info' | 'warning';
     confirmVariant?: 'text' | 'outlined' | 'contained';
     autoCloseOnConfirm?: boolean;  // 确认后是否自动关闭
+    isLoading?: boolean; // 新增属性：加载状态
+    customMessage?: string; // 新增属性：自定义消息
 }
 
 /**
@@ -47,7 +51,15 @@ interface AlertDeleteBoxProps {
     setOpen: (value: boolean) => void;
     onConfirm: () => void;
     isLoading?: boolean;  // 添加加载状态
-    customMessage?: string; // 自定义删除消息
+    message?: string; // 自定义删除消息
+}
+
+// 定义 ViewUpdateGameBoxProps 接口
+interface ViewUpdateGameBoxProps {
+    game: GameData | string | null;
+    open: boolean;
+    setOpen: (value: boolean) => void;
+    onConfirm: () => void;
 }
 
 /**
@@ -66,7 +78,8 @@ export function AlertBox({
     cancelText,
     confirmColor = 'primary',
     confirmVariant = 'text',
-    autoCloseOnConfirm = true
+    autoCloseOnConfirm = true,
+    isLoading = false
 }: AlertBoxProps) {
     const { t } = useTranslation();
 
@@ -74,7 +87,9 @@ export function AlertBox({
      * 关闭弹窗
      */
     const handleClose = () => {
-        setOpen(false);
+        if (!isLoading) {
+            setOpen(false);
+        }
     };
 
     /**
@@ -82,7 +97,7 @@ export function AlertBox({
      */
     const handleConfirm = () => {
         onConfirm();
-        if (autoCloseOnConfirm) {
+        if (autoCloseOnConfirm && !isLoading) {
             setOpen(false);
         }
     };
@@ -101,13 +116,13 @@ export function AlertBox({
             )}
             {message && (
                 <DialogContent>
-                    <DialogContentText id="alert-dialog-description">
+                    <DialogContentText component="div" id="alert-dialog-description">
                         {message}
                     </DialogContentText>
                 </DialogContent>
             )}
             <DialogActions>
-                <Button onClick={handleClose}>
+                <Button onClick={handleClose} disabled={isLoading}>
                     {cancelText || t('components.AlertBox.cancel')}
                 </Button>
                 <Button
@@ -115,8 +130,12 @@ export function AlertBox({
                     color={confirmColor}
                     variant={confirmVariant}
                     autoFocus
+                    disabled={isLoading}
+                    startIcon={isLoading ? <CircularProgress size={16} color="inherit" /> : undefined}
                 >
-                    {confirmText || t('components.AlertBox.confirm')}
+                    {isLoading
+                        ? t('components.AlertBox.processing')
+                        : (confirmText || t('components.AlertBox.confirm'))}
                 </Button>
             </DialogActions>
         </Dialog>
@@ -134,53 +153,63 @@ export const AlertDeleteBox: React.FC<AlertDeleteBoxProps> = ({
     setOpen,
     onConfirm,
     isLoading = false,
-    customMessage
+    message
 }) => {
     const { t } = useTranslation();
 
-    /**
-     * 删除确认操作，不自动关闭弹窗，由父组件控制
-     */
-    const handleDeleteConfirm = () => {
-        onConfirm();
-        // 不在这里关闭对话框，等待操作完成后由父组件关闭
-    };
-
     return (
-        <Dialog
+        <AlertBox
             open={open}
-            onClose={() => !isLoading && setOpen(false)}  // 加载时不允许关闭
-            aria-labelledby="alert-dialog-title"
-            aria-describedby="alert-dialog-description"
-        >
-            <DialogTitle id="alert-dialog-title">
-                {t('components.AlertBox.deleteGameTitle')}
-            </DialogTitle>
-            <DialogContent>
-                <DialogContentText id="alert-dialog-description">
-                    {customMessage || t('components.AlertBox.deleteGameMessage')}
-                </DialogContentText>
-            </DialogContent>
-            <DialogActions>
-                <Button
-                    onClick={() => setOpen(false)}
-                    disabled={isLoading}
-                >
-                    {t('components.AlertBox.cancel')}
-                </Button>
-                <Button
-                    onClick={handleDeleteConfirm}
-                    color="error"
-                    variant="contained"
-                    autoFocus
-                    disabled={isLoading}
-                    startIcon={isLoading ? <CircularProgress size={16} color="inherit" /> : undefined}
-                >
-                    {isLoading
-                        ? t('components.AlertBox.processing')
-                        : t('components.AlertBox.confirmDelete')}
-                </Button>
-            </DialogActions>
-        </Dialog>
+            setOpen={setOpen}
+            title={t('components.AlertBox.deleteGameTitle')}
+            message={message || t('components.AlertBox.deleteGameMessage')}
+            onConfirm={onConfirm}
+            confirmText={t('components.AlertBox.confirmDelete')}
+            cancelText={t('components.AlertBox.cancel')}
+            confirmColor="error"
+            confirmVariant="contained"
+            autoCloseOnConfirm={false} // 不自动关闭，由父组件控制
+            isLoading={isLoading} // 传递加载状态
+        />
     );
 }
+
+/**
+ * 更新游戏信息提示框组件
+ *
+ * @param {Object} props 组件属性
+ * @param {{ name: string; image: string }} props.game 游戏信息
+ * @param {boolean} props.open 控制弹窗打开状态
+ * @param {(value: boolean) => void} props.setOpen 设置弹窗打开状态的函数
+ * @param {() => void} props.onConfirm 确认操作函数
+ * @returns {JSX.Element} 更新游戏信息弹窗
+ */
+export const ViewUpdateGameBox: React.FC<ViewUpdateGameBoxProps> = ({
+    game,
+    open,
+    setOpen,
+    onConfirm
+}) => {
+    return (
+        <AlertBox
+            open={open}
+            setOpen={setOpen}
+            title="确认更新游戏信息"
+            message={
+                (game && typeof game !== 'string') ?
+                    <>
+                        <p>游戏名称: {game.name}</p>
+                        <img src={game.image} alt={game.name} style={{ maxWidth: '100%', maxHeight: '200px' }} />
+                    </>
+                    :
+                    <p>none data</p>
+
+            }
+            onConfirm={onConfirm}
+            confirmText="确认"
+            cancelText="取消"
+            confirmColor="primary"
+            confirmVariant="contained"
+        />
+    );
+};

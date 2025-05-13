@@ -93,10 +93,12 @@
             "enableCustomMode": "启用自定义模式",
             "enableVNDB": "使用VNDB api(默认使用BGM api)",
             "gameName": "游戏名称",
+            "gameID": "游戏ID",
             "cancel": "取消",
             "processing": "处理中...",
             "confirm": "确认",
-            "executable": "可执行文件"
+            "executable": "可执行文件",
+            "idSearch": "启用ID搜索模式"
         },
         "FilterModal": {
             "filter": "筛选",

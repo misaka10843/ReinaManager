@@ -55,7 +55,7 @@ pub async fn launch_game<R: Runtime>(
             let process_id = child.id();
 
             // 启动游戏监控
-            monitor_game(app_handle, game_id, process_id).await;
+            monitor_game(app_handle, game_id, process_id, game_path.clone()).await;
 
             Ok(LaunchResult {
                 success: true,

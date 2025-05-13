@@ -2,7 +2,8 @@ import { open } from '@tauri-apps/plugin-shell';
 import { invoke, isTauri } from '@tauri-apps/api/core';
 import {path} from '@tauri-apps/api';
 import type { GameData, HanleGamesProps } from '@/types';
-import i18next from 'i18next';
+import i18next, { t } from 'i18next';
+import { open as openDirectory } from '@tauri-apps/plugin-dialog';
 // import { createTheme } from '@mui/material/styles';
 
 
@@ -124,4 +125,17 @@ export function formatPlayTime(minutes: number): string {
   } 
     return i18next.t('utils.formatPlayTime.hours', { count: hours });
   
+}
+
+export  const handleDirectory = async () => {
+  const path = await openDirectory({
+      multiple: false,
+      directory: false,
+      filters: [{
+          name: t('components.AddModal.executable'),
+          extensions: ["exe"]
+      }]
+  });
+  if (path === null) return null;
+  return path
 }

@@ -29,7 +29,8 @@ import {
   getGameById as getGameByIdRepository,
   deleteGame as deleteGameRepository,
   searchGames as searchGamesRepository,
-  filterGamesByType as filterGamesByTypeRepository 
+  filterGamesByType as filterGamesByTypeRepository,
+  updateGame as updateGameRepository // 添加 updateGameRepository 导入
 } from '@/utils/repository';
 import { 
   getGames as getGamesLocal, 
@@ -67,6 +68,7 @@ export interface AppState {
   addGame: (game: GameData) => Promise<void>;
   deleteGame: (gameId: number) => Promise<void>;
   getGameById: (gameId: number) => Promise<GameData>;
+  updateGame: (id: number, game: GameData) => Promise<void>;
   
   // 排序方法
   setSortOption: (option: string) => void;
@@ -219,6 +221,29 @@ refreshGameData: async (customSortOption?: string, customSortOrder?: 'asc' | 'de
           return game;
         }
         return await Promise.resolve(getGameByIdLocal(gameId));
+      },
+
+      updateGame: async (id: number, game: GameData) => {
+        set({ loading: true });
+        try {
+          if (isTauri()) {
+            await updateGameRepository(id, game);
+            const updatedGame = await getGameByIdRepository(id); // 从数据库获取最新数据
+            if (updatedGame) {
+              set((state) => ({
+                games: state.games.map((g) => (g.id === id ? updatedGame : g)),
+              }));
+            } else {
+              console.warn(`Game with ID ${id} not found in database after update.`);
+            }
+          } else {
+            console.warn("updateGameLocal is not implemented for browser environment.");
+          }
+        } catch (error) {
+          console.error('更新游戏数据失败:', error);
+        } finally {
+          set({ loading: false });
+        }
       },
 
       setSearchKeyword: (keyword: string) => {

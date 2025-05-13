@@ -19,205 +19,42 @@
  */
 
 import { useStore } from '@/store';
-import { useGamePlayStore } from '@/store/gamePlayStore';
 import { PageContainer } from '@toolpad/core';
 import type { GameData } from '@/types';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Typography, Box, Stack, Chip, Paper } from '@mui/material';
-import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import TodayIcon from '@mui/icons-material/Today';
-import BackupIcon from '@mui/icons-material/Backup';
-import type { GameTimeStats } from '@/types';
-import { LineChart } from '@mui/x-charts/LineChart';
+import { Typography, Box, Stack, Chip, Tabs, Tab } from '@mui/material';
 import { useLocation } from 'react-router';
+import { InfoBox } from './InfoBox';
+import { Edit } from './Edit';
 
-/**
- * 图表数据类型定义
- */
-interface GameTimeChartData {
-    date: string;
-    playtime: number;
-    [key: string]: string | number;
+
+// Tab面板组件
+interface TabPanelProps {
+    children?: React.ReactNode;
+    index: number;
+    value: number;
 }
 
-/**
- * InfoBox 组件属性类型
- */
-interface InfoBoxProps {
-    game: GameData;
-}
-
-/**
- * InfoBox 组件
- * 展示游戏统计信息（游玩次数、今日时长、总时长、备份次数）及近7天游玩时长折线图。
- *
- * @param {InfoBoxProps} props 组件属性
- * @returns {JSX.Element} 统计信息卡片与折线图
- */
-const InfoBox: React.FC<InfoBoxProps> = ({ game }) => {
-    const { t } = useTranslation();
-    const { loadGameStats, runningGameIds } = useGamePlayStore();
-    const [stats, setStats] = useState<GameTimeStats | null>(null);
-    const gameId = game.id as number;
-
-    // 存储上一次游戏运行状态，用于检测变化
-    const prevRunningRef = useRef(false);
-
-    /**
-     * 异步加载游戏统计数据
-     */
-    const fetchStats = useCallback(async () => {
-        try {
-            const gameStats = await loadGameStats(gameId, true); // 强制刷新
-            setStats(gameStats);
-        } catch (error) {
-            console.error('加载游戏统计失败:', error);
-        }
-    }, [gameId, loadGameStats]);
-
-    // 初始加载数据
-    useEffect(() => {
-        fetchStats();
-    }, [fetchStats]);
-
-    // 监听当前游戏的运行状态变化，关闭后自动刷新统计
-    useEffect(() => {
-        const isCurrentGameRunning = runningGameIds.has(gameId);
-        if (prevRunningRef.current && !isCurrentGameRunning) {
-            // 游戏刚刚关闭，延迟一点执行以确保后端数据已更新
-            const timer = setTimeout(() => {
-                fetchStats();
-            }, 500);
-            return () => clearTimeout(timer);
-        }
-        prevRunningRef.current = isCurrentGameRunning;
-    }, [runningGameIds, gameId, fetchStats]);
-
-    /**
-     * 统计项数据
-     */
-    const statItems = useMemo(() =>
-        [
-            {
-                color: 'primary',
-                icon: <SportsEsportsIcon fontSize="small" />,
-                title: t('pages.Detail.playCount'),
-                value: stats ? `${stats.sessionCount}` : '0'
-            },
-            {
-                color: 'primary',
-                icon: <TodayIcon fontSize="small" />,
-                title: t('pages.Detail.todayPlayTime'),
-                value: stats ? `${stats.todayPlayTime}` : '0分钟'
-            },
-            {
-                color: 'primary',
-                icon: <AccessTimeIcon fontSize="small" />,
-                title: t('pages.Detail.totalPlayTime'),
-                value: stats ? `${stats.totalPlayTime}` : '0分钟'
-            },
-            {
-                color: 'primary',
-                icon: <BackupIcon fontSize="small" />,
-                title: t('pages.Detail.backupCount'),
-                value: '0' // 备份功能暂未实现，保留原值
-            }
-        ],
-        [stats, t]
-    )
-
-    /**
-     * 生成近7天的游玩时长数据，补全无数据的日期
-     */
-    const chartData = useMemo(() => {
-        const datePlaytimeMap = new Map<string, number>();
-        if (stats?.daily_stats) {
-            for (const item of stats.daily_stats) {
-                datePlaytimeMap.set(item.date, item.playtime);
-            }
-        }
-        const result: GameTimeChartData[] = [];
-        const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        for (let i = 6; i >= 0; i--) {
-            const date = new Date(today);
-            date.setDate(today.getDate() - i);
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            const dateStr = `${year}-${month}-${day}`;
-            result.push({
-                date: dateStr,
-                playtime: datePlaytimeMap.get(dateStr) || 0
-            });
-        }
-        return result;
-    }, [stats?.daily_stats]);
+const TabPanel = (props: TabPanelProps) => {
+    const { children, value, index, ...other } = props;
 
     return (
-        <>
-            {/* 统计信息卡片 */}
-            <Box className="mt-16 mb-4">
-                <Typography variant="h6" fontWeight="bold" gutterBottom>
-                    {t('pages.Detail.gameStats')}
-                </Typography>
-                <div className="grid grid-cols-4 gap-4">
-                    {statItems.map((item) => (
-                        <Paper
-                            key={item.title}
-                            elevation={0}
-                            className={`
-                                p-4 rounded-lg overflow-hidden
-                                transition-all duration-200
-                                hover:shadow-md hover:scale-[1.02]
-                                ${item.color === 'primary' ? 'bg-blue-50/40 border border-blue-100/40' : 'bg-green-50/40 border border-green-100/40'}
-                            `}
-                        >
-                            <div className="flex items-center space-x-2 mb-2">
-                                <span className="text-[#1976d2] flex-shrink-0 flex items-center">
-                                    {item.icon}
-                                </span>
-                                <Typography
-                                    variant="body2"
-                                    className="font-medium text-gray-600 truncate"
-                                    title={item.title}
-                                >
-                                    {item.title}
-                                </Typography>
-                            </div>
-                            <Typography variant="h6" className="font-bold">
-                                {item.value}
-                            </Typography>
-                        </Paper>
-                    ))}
-                </div>
-            </Box>
-            {/* 近7天游玩时长折线图 */}
-            {
-                chartData.length > 0 &&
-                <LineChart
-                    dataset={chartData}
-                    xAxis={[{
-                        dataKey: 'date',
-                        scaleType: 'point'
-                    }]}
-                    yAxis={[{
-                        min: 0,
-                        max: chartData.every(item => item.playtime === 0) ? 10 : undefined,
-                        label: t('pages.Detail.playTimeMinutes'),
-                        scaleType: 'linear',
-                        tickMinStep: 1
-                    }]}
-                    series={[{ dataKey: 'playtime', color: '#1976d2' }]}
-                    height={300}
-                    grid={{ vertical: true, horizontal: true }}
-                />
-            }
-        </>
+        <div
+            role="tabpanel"
+            hidden={value !== index}
+            id={`game-tab-${index}`}
+            aria-labelledby={`game-tab-${index}`}
+            {...other}
+        >
+            {value === index && (
+                <Box sx={{ pt: 3 }}>
+                    {children}
+                </Box>
+            )}
+        </div>
     );
-};
+}
 
 /**
  * Detail 组件
@@ -230,9 +67,17 @@ export const Detail: React.FC = () => {
     const { t } = useTranslation();
     const { getGameById, setSelectedGameId } = useStore();
     const [game, setGame] = useState<GameData>();
+    const [tabIndex, setTabIndex] = useState(0);
     const id = Number(useLocation().pathname.split('/').pop());
+    const games = useStore((state) => state.games);
+
+    const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+        0
+        setTabIndex(newValue);
+    };
 
     // 加载游戏数据
+    // biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
     useEffect(() => {
         getGameById(id)
             .then(data => {
@@ -243,7 +88,7 @@ export const Detail: React.FC = () => {
             .catch(error => {
                 console.error('获取游戏数据失败:', error);
             })
-    }, [id, getGameById, setSelectedGameId]);
+    }, [id, getGameById, setSelectedGameId, games]);
 
     if (!game) return <div>{t('pages.Detail.notFound')}</div>;
 
@@ -270,7 +115,7 @@ export const Detail: React.FC = () => {
                             {game.id_type === 'custom' ?
                                 <Box>
                                     <Typography variant="subtitle2" fontWeight="bold">{t('pages.Detail.gameDatafrom')}</Typography>
-                                    <Typography>custom</Typography>
+                                    <Typography>Custom</Typography>
                                 </Box> :
                                 <Box>
                                     <Typography variant="subtitle2" fontWeight="bold">{t('pages.Detail.gameDatafrom')}</Typography>
@@ -286,7 +131,7 @@ export const Detail: React.FC = () => {
                             </Box>
                             <Box>
                                 <Typography variant="subtitle2" fontWeight="bold">{t('pages.Detail.addTime')}</Typography>
-                                <Typography>{new Date(game.time).toLocaleDateString()}</Typography>
+                                <Typography>{new Date(game.time as Date).toLocaleDateString()}</Typography>
                             </Box>
                             {game.rank !== 0 && game.rank !== null &&
                                 <Box>
@@ -314,13 +159,39 @@ export const Detail: React.FC = () => {
                         </Box>
                     </Box>
                 </Stack>
-                {/* 统计信息卡片 */}
-                <InfoBox game={game} />
-                {/* 游戏简介 */}
-                <Box className="mt-3">
-                    <Typography variant="h6" fontWeight="bold">{t('pages.Detail.introduction')}</Typography>
-                    <Typography className="mt-1">{game.summary}</Typography>
+
+
+                {/* 添加Tabs组件 */}
+                <Box sx={{ width: '100%' }}>
+                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+                        <Tabs
+                            value={tabIndex}
+                            onChange={handleTabChange}
+                            aria-label="game detail tabs"
+                        >
+                            <Tab label={t('pages.Detail.gameStats')} id="game-tab-0" aria-controls="game-tabpanel-0" />
+                            <Tab label={t('pages.Detail.introduction')} id="game-tab-1" aria-controls="game-tabpanel-1" />
+                            <Tab label="编辑" id="game-tab-2" aria-controls="game-tabpanel-2" />
+                        </Tabs>
+                    </Box>
+
+                    {/* 统计信息Tab */}
+                    <TabPanel value={tabIndex} index={0}>
+                        <InfoBox game={game} />
+                    </TabPanel>
+                    <TabPanel value={tabIndex} index={1}>
+                        {/* 游戏简介 */}
+                        <Box>
+                            <Typography variant="h6" fontWeight="bold">{t('pages.Detail.introduction')}</Typography>
+                            <Typography className="mt-1">{game.summary}</Typography>
+                        </Box>
+                    </TabPanel>
+                    <TabPanel value={tabIndex} index={2}>
+                        <Edit />
+                    </TabPanel>
+
                 </Box>
+
             </Box>
         </PageContainer>
     )
