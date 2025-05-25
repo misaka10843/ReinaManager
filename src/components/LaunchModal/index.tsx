@@ -26,30 +26,19 @@ import { isTauri } from '@tauri-apps/api/core';
 import { useTranslation } from 'react-i18next';
 
 /**
- * LaunchModal 组件属性类型
- */
-interface LaunchModalProps {
-    game_id?: number;
-}
-
-/**
  * LaunchModal 组件
  * 判断游戏是否可启动、是否正在运行，并渲染启动按钮。
  * 仅本地游戏且未运行时可启动，适配 Tauri 桌面环境。
  *
- * @param {LaunchModalProps} props 组件属性
  * @returns {JSX.Element} 启动按钮或运行中提示
  */
-export const LaunchModal = ({ game_id }: LaunchModalProps) => {
+export const LaunchModal = () => {
     const { t } = useTranslation();
     const { selectedGameId, getGameById, useIsLocalGame } = useStore();
     const { launchGame, isGameRunning } = useGamePlayStore();
 
-    // 确定要使用的游戏ID（优先使用props传入的，否则使用全局状态）
-    const effectiveGameId = game_id || selectedGameId;
-
     // 检查这个特定游戏是否在运行
-    const isThisGameRunning = isGameRunning(effectiveGameId === null ? undefined : effectiveGameId);
+    const isThisGameRunning = isGameRunning(selectedGameId === null ? undefined : selectedGameId);
 
     /**
      * 判断当前游戏是否可以启动
@@ -60,30 +49,30 @@ export const LaunchModal = ({ game_id }: LaunchModalProps) => {
         if (!isTauri()) return false;
 
         // 如果没有有效的游戏ID，无法启动
-        if (!effectiveGameId) return false;
+        if (!selectedGameId) return false;
 
         // 如果该游戏已在运行，不能再次启动
         if (isThisGameRunning) return false;
 
         // 检查是否为本地游戏，只有本地游戏才能启动
-        return useIsLocalGame(effectiveGameId);
+        return useIsLocalGame(selectedGameId);
     };
 
     /**
      * 启动游戏按钮点击事件
      */
     const handleStartGame = async () => {
-        if (!effectiveGameId) return;
+        if (!selectedGameId) return;
 
         try {
-            const selectedGame = await getGameById(effectiveGameId);
+            const selectedGame = await getGameById(selectedGameId);
             if (!selectedGame || !selectedGame.localpath) {
                 console.error(t('components.LaunchModal.gamePathNotFound'));
                 return;
             }
 
             // 使用游戏启动函数
-            await launchGame(selectedGame.localpath, effectiveGameId);
+            await launchGame(selectedGame.localpath, selectedGameId);
         } catch (error) {
             console.error(t('components.LaunchModal.launchFailed'), error);
         }

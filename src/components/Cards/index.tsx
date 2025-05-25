@@ -14,12 +14,16 @@
  * - @/store
  */
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import Card from '@mui/material/Card';
 import CardMedia from '@mui/material/CardMedia';
 import CardActionArea from '@mui/material/CardActionArea';
 import RightMenu from '@/components/RightMenu';
 import { useStore } from '@/store';
+import type { GameData } from '@/types';
+import KeepAlive from 'react-activation';
+import { useTranslation } from 'react-i18next';
+import { getGameDisplayName } from '@/utils';
 
 /**
  * Cards 组件用于展示游戏卡片列表。
@@ -28,20 +32,54 @@ import { useStore } from '@/store';
  * @component
  * @returns {JSX.Element} 游戏卡片列表
  */
+// 单个卡片项，使用memo避免无关渲染
+const CardItem = memo(({ card, isActive, onContextMenu, onClick, displayName }: {
+    card: GameData;
+    isActive: boolean;
+    onContextMenu: (e: React.MouseEvent) => void;
+    onClick: () => void;
+    displayName: string;
+}) => (
+    <Card
+        key={card.id}
+        className={`min-w-24 max-w-full ${isActive ? 'scale-y-105' : ''}`}
+        onContextMenu={onContextMenu}
+    >
+        <CardActionArea
+            onClick={onClick}
+            className={`
+             duration-100 
+            hover:shadow-lg hover:scale-105 
+            active:shadow-sm active:scale-95 
+            `}
+        >
+            <CardMedia
+                component="img"
+                className="h-auto aspect-[3/4]"
+                image={card.image}
+                alt="Card Image"
+                draggable="false"
+                loading="lazy"
+            />
+            <div className={`p-1 h-8 text-base  truncate ${isActive ? '!font-bold text-blue-500' : ''}`}>{displayName}</div>
+        </CardActionArea>
+    </Card>
+));
+
 const Cards = () => {
-    const { selectedGameId, setSelectedGameId } = useStore();
+    // 只订阅需要的状态，减少重渲染
+    const selectedGameId = useStore(s => s.selectedGameId);
+    const setSelectedGameId = useStore(s => s.setSelectedGameId);
+    const games = useStore(s => s.games);
+    const { i18n } = useTranslation();
     const [menuPosition, setMenuPosition] = useState<{
         mouseX: number;
         mouseY: number;
         cardId: number | null;
     } | null>(null);
 
-    const { games } = useStore();
-
     /**
      * 右键菜单事件处理，弹出菜单并设置选中卡片
-     * @param event 鼠标事件
-     * @param cardId 当前卡片的 id
      */
     const handleContextMenu = (event: React.MouseEvent, cardId: number | undefined) => {
         if (!cardId) return;
@@ -52,49 +90,35 @@ const Cards = () => {
         });
         setSelectedGameId(cardId);
     };
-
     return (
-        <div className="flex-1 text-center grid grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-4 p-4">
-            {/* 右键菜单组件 */}
-            <RightMenu id={menuPosition?.cardId} isopen={Boolean(menuPosition)}
-                anchorPosition={
-                    menuPosition
-                        ? { top: menuPosition.mouseY, left: menuPosition.mouseX }
-                        : undefined
-                }
-                setAnchorEl={(value) => {
-                    if (!value) setMenuPosition(null);
-                }} />
-            {/* 游戏卡片渲染 */}
-            {games.map((card) => {
-                const isActive = selectedGameId === card.id; // 判断当前卡片是否被选中
-                return (
-                    <Card
-                        key={card.id}
-                        className={`min-w-24 max-w-full ${isActive ? 'scale-y-105' : ''}`}
-                        onContextMenu={(e) => handleContextMenu(e, card.id)}
-                    >
-                        <CardActionArea
+        <KeepAlive>
+            <div className="flex-1 text-center grid grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-4 p-4">
+                {/* 右键菜单组件 */}
+                <RightMenu id={menuPosition?.cardId} isopen={Boolean(menuPosition)}
+                    anchorPosition={
+                        menuPosition
+                            ? { top: menuPosition.mouseY, left: menuPosition.mouseX }
+                            : undefined
+                    }
+                    setAnchorEl={(value) => {
+                        if (!value) setMenuPosition(null);
+                    }} />                {/* 游戏卡片渲染 */}
+                {games.map((card) => {
+                    const displayName = getGameDisplayName(card, i18n.language);
+
+                    return (
+                        <CardItem
+                            key={card.id}
+                            card={card}
+                            isActive={selectedGameId === card.id}
+                            onContextMenu={(e) => handleContextMenu(e, card.id)}
                             onClick={() => setSelectedGameId(card.id)}
-                            className={`
-                             duration-100 
-                            hover:shadow-lg hover:scale-105 
-                            active:shadow-sm active:scale-95 
-                            `}
-                        >
-                            <CardMedia
-                                component="img"
-                                className="h-auto aspect-[3/4]"
-                                image={card.image}
-                                alt="Card Image"
-                                draggable="false"
-                            />
-                            <div className={`p-1 h-8 text-base  truncate ${isActive ? '!font-bold text-blue-500' : ''}`}>{card.name_cn === "" ? card.name : card.name_cn}</div>
-                        </CardActionArea>
-                    </Card>
-                )
-            })}
-        </div>
+                            displayName={displayName}
+                        />
+                    );
+                })}
+            </div>
+        </KeepAlive>
     );
 };
 

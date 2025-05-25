@@ -75,6 +75,17 @@ interface GamePlayState {
   getTodayPlayTime: () => Promise<number>;
 }
 
+// ====== 统计缓存优化：全局作用域 ======
+let lastGamesSnapshot: number[] = [];
+let lastTotalPlayTime = 0;
+let lastWeekPlayTime = 0;
+let lastTodayPlayTime = 0;
+function getGamesIdSnapshot() {
+  const { games } = useStore.getState();
+  return games.map(g => g.id ?? 0).sort();
+}
+// ====== 统计缓存优化 END ======
+
 /**
  * useGamePlayStore
  * 管理游戏运行、统计、会话、实时状态等，支持 Tauri 桌面环境。
@@ -337,6 +348,10 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
    * 获取所有游戏的总游玩时长（分钟）
    */
   getTotalPlayTime: async () => {
+    const gamesSnapshot = getGamesIdSnapshot();
+    if (JSON.stringify(gamesSnapshot) === JSON.stringify(lastGamesSnapshot) && lastTotalPlayTime !== 0) {
+      return lastTotalPlayTime;
+    }
     const { games } = useStore.getState();
     let total = 0;
     for (const game of games) {
@@ -346,29 +361,48 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
         total += stats.total_time;
       }
     }
+    lastGamesSnapshot = gamesSnapshot;
+    lastTotalPlayTime = total;
     return total;
-  },
-
-  /**
+  },  /**
    * 获取本周所有游戏的总游玩时长（分钟）
+   * 本周定义：周一凌晨0点0分 到 周日23点59分59秒
    */
   getWeekPlayTime: async () => {
+    const gamesSnapshot = getGamesIdSnapshot();
+    if (JSON.stringify(gamesSnapshot) === JSON.stringify(lastGamesSnapshot) && lastWeekPlayTime !== 0) {
+      return lastWeekPlayTime;
+    }
     const { games } = useStore.getState();
     let total = 0;
     const now = new Date();
+    
+    // 计算本周开始日期（周一为一周的开始）
     const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - now.getDay());
+    const dayOfWeek = now.getDay(); // 0 = 周日, 1 = 周一, ..., 6 = 周六
+    
+    // 计算距离本周周一的天数
+    const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // 周日时为6天前，其他为 dayOfWeek - 1
+    weekStart.setDate(now.getDate() - daysFromMonday);
+    weekStart.setHours(0, 0, 0, 0); // 设置为周一凌晨0点0分
+    
+    // 生成本周开始日期字符串用于比较
+    const weekStartDateStr = getLocalDateString(Math.floor(weekStart.getTime() / 1000));
+    
     for (const game of games) {
       if (!game.id) continue;
       const stats = await getGameStatistics(game.id);
       if (stats && Array.isArray(stats.daily_stats)) {
         for (const record of stats.daily_stats) {
-          if (record.date && new Date(record.date) >= weekStart) {
+          // 使用字符串比较，确保准确性
+          if (record.date && record.date >= weekStartDateStr) {
             total += record.playtime || 0;
           }
         }
       }
     }
+    lastGamesSnapshot = gamesSnapshot;
+    lastWeekPlayTime = total;
     return total;
   },
 
@@ -376,6 +410,10 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
    * 获取今天所有游戏的总游玩时长（分钟）
    */
   getTodayPlayTime: async () => {
+    const gamesSnapshot = getGamesIdSnapshot();
+    if (JSON.stringify(gamesSnapshot) === JSON.stringify(lastGamesSnapshot) && lastTodayPlayTime !== 0) {
+      return lastTodayPlayTime;
+    }
     const { games } = useStore.getState();
     let total = 0;
     const today = getLocalDateString();
@@ -389,6 +427,8 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
         }
       }
     }
+    lastGamesSnapshot = gamesSnapshot;
+    lastTodayPlayTime = total;
     return total;
   },
 }));

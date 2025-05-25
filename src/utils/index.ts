@@ -6,7 +6,6 @@ import i18next, { t } from 'i18next';
 import { open as openDirectory } from '@tauri-apps/plugin-dialog';
 // import { createTheme } from '@mui/material/styles';
 
-
 export const time_now=()=>{
     // 获取当前时间
 const currentDate = new Date();
@@ -139,3 +138,12 @@ export  const handleDirectory = async () => {
   if (path === null) return null;
   return path
 }
+
+export const getGameDisplayName = (game: GameData, language?: string): string => {
+  const currentLanguage = language || i18next.language;
+  
+  // 只有当语言为zh-CN时才使用name_cn，其他语言都使用name
+  return currentLanguage === 'zh-CN' && game.name_cn 
+    ? game.name_cn 
+    : game.name;
+};

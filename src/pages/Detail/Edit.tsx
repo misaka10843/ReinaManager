@@ -1,153 +1,166 @@
 import { useStore } from "@/store";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useLocation } from "react-router";
-import { Box, TextField, Button, Stack, Select, MenuItem, InputLabel, FormControl, CircularProgress } from "@mui/material"; // 添加 CircularProgress
+import {
+    Box,
+    TextField,
+    Button,
+    Stack,
+    FormControl,
+    InputLabel,
+    Select as MuiSelect,
+    MenuItem,
+    CircularProgress,
+    Alert,
+    AlertTitle,
+    type SelectChangeEvent
+} from "@mui/material";
+import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import UpdateIcon from '@mui/icons-material/Update';
 import { fetchFromBgm } from "@/api/bgm";
 import { fetchFromVNDB } from "@/api/vndb";
+import fetchMixedData from "@/api/mixed";
 import type { GameData } from "@/types";
 import { ViewUpdateGameBox } from "@/components/AlertBox";
 import { handleDirectory } from "@/utils";
 import { updateGameLocalPath } from "@/utils/repository";
+import { useTranslation } from 'react-i18next';
 
 /**
  * Edit 组件
- * 游戏信息编辑页面，加载指定游戏数据并展示（当前仅展示名称）。
+ * 游戏信息编辑页面，利用全局状态管理优化，减少冗余代码。
  *
  * @component
  * @returns {JSX.Element} 编辑页面
  */
 export const Edit = (): JSX.Element => {
-    const { bgmToken, getGameById, updateGame } = useStore();
+    const { bgmToken, updateGame, selectedGame } = useStore();
+    const id = Number(useLocation().pathname.split('/').pop());
+    const { t } = useTranslation();
+
+    // 可编辑状态
     const [bgmId, setBgmId] = useState<string>("");
     const [vndbId, setVndbId] = useState<string>("");
-    // 移除了 gameID 状态，因为它可以在 fetch 函数内部派生
-    const [gameData, setGameData] = useState<GameData | string | null>(null); // 用于存储获取到的游戏数据或错误信息
     const [idType, setIdType] = useState<string>("");
-    const [openViewBox, setOpenViewBox] = useState(false); // 控制预览弹窗的打开状态
-    const [isLoading, setIsLoading] = useState(false); // 添加加载状态
-    const [fetchError, setFetchError] = useState<string | null>(null); // 可选：用于存储和显示获取错误
-    const [localPath, setLocalPath] = useState<string>(""); // 用于存储可执行文件路径
+    const [localPath, setLocalPath] = useState<string>("");
 
-    const id = Number(useLocation().pathname.split('/').pop()); // 从 URL 获取游戏 ID
+    // UI 状态
+    const [gameData, setGameData] = useState<GameData | string | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [fetchError, setFetchError] = useState<string | null>(null);
+    const [updateSuccess, setUpdateSuccess] = useState(false);
+    const [pathUpdateSuccess, setPathUpdateSuccess] = useState(false);
+    const [openViewBox, setOpenViewBox] = useState(false);
 
-    // 重构的数据获取逻辑：现在只负责获取数据并返回 GameData 或错误字符串
-    const fetchGameData = async (): Promise<GameData | string> => {
+    // 重构的数据获取逻辑
+    const fetchGameData = useCallback(async (): Promise<GameData | string> => {
         let fetchedData: GameData | string | null = null;
-        const currentBgmId = bgmId; // 直接使用 state 中的 ID
-        const currentVndbId = vndbId; // 直接使用 state 中的 ID
 
         switch (idType) {
             case "bgm": {
-                if (!currentBgmId) return "Bangumi ID 不能为空"; // 处理 ID 为空的情况
+                if (!bgmId) return t('pages.Detail.Edit.bgmIdRequired', 'Bangumi ID 不能为空');
                 try {
-                    // 确保 fetchFromBgm 能正确处理 ID
-                    fetchedData = await fetchFromBgm(currentBgmId, bgmToken, currentBgmId); // 正确传递 bgmId
+                    fetchedData = await fetchFromBgm(bgmId, bgmToken, bgmId);
                 } catch (error) {
-                    const errorMessage = error instanceof Error ? error.message : "未知错误";
+                    const errorMessage = error instanceof Error ? error.message : t('pages.Detail.Edit.unknownError', '未知错误');
                     console.error("Bangumi 数据获取失败:", errorMessage);
-                    fetchedData = `Bangumi 获取错误: ${errorMessage}`; // 返回错误信息
+                    return `${t('pages.Detail.Edit.bangumiFetchError', 'Bangumi 获取错误')}: ${errorMessage}`;
                 }
                 break;
             }
             case "vndb": {
-                if (!currentVndbId) return "VNDB ID 不能为空"; // 处理 ID 为空的情况
+                if (!vndbId) return t('pages.Detail.Edit.vndbIdRequired', 'VNDB ID 不能为空');
                 try {
-                    // 确保 fetchFromVNDB 能正确处理 ID
-                    fetchedData = await fetchFromVNDB(currentVndbId, currentVndbId); // 正确传递 vndbId
+                    fetchedData = await fetchFromVNDB(vndbId, vndbId);
                 } catch (error) {
-                    const errorMessage = error instanceof Error ? error.message : "未知错误";
+                    const errorMessage = error instanceof Error ? error.message : t('pages.Detail.Edit.unknownError', '未知错误');
                     console.error("VNDB 数据获取失败:", errorMessage);
-                    fetchedData = `VNDB 获取错误: ${errorMessage}`; // 返回错误信息
+                    return `${t('pages.Detail.Edit.vndbFetchError', 'VNDB 获取错误')}: ${errorMessage}`;
                 }
                 break;
             }
-            // case "mixed": {
-            //  // 如果需要，实现 mixed 逻辑，确保返回 GameData 或 string
-            //  fetchedData = "混合模式未实现";
-            //  break;
-            // }
-            case "custom": {
-                fetchedData = "自定义模式无法从数据源更新。";
+            case "mixed": {
+                if (!bgmId && !vndbId) return t('pages.Detail.Edit.bgmOrVndbIdRequired', 'Bangumi ID 或 VNDB ID 不能为空');
+                try {
+                    fetchedData = await fetchMixedData(
+                        bgmId || vndbId,
+                        bgmToken,
+                        bgmId,
+                        vndbId
+                    );
+                } catch (error) {
+                    const errorMessage = error instanceof Error ? error.message : t('pages.Detail.Edit.unknownError', '未知错误');
+                    console.error("Mixed 数据获取失败:", errorMessage);
+                    return `${t('pages.Detail.Edit.mixedFetchError', 'Mixed 获取错误')}: ${errorMessage}`;
+                }
                 break;
+            }
+            case "custom": {
+                return t('pages.Detail.Edit.customModeWarning', '自定义模式无法从数据源更新。');
             }
             default:
-                fetchedData = "选择了无效的数据源。"; // 默认错误
-                break;
+                return t('pages.Detail.Edit.invalidDataSource', '选择了无效的数据源。');
         }
 
-        // 确保总是返回 GameData 或字符串错误信息
-        return fetchedData ?? "未获取到数据或数据源无效。";
-    };
+        return fetchedData ?? t('pages.Detail.Edit.noDataFetched', '未获取到数据或数据源无效。');
+    }, [idType, bgmId, vndbId, bgmToken, t]);
 
-    // Effect：用于加载初始的游戏 ID
+    // Effect：从 selectedGame 初始化本地状态
     useEffect(() => {
-        getGameById(id)
-            .then(data => {
-                if (data) {
-                    setBgmId(data.bgm_id || "");
-                    setVndbId(data.vndb_id || "");
-                    setIdType(data.id_type || "");
-                    setLocalPath(data.localpath || ""); // 设置初始的可执行文件路径
-                } else {
-                    console.error("未找到游戏数据");
-                    setFetchError("未找到指定 ID 的游戏数据"); // 可以设置错误状态
-                }
-            })
-            .catch(error => {
-                console.error('获取初始游戏数据失败:', error);
-                setFetchError(`获取初始数据失败: ${error instanceof Error ? error.message : error}`); // 设置错误状态
-            });
-    }, [id, getGameById]); // 依赖项：仅在 id 或 getGameById 变化时执行
-
-    // Effect：用于在 gameData 状态成功更新 *之后* 打开对话框
-    useEffect(() => {
-        // 仅当 gameData 更新为一个有效的 GameData 对象 (非 null, 非 string) 且不在加载中时打开
-        if (gameData && typeof gameData !== 'string' && !isLoading) {
-            setOpenViewBox(true);
-            setFetchError(null); // 如果成功获取，清除之前的错误
-        } else if (typeof gameData === 'string' && !isLoading) {
-            // 处理 gameData 是错误字符串的情况
-            console.error("获取错误:", gameData);
-            setFetchError(gameData); // 设置错误状态，以便在 UI 中显示
-            setOpenViewBox(false); // 确保错误时不打开对话框
+        if (selectedGame) {
+            setBgmId(selectedGame.bgm_id || "");
+            setVndbId(selectedGame.vndb_id || "");
+            setIdType(selectedGame.id_type || "");
+            setLocalPath(selectedGame.localpath || "");
         }
-        // 这里特意没有将 isLoading 作为依赖项，
-        // 因为我们只想在 gameData *本身* 发生变化时触发此效果。
-        // !isLoading 的检查是为了防止在新的获取请求可能刚开始时就打开对话框。
-
-    }, [gameData, isLoading]); // 依赖项：仅在 gameData 变化时执行
+    }, [selectedGame]);
 
     // 按钮点击处理函数：启动获取流程并设置状态
     const handleUpdateClick = async () => {
-        setIsLoading(true); // 设置加载状态为 true
-        setFetchError(null); // 清除之前的错误信息
-        setGameData(null); // 清除旧数据，确保 useEffect 能检测到变化
-        setOpenViewBox(false); // 如果对话框已打开，先关闭
+        setIsLoading(true);
+        setFetchError(null);
+        setUpdateSuccess(false);
 
-        const result = await fetchGameData(); // 获取数据
+        const result = await fetchGameData();
 
-        // 设置结果（可能是 GameData 或错误字符串）
-        // 上面的 useEffect Hook 会根据这个结果来决定是否打开对话框
-        setGameData(result);
+        // 处理结果
+        if (result && typeof result !== 'string') {
+            const originalPath = selectedGame?.localpath || "";
+            const updatedResult = {
+                ...result,
+                localpath: originalPath // 保留原有的路径
+            };
+            setGameData(updatedResult);
+            setOpenViewBox(true);
+        } else {
+            setFetchError(result);
+        }
 
-        setIsLoading(false); // 设置加载状态为 false
+        setIsLoading(false);
     };
 
-    // 添加一个处理修改可执行文件路径的函数
+    // 处理修改可执行文件路径
     const handleUpdateLocalPath = async () => {
-        if (!localPath) {
-            console.error("路径不能为空");
-            return;
-        }
+        if (!localPath || !selectedGame) return;
+
+        setIsLoading(true);
         try {
             await updateGameLocalPath(id, localPath);
-            console.log("可执行文件路径已更新");
+
+            // 更新全局状态
+            const updatedGame = { ...selectedGame, localpath: localPath };
+            updateGame(id, updatedGame);
+
+            setPathUpdateSuccess(true);
+            setTimeout(() => setPathUpdateSuccess(false), 3000);
         } catch (error) {
-            console.error("更新可执行文件路径失败:", error);
+            setFetchError(`${t('pages.Detail.Edit.updatePathFailed', '更新路径失败')}: ${error instanceof Error ? error.message : t('pages.Detail.Edit.unknownError', '未知错误')}`);
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    // 添加一个处理选择可执行文件路径的函数
+    // 处理选择可执行文件路径
     const handleSelectLocalPath = async () => {
         const selectedPath = await handleDirectory();
         if (selectedPath) {
@@ -155,99 +168,160 @@ export const Edit = (): JSX.Element => {
         }
     };
 
+    // 处理游戏数据更新
+    const handleGameDataUpdate = () => {
+        if (gameData && typeof gameData !== 'string') {
+            const originalPath = selectedGame?.localpath || "";
+
+            // 确保新数据保留原来的 localpath
+            const updatedGameData = {
+                ...gameData,
+                localpath: originalPath
+            };
+
+            // 更新游戏数据并关闭对话框
+            updateGame(id, updatedGameData);
+            setOpenViewBox(false);
+            setUpdateSuccess(true);
+            setTimeout(() => setUpdateSuccess(false), 3000);
+        }
+    };
+
+    // 处理数据源选择变更
+    const handleIdTypeChange = (event: SelectChangeEvent) => {
+        setIdType(event.target.value);
+    };
+
     return (
         <Box sx={{ p: 3 }}>
-            {/* 如果有获取错误，显示错误信息 */}
-            {fetchError && <p style={{ color: 'red' }}>错误: {fetchError}</p>}
+            {/* 状态提示区域 */}
+            {fetchError && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                    <AlertTitle>{t('pages.Detail.Edit.error', '错误')}</AlertTitle>
+                    {fetchError}
+                </Alert>
+            )}
 
+            {!selectedGame && (
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                    <AlertTitle>{t('pages.Detail.Edit.warning', '警告')}</AlertTitle>
+                    {t('pages.Detail.Edit.notFound', '未找到游戏数据')}
+                </Alert>
+            )}
+
+            {updateSuccess && (
+                <Alert severity="success" sx={{ mb: 2 }}>
+                    <AlertTitle>{t('pages.Detail.Edit.success', '成功')}</AlertTitle>
+                    {t('pages.Detail.Edit.updateSuccess', '游戏信息已成功更新')}
+                </Alert>
+            )}
+
+            {pathUpdateSuccess && (
+                <Alert severity="success" sx={{ mb: 2 }}>
+                    <AlertTitle>{t('pages.Detail.Edit.success', '成功')}</AlertTitle>
+                    {t('pages.Detail.Edit.pathUpdateSuccess', '游戏路径已成功更新')}
+                </Alert>
+            )}
+
+            {/* 游戏更新确认弹窗 */}
             <ViewUpdateGameBox
                 open={openViewBox}
                 setOpen={setOpenViewBox}
-                onConfirm={() => {
-                    if (gameData && typeof gameData !== 'string') {
-                        updateGame(id, gameData).then(() => {
-                        });
-                        setOpenViewBox(false); // 确认后关闭对话框
-                    }
-                }}
-                // 传递 gameData state。ViewUpdateGameBox 需要能正确处理 null/string 的情况。
+                onConfirm={handleGameDataUpdate}
                 game={gameData}
             />
+
             <Stack spacing={3}>
                 {/* ID 类型选择框 */}
-                <FormControl fullWidth disabled={isLoading}> {/* 加载时禁用 */}
-                    <InputLabel id="id-type-label">数据源</InputLabel>
-                    <Select
+                <FormControl fullWidth disabled={isLoading || !selectedGame}>
+                    <InputLabel id="id-type-label">{t('pages.Detail.Edit.dataSource', '数据源')}</InputLabel>
+                    <MuiSelect
                         labelId="id-type-label"
                         value={idType}
-                        onChange={(e) => setIdType(e.target.value)}
-                        label="数据源" // 保持和 InputLabel 一致
+                        onChange={handleIdTypeChange}
+                        label={t('pages.Detail.Edit.dataSource', '数据源')}
                     >
                         <MenuItem value="bgm">Bangumi</MenuItem>
                         <MenuItem value="vndb">VNDB</MenuItem>
-                        {/* <MenuItem value="mixed">Mixed</MenuItem> */}
+                        <MenuItem value="mixed">Mixed</MenuItem>
                         <MenuItem value="custom">Custom</MenuItem>
-                    </Select>
+                    </MuiSelect>
                 </FormControl>
 
                 {/* Bangumi ID 编辑框 */}
                 {idType !== "vndb" && idType !== "custom" && (
                     <TextField
-                        label="Bangumi ID"
+                        label={t('pages.Detail.Edit.bgmId', 'Bangumi ID')}
                         variant="outlined"
                         fullWidth
                         value={bgmId}
                         onChange={(e) => setBgmId(e.target.value)}
-                        disabled={isLoading} // 加载时禁用
+                        disabled={isLoading}
                     />
                 )}
 
                 {/* VNDB ID 编辑框 */}
                 {idType !== "bgm" && idType !== "custom" && (
                     <TextField
-                        label="VNDB ID"
+                        label={t('pages.Detail.Edit.vndbId', 'VNDB ID')}
                         variant="outlined"
                         fullWidth
                         value={vndbId}
                         onChange={(e) => setVndbId(e.target.value)}
-                        disabled={isLoading} // 加载时禁用
+                        disabled={isLoading}
                     />
                 )}
+
                 {/* 更新按钮 */}
                 <Button
                     variant="contained"
                     color="primary"
                     size="large"
                     fullWidth
-                    disabled={idType === "custom" || isLoading} // Custom 模式或加载时禁用
-                    onClick={handleUpdateClick} // 使用新的处理函数
-                    startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : null} // 显示加载图标
+                    disabled={
+                        idType === "custom" ||
+                        isLoading ||
+                        !selectedGame ||
+                        (idType === "bgm" && !bgmId) ||
+                        (idType === "vndb" && !vndbId) ||
+                        (idType === "mixed" && !bgmId && !vndbId)
+                    }
+                    onClick={handleUpdateClick}
+                    startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : <UpdateIcon />}
                 >
-                    {isLoading ? "正在获取..." : "从数据源更新数据"}
+                    {isLoading ? t('pages.Detail.Edit.loading', '正在获取...') : t('pages.Detail.Edit.updateFromSource', '从数据源更新数据')}
                 </Button>
 
-                {/* 显示和修改可执行文件路径 */}
-                <TextField
-                    label="可执行文件路径"
-                    variant="outlined"
-                    fullWidth
-                    value={localPath}
-                    onClick={handleSelectLocalPath} // 点击时打开文件选择对话框
-                    InputProps={{ readOnly: true }} // 设置为只读
-                    disabled={isLoading} // 加载时禁用
-                />
+                {/* 可执行文件路径区域 */}
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                    <TextField
+                        label={t('pages.Detail.Edit.localPath', '可执行文件路径')}
+                        variant="outlined"
+                        fullWidth
+                        value={localPath}
+                        onChange={(e) => setLocalPath(e.target.value)}
+                        disabled={isLoading || !selectedGame}
+                    />
+                    <Button
+                        variant="outlined"
+                        onClick={handleSelectLocalPath}
+                        disabled={isLoading || !selectedGame}
+                        sx={{ minWidth: '40px', px: 1 }}
+                    >
+                        <FolderOpenIcon />
+                    </Button>
+                </Box>
 
-
-                {/* 确保在更新路径的按钮中调用 handleUpdateLocalPath */}
+                {/* 更新路径按钮 */}
                 <Button
                     variant="contained"
                     color="primary"
                     size="large"
                     fullWidth
-                    onClick={handleUpdateLocalPath} // 调用更新路径函数
-                    disabled={isLoading || !localPath} // 加载时禁用或路径为空时禁用
+                    onClick={handleUpdateLocalPath}
+                    disabled={isLoading || !localPath || !selectedGame}
                 >
-                    更新可执行文件路径
+                    {t('pages.Detail.Edit.updateLocalPath', '更新可执行文件路径')}
                 </Button>
             </Stack>
         </Box>

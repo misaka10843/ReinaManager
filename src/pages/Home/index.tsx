@@ -20,7 +20,7 @@
  * - react-router
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
     Box,
     Card,
@@ -50,7 +50,7 @@ import { useStore } from '@/store';
 import { Link } from 'react-router';
 import { useGamePlayStore } from '@/store/gamePlayStore';
 import { getGameSessions } from '@/utils/gameStats';
-import { formatRelativeTime, formatPlayTime } from '@/utils';
+import { formatRelativeTime, formatPlayTime, getGameDisplayName } from '@/utils';
 import type { GameData } from '@/types';
 import { useTranslation } from 'react-i18next';
 
@@ -89,9 +89,10 @@ interface ActivityItem {
 /**
  * 获取最近游玩、最近添加、动态数据
  * @param games 游戏列表
+ * @param language 当前语言
  * @returns 包含 sessions、added、activities 的对象
  */
-async function getGameActivities(games: GameData[]): Promise<{
+async function getGameActivities(games: GameData[], language: string): Promise<{
     sessions: RecentSession[];
     added: RecentGame[];
     activities: ActivityItem[];
@@ -106,11 +107,12 @@ async function getGameActivities(games: GameData[]): Promise<{
             const gameSessions = await getGameSessions(game.id, 10, 0);
 
             for (const s of gameSessions.filter(s => typeof s.end_time === 'number')) {
+                const gameTitle = getGameDisplayName(game, language);
                 const item: ActivityItem = {
                     id: `play-${s.session_id || game.id}-${s.end_time}`,
                     type: 'play',
                     gameId: game.id as number,
-                    gameTitle: game.name_cn || game.name,
+                    gameTitle,
                     imageUrl: game.image || '',
                     time: s.end_time as number,
                     duration: s.duration
@@ -122,7 +124,7 @@ async function getGameActivities(games: GameData[]): Promise<{
                     session_id: s.session_id as number,
                     game_id: game.id as number,
                     end_time: s.end_time as number,
-                    gameTitle: game.name_cn || game.name,
+                    gameTitle,
                     imageUrl: game.image || '',
                 });
             }
@@ -149,12 +151,13 @@ async function getGameActivities(games: GameData[]): Promise<{
 
         // 使用处理好的 Date 获取时间戳（确保为秒级）
         const timestamp = Math.floor(addedDate.getTime() / 1000);
+        const gameTitle = getGameDisplayName(game, language);
 
         const item: ActivityItem = {
             id: `add-${game.id}`,
             type: 'add',
             gameId: game.id as number,
-            gameTitle: game.name_cn || game.name,
+            gameTitle,
             imageUrl: game.image || '',
             time: timestamp
         };
@@ -162,7 +165,7 @@ async function getGameActivities(games: GameData[]): Promise<{
 
         added.push({
             id: game.id as number,
-            title: game.name_cn || game.name,
+            title: gameTitle,
             imageUrl: game.image || '',
             time: addedDate
         });
@@ -192,45 +195,43 @@ export const Home: React.FC = () => {
     const [weekTime, setWeekTime] = useState(0);
     const [todayTime, setTodayTime] = useState(0);
     const [recentSessions, setRecentSessions] = useState<RecentSession[]>([]);
-
     const [recentAdded, setRecentAdded] = useState<RecentGame[]>([]);
     const [activities, setActivities] = useState<ActivityItem[]>([]);
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
 
-    const gamesList = games.map((game) => {
-        return {
-            title: game.name_cn === "" ? game.name : game.name_cn,
-            id: game.id,
-            isLocal: game.localpath !== '',
-            imageUrl: game.image
-        }
-    });
+    // 用 useMemo 缓存 gamesList，避免每次渲染都新建数组
+    const gamesList = useMemo(() => games.map((game) => ({
+        title: getGameDisplayName(game, i18n.language),
+        id: game.id,
+        isLocal: game.localpath !== '',
+        imageUrl: game.image
+    })), [games, i18n.language]);
 
-    const gamesLocalCount = gamesList.filter(game => {
-        return game.isLocal
-    }).length; // 获取游戏数量
+    const gamesLocalCount = useMemo(() => gamesList.filter(game => game.isLocal).length, [gamesList]);
 
-    const statsCards = [
+    // 用 useCallback 保证函数引用稳定
+    const getTotalPlayTimeStable = useCallback(() => getTotalPlayTime(), [getTotalPlayTime]);
+    const getWeekPlayTimeStable = useCallback(() => getWeekPlayTime(), [getWeekPlayTime]);
+    const getTodayPlayTimeStable = useCallback(() => getTodayPlayTime(), [getTodayPlayTime]);
+
+    const statsCards = useMemo(() => [
         { title: t('home.stats.totalGames', '总游戏数'), value: games.length, icon: <GamesIcon /> },
         { title: t('home.stats.localGames', '本地游戏数'), value: gamesLocalCount, icon: <LocalIcon /> },
         { title: t('home.stats.completedGames', '通关游戏数'), value: '0', icon: <CompletedIcon /> },
         { title: t('home.stats.totalPlayTime', '总游戏时长'), value: formatPlayTime(totalTime), icon: <TimeIcon /> },
         { title: t('home.stats.weekPlayTime', '本周游戏时长'), value: formatPlayTime(weekTime), icon: <WeekIcon /> },
         { title: t('home.stats.todayPlayTime', '今日游戏时长'), value: formatPlayTime(todayTime), icon: <TodayIcon /> },
-    ];
-
-    useEffect(() => {
+    ], [t, games.length, gamesLocalCount, totalTime, weekTime, todayTime]); useEffect(() => {
         (async () => {
-            setTotalTime(await getTotalPlayTime());
-            setWeekTime(await getWeekPlayTime());
-            setTodayTime(await getTodayPlayTime());
-
-            const result = await getGameActivities(games);
+            setTotalTime(await getTotalPlayTimeStable());
+            setWeekTime(await getWeekPlayTimeStable());
+            setTodayTime(await getTodayPlayTimeStable());
+            const result = await getGameActivities(games, i18n.language);
             setRecentSessions(result.sessions);
             setRecentAdded(result.added);
             setActivities(result.activities);
         })();
-    }, [games, getTotalPlayTime, getWeekPlayTime, getTodayPlayTime]);
+    }, [games, getTotalPlayTimeStable, getWeekPlayTimeStable, getTodayPlayTimeStable, i18n.language]);
 
     return (
         <Box className="p-6 flex flex-col gap-4">

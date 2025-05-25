@@ -20,19 +20,40 @@
             "notFound": "ゲームデータが見つかりません",
             "introduction": "紹介",
             "gameScore": "ゲームスコア",
-            "releaseDate": "発売日",
+            "releaseDate": "公開日",
             "gameRanking": "ゲームランキング",
             "gameTags": "ゲームタグ",
             "addTime": "追加時間",
             "gameDeveloper": "開発者",
             "gameStats": "ゲーム統計",
-            "playCount": "総プレイ回数",
-            "totalPlayTime": "総プレイ時間",
-            "todayPlayTime": "今日のプレイ時間",
-            "backupCount": "セーブバックアップ数",
+            "playCount": "累計プレイ回数",
+            "totalPlayTime": "累計総プレイ時間",
+            "todayPlayTime": "本日のプレイ時間",
+            "backupCount": "バックアップ数",
             "gameDatafrom": "データソース",
-            "expected_hours": "予想プレイ時間",
-            "playTimeMinutes": "プレイ時間（分）"
+            "expected_hours": "予想時間",
+            "playTimeMinutes": "プレイ時間(分)",
+            "editPart": "編集",
+            "Edit": {
+                "error": "エラー",
+                "warning": "警告",
+                "notFound": "ゲームデータが見つかりません",
+                "success": "成功",
+                "updateSuccess": "ゲーム情報が正常に更新されました",
+                "pathUpdateSuccess": "ゲームパスが正常に更新されました",
+                "dataSource": "データソース",
+                "bgmId": "Bangumi ID",
+                "vndbId": "VNDB ID",
+                "loading": "取得中...",
+                "updateFromSource": "データソースから更新",
+                "localPath": "実行ファイルパス",
+                "updateLocalPath": "実行ファイルパスを更新",
+                "invalidDataSource": "無効なデータソースが選択されました。",
+                "noDataFetched": "データが取得できないか、データソースが無効です。",
+                "unknownError": "不明なエラー",
+                "mixedFetchError": "Mixed 取得エラー",
+                "updatePathFailed": "パスの更新に失敗しました"
+            }
         }
     },
     "components": {
@@ -42,13 +63,12 @@
             "inputGameName": "ゲーム名を入力",
             "clearSearch": "検索をクリア"
         },
-        "Toolbar": {
+        "Toolbar": {           
             "gameLibrary": "ゲームライブラリ",
             "openGameFolder": "ゲームフォルダを開く",
             "deleteGame": "ゲームを削除",
             "bgmlink": "Bangumiページを見る",
             "vndblink": "Vndbページを見る",
-            "editModal": "ゲームを編集",
             "more": "その他"
         },
         "LaunchModal": {
@@ -56,13 +76,14 @@
             "gamePathNotFound": "ゲームパスが見つかりません",
             "launchFailed": "ゲーム起動に失敗しました:",
             "playing": "プレイ中..."
-        },
+        },        
         "SortModal": {
             "sort": "並べ替え",
             "sortMethod": "並べ替え方法：",
             "addTime": "追加時間(デフォルト)",
             "releaseTime": "ゲーム発売時間",
             "Ranking": "総合評価ランキング",
+            "lastPlayed": "最近プレイ",
             "ascending": "昇順",
             "descending": "降順",
             "cancel": "キャンセル",
@@ -81,8 +102,11 @@
             "confirmDelete": "削除を確認",
             "deleteGameTitle": "ゲームを削除",
             "deleteGameMessage": "このゲームを削除してもよろしいですか？この操作は取り消せません。",
-            "processing": "処理中..."
-        },
+            "processing": "処理中...",
+            "confirmUpdateTitle": "ゲーム情報の更新を確認",
+            "gameName": "ゲーム名",
+            "noData": "データがありません"
+        },        
         "AddModal": {
             "addGame": "ゲームを追加",
             "noExecutableSelected": "実行ファイルが選択されていません",
@@ -92,10 +116,12 @@
             "enableCustomMode": "カスタムモードを有効化",
             "enableVNDB": "VNDB APIを使用する（デフォルトではBGM API）",
             "gameName": "ゲーム名",
+            "gameID": "ゲームID",
             "cancel": "キャンセル",
             "processing": "処理中...",
             "confirm": "確認",
-            "executable": "実行ファイル"
+            "executable": "実行ファイル",
+            "idSearch": "ID検索モードを有効化"
         },
         "FilterModal": {
             "filter": "フィルター",

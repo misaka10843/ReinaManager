@@ -16,11 +16,11 @@
             "tokenPlaceholder": "請填寫你的BGM_TOKEN"
         },
         "Detail": {
-            "loading": "載入中...",
+            "loading": "加載中...",
             "notFound": "未找到遊戲資料",
             "introduction": "簡介",
             "gameScore": "遊戲評分",
-            "releaseDate": "遊戲發布時間",
+            "releaseDate": "發佈時間",
             "gameRanking": "遊戲排行",
             "gameTags": "遊戲標籤",
             "addTime": "添加時間",
@@ -30,9 +30,30 @@
             "totalPlayTime": "累計總時長",
             "todayPlayTime": "今日遊戲時長",
             "backupCount": "存檔備份數",
-            "gameDatafrom": "數據來源",
+            "gameDatafrom": "資料來源",
             "expected_hours": "預計時長",
-            "playTimeMinutes": "遊戲時長(分鐘)"
+            "playTimeMinutes": "遊戲時長(分鐘)",
+            "editPart": "編輯",
+            "Edit": {
+                "error": "錯誤",
+                "warning": "警告",
+                "notFound": "未找到遊戲資料",
+                "success": "成功",
+                "updateSuccess": "遊戲資訊已成功更新",
+                "pathUpdateSuccess": "遊戲路徑已成功更新",
+                "dataSource": "資料來源",
+                "bgmId": "Bangumi ID",
+                "vndbId": "VNDB ID",
+                "loading": "正在獲取...",
+                "updateFromSource": "從資料來源更新資料",
+                "localPath": "可執行檔路徑",
+                "updateLocalPath": "更新可執行檔路徑",
+                "invalidDataSource": "選擇了無效的資料來源。",
+                "noDataFetched": "未獲取到資料或資料來源無效。",
+                "unknownError": "未知錯誤",
+                "mixedFetchError": "Mixed 獲取錯誤",
+                "updatePathFailed": "更新路徑失敗"
+            }
         }
     },
     "components": {
@@ -42,13 +63,12 @@
             "inputGameName": "輸入遊戲名稱",
             "clearSearch": "清除搜尋"
         },
-        "Toolbar": {
+        "Toolbar": {            
             "gameLibrary": "遊戲倉庫",
             "openGameFolder": "開啟遊戲目錄",
             "deleteGame": "刪除遊戲",
             "bgmlink": "查看Bangumi頁面",
             "vndblink": "查看Vndb頁面",
-            "editModal": "編輯遊戲",
             "more": "更多"
         },
         "LaunchModal": {
@@ -56,13 +76,14 @@
             "gamePathNotFound": "遊戲路徑未找到",
             "launchFailed": "遊戲啟動失敗:",
             "playing": "遊戲中..."
-        },
+        },        
         "SortModal": {
             "sort": "排序",
             "sortMethod": "排序方法：",
             "addTime": "添加時間(默認)",
             "releaseTime": "遊戲發布時間",
             "Ranking": "綜合評分排名",
+            "lastPlayed": "最近遊玩",
             "ascending": "升序",
             "descending": "降序",
             "cancel": "取消",
@@ -81,8 +102,11 @@
             "confirmDelete": "確認刪除",
             "deleteGameTitle": "刪除遊戲",
             "deleteGameMessage": "確定要刪除這個遊戲嗎？此操作不可撤銷。",
-            "processing": "處理中..."
-        },
+            "processing": "處理中...",
+            "confirmUpdateTitle": "確認更新遊戲資訊",
+            "gameName": "遊戲名稱",
+            "noData": "無可用資料"
+        },        
         "AddModal": {
             "addGame": "添加遊戲",
             "noExecutableSelected": "未選擇可執行程序",
@@ -92,10 +116,12 @@
             "enableCustomMode": "啟用自定義模式",
             "enableVNDB": "使用VNDB api(默認使用BGM api)",
             "gameName": "遊戲名稱",
+            "gameID": "遊戲ID",
             "cancel": "取消",
             "processing": "處理中...",
             "confirm": "確認",
-            "executable": "可執行文件"
+            "executable": "可執行文件",
+            "idSearch": "啟用ID搜尋模式"
         },
         "FilterModal": {
             "filter": "篩選",

@@ -23,16 +23,37 @@
             "releaseDate": "Release Date",
             "gameRanking": "Game Ranking",
             "gameTags": "Game Tags",
-            "addTime": "Add Time",
+            "addTime": "Added Time",
             "gameDeveloper": "Developer",
-            "gameStats": "Game Statistics",
+            "gameStats": "Game Stats",
             "playCount": "Total Play Count",
             "totalPlayTime": "Total Play Time",
             "todayPlayTime": "Today's Play Time",
-            "backupCount": "Save Backup Count",
+            "backupCount": "Backup Count",
             "gameDatafrom": "Data Source",
             "expected_hours": "Expected Hours",
-            "playTimeMinutes": "Play Time (Minutes)"
+            "playTimeMinutes": "Play Time (minutes)",
+            "editPart": "Edit",
+            "Edit": {
+                "error": "Error",
+                "warning": "Warning",
+                "notFound": "Game data not found",
+                "success": "Success",
+                "updateSuccess": "Game information updated successfully",
+                "pathUpdateSuccess": "Game path updated successfully",
+                "dataSource": "Data Source",
+                "bgmId": "Bangumi ID",
+                "vndbId": "VNDB ID",
+                "loading": "Loading...",
+                "updateFromSource": "Update from data source",
+                "localPath": "Executable Path",
+                "updateLocalPath": "Update Executable Path",
+                "invalidDataSource": "Invalid data source selected.",
+                "noDataFetched": "No data fetched or invalid data source.",
+                "unknownError": "Unknown error",
+                "mixedFetchError": "Mixed fetch error",
+                "updatePathFailed": "Failed to update path"
+            }
         }
     },
     "components": {
@@ -42,13 +63,12 @@
             "inputGameName": "Enter game name",
             "clearSearch": "Clear search"
         },
-        "Toolbar": {
+        "Toolbar": {            
             "gameLibrary": "Game Library",
             "openGameFolder": "Open Game Folder",
             "deleteGame": "Delete Game",
             "bgmlink": "View Bangumi Page",
             "vndblink": "View Vndb Page",
-            "editModal": "Edit Game",
             "more": "More"
         },
         "LaunchModal": {
@@ -56,13 +76,14 @@
             "gamePathNotFound": "Game path not found",
             "launchFailed": "Failed to launch game:",
             "playing": "Playing..."
-        },
+        },        
         "SortModal": {
             "sort": "Sort",
             "sortMethod": "Sort Method:",
             "addTime": "Add Time (Default)",
             "releaseTime": "Game Release Time",
             "Ranking": "Overall Rating Rank",
+            "lastPlayed": "Last Played",
             "ascending": "Ascending",
             "descending": "Descending",
             "cancel": "Cancel",
@@ -81,8 +102,11 @@
             "confirmDelete": "Confirm Delete",
             "deleteGameTitle": "Delete Game?",
             "deleteGameMessage": "This action cannot be undone. Are you sure you want to delete this game?",
-            "processing": "Processing..."
-        },
+            "processing": "Processing...",
+            "confirmUpdateTitle": "Confirm Update Game Info",
+            "gameName": "Game Name",
+            "noData": "No data available"
+        },        
         "AddModal": {
             "addGame": "Add Game",
             "noExecutableSelected": "No executable selected",
@@ -92,10 +116,12 @@
             "enableCustomMode": "Enable Custom Mode",
             "enableVNDB": "Use VNDB API (BGM API by default)",
             "gameName": "Game Name",
+            "gameID": "Game ID",
             "cancel": "Cancel",
             "processing": "Processing...",
             "confirm": "Confirm",
-            "executable": "Executable File"
+            "executable": "Executable File",
+            "idSearch": "Enable ID Search Mode"
         },
         "FilterModal": {
             "filter": "Filter",

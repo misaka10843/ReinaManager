@@ -32,6 +32,6 @@ initializeStores().then(() => {
   createRoot(document.getElementById('root') as HTMLElement).render(
     <StrictMode>
       <RouterProvider router={routers} />
-    </StrictMode>,
+    </StrictMode>
   )
 })

@@ -31,14 +31,17 @@ import { useModal } from '@/components/Toolbar';
 import { useEffect, useState } from 'react';
 import { fetchFromBgm } from '@/api/bgm';
 import { fetchFromVNDB } from '@/api/vndb';
+import fetchMixedData from '@/api/mixed';
 import Alert from '@mui/material/Alert';
 import { useStore } from '@/store/';
 import CircularProgress from '@mui/material/CircularProgress';
 import { isTauri } from '@tauri-apps/api/core';
 import Switch from '@mui/material/Switch';
+import { RadioGroup, FormControlLabel, Radio } from '@mui/material';
 import { time_now } from '@/utils';
 import { useTranslation } from 'react-i18next';
 import { getGamePlatformId, handleDirectory } from '@/utils';
+import type { GameData } from '@/types';
 
 /**
  * AddModal 组件用于添加新游戏条目。
@@ -60,7 +63,9 @@ const AddModal: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [path, setPath] = useState('');
     const [customMode, setCustomMode] = useState(false);
-    const [isVNDB, setIsVNDB] = useState(false);
+    // 将 boolean 切换改为多种模式选择
+    const [apiSource, setApiSource] = useState<'bgm' | 'vndb' | 'mixed'>('bgm');
+    // 保留 ID 搜索状态
     const [isID, setisID] = useState(false);
 
     /**
@@ -94,9 +99,15 @@ const AddModal: React.FC = () => {
                 setPath('');
                 handleClose();
                 return;
+            }            // 根据 apiSource 状态选择数据源
+            let res: GameData | string;
+            if (apiSource === 'vndb') {
+                res = await fetchFromVNDB(formText, isID ? formText : undefined);
+            } else if (apiSource === 'mixed') {
+                res = await fetchMixedData(formText, bgmToken, isID ? formText : undefined);
+            } else {
+                res = await fetchFromBgm(formText, bgmToken, isID ? formText : undefined);
             }
-            // 根据 isVNDB 状态选择数据源
-            const res = isVNDB ? (await fetchFromVNDB(formText, isID ? formText : undefined)) : (await fetchFromBgm(formText, bgmToken, isID ? formText : undefined));
             // 错误处理
             if (typeof res === 'string') {
                 setError(res);
@@ -172,24 +183,21 @@ const AddModal: React.FC = () => {
                         <input className='w-md' type="text" value={path}
                             placeholder={t('components.AddModal.selectExecutable')} readOnly />
                     </p>
-                    {/* 自定义模式和 VNDB 切换 */}
+                    {/* 自定义模式和 API 来源切换 */}
                     <div>
                         <Switch checked={customMode} onChange={() => {
                             setCustomMode(!customMode)
                         }} />
                         <span>{t('components.AddModal.enableCustomMode')}</span>
-                        <div>
-                            <Switch checked={isVNDB} onChange={() => {
-                                setIsVNDB(!isVNDB)
-                            }} />
-                            <span>{t('components.AddModal.enableVNDB')}</span>
-                        </div>
-                        <div>
-                            <Switch checked={isID} onChange={() => {
-                                setisID(!isID)
-                            }} />
-                            <span>{t('components.AddModal.idSearch')}</span>
-                        </div>
+                        <RadioGroup className='ml-2' row value={apiSource} onChange={(e) => setApiSource(e.target.value as 'bgm' | 'vndb' | 'mixed')}>
+                            <FormControlLabel value="bgm" control={<Radio />} label="Bangumi" />
+                            <FormControlLabel value="vndb" control={<Radio />} label="VNDB" />
+                            <FormControlLabel value="mixed" control={<Radio />} label="Mixed" />
+                        </RadioGroup>
+                        <Switch checked={isID} onChange={() => {
+                            setisID(!isID)
+                        }} />
+                        <span>{t('components.AddModal.idSearch')}</span>
                     </div>
                     {/* 游戏名称输入框 */}
                     <TextField

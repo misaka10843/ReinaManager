@@ -24,7 +24,9 @@ import HomeIcon from '@mui/icons-material/Home';
 import GamesIcon from '@mui/icons-material/Games';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { useStore } from './store';
+import { getGameDisplayName } from '@/utils';
 import { useTranslation } from 'react-i18next';
+import { AliveScope } from 'react-activation';
 
 /**
  * App 组件
@@ -34,12 +36,14 @@ import { useTranslation } from 'react-i18next';
  * @returns {JSX.Element} 应用主容器
  */
 const App: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { games } = useStore();
   // 动态生成游戏库子菜单
   const lists = games.map((game) => {
+    const title = getGameDisplayName(game, i18n.language);
+
     return {
-      title: game.name_cn === "" ? game.name : game.name_cn,
+      title,
       segment: String(game.id)
     }
   })
@@ -70,7 +74,9 @@ const App: React.FC = () => {
 
   return (
     <ReactRouterAppProvider navigation={NAVIGATION}>
-      <Outlet />
+      <AliveScope>
+        <Outlet />
+      </AliveScope>
     </ReactRouterAppProvider>
   )
 }

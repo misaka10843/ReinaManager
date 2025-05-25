@@ -1,4 +1,5 @@
 import type { GameData } from '@/types/index';
+import { getGameDisplayName } from './index';
 
 
 // 定义本地存储的 key
@@ -209,11 +210,10 @@ export function searchGamesLocal(
   // 否则执行关键字搜索
   const searchRegex = new RegExp(keyword.trim(), 'i');
   const games = getGames(sortOption, sortOrder);
-  
-  return games.filter(game => 
-    (game.name_cn && searchRegex.test(game.name_cn)) || 
-    searchRegex.test(game.name)
-  );
+    return games.filter(game => {
+    const displayName = getGameDisplayName(game);
+    return searchRegex.test(displayName);
+  });
 }
 
 export function filterGamesByTypeLocal(

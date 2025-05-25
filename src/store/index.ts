@@ -62,9 +62,12 @@ export interface AppState {
   bgmToken: string;
   // UI 状态
   selectedGameId: number | null;
+  selectedGame: GameData | null;
+
   
   // 游戏操作方法
   fetchGames: (sortOption?: string, sortOrder?: 'asc' | 'desc', resetSearch?: boolean) => Promise<void>;
+  fetchGame: (id: number) => Promise<void>;
   addGame: (game: GameData) => Promise<void>;
   deleteGame: (gameId: number) => Promise<void>;
   getGameById: (gameId: number) => Promise<GameData>;
@@ -80,7 +83,8 @@ export interface AppState {
   
   // UI 操作方法
   setSelectedGameId: (id: number | null | undefined) => void;
-  
+  setSelectedGame: (game: GameData | null) => void;
+
   // 初始化
   initialize: () => Promise<void>;
 
@@ -115,6 +119,7 @@ export const useStore = create<AppState>()(
       
       // UI 状态
       selectedGameId: null,
+      selectedGame: null,
 
       searchKeyword: '',
 
@@ -179,7 +184,24 @@ refreshGameData: async (customSortOption?: string, customSortOrder?: 'asc' | 'de
           set({ loading: false });
         }
       },
-
+      fetchGame: async (id: number) => {
+        set({ loading: true });
+        try {
+          const game = isTauri()
+            ? await getGameByIdRepository(id)
+            : getGameByIdLocal(id);
+          
+          if (game) {
+            set({ selectedGame: game });
+          } else {
+            console.warn(`Game with ID ${id} not found`);
+          }
+        } catch (error) {
+          console.error('获取游戏数据失败:', error);
+        } finally {
+          set({ loading: false });
+        }
+      },
       
       // 使用通用函数简化 addGame
       addGame: async (game: GameData) => {
@@ -228,14 +250,8 @@ refreshGameData: async (customSortOption?: string, customSortOrder?: 'asc' | 'de
         try {
           if (isTauri()) {
             await updateGameRepository(id, game);
-            const updatedGame = await getGameByIdRepository(id); // 从数据库获取最新数据
-            if (updatedGame) {
-              set((state) => ({
-                games: state.games.map((g) => (g.id === id ? updatedGame : g)),
-              }));
-            } else {
-              console.warn(`Game with ID ${id} not found in database after update.`);
-            }
+            set({ selectedGame: game }); // 使用 setSelectedGame 更新全局状态
+            await get().refreshGameData();
           } else {
             console.warn("updateGameLocal is not implemented for browser environment.");
           }
@@ -365,6 +381,9 @@ setSortOrder: (order: 'asc' | 'desc') => {
       // UI 操作方法
       setSelectedGameId: (id: number | null|undefined) => {
         set({ selectedGameId: id });
+      },
+      setSelectedGame: (game: GameData | null) => {
+        set({ selectedGame: game });
       },
 
       // 修改 setGameFilterType 函数，避免循环引用

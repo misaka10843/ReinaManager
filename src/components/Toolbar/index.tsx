@@ -28,7 +28,7 @@
  * - @tauri-apps/api/core
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import Stack from '@mui/material/Stack';
 import { ThemeSwitcher } from '@toolpad/core/DashboardLayout';
 import GamesIcon from '@mui/icons-material/Games';
@@ -42,14 +42,13 @@ import { LaunchModal } from '@/components/LaunchModal';
 import Button from '@mui/material/Button';
 import { handleOpenFolder, openurl } from '@/utils';
 import { useStore } from '@/store';
-import type { GameData, HanleGamesProps } from '@/types';
+import type { HanleGamesProps } from '@/types';
 import { AlertDeleteBox } from '@/components/AlertBox';
 import { useTranslation } from 'react-i18next';
 import { isTauri } from '@tauri-apps/api/core';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import EditIcon from '@mui/icons-material/Edit';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import CallMadeIcon from '@mui/icons-material/CallMade';
@@ -186,29 +185,14 @@ export const DeleteModal: React.FC<{ id: number }> = ({ id }) => {
 }
 
 /**
- * 详情页更多操作按钮（编辑、外链等）
+ * 详情页更多操作按钮（外链等）
  * @returns {JSX.Element}
  */
 const MoreButton = () => {
-    const { getGameById } = useStore();
-    const [game, setGame] = useState<GameData | null>(null);
+    const { selectedGame } = useStore();
     const { t } = useTranslation();
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
-    const id = Number(useLocation().pathname.split('/').pop());
-
-    // 加载游戏数据
-    useEffect(() => {
-        if (id) {
-            getGameById(id)
-                .then(data => {
-                    setGame(data);
-                })
-                .catch(error => {
-                    console.error('获取游戏数据失败:', error);
-                });
-        }
-    }, [id, getGameById]);
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
         setAnchorEl(event.currentTarget);
@@ -224,9 +208,9 @@ const MoreButton = () => {
      */
     const handleView = (type: string) => {
         if (type === "bgm") {
-            openurl(`https://bgm.tv/subject/${game?.bgm_id}`);
+            openurl(`https://bgm.tv/subject/${selectedGame?.bgm_id}`);
         } else if (type === "vndb") {
-            openurl(`https://vndb.org/${game?.vndb_id}`);
+            openurl(`https://vndb.org/${selectedGame?.vndb_id}`);
         }
     }
     return (
@@ -245,18 +229,7 @@ const MoreButton = () => {
                 open={open}
                 onClose={handleClose}
             >
-                <MenuItem
-                    component={Link}
-                    to={`edit/${id}`}
-                    onClick={() => {
-                        handleClose();
-                    }}>
-                    <ListItemIcon>
-                        <EditIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText>{t('components.Toolbar.editModal')}</ListItemText>
-                </MenuItem>
-                <MenuItem disabled={!game || !game.bgm_id} onClick={() => {
+                <MenuItem disabled={!selectedGame || !selectedGame.bgm_id} onClick={() => {
                     handleView("bgm");
                     handleClose();
                 }}>
@@ -265,7 +238,7 @@ const MoreButton = () => {
                     </ListItemIcon>
                     <ListItemText>{t('components.Toolbar.bgmlink')}</ListItemText>
                 </MenuItem>
-                <MenuItem disabled={!game || !game.vndb_id} onClick={() => {
+                <MenuItem disabled={!selectedGame || !selectedGame.vndb_id} onClick={() => {
                     handleView("vndb");
                     handleClose();
                 }}>
@@ -303,7 +276,7 @@ export const Buttongroup = ({ isLibraries, isDetail }: ButtonGroupProps) => {
             {(isDetail &&
                 id) &&
                 <>
-                    <LaunchModal game_id={id} />
+                    <LaunchModal />
                     <OpenFolder id={id} getGameById={getGameById} canUse={canUse} />
                     <DeleteModal id={id} />
                     <MoreButton />

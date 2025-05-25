@@ -190,24 +190,25 @@ export const ViewUpdateGameBox: React.FC<ViewUpdateGameBoxProps> = ({
     setOpen,
     onConfirm
 }) => {
+    const { t } = useTranslation();
+
     return (
         <AlertBox
             open={open}
             setOpen={setOpen}
-            title="确认更新游戏信息"
+            title={t('components.AlertBox.confirmUpdateTitle')}
             message={
                 (game && typeof game !== 'string') ?
                     <>
-                        <p>游戏名称: {game.name}</p>
+                        <p>{t('components.AlertBox.gameName')}: {game.name}</p>
                         <img src={game.image} alt={game.name} style={{ maxWidth: '100%', maxHeight: '200px' }} />
                     </>
                     :
-                    <p>none data</p>
-
+                    <p>{t('components.AlertBox.noData')}</p>
             }
             onConfirm={onConfirm}
-            confirmText="确认"
-            cancelText="取消"
+            confirmText={t('components.AlertBox.confirm')}
+            cancelText={t('components.AlertBox.cancel')}
             confirmColor="primary"
             confirmVariant="contained"
         />
