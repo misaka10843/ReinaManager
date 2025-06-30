@@ -198,7 +198,7 @@ export const Detail: React.FC = () => {
 
                     {/* 统计信息Tab */}
                     <TabPanel value={tabIndex} index={0}>
-                        <InfoBox game={selectedGame} />
+                        <InfoBox gameID={id} />
                     </TabPanel>
                     <TabPanel value={tabIndex} index={1}>
                         {/* 游戏简介 */}

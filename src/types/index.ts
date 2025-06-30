@@ -27,6 +27,7 @@ export interface GameData {
     developer?: string | null;
     all_titles?: string[];
     aveage_hours?: number;
+    clear?: 1 | 0;
 }
 
 /**

@@ -4,6 +4,8 @@ import {path} from '@tauri-apps/api';
 import type { GameData, HanleGamesProps } from '@/types';
 import i18next, { t } from 'i18next';
 import { open as openDirectory } from '@tauri-apps/plugin-dialog';
+import { updateGameClearStatus } from './repository';
+
 // import { createTheme } from '@mui/material/styles';
 
 export const time_now=()=>{
@@ -146,4 +148,43 @@ export const getGameDisplayName = (game: GameData, language?: string): string =>
   return currentLanguage === 'zh-CN' && game.name_cn 
     ? game.name_cn 
     : game.name;
+};
+
+/**
+ * 切换游戏通关状态的通用函数
+ * @param gameId 游戏ID
+ * @param getGameById 获取游戏数据的函数
+ * @param onSuccess 成功回调函数，返回新的通关状态
+ * @param updateGamesInStore 可选：更新store中games数组的函数
+ * @returns Promise<void>
+ */
+export const toggleGameClearStatus = async (
+  gameId: number,
+  getGameById: (id: number) => Promise<GameData | null>,
+  onSuccess?: (newStatus: 1 | 0, gameData: GameData) => void,
+  updateGamesInStore?: (gameId: number, newClearStatus: 1 | 0) => void
+): Promise<void> => {
+  try {
+    const game = await getGameById(gameId);
+    if (!game) {
+      console.error('游戏数据未找到');
+      return;
+    }
+
+    const newClearStatus = game.clear === 1 ? 0 : 1;
+    await updateGameClearStatus(gameId, newClearStatus as 1 | 0);
+    
+    // 更新store中的games数组
+    if (updateGamesInStore) {
+      updateGamesInStore(gameId, newClearStatus as 1 | 0);
+    }
+    
+    // 调用成功回调
+    if (onSuccess) {
+      onSuccess(newClearStatus as 1 | 0, { ...game, clear: newClearStatus as 1 | 0 });
+    }
+  } catch (error) {
+    console.error('更新游戏通关状态失败:', error);
+    throw error;
+  }
 };

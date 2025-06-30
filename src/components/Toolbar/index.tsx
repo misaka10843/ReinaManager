@@ -40,7 +40,7 @@ import { FilterModal } from '@/components/FilterModal';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { LaunchModal } from '@/components/LaunchModal';
 import Button from '@mui/material/Button';
-import { handleOpenFolder, openurl } from '@/utils';
+import { handleOpenFolder, openurl, toggleGameClearStatus } from '@/utils';
 import { useStore } from '@/store';
 import type { HanleGamesProps } from '@/types';
 import { AlertDeleteBox } from '@/components/AlertBox';
@@ -52,6 +52,8 @@ import MenuItem from '@mui/material/MenuItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import CallMadeIcon from '@mui/icons-material/CallMade';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import EmojiEventsOutlinedIcon from '@mui/icons-material/EmojiEventsOutlined';
 
 /**
  * 按钮组属性类型
@@ -189,7 +191,7 @@ export const DeleteModal: React.FC<{ id: number }> = ({ id }) => {
  * @returns {JSX.Element}
  */
 const MoreButton = () => {
-    const { selectedGame } = useStore();
+    const { selectedGame, getGameById, setSelectedGame, updateGameClearStatusInStore } = useStore();
     const { t } = useTranslation();
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
@@ -212,7 +214,23 @@ const MoreButton = () => {
         } else if (type === "vndb") {
             openurl(`https://vndb.org/${selectedGame?.vndb_id}`);
         }
-    }
+    };
+
+    /**
+     * 切换通关状态
+     */
+    const handleToggleClearStatus = async () => {
+        if (selectedGame?.id === undefined) return;
+        try {
+            await toggleGameClearStatus(selectedGame.id, getGameById, (_, updatedGame) => {
+                // 更新store中的游戏数据
+                setSelectedGame(updatedGame);
+            }, updateGameClearStatusInStore);
+        } catch (error) {
+            console.error('更新游戏通关状态失败:', error);
+        }
+    };
+
     return (
         <>
             <Button
@@ -246,6 +264,21 @@ const MoreButton = () => {
                         <CallMadeIcon fontSize="small" />
                     </ListItemIcon>
                     <ListItemText>{t('components.Toolbar.vndblink')}</ListItemText>
+                </MenuItem>
+                <MenuItem onClick={handleToggleClearStatus}>
+                    <ListItemIcon>
+                        {selectedGame?.clear === 1 ? (
+                            <EmojiEventsIcon fontSize="small" className="text-yellow-500" />
+                        ) : (
+                            <EmojiEventsOutlinedIcon fontSize="small" />
+                        )}
+                    </ListItemIcon>
+                    <ListItemText>
+                        {selectedGame?.clear === 1 ?
+                            t('components.Toolbar.markAsNotCompleted') :
+                            t('components.Toolbar.markAsCompleted')
+                        }
+                    </ListItemText>
                 </MenuItem>
             </Menu>
         </>

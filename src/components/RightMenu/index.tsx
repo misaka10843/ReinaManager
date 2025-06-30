@@ -20,16 +20,18 @@
 import PlayCircleOutlineIcon from '@mui/icons-material/PlayCircleOutline';
 import ArticleIcon from '@mui/icons-material/Article';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
-import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
 import DeleteIcon from '@mui/icons-material/Delete';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
+import EmojiEventsOutlinedIcon from '@mui/icons-material/EmojiEventsOutlined';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
 import { useStore } from '@/store';
-import { handleOpenFolder } from '@/utils';
+import { handleOpenFolder, toggleGameClearStatus } from '@/utils';
 import { AlertDeleteBox } from '@/components/AlertBox';
 import { useTranslation } from 'react-i18next';
 import { isTauri } from '@tauri-apps/api/core';
 import { useGamePlayStore } from '@/store/gamePlayStore';
+import type { GameData } from '@/types';
 
 /**
  * RightMenu 组件属性类型
@@ -49,14 +51,34 @@ interface RightMenuProps {
  * @returns {JSX.Element | null} 右键菜单
  */
 const RightMenu: React.FC<RightMenuProps> = ({ isopen, anchorPosition, setAnchorEl, id }) => {
-    const { getGameById, deleteGame, useIsLocalGame } = useStore();
+    const { getGameById, deleteGame, useIsLocalGame, updateGameClearStatusInStore } = useStore();
     const { launchGame, isGameRunning } = useGamePlayStore();
     const [openAlert, setOpenAlert] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [gameData, setGameData] = useState<GameData | null>(null);
     const { t } = useTranslation();
+
 
     // 检查该游戏是否正在运行
     const isThisGameRunning = isGameRunning(id === null ? undefined : id);
+
+    // 获取游戏数据以显示通关状态
+    useEffect(() => {
+        const fetchGameData = async () => {
+            if (id !== null && id !== undefined) {
+                try {
+                    const game = await getGameById(id);
+                    setGameData(game);
+                } catch (error) {
+                    console.error('获取游戏数据失败:', error);
+                }
+            }
+        };
+
+        if (isopen) {
+            fetchGameData();
+        }
+    }, [id, isopen, getGameById]);
 
     /**
      * 判断当前游戏是否可以启动
@@ -130,6 +152,19 @@ const RightMenu: React.FC<RightMenuProps> = ({ isopen, anchorPosition, setAnchor
         }
     };
 
+    const handleSwitchClearStatus = async () => {
+        if (id === null || id === undefined) return;
+        try {
+            await toggleGameClearStatus(id, getGameById, (_, updatedGame) => {
+                // 更新本地状态
+                setGameData(updatedGame);
+            }, updateGameClearStatusInStore);
+            setAnchorEl(null);
+        } catch (error) {
+            console.error('更新游戏通关状态失败:', error);
+        }
+    }
+
     return (
         <div
             className="fixed z-50 animate-fade-in animate-duration-200 select-none"
@@ -185,13 +220,22 @@ const RightMenu: React.FC<RightMenuProps> = ({ isopen, anchorPosition, setAnchor
                     <FolderOpenIcon className="mr-2" />
                     <span>{t('components.RightMenu.openGameFolder')}</span>
                 </div>
-                {/* 更多操作 */}
+                {/* 通关状态切换 */}
                 <div
                     className="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-black dark:text-white"
-                    onClick={() => setAnchorEl(null)}
+                    onClick={handleSwitchClearStatus}
                 >
-                    <MoreHorizIcon className="mr-2" />
-                    <span>{t('components.RightMenu.more')}</span>
+                    {gameData?.clear === 1 ? (
+                        <EmojiEventsIcon className="mr-2 text-yellow-500" />
+                    ) : (
+                        <EmojiEventsOutlinedIcon className="mr-2" />
+                    )}
+                    <span>
+                        {gameData?.clear === 1 ?
+                            t('components.RightMenu.markAsNotCompleted') :
+                            t('components.RightMenu.markAsCompleted')
+                        }
+                    </span>
                 </div>
             </div>
         </div>

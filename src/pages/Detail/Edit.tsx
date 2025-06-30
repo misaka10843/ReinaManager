@@ -25,7 +25,6 @@ import { ViewUpdateGameBox } from "@/components/AlertBox";
 import { handleDirectory } from "@/utils";
 import { updateGameLocalPath } from "@/utils/repository";
 import { useTranslation } from 'react-i18next';
-
 /**
  * Edit 组件
  * 游戏信息编辑页面，利用全局状态管理优化，减少冗余代码。
@@ -115,20 +114,21 @@ export const Edit = (): JSX.Element => {
         }
     }, [selectedGame]);
 
-    // 按钮点击处理函数：启动获取流程并设置状态
-    const handleUpdateClick = async () => {
+    // 获取并预览游戏数据
+    const handleFetchAndPreview = async () => {
         setIsLoading(true);
         setFetchError(null);
         setUpdateSuccess(false);
 
-        const result = await fetchGameData();
+        const result = await fetchGameData()
 
-        // 处理结果
+
         if (result && typeof result !== 'string') {
-            const originalPath = selectedGame?.localpath || "";
             const updatedResult = {
                 ...result,
-                localpath: originalPath // 保留原有的路径
+                id: id,
+                localpath: localPath,
+                clear: selectedGame?.clear
             };
             setGameData(updatedResult);
             setOpenViewBox(true);
@@ -139,9 +139,20 @@ export const Edit = (): JSX.Element => {
         setIsLoading(false);
     };
 
+    // 确认更新游戏数据
+    const handleConfirmGameUpdate = () => {
+        if (gameData && typeof gameData !== 'string') {
+            updateGame(id, gameData);
+            setOpenViewBox(false);
+            setUpdateSuccess(true);
+            setTimeout(() => setUpdateSuccess(false), 3000);
+        }
+    };
+
     // 处理修改可执行文件路径
     const handleUpdateLocalPath = async () => {
         if (!localPath || !selectedGame) return;
+        console.log('更新可执行文件路径:', selectedGame);
 
         setIsLoading(true);
         try {
@@ -165,25 +176,6 @@ export const Edit = (): JSX.Element => {
         const selectedPath = await handleDirectory();
         if (selectedPath) {
             setLocalPath(selectedPath);
-        }
-    };
-
-    // 处理游戏数据更新
-    const handleGameDataUpdate = () => {
-        if (gameData && typeof gameData !== 'string') {
-            const originalPath = selectedGame?.localpath || "";
-
-            // 确保新数据保留原来的 localpath
-            const updatedGameData = {
-                ...gameData,
-                localpath: originalPath
-            };
-
-            // 更新游戏数据并关闭对话框
-            updateGame(id, updatedGameData);
-            setOpenViewBox(false);
-            setUpdateSuccess(true);
-            setTimeout(() => setUpdateSuccess(false), 3000);
         }
     };
 
@@ -227,7 +219,7 @@ export const Edit = (): JSX.Element => {
             <ViewUpdateGameBox
                 open={openViewBox}
                 setOpen={setOpenViewBox}
-                onConfirm={handleGameDataUpdate}
+                onConfirm={handleConfirmGameUpdate}
                 game={gameData}
             />
 
@@ -286,7 +278,7 @@ export const Edit = (): JSX.Element => {
                         (idType === "vndb" && !vndbId) ||
                         (idType === "mixed" && !bgmId && !vndbId)
                     }
-                    onClick={handleUpdateClick}
+                    onClick={handleFetchAndPreview}
                     startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : <UpdateIcon />}
                 >
                     {isLoading ? t('pages.Detail.Edit.loading', '正在获取...') : t('pages.Detail.Edit.updateFromSource', '从数据源更新数据')}

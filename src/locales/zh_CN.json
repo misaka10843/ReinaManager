@@ -67,9 +67,12 @@
             "gameLibrary": "游戏仓库",
             "openGameFolder": "打开游戏目录",
             "deleteGame": "删除游戏",
+            "deleting": "删除中...",
             "bgmlink": "查看Bangumi页面",
             "vndblink": "查看Vndb页面",
-            "more": "更多"
+            "more": "更多",
+            "markAsCompleted": "标记为已通关",
+            "markAsNotCompleted": "标记为未通关"
         },
         "LaunchModal": {
             "launchGame": "启动游戏",
@@ -94,7 +97,9 @@
             "enterDetails": "进入详情页",
             "deleteGame": "删除游戏",
             "openGameFolder": "打开游戏目录",
-            "more": "更多"
+            "more": "更多",
+            "markAsCompleted": "标记为已通关",
+            "markAsNotCompleted": "标记为未通关"
         },
         "AlertBox": {
             "cancel": "取消",
@@ -116,7 +121,7 @@
             "enableCustomMode": "启用自定义模式",
             "enableVNDB": "使用VNDB api(默认使用BGM api)",
             "gameName": "游戏名称",
-            "gameID": "游戏ID",
+            "gameIDTips": "游戏ID(输入BGM ID或VNDB ID)",
             "cancel": "取消",
             "processing": "处理中...",
             "confirm": "确认",
@@ -129,6 +134,7 @@
             "allGames": "全部游戏",
             "localGames": "本地游戏",
             "onlineGames": "网络游戏",
+            "clearGames": "已通关游戏",
             "cancel": "取消",
             "apply": "应用"
         }

@@ -29,7 +29,7 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import { useStore } from '@/store';
 import { useTranslation } from 'react-i18next';
 
-export type GameFilterType = 'all' | 'local' | 'online';
+export type GameFilterType = 'all' | 'local' | 'online' | 'clear';
 
 /**
  * FilterModal 组件用于筛选游戏类型。
@@ -99,6 +99,11 @@ export const FilterModal: React.FC = () => {
                                 value="online"
                                 control={<Radio />}
                                 label={t('components.FilterModal.onlineGames')}
+                            />
+                            <FormControlLabel
+                                value="clear"
+                                control={<Radio />}
+                                label={t('components.FilterModal.clearGames')}
                             />
                         </RadioGroup>
                     </FormControl>

@@ -67,9 +67,12 @@
             "gameLibrary": "遊戲倉庫",
             "openGameFolder": "開啟遊戲目錄",
             "deleteGame": "刪除遊戲",
+            "deleting": "刪除中...",
             "bgmlink": "查看Bangumi頁面",
             "vndblink": "查看Vndb頁面",
-            "more": "更多"
+            "more": "更多",
+            "markAsCompleted": "標記為已通關",
+            "markAsNotCompleted": "標記為未通關"
         },
         "LaunchModal": {
             "launchGame": "啟動遊戲",
@@ -94,7 +97,9 @@
             "enterDetails": "進入詳情頁",
             "deleteGame": "刪除遊戲",
             "openGameFolder": "開啟遊戲目錄",
-            "more": "更多"
+            "more": "更多",
+            "markAsCompleted": "標記為已通關",
+            "markAsNotCompleted": "標記為未通關"
         },
         "AlertBox": {
             "cancel": "取消",
@@ -113,10 +118,10 @@
             "gameExists": "遊戲已存在",
             "selectLauncher": "選擇啟動程序",
             "selectExecutable": "請選擇一個可執行程序",
-            "enableCustomMode": "啟用自定義模式",
+            "enableCustomMode": "啟用自定義模式",            
             "enableVNDB": "使用VNDB api(默認使用BGM api)",
             "gameName": "遊戲名稱",
-            "gameID": "遊戲ID",
+            "gameIDTips": "遊戲ID（輸入BGM ID或VNDB ID）",
             "cancel": "取消",
             "processing": "處理中...",
             "confirm": "確認",
@@ -129,6 +134,7 @@
             "allGames": "全部遊戲",
             "localGames": "本地遊戲",
             "onlineGames": "網路遊戲",
+            "clearGames": "已通關遊戲",
             "cancel": "取消",
             "apply": "應用"
         }

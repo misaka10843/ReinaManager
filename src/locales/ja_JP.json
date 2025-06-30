@@ -67,9 +67,12 @@
             "gameLibrary": "ゲームライブラリ",
             "openGameFolder": "ゲームフォルダを開く",
             "deleteGame": "ゲームを削除",
+            "deleting": "削除中...",
             "bgmlink": "Bangumiページを見る",
             "vndblink": "Vndbページを見る",
-            "more": "その他"
+            "more": "その他",
+            "markAsCompleted": "クリア済みにマーク",
+            "markAsNotCompleted": "未クリアにマーク"
         },
         "LaunchModal": {
             "launchGame": "ゲームを起動",
@@ -94,7 +97,9 @@
             "enterDetails": "詳細ページへ",
             "deleteGame": "ゲームを削除",
             "openGameFolder": "ゲームフォルダを開く",
-            "more": "その他"
+            "more": "その他",
+            "markAsCompleted": "クリア済みにマーク",
+            "markAsNotCompleted": "未クリアにマーク"
         },
         "AlertBox": {
             "cancel": "キャンセル",
@@ -113,10 +118,10 @@
             "gameExists": "ゲームはすでに存在します",
             "selectLauncher": "ランチャーを選択",
             "selectExecutable": "実行ファイルを選択してください",
-            "enableCustomMode": "カスタムモードを有効化",
+            "enableCustomMode": "カスタムモードを有効化",            
             "enableVNDB": "VNDB APIを使用する（デフォルトではBGM API）",
             "gameName": "ゲーム名",
-            "gameID": "ゲームID",
+            "gameIDTips": "ゲームID（BGM IDまたはVNDB IDを入力）",
             "cancel": "キャンセル",
             "processing": "処理中...",
             "confirm": "確認",
@@ -129,6 +134,7 @@
             "allGames": "すべてのゲーム",
             "localGames": "ローカルゲーム",
             "onlineGames": "オンラインゲーム",
+            "clearGames": "クリア済みゲーム",
             "cancel": "キャンセル",
             "apply": "適用"
         }

@@ -309,16 +309,19 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
           set(state => {
             const newRunningGames = new Set(state.runningGameIds);
             newRunningGames.delete(gameId);
-            
             // 移除对应游戏条目
             const newRealTimeStates = {...state.gameRealTimeStates};
             delete newRealTimeStates[gameId];
-            
             return { 
               runningGameIds: newRunningGames,
               gameRealTimeStates: newRealTimeStates
             };
           });
+          // ====== 新增：重置统计缓存 ======
+          lastTotalPlayTime = 0;
+          lastWeekPlayTime = 0;
+          lastTodayPlayTime = 0;
+          // ====== END ======
         }
       );
       
@@ -352,9 +355,9 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
     if (JSON.stringify(gamesSnapshot) === JSON.stringify(lastGamesSnapshot) && lastTotalPlayTime !== 0) {
       return lastTotalPlayTime;
     }
-    const { games } = useStore.getState();
+    const { allGames } = useStore.getState();
     let total = 0;
-    for (const game of games) {
+    for (const game of allGames) {
       if (!game.id) continue;
       const stats = await getGameStatistics(game.id);
       if (stats && typeof stats.total_time === 'number') {

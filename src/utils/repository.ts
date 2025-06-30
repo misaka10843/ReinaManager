@@ -93,7 +93,7 @@ export async function getGames(sortOption = 'addtime', sortOrder: 'asc' | 'desc'
   const { sortField, sortDirection, customSortSql } = getSortConfig(sortOption, sortOrder);
   
   let query = `
-    SELECT id, bgm_id,vndb_id, date, image, summary, name, name_cn, tags, rank, score, time, localpath,developer,all_titles,aveage_hours FROM games
+    SELECT id, bgm_id,vndb_id, date, image, summary, name, name_cn, tags, rank, score, time, localpath,developer,all_titles,aveage_hours,clear FROM games
   `;
   
   if (customSortSql) {
@@ -130,7 +130,7 @@ export async function deleteGame(gameId: number) {
 // 更新搜索游戏函数，添加类型筛选功能
 export async function searchGames(
   keyword: string,
-  type: 'all' | 'local' | 'online' = 'all',
+  type: 'all' | 'local' | 'online' | 'clear' = 'all',
   sortOption = 'addtime',
   sortOrder: 'asc' | 'desc' = 'asc'
 ): Promise<GameData[]> {
@@ -153,12 +153,14 @@ export async function searchGames(
     filterCondition = 'AND (localpath IS NOT NULL AND localpath != "")';
   } else if (type === 'online') {
     filterCondition = 'AND (localpath IS NULL OR localpath = "")';
+  } else if (type === 'clear') {
+    filterCondition = 'AND clear = 1';
   }
 
   // 使用LIKE进行模糊搜索
   const searchKeyword = `%${keyword}%`;
   let query = `
-    SELECT id, bgm_id,vndb_id, date, image, summary, name, name_cn, tags, rank, score, time, localpath,developer,all_titles,aveage_hours
+    SELECT id, bgm_id,vndb_id, date, image, summary, name, name_cn, tags, rank, score, time, localpath,developer,all_titles,aveage_hours,clear
     FROM games
     WHERE 
       ((name_cn LIKE ? OR (name_cn IS NULL OR name_cn = '') AND name LIKE ?)
@@ -178,7 +180,7 @@ export async function searchGames(
 
 // 根据游戏类型进行筛选（全部/本地/网络）
 export async function filterGamesByType(
-  type: 'all' | 'local' | 'online',
+  type: 'all' | 'local' | 'online' | 'clear',
   sortOption = 'addtime',
   sortOrder: 'asc' | 'desc' = 'asc'
 ): Promise<GameData[]> {
@@ -194,10 +196,12 @@ export async function filterGamesByType(
     filterCondition = 'WHERE localpath IS NOT NULL AND localpath != ""';
   } else if (type === 'online') {
     filterCondition = 'WHERE localpath IS NULL OR localpath = ""';
+  } else if (type === 'clear') {
+    filterCondition = 'WHERE clear = 1';
   }
   
   let query = `
-    SELECT id, bgm_id,vndb_id, date, image, summary, name, name_cn, tags, rank, score, time, localpath,developer,all_titles,aveage_hours
+    SELECT id, bgm_id,vndb_id, date, image, summary, name, name_cn, tags, rank, score, time, localpath,developer,all_titles,aveage_hours,clear
     FROM games
     ${filterCondition}
   `;
@@ -251,5 +255,19 @@ export const updateGameLocalPath = async (id: number, localpath: string) => {
     WHERE id = ?;
     `,
     [localpath, id]
+  );
+}
+
+
+
+export const updateGameClearStatus = async (id: number, clear: 1 | 0) => {
+  const db = await getDb();
+  await db.execute(
+    `
+    UPDATE games
+    SET clear = ?
+    WHERE id = ?;
+    `,
+    [clear, id]
   );
 }

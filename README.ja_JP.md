@@ -17,43 +17,52 @@
 
 </div>
 
-## 技術スタック
+## Stacks
 
 - Tauri 2.0
+
 - React
+
 - Material UI
+
 - UnoCSS
+
 - Zustand
+
 - Sqlite
+
 - Rust
 
 ## Todo
 
-- [x] ゲームを起動するための実行ファイルを追加
-- [x] ローカルゲームフォルダを開く
-- [x] ホームページ機能
-- [x] ゲーム検索のためのVNDB APIを追加
-- [x] 多言語対応
-- [ ] ゲームのカスタムデータ
-- [x] プレイ時間のカウント
-- [ ] 各ページの美化
-- [x] 詳細ページのデザイン
-- [x] データベースクエリのリファクタリング
-- [x] ゲーム検索のための混合APIを追加
-- [x] 編集ページ機能
+- [x] Add exe to Launch games
+- [x] Open the local game folder
+- [x] Home page functions
+- [x] Add VNDB api to search games
+- [x] I18n support
+- [ ] Custom data of games
+- [x] Count the time spent playing
+- [ ] Beautify individual pages
+- [x] Design the detail page
+- [x] Refactor database queries
+- [x] Add mixed api to search games
+- [x] Edit page functions
+- [ ] Auto backup function
+- [ ] Sync games status with Bangumi
 
-## デモバージョン
 
-##### フロントエンドデモ
-- ウェブ版を試す: [https://reina.huoshen80.top](https://reina.huoshen80.top)
+## Demo Versions
 
-##### デスクトップアプリケーションデモ
-- GitHub Actionsから最新のビルドをダウンロード:
-  1. [Actionsページ](https://github.com/huoshen80/ReinaManager/actions/workflows/build.yml)に移動
-  2. 最新の成功したワークフローの実行をクリック
-  3. 「Artifacts」セクションまでスクロール
-  4. 必要なアーティファクトをダウンロード
+##### Frontend Demo
+- Try the web version: [https://reina.huoshen80.top](https://reina.huoshen80.top)
 
-## ライセンス
+##### Desktop Application Demo
+- Download the latest build from GitHub Actions:
+  1. Go to [Actions page](https://github.com/huoshen80/ReinaManager/actions/workflows/build.yml)
+  2. Click on the most recent successful workflow run
+  3. Scroll down to the "Artifacts" section
+  4. Download the artifact you want
 
-このプロジェクトは [AGPL-3.0 ライセンス](https://github.com/huoshen80/ReinaManager#AGPL-3.0-1-ov-file) の下で提供されています
+## License
+
+This project is licensed under the [AGPL-3.0 license](https://github.com/huoshen80/ReinaManager#AGPL-3.0-1-ov-file)

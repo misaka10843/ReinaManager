@@ -189,7 +189,7 @@ async function getGameActivities(games: GameData[], language: string): Promise<{
 }
 
 export const Home: React.FC = () => {
-    const { games } = useStore();
+    const { allGames } = useStore();
     const { getTotalPlayTime, getWeekPlayTime, getTodayPlayTime } = useGamePlayStore();
     const [totalTime, setTotalTime] = useState(0);
     const [weekTime, setWeekTime] = useState(0);
@@ -200,38 +200,44 @@ export const Home: React.FC = () => {
     const { t, i18n } = useTranslation();
 
     // 用 useMemo 缓存 gamesList，避免每次渲染都新建数组
-    const gamesList = useMemo(() => games.map((game) => ({
+    const gamesList = useMemo(() => allGames.map((game) => ({
         title: getGameDisplayName(game, i18n.language),
         id: game.id,
         isLocal: game.localpath !== '',
         imageUrl: game.image
-    })), [games, i18n.language]);
+    })), [allGames, i18n.language]);
 
     const gamesLocalCount = useMemo(() => gamesList.filter(game => game.isLocal).length, [gamesList]);
 
+    // 计算通关游戏数
+    const completedGamesCount = useMemo(() => {
+        return allGames.filter(game => game.clear === 1).length;
+    }, [allGames]);
     // 用 useCallback 保证函数引用稳定
     const getTotalPlayTimeStable = useCallback(() => getTotalPlayTime(), [getTotalPlayTime]);
     const getWeekPlayTimeStable = useCallback(() => getWeekPlayTime(), [getWeekPlayTime]);
     const getTodayPlayTimeStable = useCallback(() => getTodayPlayTime(), [getTodayPlayTime]);
 
     const statsCards = useMemo(() => [
-        { title: t('home.stats.totalGames', '总游戏数'), value: games.length, icon: <GamesIcon /> },
+        { title: t('home.stats.totalGames', '总游戏数'), value: allGames.length, icon: <GamesIcon /> },
         { title: t('home.stats.localGames', '本地游戏数'), value: gamesLocalCount, icon: <LocalIcon /> },
-        { title: t('home.stats.completedGames', '通关游戏数'), value: '0', icon: <CompletedIcon /> },
+        { title: t('home.stats.completedGames', '通关游戏数'), value: completedGamesCount, icon: <CompletedIcon /> },
         { title: t('home.stats.totalPlayTime', '总游戏时长'), value: formatPlayTime(totalTime), icon: <TimeIcon /> },
         { title: t('home.stats.weekPlayTime', '本周游戏时长'), value: formatPlayTime(weekTime), icon: <WeekIcon /> },
         { title: t('home.stats.todayPlayTime', '今日游戏时长'), value: formatPlayTime(todayTime), icon: <TodayIcon /> },
-    ], [t, games.length, gamesLocalCount, totalTime, weekTime, todayTime]); useEffect(() => {
+    ], [t, allGames.length, gamesLocalCount, completedGamesCount, totalTime, weekTime, todayTime]);
+
+    useEffect(() => {
         (async () => {
             setTotalTime(await getTotalPlayTimeStable());
             setWeekTime(await getWeekPlayTimeStable());
             setTodayTime(await getTodayPlayTimeStable());
-            const result = await getGameActivities(games, i18n.language);
+            const result = await getGameActivities(allGames, i18n.language);
             setRecentSessions(result.sessions);
             setRecentAdded(result.added);
             setActivities(result.activities);
         })();
-    }, [games, getTotalPlayTimeStable, getWeekPlayTimeStable, getTodayPlayTimeStable, i18n.language]);
+    }, [allGames, getTotalPlayTimeStable, getWeekPlayTimeStable, getTodayPlayTimeStable, i18n.language]);
 
     return (
         <Box className="p-6 flex flex-col gap-4">

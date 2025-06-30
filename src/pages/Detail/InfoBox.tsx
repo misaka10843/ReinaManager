@@ -7,7 +7,6 @@ import { Typography, Box, Paper } from '@mui/material';
 import type { GameTimeStats } from '@/types';
 import { LineChart } from '@mui/x-charts/LineChart';
 import { useGamePlayStore } from '@/store/gamePlayStore';
-import type { GameData } from '@/types';
 import { useTranslation } from 'react-i18next';
 
 
@@ -24,7 +23,7 @@ interface GameTimeChartData {
  * InfoBox 组件属性类型
  */
 interface InfoBoxProps {
-    game: GameData;
+    gameID: number;
 }
 
 /**
@@ -34,11 +33,10 @@ interface InfoBoxProps {
  * @param {InfoBoxProps} props 组件属性
  * @returns {JSX.Element} 统计信息卡片与折线图
  */
-export const InfoBox: React.FC<InfoBoxProps> = ({ game }: InfoBoxProps): JSX.Element => {
+export const InfoBox: React.FC<InfoBoxProps> = ({ gameID }: InfoBoxProps): JSX.Element => {
     const { t } = useTranslation();
     const { loadGameStats, runningGameIds } = useGamePlayStore();
     const [stats, setStats] = useState<GameTimeStats | null>(null);
-    const gameId = game.id as number;
 
     // 存储上一次游戏运行状态，用于检测变化
     const prevRunningRef = useRef(false);
@@ -48,12 +46,12 @@ export const InfoBox: React.FC<InfoBoxProps> = ({ game }: InfoBoxProps): JSX.Ele
      */
     const fetchStats = useCallback(async () => {
         try {
-            const gameStats = await loadGameStats(gameId, true); // 强制刷新
+            const gameStats = await loadGameStats(gameID, true); // 强制刷新
             setStats(gameStats);
         } catch (error) {
             console.error('加载游戏统计失败:', error);
         }
-    }, [gameId, loadGameStats]);
+    }, [gameID, loadGameStats]);
 
     // 初始加载数据
     useEffect(() => {
@@ -62,16 +60,22 @@ export const InfoBox: React.FC<InfoBoxProps> = ({ game }: InfoBoxProps): JSX.Ele
 
     // 监听当前游戏的运行状态变化，关闭后自动刷新统计
     useEffect(() => {
-        const isCurrentGameRunning = runningGameIds.has(gameId);
+        let unmounted = false;
+        const isCurrentGameRunning = runningGameIds.has(gameID);
         if (prevRunningRef.current && !isCurrentGameRunning) {
-            // 游戏刚刚关闭，延迟一点执行以确保后端数据已更新
             const timer = setTimeout(() => {
-                fetchStats();
+                if (!unmounted) fetchStats();
             }, 500);
-            return () => clearTimeout(timer);
+            return () => {
+                unmounted = true;
+                clearTimeout(timer);
+            };
         }
         prevRunningRef.current = isCurrentGameRunning;
-    }, [runningGameIds, gameId, fetchStats]);
+        return () => {
+            unmounted = true;
+        };
+    }, [runningGameIds, gameID, fetchStats]);
 
     /**
      * 统计项数据

@@ -37,9 +37,9 @@ import { AliveScope } from 'react-activation';
  */
 const App: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const { games } = useStore();
+  const { allGames } = useStore();
   // 动态生成游戏库子菜单
-  const lists = games.map((game) => {
+  const lists = allGames.map((game) => {
     const title = getGameDisplayName(game, i18n.language);
 
     return {

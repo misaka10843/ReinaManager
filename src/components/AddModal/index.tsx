@@ -104,7 +104,8 @@ const AddModal: React.FC = () => {
             if (apiSource === 'vndb') {
                 res = await fetchFromVNDB(formText, isID ? formText : undefined);
             } else if (apiSource === 'mixed') {
-                res = await fetchMixedData(formText, bgmToken, isID ? formText : undefined);
+                const { bgmId, vndbId } = parseGameId(formText, isID);
+                res = await fetchMixedData(formText, bgmToken, bgmId, vndbId);
             } else {
                 res = await fetchFromBgm(formText, bgmToken, isID ? formText : undefined);
             }
@@ -152,6 +153,31 @@ const AddModal: React.FC = () => {
     const extractFolderName = (path: string): string => {
         const parts = path.split('\\');
         return parts.length > 1 ? parts[parts.length - 2] : '';
+    };
+
+    /**
+     * 解析游戏 ID，判断是 Bangumi ID 还是 VNDB ID
+     * @param input 用户输入的文本
+     * @param isID 是否为 ID 搜索模式
+     * @returns 包含 bgmId 和 vndbId 的对象
+     */
+    const parseGameId = (input: string, isID: boolean): { bgmId?: string; vndbId?: string } => {
+        if (!isID) {
+            return {}; // 如果不是 ID 搜索模式，返回空对象
+        }
+
+        // VNDB ID 格式：v + 数字（如 v17, v1234）
+        if (/^v\d+$/i.test(input)) {
+            return { vndbId: input };
+        }
+
+        // Bangumi ID 格式：纯数字字符串（如 123, 456789）
+        if (/^\d+$/.test(input)) {
+            return { bgmId: input };
+        }
+
+        // 如果格式不匹配，返回空对象
+        return {};
     };
 
     return (
@@ -205,7 +231,7 @@ const AddModal: React.FC = () => {
                         margin="dense"
                         id="name"
                         name="game-name"
-                        label={!isID ? t('components.AddModal.gameName') : t('components.AddModal.gameID')}
+                        label={!isID ? t('components.AddModal.gameName') : t('components.AddModal.gameIDTips')}
                         type="text"
                         fullWidth
                         variant="standard"

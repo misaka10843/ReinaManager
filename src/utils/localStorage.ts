@@ -193,7 +193,7 @@ export function setSetting<K extends keyof Settings>(key: K, value: Settings[K])
 // 纯前端搜索游戏，根据name_cn(为空则搜索name)进行模糊匹配
 export function searchGamesLocal(
   keyword: string, 
-  type: 'all' | 'local' | 'online' = 'all',
+  type: 'all' | 'local' | 'online' | 'clear' = 'all',
   sortOption = 'addtime', 
   sortOrder: 'asc' | 'desc' = 'asc'
 ): GameData[] {
@@ -202,22 +202,30 @@ export function searchGamesLocal(
     return [];
   }
   
-  // 如果没有关键字但类型是online或all，直接返回所有游戏
+  // 如果没有关键字但有类型筛选，使用 filterGamesByTypeLocal
   if (!keyword || keyword.trim() === '') {
-    return getGames(sortOption, sortOrder);
+    return filterGamesByTypeLocal(type, sortOption, sortOrder);
   }
   
   // 否则执行关键字搜索
   const searchRegex = new RegExp(keyword.trim(), 'i');
   const games = getGames(sortOption, sortOrder);
-    return games.filter(game => {
+  let filteredGames = games.filter(game => {
     const displayName = getGameDisplayName(game);
     return searchRegex.test(displayName);
   });
+  
+  // 如果有类型筛选，进一步过滤结果
+  if (type === 'clear') {
+    filteredGames = filteredGames.filter(game => game.clear === 1);
+  }
+  // type === 'online' 或 'all' 不需要额外筛选，因为浏览器环境中所有游戏都是在线的
+  
+  return filteredGames;
 }
 
 export function filterGamesByTypeLocal(
-  type: 'all' | 'local' | 'online',
+  type: 'all' | 'local' | 'online' | 'clear',
   sortOption = 'addtime',
   sortOrder: 'asc' | 'desc' = 'asc'
 ): GameData[] {
@@ -225,15 +233,20 @@ export function filterGamesByTypeLocal(
   // - 'all': 返回所有游戏
   // - 'local': 在浏览器中无本地游戏，返回空数组
   // - 'online': 浏览器中所有游戏都是在线的，返回所有游戏
+  // - 'clear': 返回已通关的游戏
   
   const games = getGames(sortOption, sortOrder);
   
   if (type === 'all' || type === 'online') {
     return games;
-  } 
-    // 浏览器环境中没有本地游戏
-    return [];
+  }
   
+  if (type === 'clear') {
+    return games.filter(game => game.clear === 1);
+  }
+  
+  // 浏览器环境中没有本地游戏
+  return [];
 }
 
 // 用于初始化或重置ID计数器的函数

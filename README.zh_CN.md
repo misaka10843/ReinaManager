@@ -20,11 +20,17 @@
 ## 技术栈
 
 - Tauri 2.0
+
 - React
+
 - Material UI
+
 - UnoCSS
+
 - Zustand
+
 - Sqlite
+
 - Rust
 
 ## 待办事项
@@ -41,6 +47,9 @@
 - [x] 重构数据库查询
 - [x] 添加混合API搜索游戏
 - [x] 编辑页面功能
+- [ ] 自动备份功能
+- [ ] 与Bangumi同步游戏状态
+
 
 ## 演示版本
 

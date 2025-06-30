@@ -20,11 +20,17 @@
 ## 技術棧
 
 - Tauri 2.0
+
 - React
+
 - Material UI
+
 - UnoCSS
+
 - Zustand
+
 - Sqlite
+
 - Rust
 
 ## 待辦事項
@@ -41,6 +47,9 @@
 - [x] 重構數據庫查詢
 - [x] 添加混合API搜尋遊戲
 - [x] 編輯頁面功能
+- [ ] 自動備份功能
+- [ ] 與Bangumi同步遊戲狀態
+
 
 ## 演示版本
 

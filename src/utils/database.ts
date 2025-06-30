@@ -104,7 +104,7 @@ async function checkDatabaseStructure(db: Database): Promise<boolean> {
       'games': [
         'id', 'bgm_id', 'vndb_id','id_type', 'date', 'image', 'summary', 'name', 
         'name_cn', 'tags', 'rank', 'score', 'time', 'localpath', 
-        'developer', 'all_titles', 'aveage_hours'
+        'developer', 'all_titles', 'aveage_hours', 'clear'
       ],
       'user': [
         'id', 'BGM_TOKEN'
@@ -171,7 +171,8 @@ const createTable=async(db:Database)=>{
       localpath TEXT,
       developer TEXT,
       all_titles TEXT,
-      aveage_hours REAL
+      aveage_hours REAL,
+      clear INTEGER DEFAULT 0
     );
   `);
 

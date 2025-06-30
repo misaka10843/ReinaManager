@@ -67,9 +67,12 @@
             "gameLibrary": "Game Library",
             "openGameFolder": "Open Game Folder",
             "deleteGame": "Delete Game",
+            "deleting": "Deleting...",
             "bgmlink": "View Bangumi Page",
             "vndblink": "View Vndb Page",
-            "more": "More"
+            "more": "More",
+            "markAsCompleted": "Mark as Completed",
+            "markAsNotCompleted": "Mark as Not Completed"
         },
         "LaunchModal": {
             "launchGame": "Launch Game",
@@ -94,7 +97,9 @@
             "enterDetails": "Game Details",
             "deleteGame": "Delete Game",
             "openGameFolder": "Open Game Folder",
-            "more": "More"
+            "more": "More",
+            "markAsCompleted": "Mark as Completed",
+            "markAsNotCompleted": "Mark as Not Completed"
         },
         "AlertBox": {
             "cancel": "Cancel",
@@ -113,10 +118,10 @@
             "gameExists": "Game already exists",
             "selectLauncher": "Select Launcher",
             "selectExecutable": "Please select an executable file",
-            "enableCustomMode": "Enable Custom Mode",
+            "enableCustomMode": "Enable Custom Mode",            
             "enableVNDB": "Use VNDB API (BGM API by default)",
             "gameName": "Game Name",
-            "gameID": "Game ID",
+            "gameIDTips": "Game ID (Enter BGM ID or VNDB ID)",
             "cancel": "Cancel",
             "processing": "Processing...",
             "confirm": "Confirm",
@@ -129,6 +134,7 @@
             "allGames": "All Games",
             "localGames": "Local Games",
             "onlineGames": "Online Games",
+            "clearGames": "Completed Games",
             "cancel": "Cancel",
             "apply": "Apply"
         }

@@ -53,7 +53,8 @@ import { initializeGamePlayTracking } from './gamePlayStore';
 export interface AppState {
   updateSort(option: string, sortOrder: string): Promise<void>;
   // 游戏相关状态与方法
-  games: GameData[];
+  games: GameData[]; // 当前显示的游戏列表（受筛选和排序影响）
+  allGames: GameData[]; // 所有游戏的完整列表（不受筛选影响，供统计使用）
   loading: boolean;
   // 排序选项
   sortOption: string;
@@ -97,9 +98,12 @@ export interface AppState {
   refreshGameData: (customSortOption?: string, customSortOrder?: 'asc' | 'desc') => Promise<void>;
 
   // 筛选相关
-  gameFilterType: 'all' | 'local' | 'online';
-  setGameFilterType: (type: 'all' | 'local' | 'online') => void;
+  gameFilterType: 'all' | 'local' | 'online' | 'clear';
+  setGameFilterType: (type: 'all' | 'local' | 'online' | 'clear') => void;
   useIsLocalGame: (gameId: number) => boolean;
+  
+  // 更新游戏通关状态
+  updateGameClearStatusInStore: (gameId: number, newClearStatus: 1 | 0) => void;
 }
 
 // 创建持久化的全局状态
@@ -107,7 +111,8 @@ export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
       // 游戏相关状态
-      games: [],
+      games: [], // 当前显示的游戏列表（受筛选和排序影响）
+      allGames: [], // 所有游戏的完整列表（不受筛选影响，供统计使用）
       loading: false,
       
       // 排序选项默认值
@@ -152,8 +157,13 @@ refreshGameData: async (customSortOption?: string, customSortOrder?: 'asc' | 'de
       }
     }
     
+    // 同时更新完整的游戏列表（用于统计）
+    const allData = isTauri()
+      ? await getGamesRepository('addtime', 'asc')
+      : getGamesLocal('addtime', 'asc');
+    
     // 一次性设置数据和状态
-    set({ games: data, loading: false });
+    set({ games: data, allGames: allData, loading: false });
   } catch (error) {
     console.error('刷新游戏数据失败:', error);
     set({ loading: false });
@@ -171,15 +181,20 @@ refreshGameData: async (customSortOption?: string, customSortOrder?: 'asc' | 'de
             ? await getGamesRepository(option, order)
             : getGamesLocal(option, order);
           
+          // 获取完整的游戏列表（不排序）用于统计
+          const allData = isTauri()
+            ? await getGamesRepository('addtime', 'asc')
+            : getGamesLocal('addtime', 'asc');
+          
           // 只有在明确指定 resetSearch=true 时才重置搜索关键字
           if (resetSearch) {
-            set({ games: data, searchKeyword: '' });
+            set({ games: data, allGames: allData, searchKeyword: '' });
           } else {
-            set({ games: data });
+            set({ games: data, allGames: allData });
           }
         } catch (error) {
           console.error("获取游戏数据失败", error);
-          set({ games: [] });
+          set({ games: [], allGames: [] });
         } finally {
           set({ loading: false });
         }
@@ -267,7 +282,7 @@ refreshGameData: async (customSortOption?: string, customSortOrder?: 'asc' | 'de
       },
       
       // 修改 searchGames 函数定义，添加 filterType 参数
-searchGames: async (keyword: string, filterType?: 'all' | 'local' | 'online') => {
+searchGames: async (keyword: string, filterType?: 'all' | 'local' | 'online' | 'clear') => {
   set({ loading: true, searchKeyword: keyword });
   const type = filterType || get().gameFilterType;
   
@@ -387,7 +402,7 @@ setSortOrder: (order: 'asc' | 'desc') => {
       },
 
       // 修改 setGameFilterType 函数，避免循环引用
-setGameFilterType: (type: 'all' | 'local' | 'online') => {
+setGameFilterType: (type: 'all' | 'local' | 'online' | 'clear') => {
   const prevType = get().gameFilterType;
   
   // 如果类型没变，不做任何操作
@@ -431,10 +446,10 @@ setGameFilterType: (type: 'all' | 'local' | 'online') => {
   }
 },
 useIsLocalGame(gameId: number  ): boolean {
-    const games = useStore.getState().games; // 使用getState()而不是闭包中的state
+    const allGames = useStore.getState().allGames; // 使用 allGames 而不是 games
     
     // 查找游戏
-    const game = games.find(g => g.id===gameId);
+    const game = allGames.find(g => g.id===gameId);
     
     // 检查游戏是否存在并且有localpath属性
     if (!game || !game.localpath){
@@ -443,6 +458,28 @@ useIsLocalGame(gameId: number  ): boolean {
     
     // 检查localpath是否为非空字符串
     return game.localpath.trim() !== '';
+},
+
+// 更新games数组中特定游戏的通关状态
+updateGameClearStatusInStore: async (gameId: number, newClearStatus: 1 | 0) => {
+  const { games, allGames } = get();
+  
+  // 更新当前显示的游戏列表
+  const updatedGames = games.map(game => 
+    game.id === gameId 
+      ? { ...game, clear: newClearStatus }
+      : game
+  );
+  
+  // 更新完整的游戏列表
+  const updatedAllGames = allGames.map(game => 
+    game.id === gameId 
+      ? { ...game, clear: newClearStatus }
+      : game
+  );
+  
+  set({ games: updatedGames, allGames: updatedAllGames });
+  await get().refreshGameData();
 },
       // 初始化方法，先初始化数据库，然后加载所有需要的数据
       initialize: async () => {        
