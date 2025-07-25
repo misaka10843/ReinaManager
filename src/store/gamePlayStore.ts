@@ -322,6 +322,16 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
           lastWeekPlayTime = 0;
           lastTodayPlayTime = 0;
           // ====== END ======
+          
+          // ====== 新增：游戏结束后刷新Cards组件 ======
+          // 获取主store的状态，检查当前排序选项
+          const store = useStore.getState();
+          if (store.sortOption === 'lastplayed') {
+            // 如果当前排序是"最近游玩"，刷新游戏数据以更新顺序
+            console.log(`游戏 ${gameId} 结束，当前排序为"最近游玩"，刷新游戏列表`);
+            await store.refreshGameData();
+          }
+          // ====== END ======
         }
       );
       

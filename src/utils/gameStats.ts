@@ -312,7 +312,6 @@ export function initGameTimeTracking(
 ): () => void {
   if (!isTauri()) return () => {};
 
-  // 游戏会话开始
 // 游戏会话开始
 const unlistenStart = listen<{gameId: number; processId: number; startTime: number}>(
   'game-session-started',
@@ -398,6 +397,7 @@ const unlistenEnd = listen<{gameId: number; totalMinutes: number; totalSeconds: 
       
       // 记录游戏会话
       await recordGameSession(gameId, minutesToRecord, startTime, endTime);
+      
       
       // 调用回调函数
       if (onSessionEnd) {

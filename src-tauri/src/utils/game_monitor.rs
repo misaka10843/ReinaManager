@@ -1,5 +1,6 @@
 use serde_json::json;
 use std::{
+    path::Path,
     thread,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
@@ -73,15 +74,19 @@ pub async fn monitor_game<R: Runtime>(
 fn run_game_monitor<R: Runtime>(
     app_handle: AppHandle<R>,
     game_id: u32,
-    mut process_id: u32, // 当前正在监控的 PID，可能会在切换后改变。
+    process_id: u32, // 初始监控的进程 PID，可能会在检测后改变。
     executable_path: String,
     sys: &mut System,
 ) -> Result<(), String> {
     let mut accumulated_seconds = 0u64; // 使用 u64 避免溢出
     let start_time = get_timestamp();
+    thread::sleep(Duration::from_secs(1));
+
+    // 使用智能选择函数获取最佳的 PID
+    let mut process_id = select_best_pid(process_id, &executable_path, sys);
 
     println!(
-        "开始监控游戏: ID={}, 初始 PID={}, Path={}",
+        "开始监控游戏: ID={}, 最终 PID={}, Path={}",
         game_id, process_id, executable_path
     );
 
@@ -114,7 +119,10 @@ fn run_game_monitor<R: Runtime>(
                 );
 
                 // 尝试根据可执行文件路径查找是否有新的进程实例在运行。
-                if let Some(matched_pid) = get_process_id_by_path(&executable_path, sys) {
+                let available_pids = get_process_id_by_path(&executable_path, sys);
+                if !available_pids.is_empty() {
+                    // 从可用进程中选择最佳的 PID
+                    let matched_pid = select_best_pid(process_id, &executable_path, sys);
                     // 检查找到的 PID 是否与当前认为已结束的 PID 不同，
                     // 或者虽然 PID 相同但我们之前从未切换过进程 (说明可能是原始进程重启)。
                     if process_id != matched_pid || !switched_process {
@@ -161,7 +169,7 @@ fn run_game_monitor<R: Runtime>(
             consecutive_failures = 0;
 
             // 检查游戏窗口是否在前台，是则累加活动时间。
-            if is_window_foreground(process_id) {
+            if is_window_foreground_for_pid(process_id) {
                 accumulated_seconds += 1;
                 // 大约每 30 秒向前端发送一次累计时间更新。
                 if accumulated_seconds > 0 && accumulated_seconds % 30 == 0 {
@@ -250,61 +258,162 @@ fn is_process_running(pid: u32) -> bool {
     s.process(sysinfo::Pid::from_u32(pid)).is_some()
 }
 
-/// 检查指定 PID 的进程窗口当前是否为活动的前台窗口 (仅 Windows)。
+/// 检查目标目录下的任意进程是否拥有前台窗口 (仅 Windows)。
 #[cfg(target_os = "windows")]
-fn is_window_foreground(pid: u32) -> bool {
-    // 在函数内部导入所需的 Windows API 类型，避免在模块顶部产生未使用警告。
+fn is_window_foreground_for_pid(pid: u32) -> bool {
     use windows::Win32::Foundation::HWND;
     use windows::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, GetWindowThreadProcessId};
+
     unsafe {
-        // 获取当前拥有焦点的窗口句柄。
         let foreground_window: HWND = GetForegroundWindow();
-        // HWND 是 isize 的类型别名，值为 0 表示无效或没有前台窗口 (例如桌面获得焦点)。
         if foreground_window.0.is_null() {
             return false;
         }
         let mut foreground_pid: u32 = 0;
-        // 获取与该窗口句柄关联的进程 PID。
-        // GetWindowThreadProcessId 的第二个参数需要一个指向 u32 的指针。
         GetWindowThreadProcessId(foreground_window, Some(&mut foreground_pid));
-        // 比较获取到的前台窗口 PID 是否与我们监控的 PID 一致。
         foreground_pid == pid
     }
 }
-
 #[cfg(not(target_os = "windows"))]
-fn is_window_foreground(_pid: u32) -> bool {
+fn is_window_foreground_for_pid(_pid: u32) -> bool {
     // 对于非 Windows 平台，暂时假设窗口总是在前台。
     // 这是一个占位符，需要特定平台的实现 (如 X11, Wayland, AppKit) 才能准确判断。
     true
 }
 
+/// 检查指定 PID 的进程是否拥有可见窗口 (仅 Windows)。
+#[cfg(target_os = "windows")]
+fn has_window_for_pid(pid: u32) -> bool {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use windows::Win32::Foundation::{BOOL, HWND, LPARAM};
+    use windows::Win32::UI::WindowsAndMessaging::{
+        EnumWindows, GetWindowThreadProcessId, IsWindowVisible,
+    };
+
+    static FOUND_WINDOW: AtomicBool = AtomicBool::new(false);
+
+    unsafe extern "system" fn enum_windows_proc(hwnd: HWND, lparam: LPARAM) -> BOOL {
+        unsafe {
+            let mut window_pid: u32 = 0;
+            GetWindowThreadProcessId(hwnd, Some(&mut window_pid));
+            // lparam 是目标 PID 的指针
+            let target_pid = *(lparam.0 as *const u32);
+            // 检查窗口属于目标 PID 且窗口可见
+            if window_pid == target_pid && IsWindowVisible(hwnd).as_bool() {
+                // 找到窗口，设置标志并停止枚举
+                FOUND_WINDOW.store(true, Ordering::Relaxed);
+                return BOOL::from(false);
+            }
+        }
+        BOOL::from(true) // 继续枚举
+    }
+
+    // 重置标志
+    FOUND_WINDOW.store(false, Ordering::Relaxed);
+
+    let lparam = LPARAM(&pid as *const u32 as isize);
+    unsafe { EnumWindows(Some(enum_windows_proc), lparam) }.ok();
+
+    // 返回是否找到窗口
+    FOUND_WINDOW.load(Ordering::Relaxed)
+}
+
+#[cfg(not(target_os = "windows"))]
+fn has_window_for_pid(_pid: u32) -> bool {
+    // 对于非 Windows 平台，暂时假设进程总是有窗口。
+    // 这是一个占位符，需要特定平台的实现。
+    true
+}
+
 // get_child_processes 函数已根据您提供的代码移除。
 
-/// 根据可执行文件的完整路径查找正在运行的进程 PID (已优化 sysinfo 使用)。
+/// 根据可执行文件所在目录获取该目录下所有正在运行的进程 PID 列表。
+///
+/// # Arguments
+/// * `executable_path` - 可执行文件的完整路径。
+/// * `sys` - 对 `sysinfo::System` 的可变引用。
+///
+/// # Returns
+/// 返回该目录下所有正在运行进程的 PID 列表。
+fn get_processes_in_directory(executable_path: &str, sys: &mut System) -> Vec<u32> {
+    sys.refresh_processes();
+    let target_dir = Path::new(executable_path)
+        .parent()
+        .map(|p| p.to_string_lossy())
+        .unwrap();
+
+    let mut pids = Vec::new();
+    for process in sys.processes().values() {
+        let process_dir = process.exe().parent().map(|p| p.to_string_lossy());
+        #[cfg(target_os = "windows")]
+        if let Some(dir) = process_dir {
+            if dir.eq_ignore_ascii_case(&target_dir) {
+                pids.push(PidExt::as_u32(process.pid()));
+            }
+        }
+        #[cfg(not(target_os = "windows"))]
+        if let Some(dir) = process_dir {
+            if dir == target_dir {
+                pids.push(PidExt::as_u32(process.pid()));
+            }
+        }
+    }
+    pids
+}
+
+/// 选择最佳的进程 PID，优先级：聚焦进程 > 有窗口进程 > 内存最大进程 > 原始PID
+///
+/// # Arguments
+/// * `original_pid` - 原始传入的 PID
+/// * `executable_path` - 可执行文件路径
+/// * `sys` - System 实例
+///
+/// # Returns
+/// 返回最佳的 PID
+fn select_best_pid(original_pid: u32, executable_path: &str, sys: &mut System) -> u32 {
+    // 先检查原始 PID 是否有聚焦
+    if is_window_foreground_for_pid(original_pid) {
+        println!("原始 PID {} 拥有聚焦，直接使用", original_pid);
+        return original_pid;
+    }
+
+    // 获取目录下所有进程
+    let pids = get_process_id_by_path(executable_path, sys);
+    if pids.is_empty() {
+        println!("未找到目录下的进程，使用原始 PID: {}", original_pid);
+        return original_pid;
+    }
+
+    // 优先查找聚焦的进程
+    for &pid in &pids {
+        if is_window_foreground_for_pid(pid) {
+            println!("找到聚焦的进程 PID: {}", pid);
+            return pid;
+        }
+    }
+
+    // 查找有窗口的进程
+    for &pid in &pids {
+        if has_window_for_pid(pid) {
+            println!("找到有窗口的进程 PID: {}", pid);
+            return pid;
+        }
+    }
+
+    println!("回退到原始 PID: {}", original_pid);
+    original_pid
+}
+
+/// 根据可执行文件的完整路径查找所有正在运行的进程 PID 列表 (已优化 sysinfo 使用)。
 ///
 /// # Arguments
 /// * `executable_path` - 要查找的可执行文件的完整路径。
 /// * `sys` - 对 `sysinfo::System` 的可变引用。
 ///
 /// # Returns
-/// 如果找到匹配且正在运行的进程，返回 `Some(pid)`，否则返回 `None`。
-fn get_process_id_by_path(executable_path: &str, sys: &mut System) -> Option<u32> {
-    sys.refresh_processes();
-
-    for process in sys.processes().values() {
-        let path = process.exe();
-
-        #[cfg(target_os = "windows")]
-        if path.to_string_lossy().eq_ignore_ascii_case(executable_path) {
-            return Some(PidExt::as_u32(process.pid()));
-        }
-
-        #[cfg(not(target_os = "windows"))]
-        if path.to_string_lossy() == executable_path {
-            return Some(PidExt::as_u32(process.pid()));
-        }
-    }
-
-    None
+/// 返回目录下所有正在运行的进程 PID 列表。
+fn get_process_id_by_path(executable_path: &str, sys: &mut System) -> Vec<u32> {
+    let pids = get_processes_in_directory(executable_path, sys);
+    println!("找到进程目录下的进程 PID 列表: {:?}", pids);
+    pids
 }

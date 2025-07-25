@@ -18,6 +18,15 @@
     "fs:allow-copy-file",
     "fs:allow-appdata-write",
     "fs:allow-appdata-write-recursive",
+    "core:app:allow-default-window-icon",
+    "core:tray:allow-new",
+    "core:tray:default",
+    "core:menu:allow-new",
+    "core:menu:default",
+    "core:window:allow-show",
+    "core:window:allow-unminimize",
+    "core:window:allow-set-focus",
+    "core:window:allow-close",
     {
       "identifier": "fs:scope",
       "allow": [
