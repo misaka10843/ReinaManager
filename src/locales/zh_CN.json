@@ -13,7 +13,12 @@
             "bgmToken": "BGM令牌",
             "saveBtn": "保存",
             "getToken": "获取令牌",
-            "tokenPlaceholder": "请填写你的BGM_TOKEN"
+            "tokenPlaceholder": "请填写你的BGM_TOKEN",
+            "autoStart": "开机自启",
+            "closeSettings": "关闭设置",
+            "skipCloseRemind": "不再提醒",
+            "closeToTray": "最小化到托盘",
+            "closeApp": "直接退出应用"
         },
         "Detail": {
             "loading": "加载中...",
@@ -137,6 +142,15 @@
             "clearGames": "已通关游戏",
             "cancel": "取消",
             "apply": "应用"
+        },
+        "Window": {
+            "closeDialog": {
+                "title": "关闭应用",
+                "message": "请选择操作：直接退出 或 最小化到托盘？",
+                "dontRemind": "不再提醒",
+                "minimizeToTray": "最小化到托盘",
+                "exitApp": "退出应用"
+            }
         }
     },
     "home": {

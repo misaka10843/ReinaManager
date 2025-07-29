@@ -35,7 +35,6 @@ import { createBrowserRouter, createHashRouter, type RouteObject } from 'react-r
 import React from 'react';
 import Layout from '@/components/Layout';
 import App from '@/App';
-import { Edit } from '@/pages/Detail/Edit';
 import { isTauri } from '@tauri-apps/api/core';
 
 /**
@@ -78,13 +77,6 @@ export const routes: RouteGroup[] = [
                     // 默认子路由使用 index
                     { title: 'default', index: true, component: Card },
                     { title: 'detail', path: ':id', component: Detail },
-                ]
-            },
-            {
-                title: 'edit',
-                path: 'edit',
-                children: [
-                    { title: 'edit', path: ':id', component: Edit },
                 ]
             },
             {

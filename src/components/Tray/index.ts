@@ -3,7 +3,6 @@ import type { TrayIconEvent } from '@tauri-apps/api/tray';
 import { defaultWindowIcon } from '@tauri-apps/api/app';
 import { Menu, MenuItem } from '@tauri-apps/api/menu';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { toggleAutostart } from '@/components/AutoStart'; 
 
 
 /**
@@ -18,21 +17,13 @@ export const initTray = async () => {
             action: async () => {
                 console.log('Exiting application...');
                 const window = getCurrentWindow();
-                await window.close();
-            }
-        });
-
-        const autostartItem = await MenuItem.new({
-            id: 'autostart',
-            text: 'Autostart',
-            action: async () => {
-                await toggleAutostart();
+                await window.destroy();
             }
         });
 
         // 创建菜单
         const menu = await Menu.new({
-            items: [autostartItem,quitItem]
+            items: [quitItem]
         });
 
         // 获取默认窗口图标

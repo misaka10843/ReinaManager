@@ -27,6 +27,7 @@ import { useStore } from './store';
 import { getGameDisplayName } from '@/utils';
 import { useTranslation } from 'react-i18next';
 import { AliveScope } from 'react-activation';
+import WindowCloseHandler from '@/components/Window';
 
 /**
  * App 组件
@@ -75,6 +76,7 @@ const App: React.FC = () => {
   return (
     <ReactRouterAppProvider navigation={NAVIGATION}>
       <AliveScope>
+        <WindowCloseHandler />
         <Outlet />
       </AliveScope>
     </ReactRouterAppProvider>

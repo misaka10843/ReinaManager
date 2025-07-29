@@ -65,6 +65,14 @@ export interface AppState {
   selectedGameId: number | null;
   selectedGame: GameData | null;
 
+  // 关闭应用时的提醒设置，skip=不再提醒，行为为 'hide' 或 'close'
+  skipCloseRemind: boolean;
+  defaultCloseAction: 'hide' | 'close';
+  // 设置不再提醒及默认关闭行为
+  setSkipCloseRemind: (skip: boolean) => void;
+  setDefaultCloseAction: (action: 'hide' | 'close') => void;
+
+  
   
   // 游戏操作方法
   fetchGames: (sortOption?: string, sortOrder?: 'asc' | 'desc', resetSearch?: boolean) => Promise<void>;
@@ -125,6 +133,12 @@ export const useStore = create<AppState>()(
       // UI 状态
       selectedGameId: null,
       selectedGame: null,
+      // 关闭应用时的提醒设置，skip=不再提醒，行为为 'hide' 或 'close'
+      skipCloseRemind: false,
+      defaultCloseAction: 'hide',
+      // Setter: 不再提醒和默认关闭行为
+      setSkipCloseRemind: (skip: boolean) => set({ skipCloseRemind: skip }),
+      setDefaultCloseAction: (action: 'hide' | 'close') => set({ defaultCloseAction: action }),
 
       searchKeyword: '',
 
@@ -500,7 +514,9 @@ updateGameClearStatusInStore: async (gameId: number, newClearStatus: 1 | 0) => {
       // 可选：定义哪些字段需要持久化存储
       partialize: (state) => ({
         sortOption: state.sortOption,
-        sortOrder: state.sortOrder
+        sortOrder: state.sortOrder,
+        skipCloseRemind: state.skipCloseRemind,
+        defaultCloseAction: state.defaultCloseAction
       })
     }
   )

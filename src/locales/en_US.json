@@ -13,7 +13,12 @@
             "bgmToken": "BGM Token",
             "saveBtn": "Save",
             "getToken": "Get Token",
-            "tokenPlaceholder": "Please enter your BGM_TOKEN"
+        "tokenPlaceholder": "Please enter your BGM_TOKEN",
+        "autoStart": "Auto Start",
+        "closeSettings": "Close Settings",
+        "skipCloseRemind": "Don't remind again",
+        "closeToTray": "Minimize to tray",
+        "closeApp": "Exit application"
         },
         "Detail": {
             "loading": "Loading...",
@@ -137,6 +142,15 @@
             "clearGames": "Completed Games",
             "cancel": "Cancel",
             "apply": "Apply"
+        },
+        "Window": {
+            "closeDialog": {
+                "title": "Close Application",
+                "message": "Please choose an action: Exit or Minimize to tray?",
+                "dontRemind": "Don't remind again",
+                "minimizeToTray": "Minimize to tray",
+                "exitApp": "Exit application"
+            }
         }
     },
     "home": {
