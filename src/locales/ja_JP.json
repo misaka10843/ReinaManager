@@ -39,6 +39,7 @@
             "expected_hours": "予想時間",
             "playTimeMinutes": "プレイ時間(分)",
             "editPart": "編集",
+            "backup": "バックアップ",
             "Edit": {
                 "error": "エラー",
                 "warning": "警告",
@@ -58,6 +59,36 @@
                 "unknownError": "不明なエラー",
                 "mixedFetchError": "Mixed 取得エラー",
                 "updatePathFailed": "パスの更新に失敗しました"
+            },
+            "Backup": {
+                "pathRequired": "まずセーブデータフォルダを選択してください",
+                "unknownError": "不明なエラー",
+                "saveDataPath": "セーブデータフォルダパス",
+                "selectSaveDataFolder": "セーブデータフォルダを選択",
+                "createBackup": "バックアップを作成",
+                "creating": "バックアップを作成中...",
+                "backupSuccess": "バックアップが正常に作成されました",
+                "backupFailed": "バックアップに失敗しました",
+                "deleteSuccess": "バックアップが正常に削除されました",
+                "deleteFailed": "削除に失敗しました",
+                "loadBackupsFailed": "バックアップリストの読み込みに失敗しました",
+                "backupHistory": "バックアップ履歴",
+                "noBackups": "バックアップ記録がありません",
+                "backupTime": "バックアップ時刻",
+                "fileSize": "ファイルサイズ",
+                "confirmDelete": "バックアップを削除してもよろしいですか",
+                "confirmDeleteSuffix": "？この操作は取り消せません。",
+                "settings": "バックアップ設定",
+                "autoSave": "自動バックアップ",
+                "savePathSettings": "セーブパス設定",
+                "updatePath": "パスを更新",
+                "updating": "更新中...",
+                "manualBackup": "手動バックアップ",
+                "pathUpdateSuccess": "セーブパスが正常に更新されました",
+                "pathUpdateFailed": "パスの更新に失敗しました",
+                "autoSaveEnabled": "自動バックアップが有効になりました",
+                "autoSaveDisabled": "自動バックアップが無効になりました",
+                "autoSaveUpdateFailed": "自動バックアップ設定の更新に失敗しました"
             }
         }
     },
@@ -115,7 +146,12 @@
             "processing": "処理中...",
             "confirmUpdateTitle": "ゲーム情報の更新を確認",
             "gameName": "ゲーム名",
-            "noData": "データがありません"
+            "noData": "データがありません",
+            "error": "エラー",
+            "success": "成功",
+            "warning": "警告",
+            "gameNotFound": "ゲームデータが見つかりません",
+            "deleteBackupTitle": "バックアップを削除"
         },        
         "AddModal": {
             "addGame": "ゲームを追加",

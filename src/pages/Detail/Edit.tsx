@@ -11,8 +11,6 @@ import {
     Select as MuiSelect,
     MenuItem,
     CircularProgress,
-    Alert,
-    AlertTitle,
     type SelectChangeEvent
 } from "@mui/material";
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
@@ -21,7 +19,7 @@ import { fetchFromBgm } from "@/api/bgm";
 import { fetchFromVNDB } from "@/api/vndb";
 import fetchMixedData from "@/api/mixed";
 import type { GameData } from "@/types";
-import { ViewUpdateGameBox } from "@/components/AlertBox";
+import { ViewUpdateGameBox, StatusAlert } from "@/components/AlertBox";
 import { handleDirectory } from "@/utils";
 import { updateGameLocalPath } from "@/utils/repository";
 import { useTranslation } from 'react-i18next';
@@ -184,36 +182,23 @@ export const Edit = (): JSX.Element => {
         setIdType(event.target.value);
     };
 
+    // 构建成功消息数组
+    const successMessages = [];
+    if (updateSuccess) {
+        successMessages.push(t('pages.Detail.Edit.updateSuccess', '游戏信息已成功更新'));
+    }
+    if (pathUpdateSuccess) {
+        successMessages.push(t('pages.Detail.Edit.pathUpdateSuccess', '游戏路径已成功更新'));
+    }
+
     return (
         <Box sx={{ p: 3 }}>
             {/* 状态提示区域 */}
-            {fetchError && (
-                <Alert severity="error" sx={{ mb: 2 }}>
-                    <AlertTitle>{t('pages.Detail.Edit.error', '错误')}</AlertTitle>
-                    {fetchError}
-                </Alert>
-            )}
-
-            {!selectedGame && (
-                <Alert severity="warning" sx={{ mb: 2 }}>
-                    <AlertTitle>{t('pages.Detail.Edit.warning', '警告')}</AlertTitle>
-                    {t('pages.Detail.Edit.notFound', '未找到游戏数据')}
-                </Alert>
-            )}
-
-            {updateSuccess && (
-                <Alert severity="success" sx={{ mb: 2 }}>
-                    <AlertTitle>{t('pages.Detail.Edit.success', '成功')}</AlertTitle>
-                    {t('pages.Detail.Edit.updateSuccess', '游戏信息已成功更新')}
-                </Alert>
-            )}
-
-            {pathUpdateSuccess && (
-                <Alert severity="success" sx={{ mb: 2 }}>
-                    <AlertTitle>{t('pages.Detail.Edit.success', '成功')}</AlertTitle>
-                    {t('pages.Detail.Edit.pathUpdateSuccess', '游戏路径已成功更新')}
-                </Alert>
-            )}
+            <StatusAlert
+                error={fetchError}
+                success={successMessages.length > 0 ? successMessages : null}
+                gameNotFound={!selectedGame}
+            />
 
             {/* 游戏更新确认弹窗 */}
             <ViewUpdateGameBox

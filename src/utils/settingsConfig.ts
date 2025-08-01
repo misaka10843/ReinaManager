@@ -23,3 +23,25 @@ export async function setBgmTokenRepository(token: string): Promise<void> {
     [token]
   )
 }
+
+export async function getSavePathRepository(): Promise<string> {
+  const db = await getDb();
+  const rows = await db.select<{ save_path: string }>(`
+    SELECT save_root_path FROM user WHERE id = 1 LIMIT 1;
+  `);
+  if (Array.isArray(rows) && rows.length > 0 && typeof rows[0].save_path === 'string') {
+    return rows[0].save_path;
+  }
+  return "";
+}
+
+export async function setSavePathRepository(path: string): Promise<void> {
+  const db = await getDb();
+  await db.execute(
+    `
+    INSERT OR REPLACE INTO user (id, save_root_path)
+    VALUES (1, ?);
+    `,
+    [path]
+  );
+}

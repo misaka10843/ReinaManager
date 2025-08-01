@@ -1,4 +1,4 @@
-import type { GameData } from '@/types';
+import type { GameData, SavedataRecord } from '@/types';
 import { getDb } from './database';
 
 // 处理排序选项的工具函数
@@ -63,8 +63,8 @@ export async function insertGame(game: GameData) {
   const db = await getDb();
   await db.execute(
     `
-    INSERT INTO games (bgm_id,vndb_id,id_type, date, image, summary, name, name_cn, tags, rank, score, time, localpath,developer,all_titles,aveage_hours)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?,?,?,?,?);
+    INSERT INTO games (bgm_id,vndb_id,id_type, date, image, summary, name, name_cn, tags, rank, score, time, localpath, developer, all_titles, aveage_hours)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
     `,
     [
       game.bgm_id,
@@ -93,7 +93,7 @@ export async function getGames(sortOption = 'addtime', sortOrder: 'asc' | 'desc'
   const { sortField, sortDirection, customSortSql } = getSortConfig(sortOption, sortOrder);
   
   let query = `
-    SELECT id, bgm_id,vndb_id, date, image, summary, name, name_cn, tags, rank, score, time, localpath,developer,all_titles,aveage_hours,clear FROM games
+    SELECT id, bgm_id,vndb_id, date, image, summary, name, name_cn, tags, rank, score, time, localpath , savepath, autosave, developer,all_titles,aveage_hours,clear FROM games
   `;
   
   if (customSortSql) {
@@ -160,7 +160,7 @@ export async function searchGames(
   // 使用LIKE进行模糊搜索
   const searchKeyword = `%${keyword}%`;
   let query = `
-    SELECT id, bgm_id,vndb_id, date, image, summary, name, name_cn, tags, rank, score, time, localpath,developer,all_titles,aveage_hours,clear
+    SELECT id, bgm_id,vndb_id, date, image, summary, name, name_cn, tags, rank, score, time, localpath, savepath, autosave, developer, all_titles, aveage_hours, clear
     FROM games
     WHERE 
       ((name_cn LIKE ? OR (name_cn IS NULL OR name_cn = '') AND name LIKE ?)
@@ -201,7 +201,7 @@ export async function filterGamesByType(
   }
   
   let query = `
-    SELECT id, bgm_id,vndb_id, date, image, summary, name, name_cn, tags, rank, score, time, localpath,developer,all_titles,aveage_hours,clear
+    SELECT id, bgm_id,vndb_id, date, image, summary, name, name_cn, tags, rank, score, time, localpath, savepath, autosave, developer, all_titles, aveage_hours, clear
     FROM games
     ${filterCondition}
   `;
@@ -258,8 +258,6 @@ export const updateGameLocalPath = async (id: number, localpath: string) => {
   );
 }
 
-
-
 export const updateGameClearStatus = async (id: number, clear: 1 | 0) => {
   const db = await getDb();
   await db.execute(
@@ -270,4 +268,107 @@ export const updateGameClearStatus = async (id: number, clear: 1 | 0) => {
     `,
     [clear, id]
   );
+}
+
+// ==================== 备份相关数据库操作 ====================
+
+/**
+ * 保存备份记录到数据库
+ * @param gameId 游戏ID
+ * @param fileName 备份文件名
+ * @param backupTime 备份时间戳
+ * @param fileSize 文件大小
+ * @returns 新插入记录的ID
+ */
+/**
+ * 更新游戏的自动保存状态
+ * @param id 游戏ID
+ * @param autosave 自动保存状态，1表示启用，0表示禁用
+ */
+export const updateAutoSaveStatus = async (id: number, autosave: 1 | 0) => {
+  const db = await getDb();
+  await db.execute(
+    `
+    UPDATE games
+    SET autosave = ?
+    WHERE id = ?;
+    `,
+    [autosave, id]
+  );
+}
+
+/**
+ * 更新游戏的存档路径
+ * @param id 游戏ID
+ * @param savepath 存档文件夹路径
+ */
+export const updateSaveDataPath = async (id: number, savepath: string) => {
+  const db = await getDb();
+  await db.execute(
+    `
+    UPDATE games
+    SET savepath = ?
+    WHERE id = ?;
+    `,
+    [savepath, id]
+  );
+}
+export async function saveSavedataRecord(
+  gameId: number,
+  fileName: string,
+  backupTime: number,
+  fileSize: number
+): Promise<number> {
+  const db = await getDb();
+  const result = await db.execute(
+    `INSERT INTO savedata (game_id, file, backup_time, file_size) 
+     VALUES (?, ?, ?, ?)`,
+    [gameId, fileName, backupTime, fileSize]
+  );
+  return result.lastInsertId as number;
+}
+
+/**
+ * 获取指定游戏的所有备份记录
+ * @param gameId 游戏ID
+ * @returns 备份记录列表
+ */
+export async function getSavedataRecords(gameId: number): Promise<SavedataRecord[]> {
+  const db = await getDb();
+  const records = await db.select<SavedataRecord[]>(
+    `SELECT id, game_id, file, backup_time, file_size 
+     FROM savedata 
+     WHERE game_id = ? 
+     ORDER BY backup_time DESC`,
+    [gameId]
+  );
+  return records;
+}
+
+/**
+ * 删除备份记录
+ * @param backupId 备份记录ID
+ */
+export async function deleteSavedataRecord(backupId: number): Promise<void> {
+  const db = await getDb();
+  await db.execute(
+    "DELETE FROM savedata WHERE id = ?",
+    [backupId]
+  );
+}
+
+/**
+ * 根据ID获取备份记录
+ * @param backupId 备份记录ID
+ * @returns 备份记录或null
+ */
+export async function getSavedataRecordById(backupId: number): Promise<SavedataRecord | null> {
+  const db = await getDb();
+  const records = await db.select<SavedataRecord[]>(
+    `SELECT id, game_id, file, backup_time, file_size 
+     FROM savedata 
+     WHERE id = ?`,
+    [backupId]
+  );
+  return records.length > 0 ? records[0] : null;
 }

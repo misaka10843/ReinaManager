@@ -19,7 +19,7 @@
 
 import { useEffect, useState } from 'react';
 import { useStore } from '@/store';
-import { openurl } from '@/utils';
+import { openurl, openDatabaseBackupFolder } from '@/utils';
 import Box from '@mui/material/Box';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
@@ -31,7 +31,11 @@ import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import { isEnabled } from '@tauri-apps/plugin-autostart';
 import { toggleAutostart } from '@/components/AutoStart';
-import { Switch, FormControlLabel, RadioGroup, Radio, Checkbox } from '@mui/material';
+import { Switch, FormControlLabel, RadioGroup, Radio, Checkbox, CircularProgress, Alert } from '@mui/material';
+import { backupDatabase } from '@/utils/database';
+import BackupIcon from '@mui/icons-material/Backup';
+import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import { isTauri } from '@tauri-apps/api/core';
 
 
 /**
@@ -170,6 +174,90 @@ const CloseBtnSettings = () => {
     );
 }
 
+const DatabaseBackupSettings = () => {
+    const [isBackingUp, setIsBackingUp] = useState(false);
+    const [backupStatus, setBackupStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+
+    const handleBackupDatabase = async () => {
+        setIsBackingUp(true);
+        setBackupStatus(null);
+
+        try {
+            const backupPath = await backupDatabase();
+            setBackupStatus({
+                type: 'success',
+                message: `数据库备份成功: ${backupPath}`
+            });
+
+            // 3秒后清除状态消息
+            setTimeout(() => setBackupStatus(null), 3000);
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : '备份失败';
+            setBackupStatus({
+                type: 'error',
+                message: `数据库备份失败: ${errorMessage}`
+            });
+        } finally {
+            setIsBackingUp(false);
+        }
+    };
+
+    const handleOpenBackupFolder = async () => {
+        try {
+            await openDatabaseBackupFolder();
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : '打开文件夹失败';
+            setBackupStatus({
+                type: 'error',
+                message: `打开备份文件夹失败: ${errorMessage}`
+            });
+        }
+    };
+
+    return (
+        <Box className="mb-6">
+            <InputLabel className="font-semibold mb-4">
+                数据库备份
+            </InputLabel>
+
+            {/* 状态提示 */}
+            {backupStatus && (
+                <Alert
+                    severity={backupStatus.type}
+                    className="mb-4"
+                    onClose={() => setBackupStatus(null)}
+                >
+                    {backupStatus.message}
+                </Alert>
+            )}
+
+            <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+                <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleBackupDatabase}
+                    disabled={isBackingUp || !isTauri()}
+                    startIcon={isBackingUp ? <CircularProgress size={16} color="inherit" /> : <BackupIcon />}
+                    className="px-6 py-2"
+                >
+                    {isBackingUp ? '备份中...' : '备份数据库'}
+                </Button>
+
+                <Button
+                    variant="outlined"
+                    color="primary"
+                    onClick={handleOpenBackupFolder}
+                    startIcon={<FolderOpenIcon />}
+                    className="px-6 py-2"
+                    disabled={!isTauri()}
+                >
+                    打开备份文件夹
+                </Button>
+            </Stack>
+        </Box>
+    );
+}
+
 
 /**
  * Settings 组件
@@ -238,6 +326,9 @@ export const Settings: React.FC = () => {
 
                 {/* 关闭按钮设置 */}
                 <CloseBtnSettings />
+
+                {/* 数据库备份设置 */}
+                <DatabaseBackupSettings />
             </Box>
         </PageContainer>
     );

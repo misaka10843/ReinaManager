@@ -1,8 +1,9 @@
 import { listen } from '@tauri-apps/api/event';
-import { invoke, isTauri } from '@tauri-apps/api/core';
+import { isTauri } from '@tauri-apps/api/core';
 import { getDb } from './database';
 import type { GameSession, GameStatistics, GameTimeStats } from '../types';
-import { formatPlayTime,getLocalDateString } from '@/utils';
+import { formatPlayTime, getLocalDateString, createGameSavedataBackup } from '@/utils';
+import { getGameById } from '@/utils/repository';
 
 // 类型定义
 export type TimeUpdateCallback = (gameId: number, minutes: number) => void;
@@ -398,6 +399,18 @@ const unlistenEnd = listen<{gameId: number; totalMinutes: number; totalSeconds: 
       // 记录游戏会话
       await recordGameSession(gameId, minutesToRecord, startTime, endTime);
       
+      // 检查是否需要自动备份
+      try {
+        const game = await getGameById(gameId);
+        if (game && game.autosave === 1 && game.savepath) {
+          console.log(`开始自动备份游戏 ${gameId}，存档路径: ${game.savepath}`);
+          await createGameSavedataBackup(gameId, game.savepath, true);
+          console.log(`游戏 ${gameId} 自动备份完成`);
+        }
+      } catch (backupError) {
+        console.error('自动备份失败:', backupError);
+        // 备份失败不应影响会话记录
+      }
       
       // 调用回调函数
       if (onSessionEnd) {
@@ -419,24 +432,4 @@ const unlistenEnd = listen<{gameId: number; totalMinutes: number; totalSeconds: 
     unlistenUpdate.then(fn => fn());
     unlistenEnd.then(fn => fn());
   };
-}
-
-// 启动游戏并开始监控
-export async function launchGameWithTracking(
-  gamePath: string, 
-  gameId: number,  // 改为number类型
-  args?: string[],
-): Promise<{success: boolean; message: string; process_id?: number}> {
-  try {
-    const result = await invoke<{success: boolean; message: string; process_id?: number}>('launch_game', { 
-      gamePath, 
-      gameId,  
-      args: args || [],
-    });
-    
-    return result;
-  } catch (error) {
-    const errorMessage = typeof error === 'string' ? error : 'Unknown error occurred';
-    throw new Error(errorMessage);
-  }
 }

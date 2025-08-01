@@ -3,7 +3,7 @@ import type { TrayIconEvent } from '@tauri-apps/api/tray';
 import { defaultWindowIcon } from '@tauri-apps/api/app';
 import { Menu, MenuItem } from '@tauri-apps/api/menu';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-
+import pkg from '../../../package.json';
 
 /**
  * 创建并初始化托盘图标
@@ -28,12 +28,12 @@ export const initTray = async () => {
 
         // 获取默认窗口图标
         const windowIcon = await defaultWindowIcon();
-
+        const tooltipText = `ReinaManager v${pkg.version}`;
         // 创建托盘图标
         const tray = await TrayIcon.new({
             id: 'main',
             icon: windowIcon ?? undefined,
-            tooltip: 'ReinaManager v0.5.5', // 显示软件名和版本号
+            tooltip: tooltipText, // 显示软件名和版本号
             menu,
             showMenuOnLeftClick: false, // 左键不显示菜单
 

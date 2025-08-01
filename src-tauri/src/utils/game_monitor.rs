@@ -327,41 +327,36 @@ fn has_window_for_pid(_pid: u32) -> bool {
 
 // get_child_processes 函数已根据您提供的代码移除。
 
-/// 根据可执行文件所在目录获取该目录下所有正在运行的进程 PID 列表。
+/// 根据可执行文件所在目录获取该目录及子目录下所有正在运行的进程 PID 列表。
 ///
 /// # Arguments
 /// * `executable_path` - 可执行文件的完整路径。
 /// * `sys` - 对 `sysinfo::System` 的可变引用。
 ///
 /// # Returns
-/// 返回该目录下所有正在运行进程的 PID 列表。
+/// 返回该目录及子目录下所有正在运行进程的 PID 列表。
 fn get_processes_in_directory(executable_path: &str, sys: &mut System) -> Vec<u32> {
     sys.refresh_processes();
-    let target_dir = Path::new(executable_path)
-        .parent()
-        .map(|p| p.to_string_lossy())
-        .unwrap();
+    let target_dir = Path::new(executable_path).parent();
+    if target_dir.is_none() {
+        return Vec::new();
+    }
+    let target_dir = target_dir.unwrap();
 
     let mut pids = Vec::new();
-    for process in sys.processes().values() {
-        let process_dir = process.exe().parent().map(|p| p.to_string_lossy());
-        #[cfg(target_os = "windows")]
-        if let Some(dir) = process_dir {
-            if dir.eq_ignore_ascii_case(&target_dir) {
-                pids.push(PidExt::as_u32(process.pid()));
-            }
-        }
-        #[cfg(not(target_os = "windows"))]
-        if let Some(dir) = process_dir {
-            if dir == target_dir {
-                pids.push(PidExt::as_u32(process.pid()));
+    for (pid, process) in sys.processes() {
+        let process_exe_path = process.exe();
+        if let Some(process_dir) = process_exe_path.parent() {
+            // 检查进程是否在目标目录或其子目录中
+            if process_dir == target_dir || process_dir.starts_with(target_dir) {
+                pids.push(pid.as_u32());
             }
         }
     }
     pids
 }
 
-/// 选择最佳的进程 PID，优先级：聚焦进程 > 有窗口进程 > 内存最大进程 > 原始PID
+/// 选择最佳的进程 PID，简单优先级：聚焦进程 > 有窗口进程 > 第一个找到的进程 > 原始PID
 ///
 /// # Arguments
 /// * `original_pid` - 原始传入的 PID
@@ -398,6 +393,12 @@ fn select_best_pid(original_pid: u32, executable_path: &str, sys: &mut System) -
             println!("找到有窗口的进程 PID: {}", pid);
             return pid;
         }
+    }
+
+    // 如果没有找到更好的，返回第一个找到的进程
+    if let Some(&first_pid) = pids.first() {
+        println!("使用第一个找到的进程 PID: {}", first_pid);
+        return first_pid;
     }
 
     println!("回退到原始 PID: {}", original_pid);

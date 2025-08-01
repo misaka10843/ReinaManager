@@ -47,7 +47,7 @@ The `Reina` in the name is the character <a href="https://vndb.org/c64303"><b>å¦
 - [x] Refactor database queries
 - [x] Add mixed api to search games
 - [x] Edit page functions
-- [ ] Auto backup function
+- [x] Auto backup function
 - [ ] Sync games status with Bangumi
 
 

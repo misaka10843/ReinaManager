@@ -28,6 +28,7 @@ import { getGameDisplayName } from '@/utils';
 import { useTranslation } from 'react-i18next';
 import { AliveScope } from 'react-activation';
 import WindowCloseHandler from '@/components/Window';
+import { isTauri } from '@tauri-apps/api/core';
 
 /**
  * App 组件
@@ -76,7 +77,7 @@ const App: React.FC = () => {
   return (
     <ReactRouterAppProvider navigation={NAVIGATION}>
       <AliveScope>
-        <WindowCloseHandler />
+        {isTauri() && <WindowCloseHandler />}
         <Outlet />
       </AliveScope>
     </ReactRouterAppProvider>

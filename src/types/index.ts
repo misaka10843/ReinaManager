@@ -24,6 +24,8 @@ export interface GameData {
     id_type?: string | 'bgm' | 'vndb' | 'mixed' | 'custom';
     time?: Date;
     localpath?: string;
+    savepath?: string;
+    autosave?: 1 | 0; // 是否自动保存，1表示是，0表示否
     developer?: string | null;
     all_titles?: string[];
     aveage_hours?: number;
@@ -88,4 +90,15 @@ export type TimeUpdateCallback = (gameId: number, minutes: number) => void;
  * @param minutes 本次会话时长（分钟）
  */
 export type SessionEndCallback = (gameId: number, minutes: number) => void;
+
+/**
+ * 存档备份记录
+ */
+export interface SavedataRecord {
+  id: number;
+  game_id: number;
+  file: string;  // 对应数据库中的 file 列（备份文件名）
+  backup_time: number;
+  file_size: number;
+}
 

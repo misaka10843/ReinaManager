@@ -73,12 +73,39 @@ pub async fn launch_game<R: Runtime>(
 
 #[command]
 pub async fn open_directory(dir_path: String) -> Result<(), String> {
+    use std::fs;
+
+    // 首先检查路径是否存在
+    if !Path::new(&dir_path).exists() {
+        // 如果路径不存在，尝试创建它
+        if let Err(e) = fs::create_dir_all(&dir_path) {
+            return Err(format!("路径不存在且无法创建: {} - {}", dir_path, e));
+        }
+    }
+
     #[cfg(target_os = "windows")]
     {
-        let _status = Command::new("explorer")
-            .arg(&dir_path)
-            .spawn()
-            .map_err(|e| e.to_string())?;
-        Ok(())
+        // 使用正斜杠转换为反斜杠，Windows Explorer 更喜欢反斜杠
+        let normalized_path = dir_path.replace('/', "\\");
+
+        let result = Command::new("explorer").arg(&normalized_path).spawn();
+
+        match result {
+            Ok(_) => Ok(()),
+            Err(e) => {
+                // 如果 explorer 失败，尝试使用 cmd /c start
+                let fallback_result = Command::new("cmd")
+                    .args(["/c", "start", "", &normalized_path])
+                    .spawn();
+
+                match fallback_result {
+                    Ok(_) => Ok(()),
+                    Err(e2) => Err(format!(
+                        "无法打开目录 '{}': explorer 失败 ({}), cmd 备用方案也失败 ({})",
+                        normalized_path, e, e2
+                    )),
+                }
+            }
+        }
     }
 }

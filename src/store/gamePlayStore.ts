@@ -23,13 +23,12 @@ import { isTauri } from '@tauri-apps/api/core';
 import { 
   getFormattedGameStats, 
   getGameSessions,
-  launchGameWithTracking,
   initGameTimeTracking,
   getGameStatistics
 } from '@/utils/gameStats';
 import type { GameSession, GameTimeStats } from '@/types';
 import { useStore } from '@/store';
-import { getLocalDateString } from '@/utils';
+import { getLocalDateString, launchGameWithTracking } from '@/utils';
 
 /**
  * 游戏启动结果类型

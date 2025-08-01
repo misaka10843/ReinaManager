@@ -1,7 +1,6 @@
 import Database  from '@tauri-apps/plugin-sql';
-import { exists, BaseDirectory,mkdir,remove,copyFile } from '@tauri-apps/plugin-fs';
+import { exists, BaseDirectory,mkdir,copyFile } from '@tauri-apps/plugin-fs';
 
-let check=true;
 let dbInstance: Database | null = null;
 
 export async function initDatabase() {
@@ -14,21 +13,25 @@ export async function initDatabase() {
       console.log("已创建数据目录");
     }
 
-const existdb= await exists('data/reina_manager.db', { baseDir: BaseDirectory.AppData });
-  if(!existdb){
+    // 检查数据库是否存在
+    const existdb = await exists('data/reina_manager.db', { baseDir: BaseDirectory.AppData });
+    
+    if (existdb) {
+        // 数据库已存在，直接加载（自动处理迁移）
+        console.log('检测到现有数据库，正在加载...');
+        const db = await Database.load('sqlite:data/reina_manager.db');
+        console.log('现有数据库加载完成，迁移已由 Rust 端处理');
+        return db;
+    }
+    
+    // 数据库不存在，先加载再创建基础表结构
+    console.log('数据库不存在，正在创建新数据库...');
     const db = await Database.load('sqlite:data/reina_manager.db');
-    createTable(db);
-  }
-  
-// 加载 SQLite 数据库，如果不存在则会自动创建
-  const db = await Database.load('sqlite:data/reina_manager.db');
-
-  if(check&&(!await checkDatabaseStructure(db))){
-    resetDatabase();
+    
+    // 创建基础表结构
     await createTable(db);
-  }
-  
-  return db;
+    console.log('新数据库已创建完成');
+    return db;
 }
 
 export async function getDb() {
@@ -70,87 +73,6 @@ export async function backupDatabase(): Promise<string> {
   }
 }
 
-// 2. 重置数据库函数
-export async function resetDatabase(): Promise<void> {
-  try {
-    // 先备份当前数据库
-    await backupDatabase();
-    
-    // 关闭连接
-    if (dbInstance) {
-      await dbInstance.close();
-      dbInstance = null;
-    }
-    
-    // 删除当前数据库
-    await remove('data/reina_manager.db', { baseDir: BaseDirectory.AppData });
-    
-    // 重新初始化，会创建全新数据库
-
-    dbInstance = await initDatabase();
-    console.log('数据库已重置');
-  } catch (error) {
-    console.error('重置数据库失败:', error);
-    throw error;
-  }
-}
-
-// 检查数据库表结构
-async function checkDatabaseStructure(db: Database): Promise<boolean> {
-  check=false;
-  try {
-    // 定义预期表结构
-    const requiredColumns = {
-      'games': [
-        'id', 'bgm_id', 'vndb_id','id_type', 'date', 'image', 'summary', 'name', 
-        'name_cn', 'tags', 'rank', 'score', 'time', 'localpath', 
-        'developer', 'all_titles', 'aveage_hours', 'clear'
-      ],
-      'user': [
-        'id', 'BGM_TOKEN'
-      ],
-      // 添加新表的列检查
-      'game_sessions': [
-        'session_id', 'game_id', 'start_time', 'end_time', 'duration', 'date'
-      ],
-      'game_statistics': [
-        'game_id',  'total_time', 'session_count', 'last_played', 'daily_stats'
-      ]
-    };
-    
-    // 检查每个表结构
-    for (const [tableName, columns] of Object.entries(requiredColumns)) {
-      // 检查表是否存在
-      const tableExists = await db.select<{count: number}[]>(
-        `SELECT count(*) as count FROM sqlite_master WHERE type='table' AND name=?;`,
-        [tableName]
-      );
-      
-      if (tableExists[0].count === 0) {
-        console.log(`表 ${tableName} 不存在`);
-        return false;
-      }
-      
-      // 获取表的列信息
-      const tableInfo = await db.select<{name: string}[]>(`PRAGMA table_info(${tableName});`);
-      const existingColumns = tableInfo.map(col => col.name);
-      
-      // 检查是否有缺失的列
-      for (const column of columns) {
-        if (!existingColumns.includes(column)) {
-          console.log(`表 ${tableName} 缺少列: ${column}`);
-          return false;
-        }
-      }
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('检查数据库结构时出错:', error);
-    return false;
-  }
-}
-
 const createTable=async(db:Database)=>{
   // 创建存储游戏数据的表，注意将 tags 以 JSON 字符串形式存储
   await db.execute(`
@@ -169,6 +91,8 @@ const createTable=async(db:Database)=>{
       score REAL,
       time TEXT,
       localpath TEXT,
+      savepath TEXT,
+      autosave INTEGER DEFAULT 0,
       developer TEXT,
       all_titles TEXT,
       aveage_hours REAL,
@@ -180,7 +104,8 @@ const createTable=async(db:Database)=>{
   await db.execute(`
     CREATE TABLE IF NOT EXISTS user (
       id INTEGER PRIMARY KEY,
-      BGM_TOKEN TEXT
+      BGM_TOKEN TEXT,
+      save_root_path TEXT
     );
   `);
 
@@ -209,4 +134,25 @@ const createTable=async(db:Database)=>{
       FOREIGN KEY(game_id) REFERENCES games(id)
     );
   `);
+
+  // 存档备份表 - 记录游戏存档的备份信息
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS savedata (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      game_id INTEGER NOT NULL,
+      file TEXT NOT NULL,
+      backup_time INTEGER NOT NULL,
+      file_size INTEGER NOT NULL,
+      created_at INTEGER DEFAULT (strftime('%s', 'now')),
+      FOREIGN KEY(game_id) REFERENCES games(id)
+    );
+  `);
+
+  // 创建索引
+  await db.execute('CREATE INDEX IF NOT EXISTS idx_games_autosave ON games(autosave);');
+  await db.execute('CREATE INDEX IF NOT EXISTS idx_savedata_game_id ON savedata(game_id);');
+  await db.execute('CREATE INDEX IF NOT EXISTS idx_savedata_backup_time ON savedata(backup_time);');
+  await db.execute('CREATE INDEX IF NOT EXISTS idx_game_sessions_game_id ON game_sessions(game_id);');
+  await db.execute('CREATE INDEX IF NOT EXISTS idx_game_sessions_date ON game_sessions(date);');
+
 }

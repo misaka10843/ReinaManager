@@ -39,6 +39,7 @@
             "expected_hours": "預計時長",
             "playTimeMinutes": "遊戲時長(分鐘)",
             "editPart": "編輯",
+            "backup": "備份",
             "Edit": {
                 "error": "錯誤",
                 "warning": "警告",
@@ -58,6 +59,36 @@
                 "unknownError": "未知錯誤",
                 "mixedFetchError": "Mixed 獲取錯誤",
                 "updatePathFailed": "更新路徑失敗"
+            },
+            "Backup": {
+                "pathRequired": "請先選擇存檔資料夾",
+                "unknownError": "未知錯誤",
+                "saveDataPath": "存檔資料夾路徑",
+                "selectSaveDataFolder": "選擇存檔資料夾",
+                "createBackup": "建立備份",
+                "creating": "正在建立備份...",
+                "backupSuccess": "備份建立成功",
+                "backupFailed": "備份失敗",
+                "deleteSuccess": "備份刪除成功",
+                "deleteFailed": "刪除失敗",
+                "loadBackupsFailed": "載入備份清單失敗",
+                "backupHistory": "備份歷史",
+                "noBackups": "暫無備份記錄",
+                "backupTime": "備份時間",
+                "fileSize": "檔案大小",
+                "confirmDelete": "確定要刪除備份",
+                "confirmDeleteSuffix": "嗎？此操作不可撤銷。",
+                "settings": "備份設定",
+                "autoSave": "自動備份",
+                "savePathSettings": "存檔路徑設定",
+                "updatePath": "更新路徑",
+                "updating": "更新中...",
+                "manualBackup": "手動備份",
+                "pathUpdateSuccess": "存檔路徑更新成功",
+                "pathUpdateFailed": "路徑更新失敗",
+                "autoSaveEnabled": "自動備份已啟用",
+                "autoSaveDisabled": "自動備份已禁用",
+                "autoSaveUpdateFailed": "自動備份設定失敗"
             }
         }
     },
@@ -115,7 +146,12 @@
             "processing": "處理中...",
             "confirmUpdateTitle": "確認更新遊戲資訊",
             "gameName": "遊戲名稱",
-            "noData": "無可用資料"
+            "noData": "無可用資料",
+            "error": "錯誤",
+            "success": "成功",
+            "warning": "警告",
+            "gameNotFound": "未找到遊戲資料",
+            "deleteBackupTitle": "刪除備份"
         },        
         "AddModal": {
             "addGame": "添加遊戲",

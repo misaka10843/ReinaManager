@@ -33,36 +33,36 @@
 
 - Rust
 
-## Todo
 
-- [x] Add exe to Launch games
-- [x] Open the local game folder
-- [x] Home page functions
-- [x] Add VNDB api to search games
-- [x] I18n support
-- [ ] Custom data of games
-- [x] Count the time spent playing
-- [ ] Beautify individual pages
-- [x] Design the detail page
-- [x] Refactor database queries
-- [x] Add mixed api to search games
-- [x] Edit page functions
-- [ ] Auto backup function
-- [ ] Sync games status with Bangumi
+## やることリスト（Todo）
 
+- [x] exeを追加してゲームを起動
+- [x] ローカルゲームフォルダを開く
+- [x] ホームページ機能
+- [x] VNDB APIでゲーム検索
+- [x] 多言語対応（I18n）
+- [ ] ゲームのカスタムデータ
+- [x] プレイ時間の計測
+- [ ] 各ページの美化
+- [x] 詳細ページのデザイン
+- [x] データベースクエリのリファクタリング
+- [x] Mixed APIでゲーム検索
+- [x] 編集ページ機能
+- [x] 自動バックアップ機能
+- [ ] Bangumiとゲームステータスの同期
 
-## Demo Versions
+## デモバージョン
 
-##### Frontend Demo
-- Try the web version: [https://reina.huoshen80.top](https://reina.huoshen80.top)
+##### フロントエンドデモ
+- Web版を試す: [https://reina.huoshen80.top](https://reina.huoshen80.top)
 
-##### Desktop Application Demo
-- Download the latest build from GitHub Actions:
-  1. Go to [Actions page](https://github.com/huoshen80/ReinaManager/actions/workflows/build.yml)
-  2. Click on the most recent successful workflow run
-  3. Scroll down to the "Artifacts" section
-  4. Download the artifact you want
+##### デスクトップアプリデモ
+- 最新ビルドはGitHub Actionsからダウンロードできます：
+  1. [Actionsページ](https://github.com/huoshen80/ReinaManager/actions/workflows/build.yml)へアクセス
+  2. 最新の成功したワークフローをクリック
+  3. "Artifacts"セクションまでスクロール
+  4. 必要なアーティファクトをダウンロード
 
-## License
+## ライセンス
 
-This project is licensed under the [AGPL-3.0 license](https://github.com/huoshen80/ReinaManager#AGPL-3.0-1-ov-file)
+本プロジェクトは [AGPL-3.0 ライセンス](https://github.com/huoshen80/ReinaManager#AGPL-3.0-1-ov-file) の下で公開されています。

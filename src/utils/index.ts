@@ -4,7 +4,7 @@ import {path} from '@tauri-apps/api';
 import type { GameData, HanleGamesProps } from '@/types';
 import i18next, { t } from 'i18next';
 import { open as openDirectory } from '@tauri-apps/plugin-dialog';
-import { updateGameClearStatus } from './repository';
+import { updateGameClearStatus, saveSavedataRecord } from './repository';
 
 // import { createTheme } from '@mui/material/styles';
 
@@ -60,6 +60,26 @@ export async function openurl(url: string) {
         } catch (error) {
             console.error('打开文件夹失败:', error);
         }
+    }
+
+    // 启动游戏并开始监控
+    export async function launchGameWithTracking(
+      gamePath: string, 
+      gameId: number,  
+      args?: string[],
+    ): Promise<{success: boolean; message: string; process_id?: number}> {
+      try {
+        const result = await invoke<{success: boolean; message: string; process_id?: number}>('launch_game', { 
+          gamePath, 
+          gameId,  
+          args: args || [],
+        });
+        
+        return result;
+      } catch (error) {
+        const errorMessage = typeof error === 'string' ? error : 'Unknown error occurred';
+        throw new Error(errorMessage);
+      }
     }
 
 export function getGamePlatformId(game: GameData): string | undefined {
@@ -141,6 +161,19 @@ export  const handleDirectory = async () => {
   return path
 }
 
+export const handleGetFolder = async () => {
+  const path = await openDirectory({
+      multiple: false,
+      directory: true,
+      filters: [{
+          name: "存档文件夹",
+          extensions: ["*"]
+      }]
+  });
+  if (path === null) return null;
+  return path
+}
+
 export const getGameDisplayName = (game: GameData, language?: string): string => {
   const currentLanguage = language || i18next.language;
   
@@ -188,3 +221,159 @@ export const toggleGameClearStatus = async (
     throw error;
   }
 };
+
+// ==================== 备份相关 API 调用 ====================
+
+export interface BackupInfo {
+  folder_name: string;
+  backup_time: number;
+  file_size: number;
+  backup_path: string;
+}
+
+/**
+ * 创建游戏存档备份
+ * @param gameId 游戏ID
+ * @param sourcePath 存档源路径
+ * @param backupRootDir 备份根目录
+ * @returns 备份信息
+ */
+export async function createSavedataBackup(
+  gameId: number,
+  sourcePath: string,
+  backupRootDir: string
+): Promise<BackupInfo> {
+  try {
+    const result = await invoke<BackupInfo>('create_savedata_backup', {
+      gameId,
+      sourcePath,
+      backupRootDir
+    });
+    return result;
+  } catch (error) {
+    console.error('创建备份失败:', error);
+    throw error;
+  }
+}
+
+/**
+ * 删除备份文件
+ * @param backupFilePath 备份文件完整路径
+ */
+export async function deleteSavedataBackup(backupFilePath: string): Promise<void> {
+  try {
+    await invoke('delete_savedata_backup', {
+      backupFilePath
+    });
+  } catch (error) {
+    console.error('删除备份文件失败:', error);
+    throw error;
+  }
+}
+
+/**
+ * 获取应用数据目录路径
+ * @returns 应用数据目录路径
+ */
+export async function getAppDataDir(): Promise<string> {
+  try {
+    const appDataDir = await path.appDataDir();
+    return appDataDir;
+  } catch (error) {
+    console.error('获取应用数据目录失败:', error);
+    throw error;
+  }
+}
+
+/**
+ * 通用的创建游戏存档备份函数
+ * @param gameId 游戏ID
+ * @param saveDataPath 存档路径
+ * @param skipPathCheck 是否跳过路径检查（用于自动备份）
+ * @returns 备份信息
+ */
+export async function createGameSavedataBackup(
+  gameId: number,
+  saveDataPath: string,
+  skipPathCheck = false
+): Promise<{ folder_name: string; backup_time: number; file_size: number }> {
+  if (!skipPathCheck && !saveDataPath) {
+    throw new Error('存档路径不能为空');
+  }
+
+  try {
+    // 获取备份根目录
+    const appDataDir = await getAppDataDir();
+    const backupRootDir = `${appDataDir}/backups`;
+
+    // 创建备份
+    const backupInfo = await createSavedataBackup(
+      gameId,
+      saveDataPath,
+      backupRootDir
+    );
+
+    // 保存备份信息到数据库
+    await saveSavedataRecord(
+      gameId,
+      backupInfo.folder_name,
+      backupInfo.backup_time,
+      backupInfo.file_size
+    );
+
+    return backupInfo;
+  } catch (error) {
+    console.error('创建游戏存档备份失败:', error);
+    throw error;
+  }
+}
+
+/**
+ * 打开游戏备份文件夹
+ * @param gameId 游戏ID
+ */
+export async function openGameBackupFolder(gameId: number): Promise<void> {
+  try {
+    const appDataDir = await getAppDataDir();
+    const backupGameDir = `${appDataDir}/backups/game_${gameId}`;
+    // 使用后端函数打开文件夹
+    await invoke('open_directory', { dirPath: backupGameDir });
+  } catch (error) {
+    console.error('打开备份文件夹失败:', error);
+    throw error;
+  }
+}
+
+/**
+ * 打开游戏存档文件夹
+ * @param saveDataPath 存档路径
+ */
+export async function openGameSaveDataFolder(saveDataPath: string): Promise<void> {
+  if (!saveDataPath) {
+    throw new Error('存档路径不能为空');
+  }
+
+  try {
+    // 使用后端函数打开文件夹
+    await invoke('open_directory', { dirPath: saveDataPath });
+  } catch (error) {
+    console.error('打开存档文件夹失败:', error);
+    throw error;
+  }
+}
+
+/**
+ * 打开数据库备份文件夹
+ */
+export async function openDatabaseBackupFolder(): Promise<void> {
+  try {
+    const appDataDir = await getAppDataDir();
+    const backupDir = `${appDataDir}/data/backups`;
+    // 使用后端函数打开文件夹
+    await invoke('open_directory', { dirPath: backupDir });
+  } catch (error) {
+    console.error('打开数据库备份文件夹失败:', error);
+    throw error;
+  }
+}
+

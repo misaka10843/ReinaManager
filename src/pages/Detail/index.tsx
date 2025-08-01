@@ -26,6 +26,7 @@ import { Typography, Box, Stack, Chip, Tabs, Tab } from '@mui/material';
 import { useLocation } from 'react-router';
 import { InfoBox } from './InfoBox';
 import { Edit } from './Edit';
+import { Backup } from './Backup';
 import { getGameById } from '@/utils/repository';
 
 
@@ -193,6 +194,7 @@ export const Detail: React.FC = () => {
                             <Tab label={t('pages.Detail.gameStats')} id="game-tab-0" aria-controls="game-tabpanel-0" />
                             <Tab label={t('pages.Detail.introduction')} id="game-tab-1" aria-controls="game-tabpanel-1" />
                             <Tab label={t('pages.Detail.editPart')} id="game-tab-2" aria-controls="game-tabpanel-2" />
+                            <Tab label={t('pages.Detail.backup')} id="game-tab-3" aria-controls="game-tabpanel-3" />
                         </Tabs>
                     </Box>
 
@@ -209,6 +211,9 @@ export const Detail: React.FC = () => {
                     </TabPanel>
                     <TabPanel value={tabIndex} index={2}>
                         <Edit />
+                    </TabPanel>
+                    <TabPanel value={tabIndex} index={3}>
+                        <Backup />
                     </TabPanel>
 
                 </Box>

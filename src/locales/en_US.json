@@ -39,6 +39,7 @@
             "expected_hours": "Expected Hours",
             "playTimeMinutes": "Play Time (minutes)",
             "editPart": "Edit",
+            "backup": "Backup",
             "Edit": {
                 "error": "Error",
                 "warning": "Warning",
@@ -58,6 +59,36 @@
                 "unknownError": "Unknown error",
                 "mixedFetchError": "Mixed fetch error",
                 "updatePathFailed": "Failed to update path"
+            },
+            "Backup": {
+                "pathRequired": "Please select a save data folder first",
+                "unknownError": "Unknown error",
+                "saveDataPath": "Save Data Folder Path",
+                "selectSaveDataFolder": "Select Save Data Folder",
+                "createBackup": "Create Backup",
+                "creating": "Creating backup...",
+                "backupSuccess": "Backup created successfully",
+                "backupFailed": "Backup failed",
+                "deleteSuccess": "Backup deleted successfully",
+                "deleteFailed": "Delete failed",
+                "loadBackupsFailed": "Failed to load backup list",
+                "backupHistory": "Backup History",
+                "noBackups": "No backup records",
+                "backupTime": "Backup Time",
+                "fileSize": "File Size",
+                "confirmDelete": "Are you sure you want to delete backup",
+                "confirmDeleteSuffix": "? This action cannot be undone.",
+                "settings": "Backup Settings",
+                "autoSave": "Auto Backup",
+                "savePathSettings": "Save Path Settings",
+                "updatePath": "Update Path",
+                "updating": "Updating...",
+                "manualBackup": "Manual Backup",
+                "pathUpdateSuccess": "Save path updated successfully",
+                "pathUpdateFailed": "Failed to update path",
+                "autoSaveEnabled": "Auto backup enabled",
+                "autoSaveDisabled": "Auto backup disabled",
+                "autoSaveUpdateFailed": "Failed to update auto backup setting"
             }
         }
     },
@@ -115,7 +146,12 @@
             "processing": "Processing...",
             "confirmUpdateTitle": "Confirm Update Game Info",
             "gameName": "Game Name",
-            "noData": "No data available"
+            "noData": "No data available",
+            "error": "Error",
+            "success": "Success",
+            "warning": "Warning",
+            "gameNotFound": "Game data not found",
+            "deleteBackupTitle": "Delete Backup?"
         },        
         "AddModal": {
             "addGame": "Add Game",
