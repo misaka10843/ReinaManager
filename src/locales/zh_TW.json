@@ -18,7 +18,37 @@
             "closeSettings": "關閉設定",
             "skipCloseRemind": "不再提醒",
             "closeToTray": "最小化到系統匣",
-            "closeApp": "直接退出應用"
+            "closeApp": "直接退出應用",
+            "bgmTokenSettings": {
+                "saveSuccess": "BGM Token 儲存成功",
+                "saveError": "BGM Token 儲存失敗",
+                "clearToken": "清除令牌"
+            },
+            "savePath": {
+                "title": "遊戲存檔備份路徑",
+                "pathLabel": "備份根目錄路徑",
+                "pathPlaceholder": "選擇遊戲存檔備份的根目錄",
+                "selectFolder": "選擇目錄",
+                "saving": "儲存中...",
+                "saveSuccess": "備份路徑儲存成功",
+                "saveFailed": "儲存失敗",
+                "saveError": "儲存備份路徑失敗",
+                "selectFolderError": "選擇資料夾失敗",
+                "movingBackups": "正在移動備份資料夾到新位置...",
+                "moveSuccess": "備份路徑儲存成功，備份資料夾已移動到新位置",
+                "moveWarning": "備份路徑已儲存，但移動備份資料夾時出現問題"
+            },
+            "databaseBackup": {
+                "title": "資料庫備份",
+                "backup": "備份資料庫",
+                "backing": "備份中...",
+                "openFolder": "開啟備份資料夾",
+                "backupSuccess": "資料庫備份成功",
+                "backupFailed": "備份失敗",
+                "backupError": "資料庫備份失敗",
+                "openFolderFailed": "開啟資料夾失敗",
+                "openFolderError": "開啟備份資料夾失敗"
+            }
         },
         "Detail": {
             "loading": "加載中...",

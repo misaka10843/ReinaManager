@@ -51,17 +51,20 @@
 - [ ] 与Bangumi同步游戏状态
 
 
-## 演示版本
+## 展示
 
-##### 前端演示
+##### 前端展示
 - 网页版本：[https://reina.huoshen80.top](https://reina.huoshen80.top)
+- 网页版功能尚未完全实现，但您可以查看界面和部分功能。
 
-##### 桌面应用演示
-- 从GitHub Actions下载最新构建：
-  1. 前往 [Actions页面](https://github.com/huoshen80/ReinaManager/actions/workflows/build.yml)
-  2. 点击最近成功的workflow run
-  3. 滚动到"Artifacts"部分
-  4. 下载你需要的
+##### 桌面应用展示
+
+![主页](screenshots/home.png)
+![游戏库](screenshots/library.png)
+![详情页](screenshots/detail.png)
+![设置页](screenshots/setting.png)
+
+更多内容，你可以下载最新的发布版本：[下载](https://github.com/huoshen80/ReinaManager/releases)
 
 ## 许可证
 

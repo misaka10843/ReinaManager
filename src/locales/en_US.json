@@ -18,7 +18,37 @@
         "closeSettings": "Close Settings",
         "skipCloseRemind": "Don't remind again",
         "closeToTray": "Minimize to tray",
-        "closeApp": "Exit application"
+        "closeApp": "Exit application",
+            "bgmTokenSettings": {
+                "saveSuccess": "BGM Token saved successfully",
+                "saveError": "Failed to save BGM Token",
+                "clearToken": "Clear token"
+            },
+            "savePath": {
+                "title": "Game Save Backup Path",
+                "pathLabel": "Backup Root Directory Path",
+                "pathPlaceholder": "Select the root directory for game save backups",
+                "selectFolder": "Select Directory",
+                "saving": "Saving...",
+                "saveSuccess": "Backup path saved successfully",
+                "saveFailed": "Save failed",
+                "saveError": "Failed to save backup path",
+                "selectFolderError": "Failed to select folder",
+                "movingBackups": "Moving backup folder to new location...",
+                "moveSuccess": "Backup path saved successfully, backup folder has been moved to new location",
+                "moveWarning": "Backup path saved, but there was an issue moving the backup folder"
+            },
+            "databaseBackup": {
+                "title": "Database Backup",
+                "backup": "Backup Database",
+                "backing": "Backing up...",
+                "openFolder": "Open Backup Folder",
+                "backupSuccess": "Database backup successful",
+                "backupFailed": "Backup failed",
+                "backupError": "Database backup failed",
+                "openFolderFailed": "Failed to open folder",
+                "openFolderError": "Failed to open backup folder"
+            }
         },
         "Detail": {
             "loading": "Loading...",

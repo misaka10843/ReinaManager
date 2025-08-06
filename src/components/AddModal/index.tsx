@@ -67,7 +67,6 @@ const AddModal: React.FC = () => {
     const [apiSource, setApiSource] = useState<'bgm' | 'vndb' | 'mixed'>('bgm');
     // 保留 ID 搜索状态
     const [isID, setisID] = useState(false);
-
     /**
      * 当路径变化时，自动提取文件夹名作为游戏名。
      */
@@ -218,7 +217,7 @@ const AddModal: React.FC = () => {
                         <RadioGroup className='ml-2' row value={apiSource} onChange={(e) => setApiSource(e.target.value as 'bgm' | 'vndb' | 'mixed')}>
                             <FormControlLabel value="bgm" control={<Radio />} label="Bangumi" />
                             <FormControlLabel value="vndb" control={<Radio />} label="VNDB" />
-                            <FormControlLabel value="mixed" control={<Radio />} label="Mixed" />
+                            <FormControlLabel value="mixed" control={<Radio />} label="Mixed" disabled={!bgmToken} />
                         </RadioGroup>
                         <Switch checked={isID} onChange={() => {
                             setisID(!isID)

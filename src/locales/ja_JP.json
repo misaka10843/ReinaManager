@@ -18,7 +18,37 @@
             "closeSettings": "終了設定",
             "skipCloseRemind": "再度確認しない",
             "closeToTray": "トレイに最小化",
-            "closeApp": "アプリを終了"
+            "closeApp": "アプリを終了",
+            "bgmTokenSettings": {
+                "saveSuccess": "BGM Token の保存が成功しました",
+                "saveError": "BGM Token の保存に失敗しました",
+                "clearToken": "トークンをクリア"
+            },
+            "savePath": {
+                "title": "ゲームセーブバックアップパス",
+                "pathLabel": "バックアップルートディレクトリパス",
+                "pathPlaceholder": "ゲームセーブバックアップのルートディレクトリを選択",
+                "selectFolder": "ディレクトリを選択",
+                "saving": "保存中...",
+                "saveSuccess": "バックアップパスの保存が成功しました",
+                "saveFailed": "保存に失敗しました",
+                "saveError": "バックアップパスの保存に失敗しました",
+                "selectFolderError": "フォルダの選択に失敗しました",
+                "movingBackups": "バックアップフォルダを新しい場所に移動中...",
+                "moveSuccess": "バックアップパスの保存が成功し、バックアップフォルダが新しい場所に移動されました",
+                "moveWarning": "バックアップパスは保存されましたが、バックアップフォルダの移動に問題がありました"
+            },
+            "databaseBackup": {
+                "title": "データベースバックアップ",
+                "backup": "データベースをバックアップ",
+                "backing": "バックアップ中...",
+                "openFolder": "バックアップフォルダを開く",
+                "backupSuccess": "データベースバックアップが成功しました",
+                "backupFailed": "バックアップに失敗しました",
+                "backupError": "データベースバックアップに失敗しました",
+                "openFolderFailed": "フォルダを開くのに失敗しました",
+                "openFolderError": "バックアップフォルダを開くのに失敗しました"
+            }
         },
         "Detail": {
             "loading": "読み込み中...",

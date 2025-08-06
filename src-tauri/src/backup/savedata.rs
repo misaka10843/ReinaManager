@@ -12,7 +12,6 @@ pub struct BackupInfo {
     pub file_size: u64,
     pub backup_path: String,
 }
-
 /// 创建游戏存档备份
 ///
 /// # Arguments
@@ -31,6 +30,7 @@ pub async fn create_savedata_backup(
     backup_root_dir: String,
 ) -> Result<BackupInfo, String> {
     let source_path = Path::new(&source_path);
+    let backup_root = Path::new(&backup_root_dir);
 
     // 验证源路径是否存在
     if !source_path.exists() {
@@ -42,7 +42,6 @@ pub async fn create_savedata_backup(
     }
 
     // 创建游戏专属备份目录
-    let backup_root = Path::new(&backup_root_dir);
     let game_backup_dir = backup_root.join(format!("game_{}", game_id));
 
     fs::create_dir_all(&game_backup_dir).map_err(|e| format!("创建备份目录失败: {}", e))?;
@@ -74,7 +73,8 @@ pub async fn create_savedata_backup(
 /// * `Result<(), String>` - 成功或错误消息
 #[tauri::command]
 pub async fn delete_savedata_backup(backup_file_path: String) -> Result<(), String> {
-    let backup_path = Path::new(&backup_file_path);
+    let normalized_path = backup_file_path.replace('/', "\\");
+    let backup_path = Path::new(&normalized_path);
 
     if !backup_path.exists() {
         return Err("备份文件不存在".to_string());

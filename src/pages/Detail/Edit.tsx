@@ -150,7 +150,6 @@ export const Edit = (): JSX.Element => {
     // 处理修改可执行文件路径
     const handleUpdateLocalPath = async () => {
         if (!localPath || !selectedGame) return;
-        console.log('更新可执行文件路径:', selectedGame);
 
         setIsLoading(true);
         try {

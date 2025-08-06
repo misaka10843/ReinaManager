@@ -55,13 +55,16 @@
 
 ##### フロントエンドデモ
 - Web版を試す: [https://reina.huoshen80.top](https://reina.huoshen80.top)
+- Web版はまだ完全に機能していませんが、UIといくつかの機能を確認できます。
 
 ##### デスクトップアプリデモ
-- 最新ビルドはGitHub Actionsからダウンロードできます：
-  1. [Actionsページ](https://github.com/huoshen80/ReinaManager/actions/workflows/build.yml)へアクセス
-  2. 最新の成功したワークフローをクリック
-  3. "Artifacts"セクションまでスクロール
-  4. 必要なアーティファクトをダウンロード
+
+![ホーム](screenshots/home.png)
+![ライブラリ](screenshots/library.png)
+![詳細](screenshots/detail.png)
+![設定](screenshots/setting.png)
+
+詳細については、最新のリリース版をダウンロードしてください：[ダウンロード](https://github.com/huoshen80/ReinaManager/releases)
 
 ## ライセンス
 

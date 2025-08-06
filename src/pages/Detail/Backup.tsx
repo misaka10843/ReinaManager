@@ -33,6 +33,7 @@ import {
 import type { SavedataRecord } from '@/types';
 import { useTranslation } from 'react-i18next';
 import { StatusAlert, AlertDeleteBox } from '@/components/AlertBox';
+import { getSavePathRepository } from "@/utils/settingsConfig";
 
 /**
  * Backup 组件
@@ -232,7 +233,9 @@ export const Backup = (): JSX.Element => {
         try {
             // 获取备份文件完整路径
             const appDataDir = await getAppDataDir();
-            const backupFilePath = `${appDataDir}/backups/game_${backupToDelete.game_id}/${backupToDelete.file}`;
+            const saveRootPath = await getSavePathRepository();
+            const backupGameDir = (saveRootPath === '') ? `${appDataDir}` : `${saveRootPath}`;
+            const backupFilePath = `${backupGameDir}/backups/game_${backupToDelete.game_id}/${backupToDelete.file}`;
 
             // 删除备份文件
             await deleteSavedataBackup(backupFilePath);
@@ -250,6 +253,7 @@ export const Backup = (): JSX.Element => {
             // 3秒后清除成功消息
             setTimeout(() => setSuccess(null), 3000);
         } catch (error) {
+            await deleteSavedataRecord(backupToDelete.id);
             const errorMessage = error instanceof Error ? error.message : t('pages.Detail.Backup.unknownError', '未知错误');
             setError(`${t('pages.Detail.Backup.deleteFailed', '删除失败')}: ${errorMessage}`);
         } finally {

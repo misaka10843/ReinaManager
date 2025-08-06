@@ -5,6 +5,7 @@ import type { GameData, HanleGamesProps } from '@/types';
 import i18next, { t } from 'i18next';
 import { open as openDirectory } from '@tauri-apps/plugin-dialog';
 import { updateGameClearStatus, saveSavedataRecord } from './repository';
+import {getSavePathRepository} from './settingsConfig';
 
 // import { createTheme } from '@mui/material/styles';
 
@@ -161,10 +162,11 @@ export  const handleDirectory = async () => {
   return path
 }
 
-export const handleGetFolder = async () => {
+export const handleGetFolder = async (defaultPath?: string) => {
   const path = await openDirectory({
       multiple: false,
       directory: true,
+      defaultPath: defaultPath,
       filters: [{
           name: "存档文件夹",
           extensions: ["*"]
@@ -300,12 +302,12 @@ export async function createGameSavedataBackup(
   if (!skipPathCheck && !saveDataPath) {
     throw new Error('存档路径不能为空');
   }
+  const saveRootPath = await getSavePathRepository();
 
   try {
     // 获取备份根目录
     const appDataDir = await getAppDataDir();
-    const backupRootDir = `${appDataDir}/backups`;
-
+    const backupRootDir = (saveRootPath === '') ? `${appDataDir}/backups` : `${saveRootPath}/backups`;
     // 创建备份
     const backupInfo = await createSavedataBackup(
       gameId,
@@ -333,9 +335,10 @@ export async function createGameSavedataBackup(
  * @param gameId 游戏ID
  */
 export async function openGameBackupFolder(gameId: number): Promise<void> {
+  const saveRootPath = await getSavePathRepository();
   try {
     const appDataDir = await getAppDataDir();
-    const backupGameDir = `${appDataDir}/backups/game_${gameId}`;
+    const backupGameDir = (saveRootPath === '') ? `${appDataDir}/backups/game_${gameId}` : `${saveRootPath}/backups/game_${gameId}`;
     // 使用后端函数打开文件夹
     await invoke('open_directory', { dirPath: backupGameDir });
   } catch (error) {
@@ -374,6 +377,41 @@ export async function openDatabaseBackupFolder(): Promise<void> {
   } catch (error) {
     console.error('打开数据库备份文件夹失败:', error);
     throw error;
+  }
+}
+
+/**
+ * 移动备份文件夹到新位置
+ * @param oldPath 旧的备份根路径
+ * @param newPath 新的备份根路径
+ * @returns Promise<{ moved: boolean; message: string }>
+ */
+export async function moveBackupFolder(oldPath: string, newPath: string): Promise<{ moved: boolean; message: string }> {
+  try {
+    // 获取应用数据目录
+    const appDataDir = await getAppDataDir();
+    
+    // 确定旧备份目录和新备份目录路径
+    const oldBackupDir = oldPath ? `${oldPath}/backups` : `${appDataDir}/backups`;
+    const newBackupDir = `${newPath}/backups`;
+
+    // 调用 Rust 后端函数移动文件夹
+    const result = await invoke<{ success: boolean; message: string }>('move_backup_folder', {
+      oldPath: oldBackupDir,
+      newPath: newBackupDir
+    });
+    
+    return {
+      moved: result.success,
+      message: result.message
+    };
+  } catch (error) {
+    console.error('移动备份文件夹失败:', error);
+    const errorMessage = error instanceof Error ? error.message : '移动备份文件夹时发生未知错误';
+    return {
+      moved: false,
+      message: errorMessage
+    };
   }
 }
 

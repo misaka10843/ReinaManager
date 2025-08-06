@@ -50,18 +50,19 @@ The `Reina` in the name is the character <a href="https://vndb.org/c64303"><b>å¦
 - [x] Auto backup function
 - [ ] Sync games status with Bangumi
 
-
-## Demo Versions
-
+## Demo
 ##### Frontend Demo
 - Try the web version: [https://reina.huoshen80.top](https://reina.huoshen80.top)
+- The web version is not fully functional yet, but you can view the UI and some features.
 
-##### Desktop Application Demo
-- Download the latest build from GitHub Actions:
-  1. Go to [Actions page](https://github.com/huoshen80/ReinaManager/actions/workflows/build.yml)
-  2. Click on the most recent successful workflow run
-  3. Scroll down to the "Artifacts" section
-  4. Download the artifact you want
+##### Desktop App Demo
+
+![Home](screenshots/home.png)
+![Library](screenshots/library.png)
+![Detail](screenshots/detail.png)
+![Setting](screenshots/setting.png)
+
+For more, you can download the latest Release Version: [Download](https://github.com/huoshen80/ReinaManager/releases)
 
 ## License
 

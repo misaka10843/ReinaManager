@@ -19,7 +19,7 @@
 
 import { useEffect, useState } from 'react';
 import { useStore } from '@/store';
-import { openurl, openDatabaseBackupFolder } from '@/utils';
+import { openurl, openDatabaseBackupFolder, handleGetFolder, moveBackupFolder } from '@/utils';
 import Box from '@mui/material/Box';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
@@ -31,10 +31,14 @@ import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import { isEnabled } from '@tauri-apps/plugin-autostart';
 import { toggleAutostart } from '@/components/AutoStart';
-import { Switch, FormControlLabel, RadioGroup, Radio, Checkbox, CircularProgress, Alert } from '@mui/material';
+import { Switch, FormControlLabel, RadioGroup, Radio, Checkbox, CircularProgress, IconButton, InputAdornment } from '@mui/material';
 import { backupDatabase } from '@/utils/database';
+import { getSavePathRepository, setSavePathRepository } from '@/utils/settingsConfig';
+import { StatusAlert } from '@/components/AlertBox';
 import BackupIcon from '@mui/icons-material/Backup';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import ClearIcon from '@mui/icons-material/Clear';
+import SaveIcon from '@mui/icons-material/Save';
 import { isTauri } from '@tauri-apps/api/core';
 
 
@@ -93,6 +97,111 @@ const LanguageSelect = () => {
                 <MenuItem value="en-US">English(en-US)</MenuItem>
                 <MenuItem value="ja-JP">日本語(ja-JP)</MenuItem>
             </Select>
+        </Box>
+    );
+}
+
+const BgmTokenSettings = () => {
+    const { t } = useTranslation();
+    const { bgmToken, setBgmToken } = useStore();
+    const [inputToken, setInputToken] = useState('');
+    const [tokenStatus, setTokenStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+
+    useEffect(() => {
+        setInputToken(bgmToken);
+    }, [bgmToken]);
+
+    /**
+     * 打开 Bangumi Token 获取页面
+     */
+    const handleOpen = () => {
+        openurl("https://next.bgm.tv/demo/access-token/create");
+    }
+
+    /**
+     * 保存BGM Token
+     */
+    const handleSaveToken = () => {
+        try {
+            setBgmToken(inputToken);
+            setTokenStatus({
+                type: 'success',
+                message: t('pages.Settings.bgmTokenSettings.saveSuccess', 'BGM Token 保存成功')
+            });
+
+            // 3秒后清除状态消息
+            setTimeout(() => setTokenStatus(null), 3000);
+        } catch (error) {
+            setTokenStatus({
+                type: 'error',
+                message: t('pages.Settings.bgmTokenSettings.saveError', 'BGM Token 保存失败')
+            });
+        }
+    };
+
+    /**
+     * 清除BGM Token输入框
+     */
+    const handleClearToken = () => {
+        setInputToken('');
+        setTokenStatus(null);
+    };
+
+    return (
+        <Box className="mb-8">
+            <InputLabel className="font-semibold mb-4">
+                {t('pages.Settings.bgmToken')}
+            </InputLabel>
+
+            {/* BGM Token 状态提示 */}
+            <StatusAlert
+                success={tokenStatus?.type === 'success' ? tokenStatus.message : null}
+                error={tokenStatus?.type === 'error' ? tokenStatus.message : null}
+                sx={{ mb: 2 }}
+            />
+
+            <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+                <TextField
+                    type="password"
+                    placeholder={t('pages.Settings.tokenPlaceholder')}
+                    value={inputToken}
+                    onChange={(e) => setInputToken(e.target.value)}
+                    variant="outlined"
+                    size="medium"
+                    className="min-w-60"
+                    InputProps={{
+                        endAdornment: inputToken && (
+                            <InputAdornment position="end">
+                                <IconButton
+                                    onClick={handleClearToken}
+                                    edge="end"
+                                    size="small"
+                                    aria-label={t('pages.Settings.bgmTokenSettings.clearToken', '清除令牌')}
+                                >
+                                    <ClearIcon />
+                                </IconButton>
+                            </InputAdornment>
+                        ),
+                    }}
+                />
+                <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleSaveToken}
+                    className="px-6 py-2"
+                    disabled={!inputToken}
+                >
+                    {t('pages.Settings.saveBtn')}
+                </Button>
+                <Button
+                    variant="outlined"
+                    color="primary"
+                    onClick={handleOpen}
+                    className="px-6 py-2"
+                >
+                    {t('pages.Settings.getToken')}
+                </Button>
+            </Stack>
         </Box>
     );
 }
@@ -175,6 +284,7 @@ const CloseBtnSettings = () => {
 }
 
 const DatabaseBackupSettings = () => {
+    const { t } = useTranslation();
     const [isBackingUp, setIsBackingUp] = useState(false);
     const [backupStatus, setBackupStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
@@ -186,16 +296,16 @@ const DatabaseBackupSettings = () => {
             const backupPath = await backupDatabase();
             setBackupStatus({
                 type: 'success',
-                message: `数据库备份成功: ${backupPath}`
+                message: t('pages.Settings.databaseBackup.backupSuccess', `数据库备份成功: ${backupPath}`)
             });
 
             // 3秒后清除状态消息
             setTimeout(() => setBackupStatus(null), 3000);
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : '备份失败';
+            const errorMessage = error instanceof Error ? error.message : t('pages.Settings.databaseBackup.backupFailed', '备份失败');
             setBackupStatus({
                 type: 'error',
-                message: `数据库备份失败: ${errorMessage}`
+                message: t('pages.Settings.databaseBackup.backupError', `数据库备份失败: ${errorMessage}`)
             });
         } finally {
             setIsBackingUp(false);
@@ -206,10 +316,10 @@ const DatabaseBackupSettings = () => {
         try {
             await openDatabaseBackupFolder();
         } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : '打开文件夹失败';
+            const errorMessage = error instanceof Error ? error.message : t('pages.Settings.databaseBackup.openFolderFailed', '打开文件夹失败');
             setBackupStatus({
                 type: 'error',
-                message: `打开备份文件夹失败: ${errorMessage}`
+                message: t('pages.Settings.databaseBackup.openFolderError', `打开备份文件夹失败: ${errorMessage}`)
             });
         }
     };
@@ -217,19 +327,15 @@ const DatabaseBackupSettings = () => {
     return (
         <Box className="mb-6">
             <InputLabel className="font-semibold mb-4">
-                数据库备份
+                {t('pages.Settings.databaseBackup.title', '数据库备份')}
             </InputLabel>
 
             {/* 状态提示 */}
-            {backupStatus && (
-                <Alert
-                    severity={backupStatus.type}
-                    className="mb-4"
-                    onClose={() => setBackupStatus(null)}
-                >
-                    {backupStatus.message}
-                </Alert>
-            )}
+            <StatusAlert
+                success={backupStatus?.type === 'success' ? backupStatus.message : null}
+                error={backupStatus?.type === 'error' ? backupStatus.message : null}
+                sx={{ mb: 2 }}
+            />
 
             <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
                 <Button
@@ -240,7 +346,7 @@ const DatabaseBackupSettings = () => {
                     startIcon={isBackingUp ? <CircularProgress size={16} color="inherit" /> : <BackupIcon />}
                     className="px-6 py-2"
                 >
-                    {isBackingUp ? '备份中...' : '备份数据库'}
+                    {isBackingUp ? t('pages.Settings.databaseBackup.backing', '备份中...') : t('pages.Settings.databaseBackup.backup', '备份数据库')}
                 </Button>
 
                 <Button
@@ -251,14 +357,146 @@ const DatabaseBackupSettings = () => {
                     className="px-6 py-2"
                     disabled={!isTauri()}
                 >
-                    打开备份文件夹
+                    {t('pages.Settings.databaseBackup.openFolder', '打开备份文件夹')}
                 </Button>
             </Stack>
         </Box>
     );
 }
 
+const SavePathSettings = () => {
+    const { t } = useTranslation();
+    const [savePath, setSavePath] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [saveStatus, setSaveStatus] = useState<{ type: 'success' | 'error' | 'warning', message: string } | null>(null);
+    const [originalPath, setOriginalPath] = useState(''); // 存储原始路径
 
+    // 加载当前设置的备份路径
+    useEffect(() => {
+        const loadSavePath = async () => {
+            try {
+                const currentPath = await getSavePathRepository();
+                setSavePath(currentPath);
+                setOriginalPath(currentPath); // 保存原始路径
+            } catch (error) {
+                console.error('加载备份路径失败:', error);
+            }
+        };
+        loadSavePath();
+    }, []);
+
+    const handleSelectFolder = async () => {
+        try {
+            const selectedPath = await handleGetFolder();
+            if (selectedPath) {
+                setSavePath(selectedPath);
+            }
+        } catch (error) {
+            setSaveStatus({
+                type: 'error',
+                message: t('pages.Settings.savePath.selectFolderError', '选择文件夹失败')
+            });
+        }
+    };
+
+    const handleSavePath = async () => {
+        setIsLoading(true);
+        setSaveStatus(null);
+
+        try {
+            // 首先保存新路径到数据库
+            await setSavePathRepository(savePath);
+
+            // 如果路径发生了变化，需要移动备份文件夹
+            if (originalPath !== savePath || originalPath !== '') {
+                setSaveStatus({
+                    type: 'warning',
+                    message: t('pages.Settings.savePath.movingBackups', '正在移动备份文件夹到新位置...')
+                });
+
+                const moveResult = await moveBackupFolder(originalPath, savePath);
+
+                if (moveResult.moved) {
+                    setSaveStatus({
+                        type: 'success',
+                        message: t('pages.Settings.savePath.moveSuccess', '备份路径保存成功，备份文件夹已移动到新位置')
+                    });
+                    setOriginalPath(savePath); // 更新原始路径
+                } else {
+                    setSaveStatus({
+                        type: 'warning',
+                        message: t('pages.Settings.savePath.moveWarning', `备份路径已保存，但移动备份文件夹时出现问题: ${moveResult.message}`)
+                    });
+                }
+            } else {
+                setSaveStatus({
+                    type: 'success',
+                    message: t('pages.Settings.savePath.saveSuccess', '备份路径保存成功')
+                });
+            }
+
+            // 5秒后清除状态消息
+            setTimeout(() => setSaveStatus(null), 5000);
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : t('pages.Settings.savePath.saveFailed', '保存失败');
+            setSaveStatus({
+                type: 'error',
+                message: t('pages.Settings.savePath.saveError', `保存备份路径失败: ${errorMessage}`)
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <Box className="mb-6">
+            <InputLabel className="font-semibold mb-4">
+                {t('pages.Settings.savePath.title', '游戏存档备份路径')}
+            </InputLabel>
+
+            {/* 状态提示 */}
+            <StatusAlert
+                success={saveStatus?.type === 'success' ? saveStatus.message : null}
+                error={saveStatus?.type === 'error' ? saveStatus.message : null}
+                warning={saveStatus?.type === 'warning' ? saveStatus.message : null}
+                sx={{ mb: 2 }}
+            />
+
+            <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+                <TextField
+                    label={t('pages.Settings.savePath.pathLabel', '备份根目录路径')}
+                    variant="outlined"
+                    value={savePath}
+                    onChange={(e) => setSavePath(e.target.value)}
+                    className="min-w-60 flex-grow"
+                    placeholder={t('pages.Settings.savePath.pathPlaceholder', '选择游戏存档备份的根目录')}
+                    disabled={isLoading}
+                />
+
+                <Button
+                    variant="outlined"
+                    onClick={handleSelectFolder}
+                    disabled={isLoading || !isTauri()}
+                    startIcon={<FolderOpenIcon />}
+                    className="px-4 py-2"
+                >
+                    {t('pages.Settings.savePath.selectFolder', '选择目录')}
+                </Button>
+
+                <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleSavePath}
+                    disabled={isLoading || !savePath.trim()}
+                    startIcon={isLoading ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
+                    className="px-6 py-2"
+                >
+                    {isLoading ? t('pages.Settings.savePath.saving', '保存中...') : t('pages.Settings.saveBtn')}
+                </Button>
+            </Stack>
+        </Box>
+    );
+}
 /**
  * Settings 组件
  * 应用设置页面，支持 Bangumi Token 设置与保存、获取 Token 链接、语言切换等功能。
@@ -267,56 +505,11 @@ const DatabaseBackupSettings = () => {
  * @returns {JSX.Element} 设置页面
  */
 export const Settings: React.FC = () => {
-    const { t } = useTranslation();
-    const { bgmToken, setBgmToken } = useStore();
-    const [inputToken, setInputToken] = useState('');
-
-    useEffect(() => {
-        setInputToken(bgmToken);
-    }, [bgmToken]);
-
-    /**
-     * 打开 Bangumi Token 获取页面
-     */
-    const handleOpen = () => {
-        openurl("https://next.bgm.tv/demo/access-token/create");
-    }
     return (
         <PageContainer className="max-w-full">
             <Box className="py-4">
                 {/* BGM Token 设置 */}
-                <Box className="mb-8">
-                    <InputLabel className="font-semibold mb-4">
-                        {t('pages.Settings.bgmToken')}
-                    </InputLabel>
-                    <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
-                        <TextField
-                            type="password"
-                            placeholder={t('pages.Settings.tokenPlaceholder')}
-                            value={inputToken}
-                            onChange={(e) => setInputToken(e.target.value)}
-                            variant="outlined"
-                            size="medium"
-                            className="min-w-60"
-                        />
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={() => setBgmToken(inputToken)}
-                            className="px-6 py-2"
-                        >
-                            {t('pages.Settings.saveBtn')}
-                        </Button>
-                        <Button
-                            variant="outlined"
-                            color="primary"
-                            onClick={handleOpen}
-                            className="px-6 py-2"
-                        >
-                            {t('pages.Settings.getToken')}
-                        </Button>
-                    </Stack>
-                </Box>
+                <BgmTokenSettings />
 
                 {/* 语言设置 */}
                 <LanguageSelect />
@@ -326,6 +519,9 @@ export const Settings: React.FC = () => {
 
                 {/* 关闭按钮设置 */}
                 <CloseBtnSettings />
+
+                {/* 备份路径设置 */}
+                <SavePathSettings />
 
                 {/* 数据库备份设置 */}
                 <DatabaseBackupSettings />
