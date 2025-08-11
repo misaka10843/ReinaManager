@@ -196,7 +196,6 @@
             "cancel": "取消",
             "processing": "處理中...",
             "confirm": "確認",
-            "executable": "可執行文件",
             "idSearch": "啟用ID搜尋模式"
         },
         "FilterModal": {
@@ -255,6 +254,10 @@
             "minutes": "{{count}}分鐘",
             "hours": "{{count}}小時",
             "hoursAndMinutes": "{{hours}}小時{{minutes}}分鐘"
+        },
+        "handleDirectory":{
+            "executable": "可執行檔",
+            "allFiles": "所有檔案"
         }
     }
 }

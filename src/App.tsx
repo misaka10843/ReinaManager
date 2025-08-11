@@ -18,13 +18,11 @@
 import './App.css'
 import '@/utils/i18n';
 import { Outlet } from "react-router";
-import type { Navigation } from '@toolpad/core';
+import type { Navigation } from '@toolpad/core/AppProvider';
 import { ReactRouterAppProvider } from '@toolpad/core/react-router'
 import HomeIcon from '@mui/icons-material/Home';
 import GamesIcon from '@mui/icons-material/Games';
 import SettingsIcon from '@mui/icons-material/Settings';
-import { useStore } from './store';
-import { getGameDisplayName } from '@/utils';
 import { useTranslation } from 'react-i18next';
 import { AliveScope } from 'react-activation';
 import WindowCloseHandler from '@/components/Window';
@@ -38,17 +36,7 @@ import { isTauri } from '@tauri-apps/api/core';
  * @returns {JSX.Element} 应用主容器
  */
 const App: React.FC = () => {
-  const { t, i18n } = useTranslation();
-  const { allGames } = useStore();
-  // 动态生成游戏库子菜单
-  const lists = allGames.map((game) => {
-    const title = getGameDisplayName(game, i18n.language);
-
-    return {
-      title,
-      segment: String(game.id)
-    }
-  })
+  const { t } = useTranslation();
   // 全局导航配置
   const NAVIGATION: Navigation = [
     {
@@ -63,9 +51,7 @@ const App: React.FC = () => {
       segment: 'libraries',
       title: t('app.NAVIGATION.gameLibrary'),
       icon: <GamesIcon />,
-      children: [
-        ...lists,
-      ]
+      pattern: 'libraries/:id'
     },
     {
       segment: 'settings',

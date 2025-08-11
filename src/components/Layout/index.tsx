@@ -29,7 +29,7 @@ import {
 } from '@toolpad/core/DashboardLayout';
 import { Toolbars } from '@/components/Toolbar';
 import { SearchBox } from '@/components/SearchBox';
-import { PageContainer } from '@toolpad/core';
+import { PageContainer } from '@toolpad/core/PageContainer';
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 

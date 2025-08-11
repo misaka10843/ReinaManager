@@ -196,7 +196,6 @@
             "cancel": "キャンセル",
             "processing": "処理中...",
             "confirm": "確認",
-            "executable": "実行ファイル",
             "idSearch": "ID検索モードを有効化"
         },
         "FilterModal": {
@@ -255,6 +254,10 @@
             "minutes": "{{count}}分",
             "hours": "{{count}}時間",
             "hoursAndMinutes": "{{hours}}時間{{minutes}}分"
+        },
+        "handleDirectory":{
+            "executable": "実行ファイル",
+            "allFiles": "すべてのファイル"
         }
     }
 }

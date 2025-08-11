@@ -25,7 +25,6 @@ import {
     Box,
     Card,
     CardContent,
-    Grid,
     Typography,
     Avatar,
     List,
@@ -182,8 +181,8 @@ async function getGameActivities(games: GameData[], language: string): Promise<{
     });
 
     return {
-        sessions: sessions.slice(0, 4),
-        added: added.slice(0, 4),
+        sessions: sessions.slice(0, 5),
+        added: added.slice(0, 5),
         activities: allActivities.slice(0, 10)
     };
 }
@@ -246,9 +245,9 @@ export const Home: React.FC = () => {
             </Typography>
 
             {/* 数据统计卡片 */}
-            <Grid container spacing={3}>
+            <Box className="grid grid-cols-12 gap-6">
                 {statsCards.map((card) => (
-                    <Grid item xs={12} sm={6} md={4} lg={2} key={card.title}>
+                    <Box key={card.title} className="col-span-12 sm:col-span-6 md:col-span-4 lg:col-span-2">
                         <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
                             <CardContent className="flex flex-col items-center text-center">
                                 {card.icon}
@@ -260,14 +259,14 @@ export const Home: React.FC = () => {
                                 </Typography>
                             </CardContent>
                         </Card>
-                    </Grid>
+                    </Box>
                 ))}
-            </Grid>
+            </Box>
 
             {/* 详细信息卡片 */}
-            <Grid container spacing={3}>
+            <Box className="grid grid-cols-12 gap-6">
                 {/* 游戏仓库 */}
-                <Grid item xs={12} md={6} lg={3}>
+                <Box className="col-span-12 md:col-span-6 lg:col-span-3">
                     <Card className="h-full shadow-md">
                         <CardContent>
                             <Box
@@ -302,10 +301,10 @@ export const Home: React.FC = () => {
                             </Box>
                         </CardContent>
                     </Card>
-                </Grid>
+                </Box>
 
                 {/* 动态 */}
-                <Grid item xs={12} md={6} lg={3}>
+                <Box className="col-span-12 md:col-span-6 lg:col-span-3">
                     <Card className="h-full shadow-md">
                         <CardContent>
                             <Box className="flex items-center mb-3">
@@ -348,10 +347,10 @@ export const Home: React.FC = () => {
                             </List>
                         </CardContent>
                     </Card>
-                </Grid>
+                </Box>
 
                 {/* 最近游玩 */}
-                <Grid item xs={12} md={6} lg={3}>
+                <Box className="col-span-12 md:col-span-6 lg:col-span-3">
                     <Card className="h-full shadow-md">
                         <CardContent>
                             <Box className="flex items-center mb-3">
@@ -378,10 +377,10 @@ export const Home: React.FC = () => {
                             </List>
                         </CardContent>
                     </Card>
-                </Grid>
+                </Box>
 
                 {/* 最近添加 */}
-                <Grid item xs={12} md={6} lg={3}>
+                <Box className="col-span-12 md:col-span-6 lg:col-span-3">
                     <Card className="h-full shadow-md">
                         <CardContent>
                             <Box className="flex items-center mb-3">
@@ -408,8 +407,8 @@ export const Home: React.FC = () => {
                             </List>
                         </CardContent>
                     </Card>
-                </Grid>
-            </Grid>
+                </Box>
+            </Box>
         </Box>
     );
 };

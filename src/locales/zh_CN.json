@@ -196,7 +196,6 @@
             "cancel": "取消",
             "processing": "处理中...",
             "confirm": "确认",
-            "executable": "可执行文件",
             "idSearch": "启用ID搜索模式"
         },
         "FilterModal": {
@@ -255,6 +254,10 @@
             "minutes": "{{count}}分钟",
             "hours": "{{count}}小时",
             "hoursAndMinutes": "{{hours}}小时{{minutes}}分钟"
+        },
+        "handleDirectory":{
+            "executable": "可执行文件",
+            "allFiles": "所有文件"
         }
     }
 }

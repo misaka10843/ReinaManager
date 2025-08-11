@@ -154,9 +154,14 @@ export  const handleDirectory = async () => {
       multiple: false,
       directory: false,
       filters: [{
-          name: t('components.AddModal.executable'),
-          extensions: ["exe"]
-      }]
+          name: t('utils.handleDirectory.executable'),
+          extensions: ["exe","bat","cmd"]
+      },
+      {
+          name: t('utils.handleDirectory.allFiles'),
+          extensions: ["*"]
+      }
+    ]
   });
   if (path === null) return null;
   return path

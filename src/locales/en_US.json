@@ -196,7 +196,6 @@
             "cancel": "Cancel",
             "processing": "Processing...",
             "confirm": "Confirm",
-            "executable": "Executable File",
             "idSearch": "Enable ID Search Mode"
         },
         "FilterModal": {
@@ -255,6 +254,10 @@
             "minutes": "{{count}} minutes",
             "hours": "{{count}} hours",
             "hoursAndMinutes": "{{hours}}h {{minutes}}min"
+        },
+        "handleDirectory":{
+            "executable": "Executable File",
+            "allFiles": "All Files"
         }
     }
 }

@@ -19,8 +19,9 @@
  */
 
 import { useStore } from '@/store';
-import { PageContainer } from '@toolpad/core';
-import { useEffect, useState } from 'react';
+import { PageContainer } from '@toolpad/core/PageContainer';
+import { useActivePage } from '@toolpad/core/useActivePage';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Typography, Box, Stack, Chip, Tabs, Tab } from '@mui/material';
 import { useLocation } from 'react-router';
@@ -28,6 +29,8 @@ import { InfoBox } from './InfoBox';
 import { Edit } from './Edit';
 import { Backup } from './Backup';
 import { getGameById } from '@/utils/repository';
+import i18n from '@/utils/i18n';
+import { getGameDisplayName } from '@/utils';
 
 
 // Tab面板组件
@@ -77,6 +80,19 @@ export const Detail: React.FC = () => {
         setTabIndex(newValue);
     };
 
+    const activePage = useActivePage();
+    const location = useLocation();
+    const title = selectedGame ? getGameDisplayName(selectedGame, i18n.language) : String(id);
+    const breadcrumbs = useMemo(() => {
+        const base = activePage?.breadcrumbs ?? [];
+        // 使用当前路径，避免手动拼接出重复斜杠或错误段
+        const path = location.pathname;
+        // 仅在标题存在时追加末级面包屑
+        return title
+            ? [...base, { title, path }]
+            : base;
+    }, [activePage?.breadcrumbs, location.pathname, title]);
+
     // 加载游戏数据
     useEffect(() => {
         setIsLoading(true); // 开始加载时设置加载状态为true
@@ -113,7 +129,7 @@ export const Detail: React.FC = () => {
     }
 
     return (
-        <PageContainer sx={{ maxWidth: '100% !important' }}>
+        <PageContainer title={title} breadcrumbs={breadcrumbs} sx={{ maxWidth: '100% !important' }}>
             <Box className="p-2">
                 {/* 顶部区域：图片和基本信息 */}
                 <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
