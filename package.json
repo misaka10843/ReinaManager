@@ -1,7 +1,7 @@
 {
   "name": "reinamanager",
   "private": true,
-  "version": "0.6.2",
+  "version": "0.6.3",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -19,6 +19,7 @@
     "@tauri-apps/plugin-autostart": "~2.5.0",
     "@tauri-apps/plugin-dialog": "~2.3.1",
     "@tauri-apps/plugin-fs": "~2.4.1",
+    "@tauri-apps/plugin-http": "^2.5.1",
     "@tauri-apps/plugin-shell": "~2.3.0",
     "@tauri-apps/plugin-sql": "~2.3.0",
     "@toolpad/core": "^0.16.0",

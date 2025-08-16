@@ -29,6 +29,8 @@
     "core:window:allow-close",
     "core:window:allow-hide",
     "core:window:allow-destroy",
+    "http:allow-fetch",
+    "http:default",
     {
       "identifier": "fs:scope",
       "allow": [
@@ -39,6 +41,10 @@
           "path": "$APPDATA/**"
         }
       ]
+    },
+    {
+      "identifier": "http:default",
+      "allow": [{ "url": "https://api.bgm.tv" }]
     }
   ]
 }

@@ -24,6 +24,7 @@ pub fn run() {
         ))
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_http::init())
         .plugin(
             tauri_plugin_sql::Builder::new()
                 .add_migrations("sqlite:data/reina_manager.db", get_migrations())
