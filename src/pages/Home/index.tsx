@@ -181,8 +181,8 @@ async function getGameActivities(games: GameData[], language: string): Promise<{
     });
 
     return {
-        sessions: sessions.slice(0, 5),
-        added: added.slice(0, 5),
+        sessions: sessions.slice(0, 6),
+        added: added.slice(0, 6),
         activities: allActivities.slice(0, 10)
     };
 }

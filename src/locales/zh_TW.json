@@ -1,4 +1,27 @@
 {
+    "api": {
+        "bgm": {
+            "notFound": "未找到BGM數據"
+        },
+        "vndb": {
+            "notFound": "未找到VNDB數據",
+            "fetchFailed": "獲取數據失敗，請稍後重試",
+            "apiCallFailed": "VNDB API 調用失敗"
+        },
+        "http": {
+            "notFound": "HTTP請求失敗",
+            "authFailed": "認證失敗，請檢查你的BGM_TOKEN是否正確",
+            "networkError": "請求錯誤，請檢查你的網絡連接",
+            "requestError": "請求錯誤"
+        },
+        "mixed": {
+            "fetchError": "獲取數據失敗",
+            "noDataSource": "無法從任何數據源獲取遊戲信息",
+            "bgmFetchFailed": "Bangumi 數據獲取失敗",
+            "vndbFetchFailed": "VNDB 數據獲取失敗",
+            "noDataForMerge": "沒有可用的數據進行合併"
+        }
+    },
     "app": {
         "NAVIGATION": {
             "menu": "選單",
@@ -118,7 +141,9 @@
                 "pathUpdateFailed": "路徑更新失敗",
                 "autoSaveEnabled": "自動備份已啟用",
                 "autoSaveDisabled": "自動備份已禁用",
-                "autoSaveUpdateFailed": "自動備份設定失敗"
+                "autoSaveUpdateFailed": "自動備份設定失敗",
+                "openBackupFolder": "開啟備份資料夾",
+                "openSaveDataFolder": "開啟存檔資料夾"
             }
         }
     },

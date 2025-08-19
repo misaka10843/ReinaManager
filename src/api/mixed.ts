@@ -21,6 +21,7 @@
 import { fetchFromBgm } from "./bgm";
 import { fetchFromVNDB } from "./vndb";
 import type { GameData } from "../types";
+import i18n from '@/utils/i18n';
 
 const fetchMixedData = async (
   name: string, 
@@ -63,7 +64,7 @@ const fetchMixedData = async (
     
     // 确保至少有一个数据源成功
     if (!BGMdata && !VNDBdata) {
-      throw new Error("无法从任何数据源获取游戏信息");
+      throw new Error(i18n.t('api.mixed.noDataSource', '无法从任何数据源获取游戏信息'));
     }
     
     // 合并数据
@@ -71,7 +72,7 @@ const fetchMixedData = async (
     
   } catch (error) {
     console.error("Mixed API 调用失败:", error instanceof Error ? error.message : error);
-    return "获取数据失败，请稍后重试";
+    return i18n.t('api.mixed.fetchError', '获取数据失败，请稍后重试');
   }
 };
 
@@ -80,7 +81,7 @@ async function getBangumiData(name: string, BGM_TOKEN: string, bgm_id?: string):
   const BGMdata = await fetchFromBgm(name, BGM_TOKEN, bgm_id);
   
   if (!BGMdata || typeof BGMdata === "string") {
-    throw new Error(`Bangumi 数据获取失败: ${BGMdata}`);
+    throw new Error(`${i18n.t('api.mixed.bgmFetchFailed', 'Bangumi 数据获取失败')}: ${BGMdata}`);
   }
   
   return BGMdata;
@@ -100,7 +101,7 @@ async function getVNDBData(searchName: string, vndb_id?: string): Promise<GameDa
   const VNDBdata = await fetchFromVNDB(searchName, vndb_id);
   
   if (!VNDBdata || typeof VNDBdata === "string") {
-    throw new Error(`VNDB 数据获取失败: ${VNDBdata}`);
+    throw new Error(`${i18n.t('api.mixed.vndbFetchFailed', 'VNDB 数据获取失败')}: ${VNDBdata}`);
   }
   
   return VNDBdata;
@@ -121,7 +122,7 @@ function mergeData(BGMdata: GameData | null, VNDBdata: GameData | null): GameDat
   if (!BGMdata && VNDBdata) return VNDBdata;
   if (BGMdata && !VNDBdata) return BGMdata;
   if (!BGMdata && !VNDBdata) {
-    throw new Error("没有可用的数据进行合并");
+    throw new Error(i18n.t('api.mixed.noDataForMerge', '没有可用的数据进行合并'));
   }
   
   // 两个数据源都有，进行合并（BGM 数据优先）

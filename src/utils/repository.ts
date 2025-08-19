@@ -329,6 +329,20 @@ export async function saveSavedataRecord(
 }
 
 /**
+ * 获取指定游戏的备份数量
+ * @param gameId 游戏ID
+ * @returns 备份数量
+ */
+export async function getSavedataCount(gameId: number): Promise<number> {
+  const db = await getDb();
+  const result = await db.select<{ count: number }[]>(
+    "SELECT COUNT(*) as count FROM savedata WHERE game_id = ?",
+    [gameId]
+  );
+  return result[0]?.count || 0;
+}
+
+/**
  * 获取指定游戏的所有备份记录
  * @param gameId 游戏ID
  * @returns 备份记录列表

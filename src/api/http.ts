@@ -17,6 +17,7 @@
 
 import axios, { type AxiosError } from 'axios';
 import { fetch as tauriFetch } from '@tauri-apps/plugin-http';
+import i18n from '@/utils/i18n';
 
 /**
  * 创建一个带有响应拦截器的 Axios 实例。
@@ -40,14 +41,14 @@ export const createHttp = ()=> {
        (error: AxiosError) => {
             if (error.response?.status === 401) {
                 // 抛出自定义错误对象
-                return Promise.reject(new Error("认证失败，请检查你的BGM_TOKEN是否正确"));
+                return Promise.reject(new Error(i18n.t('api.http.authFailed', '认证失败，请检查你的BGM_TOKEN是否正确')));
             }
             if (error.response?.status === 400) {
                 // 抛出自定义错误对象
-                return Promise.reject(new Error("未找到相关条目,请确认ID或游戏名字后重试"));
+                return Promise.reject(new Error(i18n.t('api.http.notFound', '未找到相关条目,请确认ID或游戏名字后重试')));
             }
             // 其他错误
-            return Promise.reject(new Error("请求错误，请检查你的网络连接"));
+            return Promise.reject(new Error(i18n.t('api.http.networkError', '请求错误，请检查你的网络连接')));
         }
     );
 
@@ -124,16 +125,16 @@ export const tauriHttp = {
  * @param error 错误对象
  */
 function handleTauriHttpError(error: unknown): never {
-    const errorMessage = error instanceof Error ? error.message : '请求错误';
+    const errorMessage = error instanceof Error ? error.message : i18n.t('api.http.requestError', '请求错误');
     
     if (errorMessage.includes('401')) {
-        throw new Error("认证失败，请检查你的BGM_TOKEN是否正确");
+        throw new Error(i18n.t('api.http.authFailed', '认证失败，请检查你的BGM_TOKEN是否正确'));
     }
     if (errorMessage.includes('400')) {
-        throw new Error("未找到相关条目,请确认ID或游戏名字后重试");
+        throw new Error(i18n.t('api.http.notFound', '未找到相关条目,请确认ID或游戏名字后重试'));
     }
     console.error('Tauri HTTP 请求失败:', error);
-    throw new Error("请求错误，请检查你的网络连接");
+    throw new Error(i18n.t('api.http.networkError', '请求错误，请检查你的网络连接'));
 }
 
 /**

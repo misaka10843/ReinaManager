@@ -189,7 +189,6 @@ const BgmTokenSettings = () => {
                     color="primary"
                     onClick={handleSaveToken}
                     className="px-6 py-2"
-                    disabled={!inputToken}
                 >
                     {t('pages.Settings.saveBtn')}
                 </Button>

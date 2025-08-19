@@ -8,6 +8,7 @@ import type { GameTimeStats } from '@/types';
 import { LineChart } from '@mui/x-charts/LineChart';
 import { useGamePlayStore } from '@/store/gamePlayStore';
 import { useTranslation } from 'react-i18next';
+import { getSavedataCount } from '@/utils/repository';
 
 
 /**
@@ -37,6 +38,7 @@ export const InfoBox: React.FC<InfoBoxProps> = ({ gameID }: InfoBoxProps): JSX.E
     const { t } = useTranslation();
     const { loadGameStats, runningGameIds } = useGamePlayStore();
     const [stats, setStats] = useState<GameTimeStats | null>(null);
+    const [backupCount, setBackupCount] = useState<number>(0);
 
     // 存储上一次游戏运行状态，用于检测变化
     const prevRunningRef = useRef(false);
@@ -47,6 +49,7 @@ export const InfoBox: React.FC<InfoBoxProps> = ({ gameID }: InfoBoxProps): JSX.E
     const fetchStats = useCallback(async () => {
         try {
             const gameStats = await loadGameStats(gameID, true); // 强制刷新
+            setBackupCount(await getSavedataCount(gameID));
             setStats(gameStats);
         } catch (error) {
             console.error('加载游戏统计失败:', error);
@@ -104,10 +107,10 @@ export const InfoBox: React.FC<InfoBoxProps> = ({ gameID }: InfoBoxProps): JSX.E
                 color: 'primary',
                 icon: <BackupIcon fontSize="small" />,
                 title: t('pages.Detail.backupCount'),
-                value: '0' // 备份功能暂未实现，保留原值
+                value: backupCount
             }
         ],
-        [stats, t]
+        [stats, t, backupCount]
     )
 
     /**
@@ -142,7 +145,7 @@ export const InfoBox: React.FC<InfoBoxProps> = ({ gameID }: InfoBoxProps): JSX.E
         <>
             {/* 统计信息卡片 */}
             <Box className="mb-4">
-                <Typography variant="h6" fontWeight="bold" gutterBottom>
+                <Typography variant="h6" fontWeight="bold" gutterBottom component="div">
                     {t('pages.Detail.gameStats')}
                 </Typography>
                 <div className="grid grid-cols-4 gap-4">
@@ -165,11 +168,12 @@ export const InfoBox: React.FC<InfoBoxProps> = ({ gameID }: InfoBoxProps): JSX.E
                                     variant="body2"
                                     className="font-medium text-gray-600 truncate"
                                     title={item.title}
+                                    component="span"
                                 >
                                     {item.title}
                                 </Typography>
                             </div>
-                            <Typography variant="h6" className="font-bold">
+                            <Typography variant="h6" className="font-bold" component="div">
                                 {item.value}
                             </Typography>
                         </Paper>
@@ -194,6 +198,7 @@ export const InfoBox: React.FC<InfoBoxProps> = ({ gameID }: InfoBoxProps): JSX.E
                     }]}
                     series={[{ dataKey: 'playtime', color: '#1976d2' }]}
                     height={300}
+                    margin={{ right: 40 }}
                     grid={{ vertical: true, horizontal: true }}
                 />
             }

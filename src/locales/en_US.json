@@ -7,6 +7,29 @@
             "settings": "Settings"
         }
     },
+    "api": {
+        "bgm": {
+            "notFound": "No related entries found, please check the game name and try again, or BGM_TOKEN is not set"
+        },
+        "vndb": {
+            "notFound": "No related entries found, please check the ID or game name and try again",
+            "fetchFailed": "Failed to fetch data, please try again later",
+            "apiCallFailed": "VNDB API call failed"
+        },
+        "http": {
+            "notFound": "No related entries found, please check the ID or game name and try again",
+            "authFailed": "Authentication failed, please check your BGM_TOKEN",
+            "networkError": "Request error, please check your network connection",
+            "requestError": "Request error"
+        },
+        "mixed": {
+            "fetchError": "Failed to fetch data",
+            "noDataSource": "Unable to get game information from any data source",
+            "bgmFetchFailed": "Failed to fetch Bangumi data",
+            "vndbFetchFailed": "Failed to fetch VNDB data",
+            "noDataForMerge": "No available data for merging"
+        }
+    },
     "pages": {
         "Settings": {
             "language": "Language",
@@ -118,7 +141,9 @@
                 "pathUpdateFailed": "Failed to update path",
                 "autoSaveEnabled": "Auto backup enabled",
                 "autoSaveDisabled": "Auto backup disabled",
-                "autoSaveUpdateFailed": "Failed to update auto backup setting"
+                "autoSaveUpdateFailed": "Failed to update auto backup setting",
+                "openBackupFolder": "Open Backup Folder",
+                "openSaveDataFolder": "Open Save Data Folder"
             }
         }
     },

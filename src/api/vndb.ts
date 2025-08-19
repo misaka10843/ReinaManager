@@ -14,6 +14,8 @@
  * - time_now: 获取当前时间的工具函数
  */
 
+
+import i18n from '@/utils/i18n'
 import http from './http'
 
 /**
@@ -50,7 +52,7 @@ export async function fetchFromVNDB(name: string, id?: string) {
         'Content-Type': 'application/json'
       }
     })).data.results[0];
-    if(!VNDBdata) return "未找到相关条目，请确认ID或游戏名字后重试";
+    if(!VNDBdata) return i18n.t('api.vndb.notFound', '未找到相关条目，请确认ID或游戏名字后重试');
     
     // 处理标题信息
     const titles = VNDBdata.titles.map((title:VNDB_title) => ({
@@ -89,11 +91,11 @@ export async function fetchFromVNDB(name: string, id?: string) {
       aveage_hours: Number((VNDBdata.length_minutes / 60).toFixed(1)),
     };
   } catch (error) {
-       Promise.reject(new Error("VNDB API 调用失败"));
+       Promise.reject(new Error(i18n.t('api.vndb.apiCallFailed', 'VNDB API 调用失败')));
     if (error instanceof Error) {
       console.error("错误消息:", error.message);
     }
-    return "获取数据失败，请稍后重试";
+    return i18n.t('api.vndb.fetchFailed', '获取数据失败，请稍后重试');
   }
 }
 

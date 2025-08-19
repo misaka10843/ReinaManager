@@ -150,45 +150,45 @@ export const Detail: React.FC = () => {
                         >
                             {selectedGame.id_type === 'custom' ?
                                 <Box>
-                                    <Typography variant="subtitle2" fontWeight="bold">{t('pages.Detail.gameDatafrom')}</Typography>
-                                    <Typography>Custom</Typography>
+                                    <Typography variant="subtitle2" fontWeight="bold" component="div">{t('pages.Detail.gameDatafrom')}</Typography>
+                                    <Typography component="div">Custom</Typography>
                                 </Box> :
                                 <Box>
-                                    <Typography variant="subtitle2" fontWeight="bold">{t('pages.Detail.gameDatafrom')}</Typography>
-                                    <Typography>{selectedGame.id_type}</Typography>
+                                    <Typography variant="subtitle2" fontWeight="bold" component="div">{t('pages.Detail.gameDatafrom')}</Typography>
+                                    <Typography component="div">{selectedGame.id_type}</Typography>
                                 </Box>}
                             <Box>
-                                <Typography variant="subtitle2" fontWeight="bold">{t('pages.Detail.gameDeveloper')}</Typography>
-                                <Typography>{selectedGame.developer || '-'}</Typography>
+                                <Typography variant="subtitle2" fontWeight="bold" component="div">{t('pages.Detail.gameDeveloper')}</Typography>
+                                <Typography component="div">{selectedGame.developer || '-'}</Typography>
                             </Box>
                             <Box>
-                                <Typography variant="subtitle2" fontWeight="bold">{t('pages.Detail.releaseDate')}</Typography>
-                                <Typography>{selectedGame.date || '-'}</Typography>
+                                <Typography variant="subtitle2" fontWeight="bold" component="div">{t('pages.Detail.releaseDate')}</Typography>
+                                <Typography component="div">{selectedGame.date || '-'}</Typography>
                             </Box>
                             <Box>
-                                <Typography variant="subtitle2" fontWeight="bold">{t('pages.Detail.addTime')}</Typography>
-                                <Typography>
+                                <Typography variant="subtitle2" fontWeight="bold" component="div">{t('pages.Detail.addTime')}</Typography>
+                                <Typography component="div">
                                     {new Date(gameAddTime as Date).toLocaleDateString()}
                                 </Typography>
                             </Box>
                             {selectedGame.rank !== 0 && selectedGame.rank !== null &&
                                 <Box>
-                                    <Typography variant="subtitle2" fontWeight="bold">{t('pages.Detail.gameRanking')}</Typography>
-                                    <Typography>{selectedGame.rank || '-'}</Typography>
+                                    <Typography variant="subtitle2" fontWeight="bold" component="div">{t('pages.Detail.gameRanking')}</Typography>
+                                    <Typography component="div">{selectedGame.rank || '-'}</Typography>
                                 </Box>}
                             {selectedGame.aveage_hours !== 0 && selectedGame.aveage_hours &&
                                 <Box>
-                                    <Typography variant="subtitle2" fontWeight="bold">{t('pages.Detail.expected_hours')}</Typography>
-                                    <Typography>{selectedGame.aveage_hours || '-'}h</Typography>
+                                    <Typography variant="subtitle2" fontWeight="bold" component="div">{t('pages.Detail.expected_hours')}</Typography>
+                                    <Typography component="div">{selectedGame.aveage_hours || '-'}h</Typography>
                                 </Box>}
                             <Box>
-                                <Typography variant="subtitle2" fontWeight="bold">{t('pages.Detail.gameScore')}</Typography>
-                                <Typography>{selectedGame.score || '-'}</Typography>
+                                <Typography variant="subtitle2" fontWeight="bold" component="div">{t('pages.Detail.gameScore')}</Typography>
+                                <Typography component="div">{selectedGame.score || '-'}</Typography>
                             </Box>
                         </Stack>
                         {/* 标签 */}
                         <Box className="mt-2">
-                            <Typography variant="subtitle2" fontWeight="bold" gutterBottom>{t('pages.Detail.gameTags')}</Typography>
+                            <Typography variant="subtitle2" fontWeight="bold" gutterBottom component="div">{t('pages.Detail.gameTags')}</Typography>
                             <Stack direction="row" className="flex-wrap gap-1">
                                 {selectedGame.tags?.map(tag => (
                                     <Chip key={tag} label={tag} size="small" variant="outlined" />
@@ -221,8 +221,8 @@ export const Detail: React.FC = () => {
                     <TabPanel value={tabIndex} index={1}>
                         {/* 游戏简介 */}
                         <Box>
-                            <Typography variant="h6" fontWeight="bold">{t('pages.Detail.introduction')}</Typography>
-                            <Typography className="mt-1">{selectedGame.summary}</Typography>
+                            <Typography variant="h6" fontWeight="bold" component="div">{t('pages.Detail.introduction')}</Typography>
+                            <Typography className="mt-1" component="div">{selectedGame.summary}</Typography>
                         </Box>
                     </TabPanel>
                     <TabPanel value={tabIndex} index={2}>

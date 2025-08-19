@@ -7,6 +7,29 @@
             "settings": "设置"
         }
     },
+    "api": {
+        "bgm": {
+            "notFound": "未找到相关条目，请确认游戏名字后重试，或未设置BGM_TOKEN"
+        },
+        "vndb": {
+            "notFound": "未找到相关条目，请确认ID或游戏名字后重试",
+            "fetchFailed": "获取数据失败，请稍后重试",
+            "apiCallFailed": "VNDB API 调用失败"
+        },
+        "http": {
+            "notFound": "未找到相关条目,请确认ID或游戏名字后重试",
+            "authFailed": "认证失败，请检查你的BGM_TOKEN是否正确",
+            "networkError": "请求错误，请检查你的网络连接",
+            "requestError": "请求错误"
+        },
+        "mixed": {
+            "fetchError": "获取数据失败",
+            "noDataSource": "无法从任何数据源获取游戏信息",
+            "bgmFetchFailed": "Bangumi 数据获取失败",
+            "vndbFetchFailed": "VNDB 数据获取失败",
+            "noDataForMerge": "没有可用的数据进行合并"
+        }
+    },
     "pages": {
         "Settings": {
             "language": "语言",
@@ -91,6 +114,8 @@
                 "updatePathFailed": "更新路径失败"
             },
             "Backup": {
+                "openBackupFolder": "打开备份文件夹",
+                "openSaveDataFolder": "打开存档文件夹",
                 "pathRequired": "请先选择存档文件夹",
                 "unknownError": "未知错误",
                 "saveDataPath": "存档文件夹路径",

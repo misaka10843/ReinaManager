@@ -1,4 +1,27 @@
 {
+    "api": {
+        "bgm": {
+            "notFound": "BGMデータが見つかりません"
+        },
+        "vndb": {
+            "notFound": "VNDBデータが見つかりません",
+            "fetchFailed": "データの取得に失敗しました、しばらくしてからもう一度お試しください",
+            "apiCallFailed": "VNDB API の呼び出しに失敗しました"
+        },
+        "http": {
+            "notFound": "HTTPリクエストが失敗しました",
+            "authFailed": "認証に失敗しました、BGM_TOKENが正しいか確認してください",
+            "networkError": "リクエストエラー、ネットワーク接続を確認してください",
+            "requestError": "リクエストエラー"
+        },
+        "mixed": {
+            "fetchError": "データの取得に失敗しました",
+            "noDataSource": "どのデータソースからもゲーム情報を取得できません",
+            "bgmFetchFailed": "Bangumi データの取得に失敗しました",
+            "vndbFetchFailed": "VNDB データの取得に失敗しました",
+            "noDataForMerge": "マージに利用できるデータがありません"
+        }
+    },
     "app": {
         "NAVIGATION": {
             "menu": "メニュー",
@@ -118,7 +141,9 @@
                 "pathUpdateFailed": "パスの更新に失敗しました",
                 "autoSaveEnabled": "自動バックアップが有効になりました",
                 "autoSaveDisabled": "自動バックアップが無効になりました",
-                "autoSaveUpdateFailed": "自動バックアップ設定の更新に失敗しました"
+                "autoSaveUpdateFailed": "自動バックアップ設定の更新に失敗しました",
+                "openBackupFolder": "バックアップフォルダを開く",
+                "openSaveDataFolder": "セーブデータフォルダを開く"
             }
         }
     },

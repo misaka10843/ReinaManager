@@ -217,7 +217,7 @@ const AddModal: React.FC = () => {
                         <RadioGroup className='ml-2' row value={apiSource} onChange={(e) => setApiSource(e.target.value as 'bgm' | 'vndb' | 'mixed')}>
                             <FormControlLabel value="bgm" control={<Radio />} label="Bangumi" />
                             <FormControlLabel value="vndb" control={<Radio />} label="VNDB" />
-                            <FormControlLabel value="mixed" control={<Radio />} label="Mixed" disabled={!bgmToken} />
+                            <FormControlLabel value="mixed" control={<Radio />} label="Mixed" />
                         </RadioGroup>
                         <Switch checked={isID} onChange={() => {
                             setisID(!isID)

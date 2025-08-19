@@ -15,6 +15,7 @@
 
 import { tauriHttp } from './http'
 import pkg from '../../package.json'
+import i18n from '@/utils/i18n'
 
 /**
  * 过滤掉包含敏感关键词的标签。
@@ -118,7 +119,7 @@ export async function fetchFromBgm(
   const BGMdata = Array.isArray(resp.data) ? resp.data[0] : undefined;
 
   if (!BGMdata?.id) {
-    return "未找到相关条目，请确认游戏名字后重试，或未设置BGM_TOKEN";
+    return i18n.t('api.bgm.notFound', '未找到相关条目，请确认游戏名字后重试，或未设置BGM_TOKEN');
   }
 
   // 直接从搜索结果构建返回对象
