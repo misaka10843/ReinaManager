@@ -39,6 +39,7 @@ import { isTauri } from '@tauri-apps/api/core';
 import Switch from '@mui/material/Switch';
 import { RadioGroup, FormControlLabel, Radio } from '@mui/material';
 import { time_now } from '@/utils';
+import { getSetting, setSetting } from '@/utils/localStorage';
 import { useTranslation } from 'react-i18next';
 import { getGamePlatformId, handleDirectory } from '@/utils';
 import type { GameData } from '@/types';
@@ -64,7 +65,7 @@ const AddModal: React.FC = () => {
     const [path, setPath] = useState('');
     const [customMode, setCustomMode] = useState(false);
     // 将 boolean 切换改为多种模式选择
-    const [apiSource, setApiSource] = useState<'bgm' | 'vndb' | 'mixed'>('bgm');
+    const [apiSource, setApiSource] = useState<'bgm' | 'vndb' | 'mixed'>(getSetting('apiSource') || 'vndb');
     // 保留 ID 搜索状态
     const [isID, setisID] = useState(false);
     /**
@@ -76,6 +77,14 @@ const AddModal: React.FC = () => {
             setFormText(folderName);
         }
     }, [path]);
+
+    // 持久化：apiSource 变化时写入设置
+    useEffect(() => {
+        // 仅在值有效时保存
+        if (apiSource) {
+            setSetting('apiSource', apiSource);
+        }
+    }, [apiSource]);
 
     /**
      * 提交表单，处理添加游戏的逻辑。
@@ -118,7 +127,7 @@ const AddModal: React.FC = () => {
             }
             const gameWithPath = { ...res, localpath: path, time: time_now() };
             // 检查是否已存在相同游戏
-            if (games.find((game) => getGamePlatformId(game) === getGamePlatformId(gameWithPath) || (game.name === res.name || game.date === res.date))) {
+            if (games.find((game) => getGamePlatformId(game) === getGamePlatformId(gameWithPath))) {
                 setError(t('components.AddModal.gameExists'));
                 setTimeout(() => {
                     setError('');

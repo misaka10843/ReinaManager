@@ -49,6 +49,8 @@
 - [x] 编辑页面功能
 - [x] 自动备份功能
 - [ ] 与Bangumi同步游戏状态
+- [ ] 批量导入游戏
+- [ ] 工具：将whitecloud数据迁移到reinaManager
 
 
 ## 展示
@@ -62,6 +64,7 @@
 ![主页](screenshots/home.png)
 ![游戏库](screenshots/library.png)
 ![详情页](screenshots/detail.png)
+![统计](screenshots/stats.png)
 ![设置页](screenshots/setting.png)
 
 更多内容，你可以下载最新的发布版本：[下载](https://github.com/huoshen80/ReinaManager/releases)

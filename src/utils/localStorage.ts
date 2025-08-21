@@ -28,6 +28,8 @@ interface Settings {
   language?: string;
   // ...
   sort?: string;
+  // 新增：添加方式的默认数据源
+  apiSource?: 'bgm' | 'vndb' | 'mixed';
 }
 
 // 默认设置
@@ -36,6 +38,7 @@ const DEFAULT_SETTINGS: Settings = {
   theme: 'light',
   language: 'zh-CN',
   sort: 'addtime',
+  apiSource: 'vndb',
 };
 
 // 获取所有游戏数据（增加排序功能）

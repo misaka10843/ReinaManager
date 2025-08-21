@@ -49,6 +49,8 @@ The `Reina` in the name is the character <a href="https://vndb.org/c64303"><b>å¦
 - [x] Edit page functions
 - [x] Auto backup function
 - [ ] Sync games status with Bangumi
+- [ ] Bulk import games
+- [ ] Tool: migrate whitecloud data into reinaManager
 
 ## Demo
 ##### Frontend Demo
@@ -60,6 +62,7 @@ The `Reina` in the name is the character <a href="https://vndb.org/c64303"><b>å¦
 ![Home](screenshots/home.png)
 ![Library](screenshots/library.png)
 ![Detail](screenshots/detail.png)
+![Stats](screenshots/stats.png)
 ![Setting](screenshots/setting.png)
 
 For more, you can download the latest Release Version: [Download](https://github.com/huoshen80/ReinaManager/releases)

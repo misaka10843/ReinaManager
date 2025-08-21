@@ -50,6 +50,8 @@
 - [x] 編集ページ機能
 - [x] 自動バックアップ機能
 - [ ] Bangumiとゲームステータスの同期
+- [ ] ゲームの一括インポート
+- [ ] ツール：whitecloudデータをreinaManagerに移行
 
 ## デモバージョン
 
@@ -62,6 +64,7 @@
 ![ホーム](screenshots/home.png)
 ![ライブラリ](screenshots/library.png)
 ![詳細](screenshots/detail.png)
+![統計](screenshots/stats.png)
 ![設定](screenshots/setting.png)
 
 詳細については、最新のリリース版をダウンロードしてください：[ダウンロード](https://github.com/huoshen80/ReinaManager/releases)
