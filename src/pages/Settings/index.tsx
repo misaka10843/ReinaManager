@@ -31,7 +31,7 @@ import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import { isEnabled } from '@tauri-apps/plugin-autostart';
 import { toggleAutostart } from '@/components/AutoStart';
-import { Switch, FormControlLabel, RadioGroup, Radio, Checkbox, CircularProgress, IconButton, InputAdornment } from '@mui/material';
+import { Switch, FormControlLabel, RadioGroup, Radio, Checkbox, CircularProgress, IconButton, InputAdornment, Typography, Link } from '@mui/material';
 import { backupDatabase } from '@/utils/database';
 import { getSavePathRepository, setSavePathRepository } from '@/utils/settingsConfig';
 import { StatusAlert } from '@/components/AlertBox';
@@ -39,7 +39,10 @@ import BackupIcon from '@mui/icons-material/Backup';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import ClearIcon from '@mui/icons-material/Clear';
 import SaveIcon from '@mui/icons-material/Save';
+import UpdateIcon from '@mui/icons-material/Update';
 import { isTauri } from '@tauri-apps/api/core';
+import { checkForUpdates } from '@/components/Update';
+import pkg from '../../../package.json';
 
 
 /**
@@ -533,6 +536,120 @@ const SavePathSettings = () => {
         </Box>
     );
 }
+
+/**
+ * AboutSection 组件
+ * 关于模块，显示应用信息、版本、更新检查等功能
+ */
+const AboutSection: React.FC = () => {
+    const { t } = useTranslation();
+    const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
+    const [updateStatus, setUpdateStatus] = useState<string>('');
+
+    const handleCheckUpdate = async () => {
+        setIsCheckingUpdate(true);
+        setUpdateStatus('');
+
+        try {
+            await checkForUpdates({
+                onUpdateFound: (update) => {
+                    setUpdateStatus(`发现新版本: ${update.version}`);
+                },
+                onNoUpdate: () => {
+                    setUpdateStatus('当前已是最新版本');
+                },
+                onError: (error) => {
+                    setUpdateStatus(`检查更新失败: ${error}`);
+                }
+            });
+        } catch (error) {
+            setUpdateStatus(`检查更新出错: ${error}`);
+        } finally {
+            setIsCheckingUpdate(false);
+        }
+    };
+
+    const openGitHub = () => {
+        openurl('https://github.com/huoshen80/ReinaManager');
+    };
+
+    const openBlog = () => {
+        openurl('https://huoshen80.xin');
+    };
+
+    return (
+        <Box className="mb-6">
+            <InputLabel className="font-semibold mb-4">
+                {t('pages.Settings.about.title', '关于')}
+            </InputLabel>
+
+            <Box className="pl-2 space-y-3">
+                {/* 版本信息和更新按钮 */}
+                <Stack direction="row" alignItems="center" spacing={2}>
+                    <Typography variant="body2">
+                        <strong>{t('pages.Settings.about.version', '版本')}: </strong>
+                        v{pkg.version}
+                    </Typography>
+                    <Button
+                        variant="outlined"
+                        startIcon={isCheckingUpdate ? <CircularProgress size={16} color="inherit" /> : <UpdateIcon />}
+                        onClick={handleCheckUpdate}
+                        disabled={isCheckingUpdate}
+                        size="small"
+                    >
+                        {isCheckingUpdate
+                            ? t('pages.Settings.about.checking', '检查中...')
+                            : t('pages.Settings.about.checkUpdate', '检查更新')
+                        }
+                    </Button>
+                </Stack>
+
+                {/* 更新状态显示 */}
+                {updateStatus && (
+                    <Typography
+                        variant="body2"
+                        color={updateStatus.includes('失败') || updateStatus.includes('出错') ? 'error' : 'primary'}
+                    >
+                        {updateStatus}
+                    </Typography>
+                )}
+
+                {/* 作者信息 */}
+                <Typography variant="body2">
+                    <strong>{t('pages.Settings.about.author', '作者')}: </strong>
+                    huoshen80
+                </Typography>
+
+                {/* 项目链接 */}
+                <Typography variant="body2">
+                    <strong>{t('pages.Settings.about.github', '项目地址')}: </strong>
+                    <Link
+                        component="button"
+                        variant="body2"
+                        onClick={openGitHub}
+                        sx={{ textDecoration: 'none' }}
+                    >
+                        https://github.com/huoshen80/ReinaManager
+                    </Link>
+                </Typography>
+
+                {/* 作者博客链接 */}
+                <Typography variant="body2">
+                    <strong>{t('pages.Settings.about.blog', '作者博客')}: </strong>
+                    <Link
+                        component="button"
+                        variant="body2"
+                        onClick={openBlog}
+                        sx={{ textDecoration: 'none' }}
+                    >
+                        https://huoshen80.xin
+                    </Link>
+                </Typography>
+            </Box>
+        </Box>
+    );
+}
+
 /**
  * Settings 组件
  * 应用设置页面，支持 Bangumi Token 设置与保存、获取 Token 链接、语言切换等功能。
@@ -564,6 +681,9 @@ export const Settings: React.FC = () => {
 
                 {/* 数据库备份设置 */}
                 <DatabaseBackupSettings />
+
+                {/* 关于 */}
+                <AboutSection />
             </Box>
         </PageContainer>
     );

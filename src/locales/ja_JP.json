@@ -76,6 +76,15 @@
                 "backupError": "データベースバックアップに失敗しました",
                 "openFolderFailed": "フォルダを開くのに失敗しました",
                 "openFolderError": "バックアップフォルダを開くのに失敗しました"
+            },
+            "about": {
+                "title": "について",
+                "version": "バージョン",
+                "author": "作者",
+                "github": "プロジェクトリポジトリ",
+                "blog": "作者のブログ",
+                "checkUpdate": "アップデートを確認",
+                "checking": "確認中..."
             }
         },
         "Detail": {
@@ -245,6 +254,15 @@
                 "dontRemind": "再度確認しない",
                 "minimizeToTray": "トレイに最小化",
                 "exitApp": "終了する"
+            },
+            "UpdateModal": {
+                "title": "新しいバージョンが利用可能",
+                "newVersion": "新しいバージョン",
+                "releaseDate": "リリース日",
+                "changelog": "変更履歴",
+                "downloading": "アップデートをダウンロード中...",
+                "cancel": "キャンセル",
+                "update": "今すぐアップデート"
             }
         }
     },

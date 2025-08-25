@@ -76,6 +76,15 @@
                 "backupError": "Database backup failed",
                 "openFolderFailed": "Failed to open folder",
                 "openFolderError": "Failed to open backup folder"
+            },
+            "about": {
+                "title": "About",
+                "version": "Version",
+                "author": "Author",
+                "github": "Project Repository",
+                "blog": "Author's Blog",
+                "checkUpdate": "Check for Updates",
+                "checking": "Checking..."
             }
         },
         "Detail": {
@@ -245,6 +254,15 @@
                 "dontRemind": "Don't remind again",
                 "minimizeToTray": "Minimize to tray",
                 "exitApp": "Exit application"
+            },
+            "UpdateModal": {
+                "title": "New Version Available",
+                "newVersion": "New Version",
+                "releaseDate": "Release Date",
+                "changelog": "Changelog",
+                "downloading": "Downloading update...",
+                "cancel": "Cancel",
+                "update": "Update Now"
             }
         }
     },

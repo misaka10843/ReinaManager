@@ -76,6 +76,15 @@
                 "backupError": "数据库备份失败",
                 "openFolderFailed": "打开文件夹失败",
                 "openFolderError": "打开备份文件夹失败"
+            },
+            "about": {
+                "title": "关于",
+                "version": "版本",
+                "author": "作者",
+                "github": "项目地址",
+                "blog": "作者博客",
+                "checkUpdate": "检查更新",
+                "checking": "检查中..."
             }
         },
         "Detail": {
@@ -245,6 +254,15 @@
                 "dontRemind": "不再提醒",
                 "minimizeToTray": "最小化到托盘",
                 "exitApp": "退出应用"
+            },
+            "UpdateModal": {
+                "title": "发现新版本",
+                "newVersion": "新版本",
+                "releaseDate": "发布日期",
+                "changelog": "更新说明",
+                "downloading": "正在下载更新...",
+                "cancel": "取消",
+                "update": "立即更新"
             }
         }
     },
