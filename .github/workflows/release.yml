@@ -19,7 +19,7 @@ on:
 jobs:
   release:
     runs-on: windows-latest
-    environment: TAURI_KEY  # 指定使用这个环境
+    environment: TAURI_KEY
     permissions:
       contents: write
     
@@ -67,6 +67,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Determine release type
+        id: release-type
+        shell: bash
+        run: |
+          if [[ "${{ github.ref_name }}" == *"alpha"* ]] || [[ "${{ github.ref_name }}" == *"beta"* ]] || [[ "${{ github.ref_name }}" == *"rc"* ]] || [[ "${{ github.ref_name }}" == *"pre"* ]] || [[ "${{ github.event.inputs.prerelease }}" == "true" ]]; then
+            echo "IS_PRERELEASE=true" >> $GITHUB_OUTPUT
+          else
+            echo "IS_PRERELEASE=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Extract changelog for current version
         id: changelog
         shell: bash
@@ -74,15 +84,20 @@ jobs:
           VERSION=$(node -p "require('./package.json').version")
           
           if [ -f "CHANGELOG.md" ]; then
-            CHANGELOG_CONTENT=$(awk "/^## \[?${VERSION}\]?|^## \[?v${VERSION}\]?/{flag=1; next} /^## /{flag=0} flag {print}' CHANGELOG.md)
+            # 使用更安全的方式处理多行内容
+            CHANGELOG_FILE=$(mktemp)
+            awk "/^## \[?${VERSION}\]?|^## \[?v${VERSION}\]?/{flag=1; next} /^## /{flag=0} flag {print}" CHANGELOG.md > "$CHANGELOG_FILE"
             
-            if [ -n "$CHANGELOG_CONTENT" ]; then
-              echo "CHANGELOG_CONTENT<<EOF" >> $GITHUB_OUTPUT
-              echo "$CHANGELOG_CONTENT" >> $GITHUB_OUTPUT
-              echo "EOF" >> $GITHUB_OUTPUT
+            if [ -s "$CHANGELOG_FILE" ]; then
+              {
+                echo "CHANGELOG_CONTENT<<EOF"
+                cat "$CHANGELOG_FILE"
+                echo "EOF"
+              } >> $GITHUB_OUTPUT
             else
               echo "CHANGELOG_CONTENT=See the assets to download and install this version." >> $GITHUB_OUTPUT
             fi
+            rm -f "$CHANGELOG_FILE"
           else
             echo "CHANGELOG_CONTENT=See the assets to download and install this version." >> $GITHUB_OUTPUT
           fi
@@ -99,9 +114,7 @@ jobs:
           releaseName: ${{ github.ref_name }}
           releaseBody: ${{ steps.changelog.outputs.CHANGELOG_CONTENT }}
           releaseDraft: ${{ github.event.inputs.prerelease || false }}
-          prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') || github.event.inputs.prerelease }}
+          prerelease: ${{ steps.release-type.outputs.IS_PRERELEASE }}
           includeUpdaterJson: true
           includeRelease: true
           releaseCommitish: ${{ github.sha }}
-          args: |
-            --license LICENSE
