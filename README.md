@@ -51,6 +51,7 @@ The `Reina` in the name is the character <a href="https://vndb.org/c64303"><b>å¦
 - [ ] Sync games status with Bangumi
 - [ ] Bulk import games
 - [ ] Tool: migrate whitecloud data into reinaManager
+- [ ] Add hide NSFW filter
 
 ## Demo
 ##### Frontend Demo
@@ -74,5 +75,6 @@ This project is licensed under the [AGPL-3.0 license](https://github.com/huoshen
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=huoshen80/ReinaManager&type=Date)](https://star-history.com/#huoshen80/ReinaManager&Date)
+
 
 
