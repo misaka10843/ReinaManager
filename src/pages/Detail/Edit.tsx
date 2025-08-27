@@ -221,6 +221,7 @@ export const Edit = (): JSX.Element => {
                         <MenuItem value="vndb">VNDB</MenuItem>
                         <MenuItem value="mixed">Mixed</MenuItem>
                         <MenuItem value="custom">Custom</MenuItem>
+                        <MenuItem value="Whitecloud" disabled>Whitecloud</MenuItem>
                     </MuiSelect>
                 </FormControl>
 
