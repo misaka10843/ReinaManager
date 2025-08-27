@@ -23,6 +23,7 @@
 import {create} from 'zustand';
 import {persist} from 'zustand/middleware';
 import type {GameData} from '@/types';
+import type { Update } from '@tauri-apps/plugin-updater';
 import {
     applyNsfwFilter,
     deleteGame as deleteGameRepository,
@@ -118,8 +119,27 @@ export interface AppState {
     nsfwCoverReplace: boolean;
     setNsfwCoverReplace: (enabled: boolean) => void;
 
+    // 卡片交互模式
+    cardClickMode: 'navigate' | 'select';
+    setCardClickMode: (mode: 'navigate' | 'select') => void;
+
+    // 双击启动游戏功能
+    doubleClickLaunch: boolean;
+    setDoubleClickLaunch: (enabled: boolean) => void;
+
+    // 长按启动游戏功能
+    longPressLaunch: boolean;
+    setLongPressLaunch: (enabled: boolean) => void;
+
     // 更新游戏通关状态
     updateGameClearStatusInStore: (gameId: number, newClearStatus: 1 | 0) => void;
+
+    // 更新窗口状态管理
+    showUpdateModal: boolean;
+    pendingUpdate: Update | null;
+    setShowUpdateModal: (show: boolean) => void;
+    setPendingUpdate: (update: Update | null) => void;
+    triggerUpdateModal: (update: Update) => void;
 }
 
 // 创建持久化的全局状态
@@ -164,6 +184,27 @@ export const useStore = create<AppState>()(
             setNsfwCoverReplace: (enabled: boolean) => {
                 set({nsfwCoverReplace: enabled});
                 setSetting('nsfwCoverReplace', enabled);
+            },
+
+            // 卡片交互模式
+            cardClickMode: 'navigate',
+            setCardClickMode: (mode: 'navigate' | 'select') => {
+                set({cardClickMode: mode});
+                setSetting('cardClickMode', mode);
+            },
+
+            // 双击启动游戏功能
+            doubleClickLaunch: false,
+            setDoubleClickLaunch: (enabled: boolean) => {
+                set({doubleClickLaunch: enabled});
+                setSetting('doubleClickLaunch', enabled);
+            },
+
+            // 长按启动游戏功能
+            longPressLaunch: false,
+            setLongPressLaunch: (enabled: boolean) => {
+                set({longPressLaunch: enabled});
+                setSetting('longPressLaunch', enabled);
             },
 
             // 优化刷新数据的方法，减少状态更新
@@ -537,15 +578,38 @@ export const useStore = create<AppState>()(
                 set({games: updatedGames, allGames: updatedAllGames});
                 await get().refreshGameData();
             },
+
+            // 更新窗口状态管理
+            showUpdateModal: false,
+            pendingUpdate: null,
+            setShowUpdateModal: (show: boolean) => {
+                set({showUpdateModal: show});
+            },
+            setPendingUpdate: (update: Update | null) => {
+                set({pendingUpdate: update});
+            },
+            triggerUpdateModal: (update: Update) => {
+                set({
+                    pendingUpdate: update,
+                    showUpdateModal: true
+                });
+            },
+
             // 初始化方法，先初始化数据库，然后加载所有需要的数据
             initialize: async () => {
 
                 // 获取NSFW数据
                 const nsfwFilter = getSetting('nsfwFilter') ?? false;
-                const nsfwCoverReplace = getSetting('nsfwCoverReplace') ?? true;
+                const nsfwCoverReplace = getSetting('nsfwCoverReplace') ?? false;
+                const cardClickMode = getSetting('cardClickMode') ?? 'navigate';
+                const doubleClickLaunch = getSetting('doubleClickLaunch') ?? false;
+                const longPressLaunch = getSetting('longPressLaunch') ?? false;
                 set({
                     nsfwFilter,
                     nsfwCoverReplace,
+                    cardClickMode,
+                    doubleClickLaunch,
+                    longPressLaunch,
                 });
 
                 // 然后并行加载其他数据

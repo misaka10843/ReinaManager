@@ -82,11 +82,25 @@ jobs:
         shell: bash
         run: |
           VERSION=$(node -p "require('./package.json').version")
+          echo "Looking for version: $VERSION"
           
           if [ -f "CHANGELOG.md" ]; then
-            # 使用更安全的方式处理多行内容
+            # 使用更安全的方式处理多行内容，支持多种版本格式
             CHANGELOG_FILE=$(mktemp)
-            awk "/^## \[?${VERSION}\]?|^## \[?v${VERSION}\]?/{flag=1; next} /^## /{flag=0} flag {print}" CHANGELOG.md > "$CHANGELOG_FILE"
+            # 支持 0.6.6-1, v0.6.6-1, [0.6.6-1], [v0.6.6-1] 等格式
+            awk "
+            /^## \[?v?${VERSION//./\\.}\]?/ ||
+            /^## \[?v?${VERSION//./\\.}[[:space:]]*\]/ ||
+            /^## v?${VERSION//./\\.}[[:space:]]*$/ ||
+            /^## \[?v?${VERSION//./\\.}\)?[[:space:]]*\(/ {
+              flag=1; next
+            } 
+            /^## / && flag {
+              flag=0
+            } 
+            flag {
+              print
+            }" CHANGELOG.md > "$CHANGELOG_FILE"
             
             if [ -s "$CHANGELOG_FILE" ]; then
               {
@@ -94,12 +108,15 @@ jobs:
                 cat "$CHANGELOG_FILE"
                 echo "EOF"
               } >> $GITHUB_OUTPUT
+              echo "Found changelog content"
             else
               echo "CHANGELOG_CONTENT=See the assets to download and install this version." >> $GITHUB_OUTPUT
+              echo "No matching changelog found for version $VERSION"
             fi
             rm -f "$CHANGELOG_FILE"
           else
             echo "CHANGELOG_CONTENT=See the assets to download and install this version." >> $GITHUB_OUTPUT
+            echo "CHANGELOG.md not found"
           fi
 
       - name: Build and Release with Tauri Action
@@ -118,3 +135,83 @@ jobs:
           includeUpdaterJson: true
           includeRelease: true
           releaseCommitish: ${{ github.sha }}
+
+      - name: Update latest.json with CDN URLs (Alternative Method)
+        if: failure()  # 只在上面的方法失败时执行
+        shell: bash
+        run: |
+          # 完全自定义生成 latest.json
+          VERSION=$(node -p "require('./package.json').version")
+          TAG_NAME="${{ github.ref_name }}"
+          
+          # 查找生成的文件
+          MSI_FILE=$(find src-tauri/target/release/bundle/msi -name "*.msi" | head -1)
+          MSI_SIG=$(find src-tauri/target/release/bundle/msi -name "*.msi.sig" | head -1)
+          
+          if [ -f "$MSI_FILE" ] && [ -f "$MSI_SIG" ]; then
+            MSI_FILENAME=$(basename "$MSI_FILE")
+            MSI_SIGNATURE=$(cat "$MSI_SIG")
+            
+            # 生成包含 CDN URL 的 latest.json
+            cat > latest.json << EOF
+          {
+            "version": "$VERSION",
+            "notes": "view changelog.md",
+            "pub_date": "$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)",
+            "platforms": {
+              "windows-x86_64": {
+                "signature": "$MSI_SIGNATURE",
+                "url": "https://cdn.akaere.online/https://github.com/huoshen80/ReinaManager/releases/download/$TAG_NAME/$MSI_FILENAME"
+              }
+            }
+          }
+          EOF
+            
+            echo "Generated custom latest.json with CDN URL:"
+            cat latest.json
+            
+            # 上传自定义的 latest.json
+            gh release upload $TAG_NAME latest.json --clobber
+            echo "Uploaded custom latest.json with CDN URL"
+          else
+            echo "Error: Could not find MSI file or signature"
+            exit 1
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update latest.json with CDN URLs
+        shell: bash
+        run: |
+          # 等待一下确保 latest.json 已经上传
+          sleep 10
+          
+          # 下载当前的 latest.json
+          TAG_NAME="${{ github.ref_name }}"
+          curl -L -o latest.json "https://github.com/huoshen80/ReinaManager/releases/download/$TAG_NAME/latest.json"
+          
+          if [ -f "latest.json" ]; then
+            echo "Original latest.json:"
+            cat latest.json
+            
+            # 使用 jq 修改 URL，在前面添加 CDN 前缀
+            jq '
+              .platforms |= with_entries(
+                .value.url |= "https://cdn.akaere.online/\(.)"
+              )
+            ' latest.json > latest_modified.json
+            
+            echo "Modified latest.json:"
+            cat latest_modified.json
+            
+            # 重新上传修改后的 latest.json
+            gh release upload $TAG_NAME latest_modified.json --clobber
+            mv latest_modified.json latest.json
+            
+            echo "Successfully updated latest.json with CDN URLs"
+          else
+            echo "Error: Could not download latest.json"
+            exit 1
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

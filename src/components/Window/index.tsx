@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { open as openUrl } from '@tauri-apps/plugin-shell';
+import ReactMarkdown from 'react-markdown';
+import rehypeRaw from 'rehype-raw';
 import {
     Dialog,
     DialogTitle,
@@ -17,7 +20,12 @@ import {
 } from '@mui/material';
 import { useStore } from '@/store';
 import { Update } from '@tauri-apps/plugin-updater';
-import { downloadAndInstallUpdate, UpdateProgress, silentCheckForUpdates, checkForUpdates } from '@/components/Update';
+import {
+    downloadAndInstallUpdate,
+    UpdateProgress,
+    silentCheckForUpdates,
+    checkForUpdates
+} from '@/components/Update';
 import UpdateIcon from '@mui/icons-material/Update';
 import DownloadIcon from '@mui/icons-material/Download';
 
@@ -109,7 +117,7 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ open, onClose, update }) => {
                                 {t('components.Window.UpdateModal.releaseDate', '发布日期')}
                             </Typography>
                             <Typography variant="body2">
-                                {new Date(update.date).toLocaleDateString()}
+                                {new Date(update.date as string).toLocaleDateString()}
                             </Typography>
                         </Box>
                     )}
@@ -125,17 +133,99 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ open, onClose, update }) => {
                                     backgroundColor: 'grey.50',
                                     p: 2,
                                     borderRadius: 1,
-                                    maxHeight: 200,
-                                    overflow: 'auto'
+                                    maxHeight: 250,
+                                    overflow: 'auto',
+                                    '& details': {
+                                        mb: 1,
+                                        border: '1px solid',
+                                        borderColor: 'divider',
+                                        borderRadius: 1,
+                                        overflow: 'hidden',
+                                    },
+                                    '& summary': {
+                                        cursor: 'pointer',
+                                        fontWeight: 'bold',
+                                        userSelect: 'none',
+                                        p: 1,
+                                        backgroundColor: 'action.hover',
+                                        '&:hover': {
+                                            backgroundColor: 'action.selected',
+                                        }
+                                    },
+                                    '& details[open] > summary': {
+                                        borderBottom: '1px solid',
+                                        borderBottomColor: 'divider',
+                                    },
+                                    '& details > :not(summary)': {
+                                        p: 1,
+                                    }
                                 }}
                             >
-                                <Typography
-                                    variant="body2"
-                                    component="pre"
-                                    sx={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}
+                                <ReactMarkdown
+                                    rehypePlugins={[rehypeRaw]}
+                                    components={{
+                                        // 自定义渲染组件以确保样式兼容
+                                        p: (props) => (
+                                            <Typography variant="body2" component="p" sx={{ mb: 1 }}>
+                                                {props.children}
+                                            </Typography>
+                                        ),
+                                        h1: (props) => (
+                                            <Typography variant="h6" component="h1" sx={{ mb: 1, mt: 2, fontWeight: 'bold' }}>
+                                                {props.children}
+                                            </Typography>
+                                        ),
+                                        h2: (props) => (
+                                            <Typography variant="subtitle1" component="h2" sx={{ mb: 1, mt: 2, fontWeight: 'bold' }}>
+                                                {props.children}
+                                            </Typography>
+                                        ),
+                                        h3: (props) => (
+                                            <Typography variant="subtitle2" component="h3" sx={{ mb: 1, mt: 1, fontWeight: 'bold' }}>
+                                                {props.children}
+                                            </Typography>
+                                        ),
+                                        ul: (props) => (
+                                            <Box component="ul" sx={{ pl: 2, mb: 1, mt: 0.5 }}>
+                                                {props.children}
+                                            </Box>
+                                        ),
+                                        li: (props) => (
+                                            <Typography variant="body2" component="li" sx={{ mb: 0.5 }}>
+                                                {props.children}
+                                            </Typography>
+                                        ),
+                                        // 自定义链接组件，点击时用默认浏览器打开
+                                        a: (props) => (
+                                            <Typography
+                                                component="span"
+                                                variant="body2"
+                                                sx={{
+                                                    color: 'primary.main',
+                                                    textDecoration: 'underline',
+                                                    cursor: 'pointer',
+                                                    '&:hover': {
+                                                        color: 'primary.dark',
+                                                    }
+                                                }}
+                                                onClick={async (e) => {
+                                                    e.preventDefault();
+                                                    if (props.href) {
+                                                        try {
+                                                            await openUrl(props.href);
+                                                        } catch (error) {
+                                                            console.error('Failed to open link:', error);
+                                                        }
+                                                    }
+                                                }}
+                                            >
+                                                {props.children}
+                                            </Typography>
+                                        )
+                                    }}
                                 >
-                                    {update.body}
-                                </Typography>
+                                    {update.body || ''}
+                                </ReactMarkdown>
                             </Box>
                         </Box>
                     )}
@@ -200,11 +290,9 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ open, onClose, update }) => {
 };
 
 const WindowsHandler: React.FC = () => {
-    const { setSkipCloseRemind } = useStore();
+    const { setSkipCloseRemind, showUpdateModal, pendingUpdate, setShowUpdateModal, setPendingUpdate } = useStore();
     const { t } = useTranslation();
     const [open, setOpen] = useState(false);
-    const [showUpdateModal, setShowUpdateModal] = useState(false);
-    const [pendingUpdate, setPendingUpdate] = useState<Update | null>(null);
 
     useEffect(() => {
         const w = getCurrentWindow();
@@ -239,7 +327,7 @@ const WindowsHandler: React.FC = () => {
                 if (result.hasUpdate) {
                     // 静默检查到更新，但不立即显示，等用户空闲时提醒
                     setTimeout(() => {
-                        // 再次检查更新以获取Update对象
+                        // 再次检查更新以获取增强的Update对象
                         checkForUpdates({
                             onUpdateFound: (update) => {
                                 setPendingUpdate(update);
