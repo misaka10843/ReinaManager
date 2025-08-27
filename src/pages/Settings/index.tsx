@@ -31,7 +31,7 @@ import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
 import { isEnabled } from '@tauri-apps/plugin-autostart';
 import { toggleAutostart } from '@/components/AutoStart';
-import { Switch, FormControlLabel, RadioGroup, Radio, Checkbox, CircularProgress, IconButton, InputAdornment, Typography, Link } from '@mui/material';
+import { Switch, FormControlLabel, RadioGroup, Radio, Checkbox, CircularProgress, IconButton, InputAdornment, Typography, Link, Divider } from '@mui/material';
 import { backupDatabase } from '@/utils/database';
 import { getSavePathRepository, setSavePathRepository } from '@/utils/settingsConfig';
 import { StatusAlert } from '@/components/AlertBox';
@@ -272,6 +272,79 @@ const NsfwSettings = () => {
                     }
                     label={t('pages.Settings.nsfw.coverReplace')}
                 />
+            </Box>
+        </Box>
+    );
+};
+
+const CardClickModeSettings = () => {
+    const { t } = useTranslation();
+    const { cardClickMode, setCardClickMode, doubleClickLaunch, setDoubleClickLaunch, longPressLaunch, setLongPressLaunch } = useStore();
+
+    return (
+        <Box className="mb-6">
+            <InputLabel className="font-semibold mb-4">
+                {t('pages.Settings.cardClickMode.title')}
+            </InputLabel>
+            <Box className="pl-2">
+                <RadioGroup
+                    value={cardClickMode}
+                    onChange={e => setCardClickMode(e.target.value as 'navigate' | 'select')}
+                    className="pl-2"
+                >
+                    <FormControlLabel
+                        value="navigate"
+                        control={<Radio color="primary" />}
+                        label={t('pages.Settings.cardClickMode.navigate')}
+                        className="mb-1"
+                    />
+                    <FormControlLabel
+                        value="select"
+                        control={<Radio color="primary" />}
+                        label={t('pages.Settings.cardClickMode.select')}
+                        className="mb-1"
+                    />
+                </RadioGroup>
+
+                {/* 双击启动游戏设置 */}
+                <Box className="mt-4 pl-2">
+                    <FormControlLabel
+                        control={
+                            <Switch
+                                checked={doubleClickLaunch}
+                                onChange={e => setDoubleClickLaunch(e.target.checked)}
+                                color="primary"
+                            />
+                        }
+                        label={t('pages.Settings.cardClickMode.doubleClickLaunch')}
+                        className="mb-1"
+                    />
+                    {doubleClickLaunch && cardClickMode === 'navigate' && (
+                        <Typography variant="caption" color="text.secondary" className="block ml-8">
+                            {t('pages.Settings.cardClickMode.doubleClickLaunchNote')}
+                        </Typography>
+                    )}
+                </Box>
+
+                {/* 长按启动游戏设置 */}
+                <Box className="mt-4 pl-2">
+                    <FormControlLabel
+                        control={
+                            <Switch
+                                checked={longPressLaunch}
+                                onChange={e => setLongPressLaunch(e.target.checked)}
+                                color="primary"
+                            />
+                        }
+                        label={t('pages.Settings.cardClickMode.longPressLaunch')}
+                        className="mb-1"
+                    />
+                    {longPressLaunch && (
+                        <Typography variant="caption" color="text.secondary" className="block ml-8">
+                            {t('pages.Settings.cardClickMode.longPressLaunchNote')}
+                        </Typography>
+                    )}
+                </Box>
             </Box>
         </Box>
     );
@@ -543,6 +616,7 @@ const SavePathSettings = () => {
  */
 const AboutSection: React.FC = () => {
     const { t } = useTranslation();
+    const { triggerUpdateModal } = useStore();
     const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
     const [updateStatus, setUpdateStatus] = useState<string>('');
 
@@ -554,6 +628,8 @@ const AboutSection: React.FC = () => {
             await checkForUpdates({
                 onUpdateFound: (update) => {
                     setUpdateStatus(`发现新版本: ${update.version}`);
+                    // 触发全局更新窗口显示
+                    triggerUpdateModal(update);
                 },
                 onNoUpdate: () => {
                     setUpdateStatus('当前已是最新版本');
@@ -663,24 +739,35 @@ export const Settings: React.FC = () => {
             <Box className="py-4">
                 {/* BGM Token 设置 */}
                 <BgmTokenSettings />
+                <Divider sx={{ my: 3 }} />
 
                 {/* 语言设置 */}
                 <LanguageSelect />
+                <Divider sx={{ my: 3 }} />
 
                 {/* NSFW设置 */}
                 <NsfwSettings />
+                <Divider sx={{ my: 3 }} />
+
+                {/* 卡片点击模式设置 */}
+                <CardClickModeSettings />
+                <Divider sx={{ my: 3 }} />
 
                 {/* 自启动设置 */}
                 <AutoStartSettings />
+                <Divider sx={{ my: 3 }} />
 
                 {/* 关闭按钮设置 */}
                 <CloseBtnSettings />
+                <Divider sx={{ my: 3 }} />
 
                 {/* 备份路径设置 */}
                 <SavePathSettings />
+                <Divider sx={{ my: 3 }} />
 
                 {/* 数据库备份设置 */}
                 <DatabaseBackupSettings />
+                <Divider sx={{ my: 3 }} />
 
                 {/* 关于 */}
                 <AboutSection />

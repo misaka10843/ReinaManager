@@ -32,6 +32,12 @@ interface Settings {
   apiSource?: 'bgm' | 'vndb' | 'mixed';
   nsfwFilter?:boolean;
   nsfwCoverReplace?:boolean;
+  // 新增：卡片左键交互模式
+  cardClickMode?: 'navigate' | 'select';
+  // 新增：双击启动游戏功能
+  doubleClickLaunch?: boolean;
+  // 新增：长按启动游戏功能
+  longPressLaunch?: boolean;
 }
 
 // 默认设置
@@ -41,6 +47,9 @@ const DEFAULT_SETTINGS: Settings = {
   language: 'zh-CN',
   sort: 'addtime',
   apiSource: 'vndb',
+  cardClickMode: 'navigate', // 默认使用导航模式
+  doubleClickLaunch: false, // 默认关闭双击启动
+  longPressLaunch: false, // 默认关闭长按启动
 };
 
 // 获取所有游戏数据（增加排序功能）

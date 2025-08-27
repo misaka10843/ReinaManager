@@ -52,6 +52,15 @@
                 "filter": "過濾NSFW内容",
                 "coverReplace": "模糊NSFW替換"
             },
+            "cardClickMode": {
+                "title": "卡片點擊模式",
+                "navigate": "導航模式（單擊跳轉詳情頁）",
+                "select": "選擇模式（單擊選擇遊戲）",
+                "doubleClickLaunch": "雙擊啟動遊戲",
+                "doubleClickLaunchNote": "開啟後會導致左鍵單擊延遲200ms（僅導航模式）",
+                "longPressLaunch": "長按啟動遊戲",
+                "longPressLaunchNote": "長按卡片800ms後啟動遊戲"
+            },
             "savePath": {
                 "title": "遊戲存檔備份路徑",
                 "pathLabel": "備份根目錄路徑",
