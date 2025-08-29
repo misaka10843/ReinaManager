@@ -11,7 +11,7 @@
 
 <p align="center"><a href="./README.md">English</a>|<a href="./README.zh_CN.md">中文</a>|繁體中文|<a href="./README.ja_JP.md">日本語</a></p>
 
-<h5>一個輕量級的視覺小說管理工具，正在開發中...</h5>
+<h5>一個輕量級的galgame/視覺小說管理工具，正在開發中...</h5>
 
 名稱中的 `Reina` 來源於遊戲 <a href="https://vndb.org/v21852"><b>金色ラブリッチェ(Kin'iro Loveriche)</b></a> 中的角色 <a href="https://vndb.org/c64303"><b>妃 玲奈(Kisaki Reina)</b></a>
 
@@ -50,8 +50,8 @@
 - [x] 自動備份功能
 - [ ] 與Bangumi同步遊戲狀態
 - [ ] 批量匯入遊戲
-- [ ] 工具：將whitecloud數據遷移到reinaManager
-
+- [x] 工具：將whitecloud數據遷移到ReinaManager(請看 [reina_migrator](https://github.com/huoshen80/reina_migrator))
+- [x] 添加NSFW內容過濾
 
 ## 展示
 

@@ -11,7 +11,7 @@
 
 <p align="center"><a href="./README.md">English</a>|<a href="./README.zh_CN.md">中文</a>|<a href="./README.zh_TW.md">繁體中文</a>|日本語</p>
 
-<h5>軽量なビジュアルノベル管理ツール、開発中...</h5>
+<h5>軽量なギャルゲー・ビジュアルノベル管理ツール、開発中...</h5>
 
 名前の `Reina` は、ゲーム <a href="https://vndb.org/v21852"><b>金色ラブリッチェ(Kin'iro Loveriche)</b></a> のキャラクター <a href="https://vndb.org/c64303"><b>妃 玲奈(Kisaki Reina)</b></a> に由来しています
 
@@ -51,7 +51,8 @@
 - [x] 自動バックアップ機能
 - [ ] Bangumiとゲームステータスの同期
 - [ ] ゲームの一括インポート
-- [ ] ツール：whitecloudデータをreinaManagerに移行
+- [x] ツール：whitecloudデータをReinaManagerに移行（[reina_migrator](https://github.com/huoshen80/reina_migrator)を参照）
+- [x] NSFWフィルタの非表示機能を追加
 
 ## デモバージョン
 
