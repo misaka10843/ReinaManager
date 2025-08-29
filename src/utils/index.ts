@@ -427,10 +427,14 @@ export async function moveBackupFolder(oldPath: string, newPath: string): Promis
 export function isNsfwGame(tags: string[]): boolean {
     if (!tags || tags.length === 0) return false;
 
-    if (tags.includes("R18")) return true;
+    // 检查是否包含R18相关标签
+    const hasR18Tag = tags.some(tag => tag.includes("R18"));
+    if (hasR18Tag) return true;
+    
+    // 检查是否包含拔作标签
+    if (tags.includes("拔作")) return true;
+    
     // 如果tags均为英文且没有包含No Sexual Content 也为NSFW
     const allEnglish = tags.every(tag => /^[\x00-\x7F]+$/.test(tag));
     return allEnglish && !tags.includes("No Sexual Content");
-
-
 }
