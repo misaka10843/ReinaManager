@@ -92,6 +92,7 @@ export async function fetchFromBgm(
       summary: BGMdata.summary,
       name: BGMdata.name,
       name_cn: BGMdata.name_cn,
+      aliases: BGMdata.infobox.find((k: { key: string }) => k.key === '别名')?.value?.map((k: { v: string }) => k.v) || [],
       tags: filterSensitiveTags(
         BGMdata.tags?.map((tag: { name: string }) => tag.name) || []
       ),
@@ -100,7 +101,8 @@ export async function fetchFromBgm(
       bgm_id: String(BGMdata.id),
       vndb_id: null,
       id_type: 'bgm',
-      developer: BGMdata.infobox.find((k: { key: string }) => k.key === '开发')?.value ?? '',
+      developer: BGMdata.infobox.find((k: { key: string }) => k.key === '开发'|| k.key === '游戏开发商')?.value ||null,
+
     };
   }
 
@@ -129,6 +131,7 @@ export async function fetchFromBgm(
       summary: BGMdata.summary,
       name: BGMdata.name,
       name_cn: BGMdata.name_cn,
+      aliases: BGMdata.infobox.find((k: { key: string }) => k.key === '别名')?.value?.map((k: { v: string }) => k.v) || [],
       tags: filterSensitiveTags(
         BGMdata.tags?.map((tag: { name: string }) => tag.name) || []
       ),
@@ -137,7 +140,7 @@ export async function fetchFromBgm(
       bgm_id: String(BGMdata.id),
       vndb_id: null,
       id_type: 'bgm',
-      developer: BGMdata.infobox.find((k: { key: string }) => k.key === '开发')?.value ?? '',
+      developer: BGMdata.infobox.find((k: { key: string }) => k.key === '开发'|| k.key === '游戏开发商')?.value ||null,
     };
 }
 

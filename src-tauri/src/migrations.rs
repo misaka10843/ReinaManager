@@ -11,5 +11,12 @@ pub fn get_migrations() -> Vec<Migration> {
             sql: include_str!("../migrations/001_database_initialization.sql"),
             kind: MigrationKind::Up,
         },
+        // 迁移 2: 添加自定义字段支持 (2025-09-03)
+        Migration {
+            version: 2,
+            description: "add_custom_fields",
+            sql: include_str!("../migrations/002_add_custom_fields.sql"),
+            kind: MigrationKind::Up,
+        },
     ]
 }

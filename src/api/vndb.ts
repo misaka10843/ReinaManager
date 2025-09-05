@@ -42,7 +42,7 @@ export async function fetchFromVNDB(name: string, id?: string) {
     // 构建 API 请求体
     const requestBody = {
       filters: id ? ['id', '=', id] : ['search', '=', name],
-      fields: 'id, titles.title, titles.lang, titles.main, image.url, released, rating, tags.name,tags.rating, description,developers.name,length_minutes'
+      fields: 'id, titles.title, titles.lang, titles.main, aliases, image.url, released, rating, tags.name,tags.rating, description,developers.name,length_minutes'
     };
     
     // 调用 VNDB API
@@ -80,14 +80,13 @@ export async function fetchFromVNDB(name: string, id?: string) {
       name: mainTitle,
       name_cn: chineseTitle,
       all_titles: allTitles,
+      aliases: VNDBdata.aliases || [],
       tags: (VNDBdata.tags as { rating: number; name: string }[])
-      .filter((tag) => tag.rating >= 2)
       .sort((a, b) => b.rating - a.rating)
-      .slice(0, 30)
       .map(({ name }) => name),
       rank: null,
       score: Number((VNDBdata.rating/10).toFixed(2)),
-      developer: VNDBdata.developers?.[0]?.name || null,
+      developer: VNDBdata.developers?.map((dev: { name: string }) => dev.name).join('/') || null,
       aveage_hours: Number((VNDBdata.length_minutes / 60).toFixed(1)),
     };
   } catch (error) {

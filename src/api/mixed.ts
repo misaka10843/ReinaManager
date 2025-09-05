@@ -136,6 +136,7 @@ function mergeData(BGMdata: GameData | null, VNDBdata: GameData | null): GameDat
     name: BGMdata?.name || VNDBdata?.name || '',
     name_cn: BGMdata?.name_cn || VNDBdata?.name_cn,
     all_titles: VNDBdata?.all_titles || BGMdata?.all_titles || [],
+    aliases: Array.from(new Set((BGMdata?.aliases || []).concat(VNDBdata?.aliases || []))),
     tags: BGMdata?.tags || VNDBdata?.tags,
     rank: BGMdata?.rank || undefined,
     score: BGMdata?.score || VNDBdata?.score,

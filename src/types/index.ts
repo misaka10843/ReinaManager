@@ -30,6 +30,9 @@ export interface GameData {
     all_titles?: string[];
     aveage_hours?: number;
     clear?: 1 | 0;
+    custom_name?: string;
+    custom_cover?: string | null; // 存储自定义封面的文件扩展名，如 'jpg', 'png', 'webp' 等
+    aliases?: string[]; 
 }
 
 /**
