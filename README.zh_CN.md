@@ -52,6 +52,8 @@
 - [ ] 批量导入游戏
 - [x] 工具：将whitecloud数据迁移到ReinaManager(请看 [reina_migrator](https://github.com/huoshen80/reina_migrator))
 - [x] 添加NSFW内容过滤
+- [x] 添加自定义封面和自定义名称功能
+- [x] 增强搜索功能以包括别名、所有标题和自定义名称
 
 ## 展示
 

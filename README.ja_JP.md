@@ -53,6 +53,8 @@
 - [ ] ゲームの一括インポート
 - [x] ツール：whitecloudデータをReinaManagerに移行（[reina_migrator](https://github.com/huoshen80/reina_migrator)を参照）
 - [x] NSFWフィルタの非表示機能を追加
+- [x] カスタムカバーとカスタム名の追加機能
+- [x] 検索機能を強化して、別名、すべてのタイトル、およびカスタム名を含める
 
 ## デモバージョン
 

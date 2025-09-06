@@ -52,6 +52,8 @@ The `Reina` in the name is the character <a href="https://vndb.org/c64303"><b>å¦
 - [ ] Bulk import games
 - [x] Tool: migrate whitecloud data into ReinaManager(view [reina_migrator](https://github.com/huoshen80/reina_migrator))
 - [x] Add hide NSFW filter
+- [x] Add custom cover and custom name for games
+- [x] enhance search function to include alias, all titles and custom name
 
 ## Demo
 ##### Frontend Demo
