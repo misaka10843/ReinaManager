@@ -49,7 +49,7 @@ import { useStore } from '@/store';
 import { Link } from 'react-router';
 import { useGamePlayStore } from '@/store/gamePlayStore';
 import { getGameSessions } from '@/utils/gameStats';
-import { formatRelativeTime, formatPlayTime, getGameDisplayName } from '@/utils';
+import { formatRelativeTime, formatPlayTime, getGameDisplayName, getGameCover } from '@/utils';
 import type { GameData } from '@/types';
 import { useTranslation } from 'react-i18next';
 
@@ -112,7 +112,7 @@ async function getGameActivities(games: GameData[], language: string): Promise<{
                     type: 'play',
                     gameId: game.id as number,
                     gameTitle,
-                    imageUrl: game.image || '',
+                    imageUrl: getGameCover(game),
                     time: s.end_time as number,
                     duration: s.duration
                 };
@@ -124,7 +124,7 @@ async function getGameActivities(games: GameData[], language: string): Promise<{
                     game_id: game.id as number,
                     end_time: s.end_time as number,
                     gameTitle,
-                    imageUrl: game.image || '',
+                    imageUrl: getGameCover(game),
                 });
             }
         })
@@ -157,7 +157,7 @@ async function getGameActivities(games: GameData[], language: string): Promise<{
             type: 'add',
             gameId: game.id as number,
             gameTitle,
-            imageUrl: game.image || '',
+            imageUrl: getGameCover(game),
             time: timestamp
         };
         addItems.push(item);
@@ -165,7 +165,7 @@ async function getGameActivities(games: GameData[], language: string): Promise<{
         added.push({
             id: game.id as number,
             title: gameTitle,
-            imageUrl: game.image || '',
+            imageUrl: getGameCover(game),
             time: addedDate
         });
     }
@@ -203,7 +203,7 @@ export const Home: React.FC = () => {
         title: getGameDisplayName(game, i18n.language),
         id: game.id,
         isLocal: game.localpath !== '',
-        imageUrl: game.image
+        imageUrl: getGameCover(game)
     })), [allGames, i18n.language]);
 
     const gamesLocalCount = useMemo(() => gamesList.filter(game => game.isLocal).length, [gamesList]);

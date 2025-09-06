@@ -1,11 +1,34 @@
 import { open } from '@tauri-apps/plugin-shell';
-import { invoke, isTauri } from '@tauri-apps/api/core';
+import { convertFileSrc, invoke, isTauri } from '@tauri-apps/api/core';
 import {path} from '@tauri-apps/api';
 import type { GameData, HanleGamesProps } from '@/types';
 import i18next, { t } from 'i18next';
 import { open as openDirectory } from '@tauri-apps/plugin-dialog';
-import { updateGameClearStatus, saveSavedataRecord } from './repository';
+import { updateGame, saveSavedataRecord } from './repository';
 import {getSavePathRepository} from './settingsConfig';
+import { resourceDir } from '@tauri-apps/api/path';
+
+// 缓存资源目录路径
+let cachedResourceDirPath: string | null = null;
+
+/**
+ * 初始化资源目录路径缓存
+ * 应该在应用启动时调用
+ */
+export const initResourceDirPath = async (): Promise<string> => {
+  if (!cachedResourceDirPath) {
+    cachedResourceDirPath = await resourceDir();
+  }
+  return cachedResourceDirPath;
+};
+
+/**
+ * 获取缓存的资源目录路径（同步）
+ * 如果未初始化则返回空字符串
+ */
+export const getResourceDirPath = (): string => {
+  return cachedResourceDirPath || '';
+};
 
 // import { createTheme } from '@mui/material/styles';
 
@@ -183,11 +206,41 @@ export const handleGetFolder = async (defaultPath?: string) => {
 
 export const getGameDisplayName = (game: GameData, language?: string): string => {
   const currentLanguage = language || i18next.language;
-
+  if (game.custom_name){
+    return game.custom_name;
+  }
   // 只有当语言为zh-CN时才使用name_cn，其他语言都使用name
   return currentLanguage === 'zh-CN' && game.name_cn
     ? game.name_cn
     : game.name;
+};
+export const getcustomCoverFolder = (gameID: number): string => {
+  const resourceFolder = getResourceDirPath();
+  const customCoverFolder = `${resourceFolder}\\resources\\covers\\game_${gameID}`;
+  return customCoverFolder;
+}
+export const getGameCover = (game: GameData): string => {
+  // 如果有自定义封面扩展名，构造自定义封面路径
+  if (game.custom_cover) {
+    // 获取缓存的资源目录路径
+    const customCoverFolder = getcustomCoverFolder(game.id as number);
+    if (customCoverFolder) {
+      // 使用数据库的custom_cover字段作为完整文件名（包含版本信息）
+      // 例如：custom_cover = "jpg_1703123456789"
+      const customCoverPath = `${customCoverFolder}\\cover_${game.id}_${game.custom_cover}`;
+      
+      // 在 Tauri 环境中使用 convertFileSrc 转换路径
+      try {
+        return convertFileSrc(customCoverPath);
+      } catch (error) {
+        // 如果无法使用 convertFileSrc，降级到 asset 协议
+        return `asset://localhost/resources/covers/game_${game.id}/cover_${game.id}_${game.custom_cover}`;
+      }
+    }
+  }
+
+  // 使用默认封面
+  return game.image as string;
 };
 
 /**
@@ -212,7 +265,7 @@ export const toggleGameClearStatus = async (
     }
 
     const newClearStatus = game.clear === 1 ? 0 : 1;
-    await updateGameClearStatus(gameId, newClearStatus as 1 | 0);
+    await updateGame(gameId, { clear: newClearStatus as 1 | 0 });
 
     // 更新store中的games数组
     if (updateGamesInStore) {

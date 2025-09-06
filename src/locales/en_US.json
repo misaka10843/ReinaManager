@@ -138,7 +138,11 @@
                 "noDataFetched": "No data fetched or invalid data source.",
                 "unknownError": "Unknown error",
                 "mixedFetchError": "Mixed fetch error",
-                "updatePathFailed": "Failed to update path"
+                "updatePathFailed": "Failed to update path",
+                "dataSourceUpdate": "Data Source Update",
+                "gameInfoEdit": "Game Info Edit",
+                "collapseTags": "Collapse Tags",
+                "expandTags": "Expand Tags"
             },
             "Backup": {
                 "pathRequired": "Please select a save data folder first",
@@ -171,6 +175,44 @@
                 "autoSaveUpdateFailed": "Failed to update auto backup setting",
                 "openBackupFolder": "Open Backup Folder",
                 "openSaveDataFolder": "Open Save Data Folder"
+            },
+            "DataSourceUpdate": {
+                "bgmIdRequired": "Bangumi ID cannot be empty",
+                "unknownError": "Unknown error",
+                "bangumiFetchError": "Bangumi fetch error",
+                "vndbIdRequired": "VNDB ID cannot be empty",
+                "vndbFetchError": "VNDB fetch error",
+                "bgmOrVndbIdRequired": "Bangumi ID or VNDB ID cannot be empty",
+                "mixedFetchError": "Mixed fetch error",
+                "customModeWarning": "Custom mode cannot update from data source.",
+                "invalidDataSource": "Invalid data source selected.",
+                "noDataFetched": "No data fetched or data source invalid.",
+                "dataSource": "Data Source",
+                "bgmId": "Bangumi ID",
+                "vndbId": "VNDB ID",
+                "loading": "Loading...",
+                "updateFromSource": "Update from data source"
+            },
+            "GameInfoEdit": {
+                "enterGameNote": "Please enter game note",
+                "selectPathFailed": "Failed to select path",
+                "invalidGameId": "Invalid game ID",
+                "selectImageFailed": "Failed to select image",
+                "removeCustomCoverFailed": "Failed to remove custom cover",
+                "saveGameInfoFailed": "Failed to save game info",
+                "customizeGame": "Customize Game Info",
+                "customName": "Custom Name",
+                "customCover": "Custom Cover",
+                "selectImage": "Select Image",
+                "removeCustomCover": "Remove Custom Cover",
+                "hasCustomCover": "Custom cover set",
+                "previewSelected": "New image selected, will take effect after saving",
+                "gameNote": "Game Note",
+                "customGameName": "Custom Game Name",
+                "noteHelperText": "You can set a custom display name for the game, leave blank to use the default name",
+                "localPath": "Executable Path",
+                "saving": "Saving...",
+                "saveAllChanges": "Save All Changes"
             }
         }
     },

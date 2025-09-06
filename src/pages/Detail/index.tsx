@@ -30,7 +30,7 @@ import { Edit } from './Edit';
 import { Backup } from './Backup';
 import { getGameById } from '@/utils/repository';
 import i18n from '@/utils/i18n';
-import { getGameDisplayName } from '@/utils';
+import { getGameDisplayName, getGameCover } from '@/utils';
 import { translateTags } from '@/utils/tagTranslation';
 
 
@@ -76,9 +76,14 @@ export const Detail: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true); // 添加加载状态
     const [currentId, setCurrentId] = useState<number | null>(null); // 跟踪当前显示的游戏ID
     const [gameAddTime, setGameAddTime] = useState<Date | undefined>(undefined);
+    const [showAllTags, setShowAllTags] = useState(false); // 控制标签折叠状态
 
     const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
         setTabIndex(newValue);
+    };
+
+    const handleToggleTags = () => {
+        setShowAllTags((prev) => !prev);
     };
 
     const activePage = useActivePage();
@@ -137,7 +142,7 @@ export const Detail: React.FC = () => {
                     {/* 左侧：游戏图片 */}
                     <Box>
                         <img
-                            src={selectedGame.image}
+                            src={getGameCover(selectedGame)}
                             alt={selectedGame.name}
                             className="max-h-65 max-w-40 lg:max-w-80 rounded-lg shadow-lg select-none"
                             onDragStart={(event) => event.preventDefault()}
@@ -191,10 +196,23 @@ export const Detail: React.FC = () => {
                         <Box className="mt-2">
                             <Typography variant="subtitle2" fontWeight="bold" gutterBottom component="div">{t('pages.Detail.gameTags')}</Typography>
                             <Stack direction="row" className="flex-wrap gap-1">
-                                {translateTags(selectedGame.tags || [], tagTranslation).map((tag, index) => (
-                                    <Chip key={`${selectedGame.tags?.[index] || tag}-${index}`} label={tag} size="small" variant="outlined" />
-                                ))}
+                                {translateTags(selectedGame.tags || [], tagTranslation)
+                                    .slice(0, showAllTags ? undefined : 40) // 根据折叠状态显示标签数量
+                                    .map((tag, index) => (
+                                        <Chip key={`${selectedGame.tags?.[index] || tag}-${index}`} label={tag} size="small" variant="outlined" />
+                                    ))}
                             </Stack>
+                            {selectedGame.tags && selectedGame.tags.length > 40 && (
+                                <Typography
+                                    variant="body2"
+                                    color="primary"
+                                    sx={{ cursor: 'pointer', mt: 1 }}
+                                    component={'span'}
+                                    onClick={handleToggleTags}
+                                >
+                                    {showAllTags ? t('pages.Detail.collapseTags', '折叠标签') : t('pages.Detail.expandTags', '展开标签')}
+                                </Typography>
+                            )}
                         </Box>
                     </Box>
                 </Stack>

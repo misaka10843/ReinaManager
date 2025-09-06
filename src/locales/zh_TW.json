@@ -138,7 +138,11 @@
                 "noDataFetched": "未獲取到資料或資料來源無效。",
                 "unknownError": "未知錯誤",
                 "mixedFetchError": "Mixed 獲取錯誤",
-                "updatePathFailed": "更新路徑失敗"
+                "updatePathFailed": "更新路徑失敗",
+                "dataSourceUpdate": "數據源更新",
+                "gameInfoEdit": "遊戲資料編輯",
+                "collapseTags": "折疊標籤",
+                "expandTags": "展開標籤"
             },
             "Backup": {
                 "pathRequired": "請先選擇存檔資料夾",
@@ -171,6 +175,44 @@
                 "autoSaveUpdateFailed": "自動備份設定失敗",
                 "openBackupFolder": "開啟備份資料夾",
                 "openSaveDataFolder": "開啟存檔資料夾"
+            },
+            "DataSourceUpdate": {
+                "bgmIdRequired": "Bangumi ID 不能為空",
+                "unknownError": "未知錯誤",
+                "bangumiFetchError": "Bangumi 獲取錯誤",
+                "vndbIdRequired": "VNDB ID 不能為空",
+                "vndbFetchError": "VNDB 獲取錯誤",
+                "bgmOrVndbIdRequired": "Bangumi ID 或 VNDB ID 不能為空",
+                "mixedFetchError": "Mixed 獲取錯誤",
+                "customModeWarning": "自定模式無法從數據源更新。",
+                "invalidDataSource": "選擇了無效的數據源。",
+                "noDataFetched": "未獲取到數據或數據源無效。",
+                "dataSource": "數據源",
+                "bgmId": "Bangumi ID",
+                "vndbId": "VNDB ID",
+                "loading": "正在獲取...",
+                "updateFromSource": "從數據源更新數據"
+            },
+            "GameInfoEdit": {
+                "enterGameNote": "請輸入遊戲備註",
+                "selectPathFailed": "選擇路徑失敗",
+                "invalidGameId": "無效的遊戲ID",
+                "selectImageFailed": "選擇圖片失敗",
+                "removeCustomCoverFailed": "移除自定封面失敗",
+                "saveGameInfoFailed": "保存遊戲信息失敗",
+                "customizeGame": "自定遊戲信息",
+                "customName": "自定名稱",
+                "customCover": "自定封面",
+                "selectImage": "選擇圖片",
+                "removeCustomCover": "移除自定封面",
+                "hasCustomCover": "已設置自定封面",
+                "previewSelected": "已選擇新圖片，保存後生效",
+                "gameNote": "遊戲備註",
+                "customGameName": "自定遊戲名稱",
+                "noteHelperText": "您可以為遊戲設置一個自定的顯示名稱，留空則使用默認名稱",
+                "localPath": "可執行文件路徑",
+                "saving": "保存中...",
+                "saveAllChanges": "保存所有更改"
             }
         }
     },

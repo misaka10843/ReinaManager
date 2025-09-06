@@ -21,8 +21,6 @@ pub struct MoveResult {
 /// 操作结果
 #[command]
 pub async fn open_directory(dir_path: String) -> Result<(), String> {
-    use std::fs;
-
     // 首先检查路径是否存在
     if !Path::new(&dir_path).exists() {
         // 如果路径不存在，尝试创建它
@@ -155,6 +153,66 @@ fn copy_dir_all(src: &Path, dst: &Path) -> Result<(), Box<dyn std::error::Error>
             copy_dir_all(&src_path, &dst_path)?;
         } else {
             fs::copy(&src_path, &dst_path)?;
+        }
+    }
+
+    Ok(())
+}
+
+#[command]
+pub async fn copy_file(src: String, dst: String) -> Result<(), String> {
+    let src_path = Path::new(&src);
+    let dst_path = Path::new(&dst);
+
+    if !src_path.exists() {
+        return Err(format!("源文件不存在: {}", src));
+    }
+
+    if let Some(parent) = dst_path.parent() {
+        if !parent.exists() {
+            fs::create_dir_all(parent).map_err(|e| format!("无法创建目标目录的父目录: {}", e))?;
+        }
+    }
+    fs::copy(src_path, dst_path).map_err(|e| format!("无法复制文件: {}", e))?;
+    Ok(())
+}
+
+/// 删除文件
+#[command]
+pub async fn delete_file(file_path: String) -> Result<(), String> {
+    let path = Path::new(&file_path);
+    if !path.exists() {
+        return Ok(()); // 文件不存在，视为成功
+    }
+
+    fs::remove_file(path).map_err(|e| format!("无法删除文件: {}", e))?;
+    Ok(())
+}
+
+/// 删除指定游戏的所有自定义封面文件
+#[command]
+pub async fn delete_game_covers(game_id: u32, covers_dir: String) -> Result<(), String> {
+    let dir_path = Path::new(&covers_dir);
+
+    if !dir_path.exists() {
+        return Ok(()); // 目录不存在，视为成功
+    }
+
+    // 读取目录中的所有文件
+    let entries = fs::read_dir(dir_path).map_err(|e| format!("无法读取封面目录: {}", e))?;
+
+    for entry in entries {
+        let entry = entry.map_err(|e| format!("读取目录项失败: {}", e))?;
+        let file_name = entry.file_name();
+        let file_name_str = file_name.to_string_lossy();
+
+        // 匹配该游戏的封面文件模式：cover_{game_id}_*
+        if file_name_str.starts_with(&format!("cover_{}_", game_id)) {
+            let file_path = entry.path();
+            if let Err(e) = fs::remove_file(&file_path) {
+                eprintln!("删除文件失败 {:?}: {}", file_path, e);
+                // 继续删除其他文件，不中断流程
+            }
         }
     }
 

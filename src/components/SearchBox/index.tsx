@@ -142,14 +142,14 @@ export const SearchBox = () => {
         if (event.ctrlKey) {
             return; // 允许 Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X 等
         }
-        
+
         // ESC 键关闭建议
         if (event.key === 'Escape') {
             setIsOpen(false);
             event.stopPropagation();
             return;
         }
-        
+
         // Enter 键执行搜索并关闭建议
         if (event.key === 'Enter') {
             if (isOpen) {
@@ -177,192 +177,192 @@ export const SearchBox = () => {
     };
 
     return (
-        <div style={{ 
-            // 固定容器宽度，防止影响其他元素
-            width: isFocused || hasInput ? '400px' : '280px',
+        <div style={{
+            // 固定宽度，不再变化
+            width: '300px',
             maxWidth: 'min(40vw, 400px)', // 最大不超过40%视窗宽度
-            transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             overflow: 'visible', // 允许下拉框溢出
         }}>
             <Autocomplete
-            freeSolo
-            open={isOpen && suggestions.length > 0}
-            onOpen={() => setIsOpen(true)}
-            onClose={() => setIsOpen(false)}
-            options={suggestions}
-            inputValue={keyword}
-            selectOnFocus={false}  // 不要在焦点时自动选择
-            clearOnBlur={false}    // 失去焦点时不清除  
-            handleHomeEndKeys={false}  // 禁用 Home/End 键处理
-            disableClearable={true}  // 禁用内置清除按钮
-            blurOnSelect={false}    // 选择后不失去焦点
-            onInputChange={(_event, newInputValue, reason) => {
-                if (reason === 'input') {
-                    setKeyword(newInputValue);
-                    setHasInput(Boolean(newInputValue.trim()));
-                    setIsOpen(true);
-                } else if (reason === 'clear') {
-                    handleClear();
-                }
-            }}
-            onChange={handleAutocompleteChange}
-            sx={{
-                // 在容器内占满宽度
-                width: '100%',
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', // 平滑过渡动画
-                '& .MuiOutlinedInput-root': {
-                    borderRadius: 3,
-                    backgroundColor: 'background.paper',
-                    transition: 'all 0.3s ease',
-                    '&:hover': {
-                        boxShadow: 1,
-                        '& .MuiOutlinedInput-notchedOutline': {
-                            borderColor: 'primary.main',
-                        },
-                    },
-                    '&.Mui-focused': {
-                        boxShadow: 2,
-                        '& .MuiOutlinedInput-notchedOutline': {
-                            borderColor: 'primary.main',
-                            borderWidth: 2,
-                        },
-                    },
-                },
-            }}
-            renderInput={(params) => (
-                <TextField
-                    {...params}
-                    variant="outlined"
-                    size="small"
-                    aria-label={t('components.SearchBox.searchGame')}
-                    placeholder={isFocused || hasInput ? t('components.SearchBox.inputGameName') : t('components.SearchBox.search')}
-                    onFocus={handleFocus}
-                    onBlur={handleBlur}
-                    onKeyDown={handleKeyDown}
-                    slotProps={{
-                        input: {
-                            ...params.InputProps,
-                            endAdornment: null, // 完全移除Autocomplete的默认endAdornment
-                            startAdornment: (
-                                <InputAdornment position="start">
-                                    <SearchIcon 
-                                        fontSize="small" 
-                                        sx={{ 
-                                            color: isFocused || keyword ? 'primary.main' : 'text.secondary',
-                                            transition: 'color 0.3s ease',
-                                        }} 
-                                    />
-                                </InputAdornment>
-                            ),
-                            // 确保原生输入行为正常工作
-                            onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => {
-                                // 让原生快捷键正常工作
-                                if (event.ctrlKey || event.metaKey) {
-                                    event.stopPropagation();
-                                }
-                                // 调用我们的处理器
-                                handleKeyDown(event);
+                freeSolo
+                open={isOpen && suggestions.length > 0}
+                onOpen={() => setIsOpen(true)}
+                onClose={() => setIsOpen(false)}
+                options={suggestions}
+                inputValue={keyword}
+                selectOnFocus={false}  // 不要在焦点时自动选择
+                clearOnBlur={false}    // 失去焦点时不清除  
+                handleHomeEndKeys={false}  // 禁用 Home/End 键处理
+                blurOnSelect={false}    // 选择后不失去焦点
+                onInputChange={(_event, newInputValue, reason) => {
+                    if (reason === 'input') {
+                        setKeyword(newInputValue);
+                        setHasInput(Boolean(newInputValue.trim()));
+                        setIsOpen(true);
+                    } else if (reason === 'clear') {
+                        handleClear();
+                    }
+                }}
+                onChange={handleAutocompleteChange}
+                sx={{
+                    // 在容器内占满宽度
+                    width: '100%',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', // 平滑过渡动画
+                    '& .MuiOutlinedInput-root': {
+                        borderRadius: 3,
+                        backgroundColor: 'background.paper',
+                        transition: 'all 0.3s ease',
+                        '&:hover': {
+                            boxShadow: 1,
+                            '& .MuiOutlinedInput-notchedOutline': {
+                                borderColor: 'primary.main',
                             },
                         },
-                    }}
-                    InputProps={{
-                        ...params.InputProps,
-                        endAdornment: (
-                            <InputAdornment position="end">
-                                {keyword && (
-                                    <IconButton
-                                        onClick={handleClear}
-                                        size="small"
-                                        aria-label={t('components.SearchBox.clearSearch')}
-                                        sx={{
-                                            p: 0.5,
-                                            '&:hover': {
-                                                backgroundColor: 'action.hover',
-                                            },
-                                        }}
-                                    >
-                                        <ClearIcon fontSize="small" />
-                                    </IconButton>
-                                )}
-                            </InputAdornment>
-                        ),
-                    }}
-                />
-            )}
-            renderOption={(props, option) => {
-                const { key, ...otherProps } = props;
-                return (
-                    <li 
-                        key={option}
-                        {...otherProps}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            padding: '12px 16px',
-                            borderRadius: '8px',
-                            margin: '4px 8px',
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            backgroundColor: 'transparent',
-                        }}
-                    >
-                        <SearchIcon 
-                            fontSize="small" 
-                            style={{ 
-                                marginRight: 12,
-                                color: '#1976d2',
-                                flexShrink: 0,
-                            }} 
-                        />
-                        <span style={{ 
-                            flex: 1,
-                            overflow: 'hidden', 
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            fontSize: '14px',
-                            color: 'inherit',
-                        }}>
-                            {option}
-                        </span>
-                    </li>
-                );
-            }}
-            ListboxProps={{
-                style: {
-                    maxHeight: '60vh',
-                    padding: '8px 0',
-                },
-                sx: {
-                    '& .MuiAutocomplete-option': {
-                        '&:hover': {
-                            backgroundColor: 'rgba(25, 118, 210, 0.08) !important',
-                        },
-                        '&[aria-selected="true"]': {
-                            backgroundColor: 'rgba(25, 118, 210, 0.12) !important',
-                            fontWeight: 500,
-                        },
                         '&.Mui-focused': {
-                            backgroundColor: 'rgba(25, 118, 210, 0.08) !important',
+                            boxShadow: 2,
+                            '& .MuiOutlinedInput-notchedOutline': {
+                                borderColor: 'primary.main',
+                                borderWidth: 2,
+                            },
                         },
                     },
-                },
-            }}
-            PaperComponent={(props) => (
-                <div 
-                    {...props}
-                    style={{
-                        ...props.style,
-                        marginTop: 8,
-                        borderRadius: 12,
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.1), 0 8px 40px rgba(0,0,0,0.05)',
-                        border: '1px solid rgba(0,0,0,0.06)',
-                        backgroundColor: '#ffffff',
-                        minWidth: props.style?.width || 'auto',
-                        overflow: 'hidden',
-                    }}
-                />
-            )}
-        />
+                }}
+                renderInput={(params) => (
+                    <TextField
+                        {...params}
+                        variant="outlined"
+                        size="small"
+                        aria-label={t('components.SearchBox.searchGame')}
+                        placeholder={isFocused || hasInput ? t('components.SearchBox.inputGameName') : t('components.SearchBox.search')}
+                        onFocus={handleFocus}
+                        onBlur={handleBlur}
+                        onKeyDown={handleKeyDown}
+                        slotProps={{
+                            input: {
+                                ...params.InputProps,
+                                startAdornment: (
+                                    <InputAdornment position="start">
+                                        <SearchIcon
+                                            fontSize="small"
+                                            sx={{
+                                                color: isFocused || keyword ? 'primary.main' : 'text.secondary',
+                                                transition: 'color 0.3s ease',
+                                            }}
+                                        />
+                                    </InputAdornment>
+                                ),
+                                // 确保原生输入行为正常工作
+                                onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => {
+                                    // 让原生快捷键正常工作
+                                    if (event.ctrlKey || event.metaKey) {
+                                        event.stopPropagation();
+                                    }
+                                    // 调用我们的处理器
+                                    handleKeyDown(event);
+                                },
+                            },
+                        }}
+                        InputProps={{
+                            ...params.InputProps,
+                            endAdornment: (
+                                <>
+                                    {keyword && (
+                                        <InputAdornment position="end">
+                                            <IconButton
+                                                onClick={handleClear}
+                                                size="small"
+                                                aria-label={t('components.SearchBox.clearSearch')}
+                                                sx={{
+                                                    p: 0.5,
+                                                    '&:hover': {
+                                                        backgroundColor: 'action.hover',
+                                                    },
+                                                }}
+                                            >
+                                                <ClearIcon fontSize="small" />
+                                            </IconButton>
+                                        </InputAdornment>
+                                    )}
+                                    {params.InputProps.endAdornment}
+                                </>
+                            ),
+                        }}
+                    />
+                )}
+                renderOption={(props, option) => {
+                    const { key, ...otherProps } = props;
+                    return (
+                        <li
+                            key={option}
+                            {...otherProps}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                padding: '12px 16px',
+                                borderRadius: '8px',
+                                margin: '4px 8px',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                backgroundColor: 'transparent',
+                            }}
+                        >
+                            <SearchIcon
+                                fontSize="small"
+                                style={{
+                                    marginRight: 12,
+                                    color: '#1976d2',
+                                    flexShrink: 0,
+                                }}
+                            />
+                            <span style={{
+                                flex: 1,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                fontSize: '14px',
+                                color: 'inherit',
+                            }}>
+                                {option}
+                            </span>
+                        </li>
+                    );
+                }}
+                ListboxProps={{
+                    style: {
+                        maxHeight: '60vh',
+                        padding: '8px 0',
+                    },
+                    sx: {
+                        '& .MuiAutocomplete-option': {
+                            '&:hover': {
+                                backgroundColor: 'rgba(25, 118, 210, 0.08) !important',
+                            },
+                            '&[aria-selected="true"]': {
+                                backgroundColor: 'rgba(25, 118, 210, 0.12) !important',
+                                fontWeight: 500,
+                            },
+                            '&.Mui-focused': {
+                                backgroundColor: 'rgba(25, 118, 210, 0.08) !important',
+                            },
+                        },
+                    },
+                }}
+                PaperComponent={(props) => (
+                    <div
+                        {...props}
+                        style={{
+                            ...props.style,
+                            marginTop: 8,
+                            borderRadius: 12,
+                            boxShadow: '0 4px 20px rgba(0,0,0,0.1), 0 8px 40px rgba(0,0,0,0.05)',
+                            border: '1px solid rgba(0,0,0,0.06)',
+                            backgroundColor: '#ffffff',
+                            minWidth: props.style?.width || 'auto',
+                            overflow: 'hidden',
+                        }}
+                    />
+                )}
+            />
         </div>
     );
 }

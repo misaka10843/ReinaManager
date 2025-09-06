@@ -9,6 +9,7 @@
 import { pinyin } from 'pinyin-pro';
 import Fuse, { type FuseResult, type IFuseOptions } from 'fuse.js';
 import type { GameData } from '@/types';
+import { getGameDisplayName } from './index';
 
 /**
  * 搜索结果接口
@@ -27,6 +28,8 @@ interface GameDataWithSearchFields extends GameData {
   pinyinFull: string;
   pinyinFirst: string;
   displayName: string;
+  allTitlesString: string;
+  aliasesString: string;
 }
 
 /**
@@ -36,25 +39,33 @@ interface GameDataWithSearchFields extends GameData {
  */
 function preprocessGameData(games: GameData[]): GameDataWithSearchFields[] {
   return games.map(game => {
-    // 获取显示名称
-    const displayName = game.name_cn || game.name || '';
+    // 使用统一的显示名称获取函数
+    const displayName = getGameDisplayName(game);
     
-    // 生成搜索关键词
+    // 处理字符串数组字段
+    const allTitles = Array.isArray(game.all_titles) ? game.all_titles : [];
+    const aliases = Array.isArray(game.aliases) ? game.aliases : [];
+    
+    // 转换为字符串用于搜索
+    const allTitlesString = allTitles.join(' ');
+    const aliasesString = aliases.join(' ');
+    
+    // 生成搜索关键词（避免重复 displayName 中已包含的内容）
     const keywords = [
-      game.name || '',
-      game.name_cn || '',
+      displayName,
       game.developer || '',
-      ...(Array.isArray(game.all_titles) ? game.all_titles.filter(title => typeof title === 'string') : [])
+      ...allTitles,
+      ...aliases
     ].filter(Boolean);
     
     const searchKeywords = keywords.join(' ').toLowerCase();
     
-    // 生成拼音 - 优化拼音处理
+    // 生成拼音 - 只处理包含中文的文本
     const chineseTexts = [
-      game.name_cn || '',
+      displayName,
       game.developer || '',
-      ...(Array.isArray(game.all_titles) ? 
-        game.all_titles.filter(title => typeof title === 'string' && /[\u4e00-\u9fff]/.test(title)) : [])
+      ...allTitles,
+      ...aliases
     ].filter(text => text && /[\u4e00-\u9fff]/.test(text));
     
     // 完整拼音 (带空格分隔)
@@ -75,13 +86,15 @@ function preprocessGameData(games: GameData[]): GameDataWithSearchFields[] {
         separator: ''
       }).toLowerCase()
     ).join('');
-    
+
     return {
       ...game,
       searchKeywords,
       pinyinFull,
       pinyinFirst,
-      displayName
+      displayName,
+      allTitlesString,
+      aliasesString
     };
   });
 }
@@ -91,10 +104,10 @@ function preprocessGameData(games: GameData[]): GameDataWithSearchFields[] {
  * @param processedGames 预处理后的游戏数据
  * @returns Fuse 搜索实例
  */
-function createFuseInstance(processedGames: GameDataWithSearchFields[]): Fuse<GameDataWithSearchFields> {
+function createFuseInstance(processedGames: GameDataWithSearchFields[], threshold: number = 0.6): Fuse<GameDataWithSearchFields> {
   const fuseOptions: IFuseOptions<GameDataWithSearchFields> = {
-    // 搜索阈值：调整为更宽松的匹配
-    threshold: 0.6,
+    // 搜索阈值：使用传入的阈值
+    threshold,
     
     // 搜索位置权重 - 匹配开始位置越靠前权重越高
     location: 0,
@@ -121,20 +134,20 @@ function createFuseInstance(processedGames: GameDataWithSearchFields[]): Fuse<Ga
         weight: 0.35  // 显示名称权重最高
       },
       {
-        name: 'name_cn', 
-        weight: 0.35  // 中文名权重
+        name: 'allTitlesString',
+        weight: 0.3   // 所有标题权重较高
       },
       {
-        name: 'name',
-        weight: 0.25  // 英文名权重
+        name: 'aliasesString',
+        weight: 0.3   // 别名权重较高
       },
       {
         name: 'pinyinFull',
-        weight: 0.3   // 完整拼音权重
+        weight: 0.25  // 完整拼音权重
       },
       {
         name: 'pinyinFirst', 
-        weight: 0.25  // 拼音首字母权重
+        weight: 0.2   // 拼音首字母权重
       },
       {
         name: 'developer',
@@ -142,7 +155,7 @@ function createFuseInstance(processedGames: GameDataWithSearchFields[]): Fuse<Ga
       },
       {
         name: 'searchKeywords',
-        weight: 0.2   // 其他关键词权重
+        weight: 0.1   // 综合关键词权重最低（避免重复计分）
       }
     ]
   };
@@ -184,10 +197,7 @@ export function enhancedSearch(
   const processedGames = preprocessGameData(games);
   
   // 创建搜索实例
-  const fuse = createFuseInstance(processedGames);
-  
-  // 更新搜索阈值
-  fuse.setCollection(processedGames);
+  const fuse = createFuseInstance(processedGames, threshold);
   
   // 执行搜索
   const searchTerm = keyword.trim().toLowerCase();
@@ -212,9 +222,8 @@ export function enhancedSearch(
     }
   }
   
-  // 转换为统一的搜索结果格式
+  // 转换为统一的搜索结果格式（移除重复的阈值过滤）
   const results: SearchResult[] = fuseResults
-    .filter(result => (result.score || 0) <= threshold)
     .map(result => ({
       item: result.item,
       score: 1 - (result.score || 0), // Fuse.js 的 score 越小越好，转换为越大越好
@@ -247,11 +256,15 @@ export function getSearchSuggestions(
   const prioritySuggestions: Array<{ name: string, priority: number }> = [];
   
   for (const game of games) {
+    const displayName = getGameDisplayName(game);
+    const allTitles = Array.isArray(game.all_titles) ? game.all_titles : [];
+    const aliases = Array.isArray(game.aliases) ? game.aliases : [];
+    
     const names = [
-      game.name_cn,
-      game.name,
+      displayName,
       game.developer,
-      ...(Array.isArray(game.all_titles) ? game.all_titles.filter(title => typeof title === 'string') : [])
+      ...allTitles,
+      ...aliases
     ].filter(Boolean);
     
     // 直接名称匹配
@@ -267,25 +280,26 @@ export function getSearchSuggestions(
       }
     }
     
-    // 拼音匹配建议
-    if (game.name_cn && /[\u4e00-\u9fff]/.test(game.name_cn)) {
+    // 拼音匹配建议 - 只对包含中文的内容进行拼音处理
+    const chineseNames = names.filter((name): name is string => name != null && /[\u4e00-\u9fff]/.test(name));
+    for (const chineseName of chineseNames) {
       try {
         // 完整拼音
-        const pinyinFull = pinyin(game.name_cn, {
+        const pinyinFull = pinyin(chineseName, {
           toneType: 'none',
           type: 'string',
           separator: ''
         }).toLowerCase();
         
         // 带空格拼音
-        const pinyinSpaced = pinyin(game.name_cn, {
+        const pinyinSpaced = pinyin(chineseName, {
           toneType: 'none',
           type: 'string',
           separator: ' '
         }).toLowerCase();
         
         // 拼音首字母
-        const pinyinFirst = pinyin(game.name_cn, {
+        const pinyinFirst = pinyin(chineseName, {
           pattern: 'first',
           toneType: 'none',
           type: 'string',
@@ -293,9 +307,9 @@ export function getSearchSuggestions(
         }).toLowerCase();
         
         if (pinyinFull.includes(inputLower) || pinyinSpaced.includes(inputLower)) {
-          prioritySuggestions.push({ name: game.name_cn, priority: 2 });
+          prioritySuggestions.push({ name: chineseName, priority: 2 });
         } else if (pinyinFirst.includes(inputLower) && inputLower.length >= 2) {
-          prioritySuggestions.push({ name: game.name_cn, priority: 1 });
+          prioritySuggestions.push({ name: chineseName, priority: 1 });
         }
       } catch (error) {
         console.warn('拼音建议生成失败:', error);
@@ -342,136 +356,4 @@ export function highlightSearchTerm(text: string, keyword: string): string {
  */
 export function containsChinese(text: string): boolean {
   return /[\u4e00-\u9fff]/.test(text);
-}
-
-/**
- * 智能搜索 - 根据输入内容自动选择最佳搜索策略
- * @param games 游戏数据数组  
- * @param keyword 搜索关键词
- * @param limit 结果数量限制
- * @returns 搜索结果
- */
-export function smartSearch(
-  games: GameData[],
-  keyword: string,
-  limit: number = 20
-): SearchResult[] {
-  if (!keyword || keyword.trim() === '') {
-    return games.map(game => ({ item: game, score: 1 }));
-  }
-
-  const searchTerm = keyword.trim().toLowerCase();
-  
-  // 简化的直接搜索逻辑 - 更可靠
-  const results: SearchResult[] = [];
-  
-  for (const game of games) {
-    let score = 0;
-    const displayName = (game.name_cn || game.name || '').toLowerCase();
-    const englishName = (game.name || '').toLowerCase();
-    const developer = (game.developer || '').toLowerCase();
-    
-    // 1. 精确匹配检查
-    if (displayName === searchTerm || englishName === searchTerm) {
-      score = 1.0;
-    }
-    // 2. 开头匹配
-    else if (displayName.startsWith(searchTerm) || englishName.startsWith(searchTerm)) {
-      score = 0.9;
-    }
-    // 3. 包含匹配
-    else if (displayName.includes(searchTerm) || englishName.includes(searchTerm)) {
-      score = 0.8;
-    }
-    // 4. 开发商匹配
-    else if (developer.includes(searchTerm)) {
-      score = 0.6;
-    }
-    
-    // 5. 拼音匹配 (仅对中文游戏名)
-    if (score === 0 && game.name_cn && /[\u4e00-\u9fff]/.test(game.name_cn)) {
-      try {
-        // 完整拼音匹配 (不带空格)
-        const pinyinFull = pinyin(game.name_cn, {
-          toneType: 'none',
-          type: 'string',
-          separator: ''
-        }).toLowerCase();
-        
-        // 拼音匹配 (带空格)
-        const pinyinSpaced = pinyin(game.name_cn, {
-          toneType: 'none',
-          type: 'string',
-          separator: ' '
-        }).toLowerCase();
-        
-        // 拼音首字母匹配
-        const pinyinFirst = pinyin(game.name_cn, {
-          pattern: 'first',
-          toneType: 'none',
-          type: 'string',
-          separator: ''
-        }).toLowerCase();
-        
-        // 检查各种拼音匹配方式
-        if (pinyinFull === searchTerm) {
-          score = 0.9; // 完整拼音精确匹配
-        } else if (pinyinSpaced.includes(searchTerm)) {
-          score = 0.8; // 拼音包含匹配
-        } else if (pinyinFull.includes(searchTerm) && searchTerm.length >= 2) {
-          score = 0.7; // 连续拼音部分匹配
-        } else if (pinyinFirst === searchTerm && searchTerm.length >= 2) {
-          score = 0.6; // 拼音首字母精确匹配
-        } else if (pinyinFirst.includes(searchTerm) && searchTerm.length >= 2) {
-          score = 0.5; // 拼音首字母部分匹配
-        }
-      } catch (error) {
-        console.warn('拼音转换失败:', error);
-      }
-    }
-    
-    // 6. 模糊匹配 (编辑距离)
-    if (score === 0 && searchTerm.length >= 3) {
-      const distance = levenshteinDistance(searchTerm, displayName);
-      const similarity = 1 - distance / Math.max(searchTerm.length, displayName.length);
-      if (similarity > 0.6) {
-        score = similarity * 0.4;
-      }
-    }
-    
-    if (score > 0) {
-      results.push({ item: game, score });
-    }
-  }
-  
-  // 按分数排序并限制结果数量
-  return results
-    .sort((a, b) => b.score - a.score)
-    .slice(0, limit);
-}
-
-// 简单的编辑距离计算
-function levenshteinDistance(str1: string, str2: string): number {
-  const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null));
-
-  for (let i = 0; i <= str1.length; i++) {
-    matrix[0][i] = i;
-  }
-
-  for (let j = 0; j <= str2.length; j++) {
-    matrix[j][0] = j;
-  }
-
-  for (let j = 1; j <= str2.length; j++) {
-    for (let i = 1; i <= str1.length; i++) {
-      const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1;
-      matrix[j][i] = Math.min(
-        matrix[j][i - 1] + 1,
-        matrix[j - 1][i] + 1,
-        matrix[j - 1][i - 1] + indicator
-      );
-    }
-  }
-
-  return matrix[str2.length][str1.length];
 }

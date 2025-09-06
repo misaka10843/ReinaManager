@@ -6,10 +6,11 @@ use backup::savedata::{create_savedata_backup, delete_savedata_backup};
 use migrations::get_migrations;
 use tauri::Manager;
 use utils::{
-    fs::{move_backup_folder, open_directory},
+    fs::{copy_file, delete_file, delete_game_covers, move_backup_folder, open_directory},
     game_monitor::monitor_game,
     launch::launch_game,
 };
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -36,9 +37,12 @@ pub fn run() {
             launch_game,
             open_directory,
             move_backup_folder,
+            copy_file,
             monitor_game,
             create_savedata_backup,
             delete_savedata_backup,
+            delete_file,
+            delete_game_covers,
         ])
         .setup(|app| {
             if cfg!(debug_assertions) {
