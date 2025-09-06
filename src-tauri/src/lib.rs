@@ -17,6 +17,7 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             let window = app.get_webview_window("main").expect("no main window");
+            let _ = window.show();
             let _ = window.unminimize();
             let _ = window.set_focus();
         }))
