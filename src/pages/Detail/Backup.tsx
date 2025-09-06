@@ -26,8 +26,6 @@ import { handleGetFolder, deleteSavedataBackup, getAppDataDir, createGameSavedat
 import {
     getSavedataRecords,
     deleteSavedataRecord,
-    updateAutoSaveStatus,
-    updateSaveDataPath,
     getGameById
 } from '@/utils/repository';
 import type { SavedataRecord } from '@/types';
@@ -112,11 +110,8 @@ export const Backup = (): JSX.Element => {
         setSuccess(null);
 
         try {
-            await updateSaveDataPath(selectedGame.id, saveDataPath);
-
-            // 同步更新 store 中的 selectedGame
-            const updatedGame = { ...selectedGame, savepath: saveDataPath };
-            await updateGame(selectedGame.id, updatedGame);
+            // 使用统一的updateGame函数更新存档路径
+            await updateGame(selectedGame.id, { savepath: saveDataPath });
 
             setSuccess(t('pages.Detail.Backup.pathUpdateSuccess', '存档路径更新成功'));
 
@@ -139,12 +134,9 @@ export const Backup = (): JSX.Element => {
         setSuccess(null);
 
         try {
-            await updateAutoSaveStatus(selectedGame.id, enabled ? 1 : 0);
+            // 使用统一的updateGame函数更新自动保存状态
+            await updateGame(selectedGame.id, { autosave: enabled ? 1 as const : 0 as const });
             setAutoSaveEnabled(enabled);
-
-            // 同步更新 store 中的 selectedGame
-            const updatedGame = { ...selectedGame, autosave: enabled ? 1 as const : 0 as const };
-            await updateGame(selectedGame.id, updatedGame);
 
             const message = enabled
                 ? t('pages.Detail.Backup.autoSaveEnabled', '自动备份已启用')

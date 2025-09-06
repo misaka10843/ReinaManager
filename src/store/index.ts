@@ -83,7 +83,7 @@ export interface AppState {
     addGame: (game: GameData) => Promise<void>;
     deleteGame: (gameId: number) => Promise<void>;
     getGameById: (gameId: number) => Promise<GameData>;
-    updateGame: (id: number, game: GameData) => Promise<void>;
+    updateGame: (id: number, gameUpdates: Partial<GameData>) => Promise<void>;
 
     // 排序方法
     setSortOption: (option: string) => void;
@@ -356,12 +356,16 @@ export const useStore = create<AppState>()(
                 return await Promise.resolve(getGameByIdLocal(gameId));
             },
 
-            updateGame: async (id: number, game: GameData) => {
+            updateGame: async (id: number, gameUpdates: Partial<GameData>) => {
                 set({loading: true});
                 try {
                     if (isTauri()) {
-                        await updateGameRepository(id, game);
-                        set({selectedGame: game}); // 使用 setSelectedGame 更新全局状态
+                        await updateGameRepository(id, gameUpdates);
+                        // 部分更新当前选中的游戏状态
+                        const currentGame = get().selectedGame;
+                        if (currentGame && currentGame.id === id) {
+                            set({selectedGame: {...currentGame, ...gameUpdates}});
+                        }
                         await get().refreshGameData();
                     } else {
                         console.warn("updateGameLocal is not implemented for browser environment.");
@@ -581,11 +585,6 @@ export const useStore = create<AppState>()(
                         ? {...game, clear: newClearStatus}
                         : game
                 );
-
-                // 应用nsfw筛选
-                const {nsfwFilter} = get();
-                updatedGames = applyNsfwFilter(updatedGames, nsfwFilter);
-
                 set({games: updatedGames, allGames: updatedAllGames});
                 await get().refreshGameData();
             },

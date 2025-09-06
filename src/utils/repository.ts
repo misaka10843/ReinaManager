@@ -55,7 +55,9 @@ function getSortConfig(sortOption = 'addtime', sortOrder: 'asc' | 'desc' = 'asc'
 function processGameRows(rows: GameData[]): GameData[] {
   return rows.map(row => ({
     ...row,
-    tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags
+    tags: typeof row.tags === 'string' ? JSON.parse(row.tags) : row.tags,
+    all_titles: typeof row.all_titles === 'string' ? JSON.parse(row.all_titles) : row.all_titles,
+    aliases: typeof row.aliases === 'string' ? JSON.parse(row.aliases) : row.aliases
   }));
 }
 
@@ -64,8 +66,8 @@ export async function insertGame(game: GameData) {
   const db = await getDb();
   await db.execute(
     `
-    INSERT INTO games (bgm_id,vndb_id,id_type, date, image, summary, name, name_cn, tags, rank, score, time, localpath, developer, all_titles, aveage_hours)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    INSERT INTO games (bgm_id,vndb_id,id_type, date, image, summary, name, name_cn, tags, rank, score, time, localpath, developer, all_titles, aveage_hours, aliases, custom_name, custom_cover)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
     `,
     [
       game.bgm_id,
@@ -83,7 +85,10 @@ export async function insertGame(game: GameData) {
       game.localpath,
       game.developer,
       JSON.stringify(game.all_titles),
-      game.aveage_hours
+      game.aveage_hours,
+      JSON.stringify(game.aliases || []),
+      game.custom_name,
+      game.custom_cover || null
     ]
   );
 }
@@ -94,7 +99,7 @@ export async function getGames(sortOption = 'addtime', sortOrder: 'asc' | 'desc'
   const { sortField, sortDirection, customSortSql } = getSortConfig(sortOption, sortOrder);
 
   let query = `
-    SELECT id, bgm_id,vndb_id, date, image, summary, name, name_cn, tags, rank, score, time, localpath , savepath, autosave, developer,all_titles,aveage_hours,clear FROM games
+    SELECT id, bgm_id,vndb_id, date, image, summary, name, name_cn, tags, rank, score, time, localpath , savepath, autosave, developer,all_titles,aveage_hours,clear, aliases, custom_name, custom_cover FROM games
   `;
 
   if (customSortSql) {
@@ -156,7 +161,7 @@ export async function searchGames(
   }
 
   // 使用增强搜索：先获取所有游戏数据，然后使用客户端搜索
-  const { smartSearch } = await import('./enhancedSearch');
+  const { enhancedSearch } = await import('./enhancedSearch');
   
   // 根据类型筛选获取基础数据
   let baseGames: GameData[];
@@ -172,7 +177,11 @@ export async function searchGames(
   }
 
   // 使用增强搜索
-  const searchResults = smartSearch(baseGames, keyword);
+  const searchResults = enhancedSearch(baseGames, keyword, {
+    limit: 50,
+    threshold: 0.6,
+    enablePinyin: true
+  });
   
   // 提取搜索结果中的游戏数据
   return searchResults.map(result => result.item);
@@ -201,7 +210,7 @@ export async function filterGamesByType(
   }
 
   let query = `
-    SELECT id, bgm_id,vndb_id, date, image, summary, name, name_cn, tags, rank, score, time, localpath, savepath, autosave, developer, all_titles, aveage_hours, clear
+    SELECT id, bgm_id,vndb_id, date, image, summary, name, name_cn, tags, rank, score, time, localpath, savepath, autosave, developer, all_titles, aveage_hours, clear, aliases, custom_name, custom_cover
     FROM games
     ${filterCondition}
   `;
@@ -216,59 +225,70 @@ export async function filterGamesByType(
   return processGameRows(rows);
 }
 
-// 更新游戏数据
-export const updateGame = async (id: number, game: GameData) => {
+// 更新游戏数据 - 智能部分更新，只更新提供的字段
+export const updateGame = async (id: number, gameUpdates: Partial<GameData>) => {
   const db = await getDb();
-
-  await db.execute(
-    `
-    UPDATE games
-    SET bgm_id = ?, vndb_id = ?, id_type = ?, date = ?, image = ?, summary = ?, name = ?, name_cn = ?, tags = ?, rank = ?, score = ?,  developer = ?, all_titles = ?, aveage_hours = ?
-    WHERE id = ?;
-    `,
-    [
-      game.bgm_id,
-      game.vndb_id,
-      game.id_type,
-      game.date,
-      game.image,
-      game.summary,
-      game.name,
-      game.name_cn,
-      JSON.stringify(game.tags),
-      game.rank,
-      game.score,
-      game.developer,
-      JSON.stringify(game.all_titles),
-      game.aveage_hours,
-      id
-    ]
-  );
+  
+  // 构建动态SQL语句，只更新提供的字段
+  const updateFields: string[] = [];
+  const values: any[] = [];
+  
+  // 定义字段映射
+  const fieldMap: Record<keyof GameData, string> = {
+    id: 'id',
+    bgm_id: 'bgm_id',
+    vndb_id: 'vndb_id', 
+    id_type: 'id_type',
+    date: 'date',
+    image: 'image',
+    summary: 'summary',
+    name: 'name',
+    name_cn: 'name_cn',
+    tags: 'tags',
+    rank: 'rank',
+    score: 'score',
+    developer: 'developer',
+    all_titles: 'all_titles',
+    aveage_hours: 'aveage_hours',
+    localpath: 'localpath',
+    savepath: 'savepath',
+    autosave: 'autosave',
+    clear: 'clear',
+    time: 'time',
+    custom_name: 'custom_name',
+    custom_cover: 'custom_cover',
+    aliases: 'aliases'
+  } as const;
+  
+  // 构建更新字段（排除不应该直接更新的字段）
+  const excludeFields = ['id', 'time']; // id是主键，time可能有特殊处理逻辑
+  
+  for (const [key, dbField] of Object.entries(fieldMap)) {
+    if (excludeFields.includes(key)) continue;
+    
+    if (gameUpdates.hasOwnProperty(key) && gameUpdates[key as keyof GameData] !== undefined) {
+      updateFields.push(`${dbField} = ?`);
+      
+      // 对于数组字段需要JSON序列化
+      if (key === 'tags' || key === 'all_titles' || key === 'aliases') {
+        values.push(JSON.stringify(gameUpdates[key as keyof GameData]));
+      } else {
+        values.push(gameUpdates[key as keyof GameData]);
+      }
+    }
+  }
+  
+  if (updateFields.length === 0) {
+    throw new Error('No fields to update');
+  }
+  
+  // 添加WHERE条件的ID参数
+  values.push(id);
+  
+  const sql = `UPDATE games SET ${updateFields.join(', ')} WHERE id = ?`;
+  
+  await db.execute(sql, values);
 };
-
-export const updateGameLocalPath = async (id: number, localpath: string) => {
-  const db = await getDb();
-  await db.execute(
-    `
-    UPDATE games
-    SET localpath = ?
-    WHERE id = ?;
-    `,
-    [localpath, id]
-  );
-}
-
-export const updateGameClearStatus = async (id: number, clear: 1 | 0) => {
-  const db = await getDb();
-  await db.execute(
-    `
-    UPDATE games
-    SET clear = ?
-    WHERE id = ?;
-    `,
-    [clear, id]
-  );
-}
 
 // ==================== 备份相关数据库操作 ====================
 
@@ -280,39 +300,6 @@ export const updateGameClearStatus = async (id: number, clear: 1 | 0) => {
  * @param fileSize 文件大小
  * @returns 新插入记录的ID
  */
-/**
- * 更新游戏的自动保存状态
- * @param id 游戏ID
- * @param autosave 自动保存状态，1表示启用，0表示禁用
- */
-export const updateAutoSaveStatus = async (id: number, autosave: 1 | 0) => {
-  const db = await getDb();
-  await db.execute(
-    `
-    UPDATE games
-    SET autosave = ?
-    WHERE id = ?;
-    `,
-    [autosave, id]
-  );
-}
-
-/**
- * 更新游戏的存档路径
- * @param id 游戏ID
- * @param savepath 存档文件夹路径
- */
-export const updateSaveDataPath = async (id: number, savepath: string) => {
-  const db = await getDb();
-  await db.execute(
-    `
-    UPDATE games
-    SET savepath = ?
-    WHERE id = ?;
-    `,
-    [savepath, id]
-  );
-}
 export async function saveSavedataRecord(
   gameId: number,
   fileName: string,
