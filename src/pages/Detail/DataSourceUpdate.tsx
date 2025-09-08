@@ -16,16 +16,13 @@ import { fetchFromVNDB } from "@/api/vndb";
 import fetchMixedData from "@/api/mixed";
 import type { GameData } from "@/types";
 import { useTranslation } from 'react-i18next';
-import { StatusAlert } from "@/components/AlertBox";
+import { snackbar } from "@/components/Snackbar";
 
 interface DataSourceUpdateProps {
     bgmToken: string;
     selectedGame: GameData | null;
     onDataFetched: (data: GameData | string) => void;
-    onError: (error: string) => void;
     disabled?: boolean;
-    error?: string | null;
-    success?: string | null;
 }
 
 /**
@@ -36,10 +33,7 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
     bgmToken,
     selectedGame,
     onDataFetched,
-    onError,
-    disabled = false,
-    error,
-    success
+    disabled = false
 }) => {
     const { t } = useTranslation();
 
@@ -111,14 +105,15 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
     // 获取并预览游戏数据
     const handleFetchAndPreview = async () => {
         setIsLoading(true);
-        onError(''); // 清除之前的错误
-
         try {
             const result = await fetchGameData();
             onDataFetched(result);
+            if (typeof result === 'string') {
+                snackbar.error(result);
+            }
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : t('pages.Detail.DataSourceUpdate.unknownError', '未知错误');
-            onError(errorMessage);
+            snackbar.error(errorMessage);
         } finally {
             setIsLoading(false);
         }
@@ -172,11 +167,6 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
                 />
             )}
 
-            {/* 状态提示区域 - 在更新按钮上方 */}
-            <StatusAlert
-                error={error}
-                success={success}
-            />
 
             {/* 更新按钮 */}
             <Button

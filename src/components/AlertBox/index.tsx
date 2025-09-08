@@ -21,9 +21,6 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import CircularProgress from '@mui/material/CircularProgress';
-import Alert from '@mui/material/Alert';
-import AlertTitle from '@mui/material/AlertTitle';
-import Box from '@mui/material/Box';
 import { useTranslation } from 'react-i18next';
 import type { ReactNode } from 'react';
 import type { GameData } from '@/types';
@@ -58,16 +55,6 @@ interface AlertDeleteBoxProps {
     title?: string; // 自定义删除标题
 }
 
-/**
- * 状态提示组件属性类型
- */
-interface StatusAlertProps {
-    error?: string | null;
-    success?: string | string[] | null;
-    warning?: string | null;
-    gameNotFound?: boolean;
-    sx?: object;
-}
 
 // 定义 ViewUpdateGameBoxProps 接口
 interface ViewUpdateGameBoxProps {
@@ -157,67 +144,6 @@ export function AlertBox({
     );
 }
 
-/**
- * 状态提示组件
- * 用于显示错误、成功、警告等状态信息
- *
- * @param {StatusAlertProps} props 组件属性
- * @returns {JSX.Element | null} 状态提示组件
- */
-export function StatusAlert({
-    error,
-    success,
-    warning,
-    gameNotFound = false,
-    sx
-}: StatusAlertProps) {
-    const { t } = useTranslation();
-
-    return (
-        <Box sx={sx}>
-            {/* 错误提示 */}
-            {error && (
-                <Alert severity="error" sx={{ mb: 2 }}>
-                    <AlertTitle>{t('components.AlertBox.error', '错误')}</AlertTitle>
-                    {error}
-                </Alert>
-            )}
-
-            {/* 成功提示 */}
-            {success && (
-                Array.isArray(success) ? (
-                    success.map((msg) => (
-                        <Alert key={msg} severity="success" sx={{ mb: 2 }}>
-                            <AlertTitle>{t('components.AlertBox.success', '成功')}</AlertTitle>
-                            {msg}
-                        </Alert>
-                    ))
-                ) : (
-                    <Alert severity="success" sx={{ mb: 2 }}>
-                        <AlertTitle>{t('components.AlertBox.success', '成功')}</AlertTitle>
-                        {success}
-                    </Alert>
-                )
-            )}
-
-            {/* 警告提示 */}
-            {warning && (
-                <Alert severity="warning" sx={{ mb: 2 }}>
-                    <AlertTitle>{t('components.AlertBox.warning', '警告')}</AlertTitle>
-                    {warning}
-                </Alert>
-            )}
-
-            {/* 未找到游戏提示 */}
-            {gameNotFound && (
-                <Alert severity="warning" sx={{ mb: 2 }}>
-                    <AlertTitle>{t('components.AlertBox.warning', '警告')}</AlertTitle>
-                    {t('components.AlertBox.gameNotFound', '未找到游戏数据')}
-                </Alert>
-            )}
-        </Box>
-    );
-}
 
 /**
  * 删除提示框组件，带加载状态

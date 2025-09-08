@@ -34,7 +34,7 @@ import { toggleAutostart } from '@/components/AutoStart';
 import { Switch, FormControlLabel, RadioGroup, Radio, Checkbox, CircularProgress, IconButton, InputAdornment, Typography, Link, Divider } from '@mui/material';
 import { backupDatabase } from '@/utils/database';
 import { getSavePathRepository, setSavePathRepository } from '@/utils/settingsConfig';
-import { StatusAlert } from '@/components/AlertBox';
+import { snackbar } from '@/components/Snackbar';
 import BackupIcon from '@mui/icons-material/Backup';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -108,7 +108,6 @@ const BgmTokenSettings = () => {
     const { t } = useTranslation();
     const { bgmToken, setBgmToken } = useStore();
     const [inputToken, setInputToken] = useState('');
-    const [tokenStatus, setTokenStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
     useEffect(() => {
         setInputToken(bgmToken);
@@ -127,18 +126,9 @@ const BgmTokenSettings = () => {
     const handleSaveToken = () => {
         try {
             setBgmToken(inputToken);
-            setTokenStatus({
-                type: 'success',
-                message: t('pages.Settings.bgmTokenSettings.saveSuccess', 'BGM Token 保存成功')
-            });
-
-            // 3秒后清除状态消息
-            setTimeout(() => setTokenStatus(null), 3000);
+            snackbar.success(t('pages.Settings.bgmTokenSettings.saveSuccess', 'BGM Token 保存成功'));
         } catch (error) {
-            setTokenStatus({
-                type: 'error',
-                message: t('pages.Settings.bgmTokenSettings.saveError', 'BGM Token 保存失败')
-            });
+            snackbar.error(t('pages.Settings.bgmTokenSettings.saveError', 'BGM Token 保存失败'));
         }
     };
 
@@ -147,7 +137,6 @@ const BgmTokenSettings = () => {
      */
     const handleClearToken = () => {
         setInputToken('');
-        setTokenStatus(null);
     };
 
     return (
@@ -156,12 +145,6 @@ const BgmTokenSettings = () => {
                 {t('pages.Settings.bgmToken')}
             </InputLabel>
 
-            {/* BGM Token 状态提示 */}
-            <StatusAlert
-                success={tokenStatus?.type === 'success' ? tokenStatus.message : null}
-                error={tokenStatus?.type === 'error' ? tokenStatus.message : null}
-                sx={{ mb: 2 }}
-            />
 
             <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
                 <TextField
@@ -423,27 +406,16 @@ const CloseBtnSettings = () => {
 const DatabaseBackupSettings = () => {
     const { t } = useTranslation();
     const [isBackingUp, setIsBackingUp] = useState(false);
-    const [backupStatus, setBackupStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
     const handleBackupDatabase = async () => {
         setIsBackingUp(true);
-        setBackupStatus(null);
 
         try {
             const backupPath = await backupDatabase();
-            setBackupStatus({
-                type: 'success',
-                message: t('pages.Settings.databaseBackup.backupSuccess', `数据库备份成功: ${backupPath}`)
-            });
-
-            // 3秒后清除状态消息
-            setTimeout(() => setBackupStatus(null), 3000);
+            snackbar.success(t('pages.Settings.databaseBackup.backupSuccess', `数据库备份成功: ${backupPath}`));
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : t('pages.Settings.databaseBackup.backupFailed', '备份失败');
-            setBackupStatus({
-                type: 'error',
-                message: t('pages.Settings.databaseBackup.backupError', `数据库备份失败: ${errorMessage}`)
-            });
+            snackbar.error(t('pages.Settings.databaseBackup.backupError', `数据库备份失败: ${errorMessage}`));
         } finally {
             setIsBackingUp(false);
         }
@@ -454,10 +426,7 @@ const DatabaseBackupSettings = () => {
             await openDatabaseBackupFolder();
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : t('pages.Settings.databaseBackup.openFolderFailed', '打开文件夹失败');
-            setBackupStatus({
-                type: 'error',
-                message: t('pages.Settings.databaseBackup.openFolderError', `打开备份文件夹失败: ${errorMessage}`)
-            });
+            snackbar.error(t('pages.Settings.databaseBackup.openFolderError', `打开备份文件夹失败: ${errorMessage}`));
         }
     };
 
@@ -467,12 +436,6 @@ const DatabaseBackupSettings = () => {
                 {t('pages.Settings.databaseBackup.title', '数据库备份')}
             </InputLabel>
 
-            {/* 状态提示 */}
-            <StatusAlert
-                success={backupStatus?.type === 'success' ? backupStatus.message : null}
-                error={backupStatus?.type === 'error' ? backupStatus.message : null}
-                sx={{ mb: 2 }}
-            />
 
             <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
                 <Button
@@ -505,7 +468,6 @@ const SavePathSettings = () => {
     const { t } = useTranslation();
     const [savePath, setSavePath] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [saveStatus, setSaveStatus] = useState<{ type: 'success' | 'error' | 'warning', message: string } | null>(null);
     const [originalPath, setOriginalPath] = useState(''); // 存储原始路径
 
     // 加载当前设置的备份路径
@@ -529,16 +491,12 @@ const SavePathSettings = () => {
                 setSavePath(selectedPath);
             }
         } catch (error) {
-            setSaveStatus({
-                type: 'error',
-                message: t('pages.Settings.savePath.selectFolderError', '选择文件夹失败')
-            });
+            snackbar.error(t('pages.Settings.savePath.selectFolderError', '选择文件夹失败'));
         }
     };
 
     const handleSavePath = async () => {
         setIsLoading(true);
-        setSaveStatus(null);
 
         try {
             // 首先保存新路径到数据库
@@ -546,40 +504,22 @@ const SavePathSettings = () => {
 
             // 如果路径发生了变化，需要移动备份文件夹
             if (originalPath !== savePath || originalPath !== '') {
-                setSaveStatus({
-                    type: 'warning',
-                    message: t('pages.Settings.savePath.movingBackups', '正在移动备份文件夹到新位置...')
-                });
+                snackbar.warning(t('pages.Settings.savePath.movingBackups', '正在移动备份文件夹到新位置...'));
 
                 const moveResult = await moveBackupFolder(originalPath, savePath);
 
                 if (moveResult.moved) {
-                    setSaveStatus({
-                        type: 'success',
-                        message: t('pages.Settings.savePath.moveSuccess', '备份路径保存成功，备份文件夹已移动到新位置')
-                    });
+                    snackbar.success(t('pages.Settings.savePath.moveSuccess', '备份路径保存成功，备份文件夹已移动到新位置'));
                     setOriginalPath(savePath); // 更新原始路径
                 } else {
-                    setSaveStatus({
-                        type: 'warning',
-                        message: t('pages.Settings.savePath.moveWarning', `备份路径已保存，但移动备份文件夹时出现问题: ${moveResult.message}`)
-                    });
+                    snackbar.warning(t('pages.Settings.savePath.moveWarning', `备份路径已保存，但移动备份文件夹时出现问题: ${moveResult.message}`));
                 }
             } else {
-                setSaveStatus({
-                    type: 'success',
-                    message: t('pages.Settings.savePath.saveSuccess', '备份路径保存成功')
-                });
+                snackbar.success(t('pages.Settings.savePath.saveSuccess', '备份路径保存成功'));
             }
-
-            // 5秒后清除状态消息
-            setTimeout(() => setSaveStatus(null), 5000);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : t('pages.Settings.savePath.saveFailed', '保存失败');
-            setSaveStatus({
-                type: 'error',
-                message: t('pages.Settings.savePath.saveError', `保存备份路径失败: ${errorMessage}`)
-            });
+            snackbar.error(t('pages.Settings.savePath.saveError', `保存备份路径失败: ${errorMessage}`));
         } finally {
             setIsLoading(false);
         }
@@ -591,13 +531,6 @@ const SavePathSettings = () => {
                 {t('pages.Settings.savePath.title', '游戏存档备份路径')}
             </InputLabel>
 
-            {/* 状态提示 */}
-            <StatusAlert
-                success={saveStatus?.type === 'success' ? saveStatus.message : null}
-                error={saveStatus?.type === 'error' ? saveStatus.message : null}
-                warning={saveStatus?.type === 'warning' ? saveStatus.message : null}
-                sx={{ mb: 2 }}
-            />
 
             <Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
                 <TextField

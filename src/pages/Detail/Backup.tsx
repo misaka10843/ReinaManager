@@ -30,7 +30,8 @@ import {
 } from '@/utils/repository';
 import type { SavedataRecord } from '@/types';
 import { useTranslation } from 'react-i18next';
-import { StatusAlert, AlertDeleteBox } from '@/components/AlertBox';
+import { AlertDeleteBox } from '@/components/AlertBox';
+import { snackbar } from '@/components/Snackbar';
 import { getSavePathRepository } from "@/utils/settingsConfig";
 
 /**
@@ -48,8 +49,6 @@ export const Backup = (): JSX.Element => {
     const [saveDataPath, setSaveDataPath] = useState<string>("");
     const [backupList, setBackupList] = useState<SavedataRecord[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState<string | null>(null);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [backupToDelete, setBackupToDelete] = useState<SavedataRecord | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -89,7 +88,7 @@ export const Backup = (): JSX.Element => {
             setBackupList(records);
         } catch (error) {
             console.error('加载备份列表失败:', error);
-            setError(t('pages.Detail.Backup.loadBackupsFailed', '加载备份列表失败'));
+            snackbar.error(t('pages.Detail.Backup.loadBackupsFailed', '加载备份列表失败'));
         }
     };
 
@@ -106,20 +105,15 @@ export const Backup = (): JSX.Element => {
         if (!selectedGame?.id) return;
 
         setIsUpdatingSettings(true);
-        setError(null);
-        setSuccess(null);
 
         try {
             // 使用统一的updateGame函数更新存档路径
             await updateGame(selectedGame.id, { savepath: saveDataPath });
 
-            setSuccess(t('pages.Detail.Backup.pathUpdateSuccess', '存档路径更新成功'));
-
-            // 3秒后清除成功消息
-            setTimeout(() => setSuccess(null), 3000);
+            snackbar.success(t('pages.Detail.Backup.pathUpdateSuccess', '存档路径更新成功'));
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : t('pages.Detail.Backup.unknownError', '未知错误');
-            setError(`${t('pages.Detail.Backup.pathUpdateFailed', '路径更新失败')}: ${errorMessage}`);
+            snackbar.error(`${t('pages.Detail.Backup.pathUpdateFailed', '路径更新失败')}: ${errorMessage}`);
         } finally {
             setIsUpdatingSettings(false);
         }
@@ -130,8 +124,6 @@ export const Backup = (): JSX.Element => {
         if (!selectedGame?.id) return;
 
         setIsUpdatingSettings(true);
-        setError(null);
-        setSuccess(null);
 
         try {
             // 使用统一的updateGame函数更新自动保存状态
@@ -141,13 +133,10 @@ export const Backup = (): JSX.Element => {
             const message = enabled
                 ? t('pages.Detail.Backup.autoSaveEnabled', '自动备份已启用')
                 : t('pages.Detail.Backup.autoSaveDisabled', '自动备份已禁用');
-            setSuccess(message);
-
-            // 3秒后清除成功消息
-            setTimeout(() => setSuccess(null), 3000);
+            snackbar.success(message);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : t('pages.Detail.Backup.unknownError', '未知错误');
-            setError(`${t('pages.Detail.Backup.autoSaveUpdateFailed', '自动备份设置失败')}: ${errorMessage}`);
+            snackbar.error(`${t('pages.Detail.Backup.autoSaveUpdateFailed', '自动备份设置失败')}: ${errorMessage}`);
             // 恢复原状态
             setAutoSaveEnabled(!enabled);
         } finally {
@@ -158,24 +147,19 @@ export const Backup = (): JSX.Element => {
     // 创建备份
     const handleCreateBackup = async () => {
         if (!saveDataPath || !selectedGame?.id) {
-            setError(t('pages.Detail.Backup.pathRequired', '请先选择存档文件夹'));
+            snackbar.error(t('pages.Detail.Backup.pathRequired', '请先选择存档文件夹'));
             return;
         }
 
         setIsLoading(true);
-        setError(null);
-        setSuccess(null);
 
         try {
             await createGameSavedataBackup(selectedGame.id, saveDataPath);
-            setSuccess(t('pages.Detail.Backup.backupSuccess', '备份创建成功'));
+            snackbar.success(t('pages.Detail.Backup.backupSuccess', '备份创建成功'));
             loadBackupList();
-
-            // 3秒后清除成功消息
-            setTimeout(() => setSuccess(null), 3000);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : t('pages.Detail.Backup.unknownError', '未知错误');
-            setError(`${t('pages.Detail.Backup.backupFailed', '备份失败')}: ${errorMessage}`);
+            snackbar.error(`${t('pages.Detail.Backup.backupFailed', '备份失败')}: ${errorMessage}`);
         } finally {
             setIsLoading(false);
         }
@@ -189,14 +173,14 @@ export const Backup = (): JSX.Element => {
             await openGameBackupFolder(selectedGame.id);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : t('pages.Detail.Backup.unknownError', '未知错误');
-            setError(`${t('pages.Detail.Backup.openFolderFailed', '打开文件夹失败')}: ${errorMessage}`);
+            snackbar.error(`${t('pages.Detail.Backup.openFolderFailed', '打开文件夹失败')}: ${errorMessage}`);
         }
     };
 
     // 打开存档文件夹
     const handleOpenSaveDataFolder = async () => {
         if (!saveDataPath) {
-            setError(t('pages.Detail.Backup.pathRequired', '请先选择存档文件夹'));
+            snackbar.error(t('pages.Detail.Backup.pathRequired', '请先选择存档文件夹'));
             return;
         }
 
@@ -204,7 +188,7 @@ export const Backup = (): JSX.Element => {
             await openGameSaveDataFolder(saveDataPath);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : t('pages.Detail.Backup.unknownError', '未知错误');
-            setError(`${t('pages.Detail.Backup.openFolderFailed', '打开文件夹失败')}: ${errorMessage}`);
+            snackbar.error(`${t('pages.Detail.Backup.openFolderFailed', '打开文件夹失败')}: ${errorMessage}`);
         }
     };
 
@@ -219,8 +203,6 @@ export const Backup = (): JSX.Element => {
         if (!backupToDelete) return;
 
         setIsDeleting(true);
-        setError(null);
-        setSuccess(null);
 
         try {
             // 获取备份文件完整路径
@@ -235,19 +217,16 @@ export const Backup = (): JSX.Element => {
             // 从数据库删除记录
             await deleteSavedataRecord(backupToDelete.id);
 
-            setSuccess(t('pages.Detail.Backup.deleteSuccess', '备份删除成功'));
+            snackbar.success(t('pages.Detail.Backup.deleteSuccess', '备份删除成功'));
             loadBackupList();
 
             // 关闭对话框并清空选中的备份
             setDeleteDialogOpen(false);
             setBackupToDelete(null);
-
-            // 3秒后清除成功消息
-            setTimeout(() => setSuccess(null), 3000);
         } catch (error) {
             await deleteSavedataRecord(backupToDelete.id);
             const errorMessage = error instanceof Error ? error.message : t('pages.Detail.Backup.unknownError', '未知错误');
-            setError(`${t('pages.Detail.Backup.deleteFailed', '删除失败')}: ${errorMessage}`);
+            snackbar.error(`${t('pages.Detail.Backup.deleteFailed', '删除失败')}: ${errorMessage}`);
         } finally {
             setIsDeleting(false);
         }
@@ -269,12 +248,6 @@ export const Backup = (): JSX.Element => {
 
     return (
         <Box sx={{ p: 3 }}>
-            {/* 状态提示区域 */}
-            <StatusAlert
-                error={error}
-                success={success}
-                gameNotFound={!selectedGame}
-            />
 
             <Stack spacing={3}>
                 {/* 自动备份设置 */}

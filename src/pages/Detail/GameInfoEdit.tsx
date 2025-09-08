@@ -19,16 +19,13 @@ import { handleDirectory, getGameCover } from "@/utils";
 import { getGameDisplayName } from "@/utils";
 import { useTranslation } from 'react-i18next';
 import i18n from '@/utils/i18n';
-import { StatusAlert } from "@/components/AlertBox";
+import { snackbar } from "@/components/Snackbar";
 import { selectImageFile, uploadSelectedImage, deleteCustomCoverFile, getPreviewUrlFromPath } from "@/utils/customCover";
 
 interface GameInfoEditProps {
     selectedGame: GameData | null;
     onSave: (data: Partial<GameData>) => Promise<void>;
-    onError: (error: string) => void;
     disabled?: boolean;
-    error?: string | null;
-    success?: string | null;
 }
 
 /**
@@ -38,10 +35,7 @@ interface GameInfoEditProps {
 export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
     selectedGame,
     onSave,
-    onError,
-    disabled = false,
-    error,
-    success
+    disabled = false
 }) => {
     const { t } = useTranslation();
     const gameCustomName = selectedGame ? getGameDisplayName(selectedGame, i18n.language) : t('pages.Detail.GameInfoEdit.enterGameNote', '请输入游戏备注');
@@ -82,14 +76,14 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
                 setLocalPath(selectedPath);
             }
         } catch (error) {
-            onError(`${t('pages.Detail.GameInfoEdit.selectPathFailed', '选择路径失败')}: ${error instanceof Error ? error.message : t('pages.Detail.GameInfoEdit.unknownError', '未知错误')}`);
+            snackbar.error(`${t('pages.Detail.GameInfoEdit.selectPathFailed', '选择路径失败')}: ${error instanceof Error ? error.message : t('pages.Detail.GameInfoEdit.unknownError', '未知错误')}`);
         }
     };
 
     // 处理自定义封面文件选择 - 只选择，不立即上传
     const handleCustomCoverSelect = async () => {
         if (!selectedGame || typeof selectedGame.id !== 'number') {
-            onError(t('pages.Detail.GameInfoEdit.invalidGameId', '无效的游戏ID'));
+            snackbar.error(t('pages.Detail.GameInfoEdit.invalidGameId', '无效的游戏ID'));
             return;
         }
 
@@ -109,7 +103,7 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
                 setPreviewUrl(blobUrl);
             }
         } catch (error) {
-            onError(`${t('pages.Detail.GameInfoEdit.selectImageFailed', '选择图片失败')}: ${error instanceof Error ? error.message : error}`);
+            snackbar.error(`${t('pages.Detail.GameInfoEdit.selectImageFailed', '选择图片失败')}: ${error instanceof Error ? error.message : error}`);
         }
     };
 
@@ -130,7 +124,7 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
     // 处理删除自定义封面
     const handleRemoveCustomCover = async () => {
         if (!selectedGame || typeof selectedGame.id !== 'number' || !selectedGame.custom_cover) {
-            onError(t('pages.Detail.GameInfoEdit.invalidGameId', '无效的游戏ID或无自定义封面'));
+            snackbar.error(t('pages.Detail.GameInfoEdit.invalidGameId', '无效的游戏ID或无自定义封面'));
             return;
         }
 
@@ -146,7 +140,7 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
             await onSave(updateData);
 
         } catch (error) {
-            onError(`${t('pages.Detail.GameInfoEdit.removeCustomCoverFailed', '移除自定义封面失败')}: ${error instanceof Error ? error.message : error}`);
+            snackbar.error(`${t('pages.Detail.GameInfoEdit.removeCustomCoverFailed', '移除自定义封面失败')}: ${error instanceof Error ? error.message : error}`);
         } finally {
             setIsLoading(false);
         }
@@ -157,7 +151,6 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
         if (!selectedGame || !hasChanges()) return;
 
         setIsLoading(true);
-        onError(''); // 清除之前的错误
 
         try {
             const updateData: Partial<GameData> = {};
@@ -205,7 +198,7 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
             }, 100); // 100ms延迟，足够新图片开始加载
 
         } catch (error) {
-            onError(`${t('pages.Detail.GameInfoEdit.saveGameInfoFailed', '保存游戏信息失败')}: ${error instanceof Error ? error.message : t('pages.Detail.GameInfoEdit.unknownError', '未知错误')}`);
+            snackbar.error(`${t('pages.Detail.GameInfoEdit.saveGameInfoFailed', '保存游戏信息失败')}: ${error instanceof Error ? error.message : t('pages.Detail.GameInfoEdit.unknownError', '未知错误')}`);
         } finally {
             setIsLoading(false);
         }
@@ -325,11 +318,6 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
                 </Button>
             </Box>
 
-            {/* 状态提示区域 - 在保存按钮上方 */}
-            <StatusAlert
-                error={error}
-                success={success}
-            />
 
             {/* 统一保存按钮 */}
             <Button
