@@ -269,6 +269,52 @@ export async function getGameSessions(
   
   return sessions;
 }
+// 优化：一次性获取所有游戏的最近会话记录
+export async function getRecentSessionsForAllGames(
+  gameIds: number[],
+  limit = 10
+): Promise<Map<number, GameSession[]>> {
+  if (!isTauri()) {
+    // 浏览器环境下返回空的Map，因为没有会话功能
+    return new Map();
+  }
+
+  if (gameIds.length === 0) {
+    return new Map();
+  }
+
+  const db = await getDb();
+  
+  // 为每个游戏获取最近的会话记录，使用ROW_NUMBER进行分组限制
+  const placeholders = gameIds.map(() => '?').join(',');
+  const sessions = await db.select<(GameSession & { game_id: number })[]>(
+    `
+    WITH ranked_sessions AS (
+      SELECT *,
+             ROW_NUMBER() OVER (PARTITION BY game_id ORDER BY start_time DESC) as rn
+      FROM game_sessions
+      WHERE game_id IN (${placeholders})
+    )
+    SELECT * FROM ranked_sessions 
+    WHERE rn <= ?
+    ORDER BY game_id, start_time DESC;
+    `,
+    [...gameIds, limit],
+  );
+  
+  // 将结果按game_id分组
+  const sessionMap = new Map<number, GameSession[]>();
+  
+  for (const session of sessions) {
+    const gameId = session.game_id;
+    if (!sessionMap.has(gameId)) {
+      sessionMap.set(gameId, []);
+    }
+    sessionMap.get(gameId)!.push(session);
+  }
+  
+  return sessionMap;
+}
 
 export async function getFormattedGameStats(gameId: number): Promise<GameTimeStats> {
   const stats = await getGameStatistics(gameId);

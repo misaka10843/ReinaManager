@@ -20,7 +20,7 @@
  * - react-router
  */
 
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
     Box,
     Card,
@@ -31,7 +31,8 @@ import {
     ListItem,
     ListItemAvatar,
     ListItemText,
-    Divider
+    Divider,
+    Skeleton
 } from '@mui/material';
 import {
     SportsEsports as GamesIcon,
@@ -46,9 +47,9 @@ import {
     Notifications as ActivityIcon
 } from '@mui/icons-material';
 import { useStore } from '@/store';
-import { Link } from 'react-router';
+import { Link } from 'react-router-dom';
 import { useGamePlayStore } from '@/store/gamePlayStore';
-import { getGameSessions } from '@/utils/gameStats';
+import { getRecentSessionsForAllGames } from '@/utils/gameStats';
 import { formatRelativeTime, formatPlayTime, getGameDisplayName, getGameCover } from '@/utils';
 import type { GameData } from '@/types';
 import { useTranslation } from 'react-i18next';
@@ -86,7 +87,7 @@ interface ActivityItem {
 }
 
 /**
- * 获取最近游玩、最近添加、动态数据
+ * 获取最近游玩、最近添加、动态数据 - 优化版本
  * @param games 游戏列表
  * @param language 当前语言
  * @returns 包含 sessions、added、activities 的对象
@@ -96,39 +97,48 @@ async function getGameActivities(games: GameData[], language: string): Promise<{
     added: RecentGame[];
     activities: ActivityItem[];
 }> {
-    // 处理游玩记录
+    // 处理游玩记录 - 使用批量查询优化
     const playItems: ActivityItem[] = [];
     const sessions: RecentSession[] = [];
 
-    await Promise.all(
-        games.filter(game => game.id).map(async (game) => {
-            if (!game.id) return;
-            const gameSessions = await getGameSessions(game.id, 10, 0);
+    // 提取所有有效的游戏ID
+    const validGameIds = games
+        .filter(game => game.id && typeof game.id === 'number')
+        .map(game => game.id as number);
 
-            for (const s of gameSessions.filter(s => typeof s.end_time === 'number')) {
-                const gameTitle = getGameDisplayName(game, language);
-                const item: ActivityItem = {
-                    id: `play-${s.session_id || game.id}-${s.end_time}`,
-                    type: 'play',
-                    gameId: game.id as number,
-                    gameTitle,
-                    imageUrl: getGameCover(game),
-                    time: s.end_time as number,
-                    duration: s.duration
-                };
-                playItems.push(item);
+    // 一次性获取所有游戏的会话记录，避免循环中的多次数据库查询
+    const allSessionsMap = await getRecentSessionsForAllGames(validGameIds, 10);
 
-                // 用于最近游玩区域
-                sessions.push({
-                    session_id: s.session_id as number,
-                    game_id: game.id as number,
-                    end_time: s.end_time as number,
-                    gameTitle,
-                    imageUrl: getGameCover(game),
-                });
-            }
-        })
-    );
+    // 处理会话数据
+    for (const game of games) {
+        if (!game.id || typeof game.id !== 'number') continue;
+
+        const gameSessions = allSessionsMap.get(game.id) || [];
+        const gameTitle = getGameDisplayName(game, language);
+        const imageUrl = getGameCover(game);
+
+        for (const s of gameSessions.filter(s => typeof s.end_time === 'number')) {
+            const item: ActivityItem = {
+                id: `play-${s.session_id || game.id}-${s.end_time}`,
+                type: 'play',
+                gameId: game.id,
+                gameTitle,
+                imageUrl,
+                time: s.end_time as number,
+                duration: s.duration
+            };
+            playItems.push(item);
+
+            // 用于最近游玩区域
+            sessions.push({
+                session_id: s.session_id as number,
+                game_id: game.id,
+                end_time: s.end_time as number,
+                gameTitle,
+                imageUrl,
+            });
+        }
+    }
 
     // 处理添加记录
     const addItems: ActivityItem[] = [];
@@ -190,15 +200,31 @@ async function getGameActivities(games: GameData[], language: string): Promise<{
 export const Home: React.FC = () => {
     const { allGames } = useStore();
     const { getTotalPlayTime, getWeekPlayTime, getTodayPlayTime } = useGamePlayStore();
-    const [totalTime, setTotalTime] = useState(0);
-    const [weekTime, setWeekTime] = useState(0);
-    const [todayTime, setTodayTime] = useState(0);
-    const [recentSessions, setRecentSessions] = useState<RecentSession[]>([]);
-    const [recentAdded, setRecentAdded] = useState<RecentGame[]>([]);
-    const [activities, setActivities] = useState<ActivityItem[]>([]);
+
+    // 分离时长数据的状态管理
+    const [playTimeStats, setPlayTimeStats] = useState({
+        total: 0,
+        week: 0,
+        today: 0,
+        loading: true
+    });
+
+    // 分离活动数据的状态管理
+    const [activityData, setActivityData] = useState<{
+        sessions: RecentSession[];
+        added: RecentGame[];
+        activities: ActivityItem[];
+        loading: boolean;
+    }>({
+        sessions: [],
+        added: [],
+        activities: [],
+        loading: true
+    });
+
     const { t, i18n } = useTranslation();
 
-    // 用 useMemo 缓存 gamesList，避免每次渲染都新建数组
+    // 同步计算的数据 - 立即显示，无需 loading 状态
     const gamesList = useMemo(() => allGames.map((game) => ({
         title: getGameDisplayName(game, i18n.language),
         id: game.id,
@@ -207,36 +233,64 @@ export const Home: React.FC = () => {
     })), [allGames, i18n.language]);
 
     const gamesLocalCount = useMemo(() => gamesList.filter(game => game.isLocal).length, [gamesList]);
+    const completedGamesCount = useMemo(() => allGames.filter(game => game.clear === 1).length, [allGames]);
 
-    // 计算通关游戏数
-    const completedGamesCount = useMemo(() => {
-        return allGames.filter(game => game.clear === 1).length;
-    }, [allGames]);
-    // 用 useCallback 保证函数引用稳定
-    const getTotalPlayTimeStable = useCallback(() => getTotalPlayTime(), [getTotalPlayTime]);
-    const getWeekPlayTimeStable = useCallback(() => getWeekPlayTime(), [getWeekPlayTime]);
-    const getTodayPlayTimeStable = useCallback(() => getTodayPlayTime(), [getTodayPlayTime]);
-
+    // 统计卡片数据 - 区分同步和异步数据
     const statsCards = useMemo(() => [
-        { title: t('home.stats.totalGames', '总游戏数'), value: allGames.length, icon: <GamesIcon /> },
-        { title: t('home.stats.localGames', '本地游戏数'), value: gamesLocalCount, icon: <LocalIcon /> },
-        { title: t('home.stats.completedGames', '通关游戏数'), value: completedGamesCount, icon: <CompletedIcon /> },
-        { title: t('home.stats.totalPlayTime', '总游戏时长'), value: formatPlayTime(totalTime), icon: <TimeIcon /> },
-        { title: t('home.stats.weekPlayTime', '本周游戏时长'), value: formatPlayTime(weekTime), icon: <WeekIcon /> },
-        { title: t('home.stats.todayPlayTime', '今日游戏时长'), value: formatPlayTime(todayTime), icon: <TodayIcon /> },
-    ], [t, allGames.length, gamesLocalCount, completedGamesCount, totalTime, weekTime, todayTime]);
+        // 同步数据 - 立即显示
+        { title: t('home.stats.totalGames', '总游戏数'), value: allGames.length, icon: <GamesIcon />, isAsync: false },
+        { title: t('home.stats.localGames', '本地游戏数'), value: gamesLocalCount, icon: <LocalIcon />, isAsync: false },
+        { title: t('home.stats.completedGames', '通关游戏数'), value: completedGamesCount, icon: <CompletedIcon />, isAsync: false },
+        // 异步数据 - 可能需要 loading
+        { title: t('home.stats.totalPlayTime', '总游戏时长'), value: formatPlayTime(playTimeStats.total), icon: <TimeIcon />, isAsync: true },
+        { title: t('home.stats.weekPlayTime', '本周游戏时长'), value: formatPlayTime(playTimeStats.week), icon: <WeekIcon />, isAsync: true },
+        { title: t('home.stats.todayPlayTime', '今日游戏时长'), value: formatPlayTime(playTimeStats.today), icon: <TodayIcon />, isAsync: true },
+    ], [t, allGames.length, gamesLocalCount, completedGamesCount, playTimeStats]);
 
+    // 异步获取游戏时长数据
     useEffect(() => {
-        (async () => {
-            setTotalTime(await getTotalPlayTimeStable());
-            setWeekTime(await getWeekPlayTimeStable());
-            setTodayTime(await getTodayPlayTimeStable());
-            const result = await getGameActivities(allGames, i18n.language);
-            setRecentSessions(result.sessions);
-            setRecentAdded(result.added);
-            setActivities(result.activities);
-        })();
-    }, [allGames, getTotalPlayTimeStable, getWeekPlayTimeStable, getTodayPlayTimeStable, i18n.language]);
+        const fetchPlayTimeStats = async () => {
+            try {
+                const [totalTimeResult, weekTimeResult, todayTimeResult] = await Promise.all([
+                    getTotalPlayTime(),
+                    getWeekPlayTime(),
+                    getTodayPlayTime()
+                ]);
+
+                setPlayTimeStats({
+                    total: totalTimeResult,
+                    week: weekTimeResult,
+                    today: todayTimeResult,
+                    loading: false
+                });
+            } catch (error) {
+                console.error('获取游戏时长统计失败:', error);
+                setPlayTimeStats(prev => ({ ...prev, loading: false }));
+            }
+        };
+
+        fetchPlayTimeStats();
+    }, [getTotalPlayTime, getWeekPlayTime, getTodayPlayTime]);
+
+    // 异步获取活动数据
+    useEffect(() => {
+        const fetchActivityData = async () => {
+            try {
+                const result = await getGameActivities(allGames, i18n.language);
+                setActivityData({
+                    sessions: result.sessions,
+                    added: result.added,
+                    activities: result.activities,
+                    loading: false
+                });
+            } catch (error) {
+                console.error('获取首页活动数据失败:', error);
+                setActivityData(prev => ({ ...prev, loading: false }));
+            }
+        };
+
+        fetchActivityData();
+    }, [allGames, i18n.language]);
 
     return (
         <Box className="p-6 flex flex-col gap-4">
@@ -251,8 +305,9 @@ export const Home: React.FC = () => {
                         <Card className="h-full shadow-md hover:shadow-lg transition-shadow">
                             <CardContent className="flex flex-col items-center text-center">
                                 {card.icon}
-                                <Typography variant="h6" className="font-bold mb-1">
-                                    {card.value}
+                                <Typography title={String(card.value)} variant="h6" className="font-bold mb-1 w-full whitespace-nowrap overflow-hidden text-ellipsis">
+                                    {/* 异步数据显示 loading，同步数据直接显示 */}
+                                    {card.isAsync && playTimeStats.loading ? <Skeleton width={60} /> : card.value}
                                 </Typography>
                                 <Typography variant="body2" color="text.secondary">
                                     {card.title}
@@ -313,38 +368,52 @@ export const Home: React.FC = () => {
                                     {t('home.activityTitle', '动态')}
                                 </Typography>
                             </Box>
-                            <List className="max-h-44vh overflow-y-auto pr-1">
-                                {activities.map((activity, idx) => (
-                                    <React.Fragment key={activity.id}>
-                                        <ListItem className="px-0 text-inherit" component={Link} to={`/libraries/${activity.gameId}`}>
-                                            <ListItemAvatar>
-                                                <Avatar variant="rounded" src={activity.imageUrl} />
-                                            </ListItemAvatar>
-                                            <Box>
-                                                <Typography variant="body1">
-                                                    {activity.type === 'add'
-                                                        ? t('home.activity.added', { title: activity.gameTitle })
-                                                        : t('home.activity.played', { title: activity.gameTitle })}
-
-                                                </Typography>
-
-                                                <Typography variant="body2" color="text.secondary">
-                                                    {activity.type === 'add'
-                                                        ? t('home.activity.addedAt', { time: formatRelativeTime(activity.time) })
-                                                        : t('home.activity.playedAtTime', { time: formatRelativeTime(activity.time) })}
-                                                </Typography>
-
-                                                {activity.type === 'play' && activity.duration !== undefined && (
-                                                    <Typography variant="body2" color="text.secondary">
-                                                        {t('home.activity.duration', { duration: formatPlayTime(activity.duration) })}
-                                                    </Typography>
-                                                )}
+                            {activityData.loading ? (
+                                <Box className="max-h-44vh overflow-y-auto pr-1">
+                                    {[1, 2, 3, 4].map((index) => (
+                                        <Box key={index} className="flex items-center mb-3">
+                                            <Skeleton variant="rounded" width={40} height={40} className="mr-3" />
+                                            <Box className="flex-1">
+                                                <Skeleton width="80%" height={20} />
+                                                <Skeleton width="60%" height={16} />
                                             </Box>
-                                        </ListItem>
-                                        {idx !== activities.length - 1 && <Divider />}
-                                    </React.Fragment>
-                                ))}
-                            </List>
+                                        </Box>
+                                    ))}
+                                </Box>
+                            ) : (
+                                <List className="max-h-44vh overflow-y-auto pr-1">
+                                    {activityData.activities.map((activity, idx) => (
+                                        <React.Fragment key={activity.id}>
+                                            <ListItem className="px-0 text-inherit" component={Link} to={`/libraries/${activity.gameId}`}>
+                                                <ListItemAvatar>
+                                                    <Avatar variant="rounded" src={activity.imageUrl} />
+                                                </ListItemAvatar>
+                                                <Box>
+                                                    <Typography variant="body1">
+                                                        {activity.type === 'add'
+                                                            ? t('home.activity.added', { title: activity.gameTitle })
+                                                            : t('home.activity.played', { title: activity.gameTitle })}
+
+                                                    </Typography>
+
+                                                    <Typography variant="body2" color="text.secondary">
+                                                        {activity.type === 'add'
+                                                            ? t('home.activity.addedAt', { time: formatRelativeTime(activity.time) })
+                                                            : t('home.activity.playedAtTime', { time: formatRelativeTime(activity.time) })}
+                                                    </Typography>
+
+                                                    {activity.type === 'play' && activity.duration !== undefined && (
+                                                        <Typography variant="body2" color="text.secondary">
+                                                            {t('home.activity.duration', { duration: formatPlayTime(activity.duration) })}
+                                                        </Typography>
+                                                    )}
+                                                </Box>
+                                            </ListItem>
+                                            {idx !== activityData.activities.length - 1 && <Divider />}
+                                        </React.Fragment>
+                                    ))}
+                                </List>
+                            )}
                         </CardContent>
                     </Card>
                 </Box>
@@ -359,22 +428,36 @@ export const Home: React.FC = () => {
                                     {t('home.recentlyPlayed', '最近游玩')}
                                 </Typography>
                             </Box>
-                            <List className="max-h-44vh overflow-y-auto pr-1">
-                                {recentSessions.map((session, idx) => (
-                                    <React.Fragment key={session.session_id}>
-                                        <ListItem className="px-0 text-inherit" component={Link} to={`/libraries/${session.game_id}`}>
-                                            <ListItemAvatar>
-                                                <Avatar variant="rounded" src={session.imageUrl} />
-                                            </ListItemAvatar>
-                                            <ListItemText
-                                                primary={session.gameTitle}
-                                                secondary={t('home.lastPlayed', { time: formatRelativeTime(session.end_time) })}
-                                            />
-                                        </ListItem>
-                                        {idx !== recentSessions.length - 1 && <Divider />}
-                                    </React.Fragment>
-                                ))}
-                            </List>
+                            {activityData.loading ? (
+                                <Box className="max-h-44vh overflow-y-auto pr-1">
+                                    {[1, 2, 3, 4].map((index) => (
+                                        <Box key={index} className="flex items-center mb-3">
+                                            <Skeleton variant="rounded" width={40} height={40} className="mr-3" />
+                                            <Box className="flex-1">
+                                                <Skeleton width="80%" height={20} />
+                                                <Skeleton width="60%" height={16} />
+                                            </Box>
+                                        </Box>
+                                    ))}
+                                </Box>
+                            ) : (
+                                <List className="max-h-44vh overflow-y-auto pr-1">
+                                    {activityData.sessions.map((session, idx) => (
+                                        <React.Fragment key={session.session_id}>
+                                            <ListItem className="px-0 text-inherit" component={Link} to={`/libraries/${session.game_id}`}>
+                                                <ListItemAvatar>
+                                                    <Avatar variant="rounded" src={session.imageUrl} />
+                                                </ListItemAvatar>
+                                                <ListItemText
+                                                    primary={session.gameTitle}
+                                                    secondary={t('home.lastPlayed', { time: formatRelativeTime(session.end_time) })}
+                                                />
+                                            </ListItem>
+                                            {idx !== activityData.sessions.length - 1 && <Divider />}
+                                        </React.Fragment>
+                                    ))}
+                                </List>
+                            )}
                         </CardContent>
                     </Card>
                 </Box>
@@ -389,22 +472,36 @@ export const Home: React.FC = () => {
                                     {t('home.recentlyAdded', '最近添加')}
                                 </Typography>
                             </Box>
-                            <List className="max-h-44vh overflow-y-auto pr-1">
-                                {recentAdded.map((game, idx) => (
-                                    <React.Fragment key={game.id}>
-                                        <ListItem className="px-0 text-inherit" component={Link} to={`/libraries/${game.id}`}>
-                                            <ListItemAvatar>
-                                                <Avatar variant="rounded" src={game.imageUrl} />
-                                            </ListItemAvatar>
-                                            <ListItemText
-                                                primary={game.title}
-                                                secondary={t('home.addedAt', { time: game.time ? formatRelativeTime(game.time) : '' })}
-                                            />
-                                        </ListItem>
-                                        {idx !== recentAdded.length - 1 && <Divider />}
-                                    </React.Fragment>
-                                ))}
-                            </List>
+                            {activityData.loading ? (
+                                <Box className="max-h-44vh overflow-y-auto pr-1">
+                                    {[1, 2, 3, 4].map((index) => (
+                                        <Box key={index} className="flex items-center mb-3">
+                                            <Skeleton variant="rounded" width={40} height={40} className="mr-3" />
+                                            <Box className="flex-1">
+                                                <Skeleton width="80%" height={20} />
+                                                <Skeleton width="60%" height={16} />
+                                            </Box>
+                                        </Box>
+                                    ))}
+                                </Box>
+                            ) : (
+                                <List className="max-h-44vh overflow-y-auto pr-1">
+                                    {activityData.added.map((game, idx) => (
+                                        <React.Fragment key={game.id}>
+                                            <ListItem className="px-0 text-inherit" component={Link} to={`/libraries/${game.id}`}>
+                                                <ListItemAvatar>
+                                                    <Avatar variant="rounded" src={game.imageUrl} />
+                                                </ListItemAvatar>
+                                                <ListItemText
+                                                    primary={game.title}
+                                                    secondary={t('home.addedAt', { time: game.time ? formatRelativeTime(game.time) : '' })}
+                                                />
+                                            </ListItem>
+                                            {idx !== activityData.added.length - 1 && <Divider />}
+                                        </React.Fragment>
+                                    ))}
+                                </List>
+                            )}
                         </CardContent>
                     </Card>
                 </Box>
