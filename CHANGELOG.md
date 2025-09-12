@@ -1,3 +1,46 @@
+## [0.6.8](https://github.com/huoshen80/ReinaManager/compare/v0.6.7...v0.6.8) (2025-09-12)
+
+<details>
+<summary>查看中文版本</summary>
+
+### Bug 修复
+
+* 改进工具栏，修复无法删除带有存档备份游戏的问题，避免不必要的刷新 ([0d3840c](https://github.com/huoshen80/ReinaManager/commit/0d3840c5f4d4783d96705388050b038c8d42e260))
+* issue [#14](https://github.com/huoshen80/ReinaManager/issues/14) 的修复 ([#15](https://github.com/huoshen80/ReinaManager/issues/15)) ([bf0951d](https://github.com/huoshen80/ReinaManager/commit/bf0951db286bfbb5d6c7506702bbf39d81070180))
+* 更新到 v0.6.8 并使用正确的 latest.json ([d8da7a6](https://github.com/huoshen80/ReinaManager/commit/d8da7a61490d58f9a95518374d21d1082c65e02e))
+
+
+### 新功能
+
+* 实现跨组件的滚动位置保存与恢复 ([e43877c](https://github.com/huoshen80/ReinaManager/commit/e43877cab10b9b6926e39e1cf2031176cddaeb7d))
+
+
+### 性能改进
+
+* 优化 Detail 页面渲染与数据处理 ([5248de8](https://github.com/huoshen80/ReinaManager/commit/5248de893131f241473f0e992e4f90dcfe8c5188))
+* 优化 Home 页面渲染与游戏统计计算 ([18ff779](https://github.com/huoshen80/ReinaManager/commit/18ff779526f9f437246b739a822e65db56a5dacc))
+
+</details>
+
+### Bug Fixes
+
+* improve toolbar,fix can't delete game with savedata backup,avoid unnecessary  refreshes ([0d3840c](https://github.com/huoshen80/ReinaManager/commit/0d3840c5f4d4783d96705388050b038c8d42e260))
+* issue [#14](https://github.com/huoshen80/ReinaManager/issues/14) ([#15](https://github.com/huoshen80/ReinaManager/issues/15)) ([bf0951d](https://github.com/huoshen80/ReinaManager/commit/bf0951db286bfbb5d6c7506702bbf39d81070180))
+* update to v0.6.8 with correct latest.json ([d8da7a6](https://github.com/huoshen80/ReinaManager/commit/d8da7a61490d58f9a95518374d21d1082c65e02e))
+
+
+### Features
+
+* implement scroll position saving and restoration across components ([e43877c](https://github.com/huoshen80/ReinaManager/commit/e43877cab10b9b6926e39e1cf2031176cddaeb7d))
+
+
+### Performance Improvements
+
+* optimize Detail page rendering and data handling ([5248de8](https://github.com/huoshen80/ReinaManager/commit/5248de893131f241473f0e992e4f90dcfe8c5188))
+* optimize Home page render and game statistics calculations ([18ff779](https://github.com/huoshen80/ReinaManager/commit/18ff779526f9f437246b739a822e65db56a5dacc))
+
+
+
 ## [0.6.7](https://github.com/huoshen80/ReinaManager/compare/v0.6.6...v0.6.7) (2025-09-06)
 
 
