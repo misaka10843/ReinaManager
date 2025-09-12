@@ -161,7 +161,7 @@ jobs:
             cat latest_modified.json
             
             # 重新上传修改后的 latest.json
-            gh release upload $TAG_NAME latest_modified.json --clobber --name latest.json
+            gh release upload $TAG_NAME "latest_modified.json#latest.json" --clobber
             
             echo "Successfully updated latest.json with CDN URLs"
           else
