@@ -139,6 +139,7 @@ export async function deleteGame(gameId: number) {
   // 删除相关的会话记录和统计数据
   await db.execute("DELETE FROM game_sessions WHERE game_id = ?", [gameId]);
   await db.execute("DELETE FROM game_statistics WHERE game_id = ?", [gameId]);
+  await db.execute("DELETE FROM savedata WHERE game_id = ?", [gameId]);
   //删除游戏数据
   await db.execute("DELETE FROM games WHERE id = ?", [gameId]);
 }

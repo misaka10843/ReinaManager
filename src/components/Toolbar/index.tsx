@@ -31,13 +31,12 @@
 import { useState, useRef } from 'react';
 import Stack from '@mui/material/Stack';
 import { ThemeSwitcher } from '@toolpad/core/DashboardLayout';
-import GamesIcon from '@mui/icons-material/Games';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddModal from '@/components/AddModal';
 import SortModal from '@/components/SortModal';
 import { FilterModal } from '@/components/FilterModal';
-import { Link, useLocation, useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { LaunchModal } from '@/components/LaunchModal';
 import Button from '@mui/material/Button';
 import { handleOpenFolder, openurl, toggleGameClearStatus } from '@/utils';
@@ -87,28 +86,6 @@ export const useModal = () => {
         }
     };
     return { isopen, handleOpen, handleClose };
-}
-
-/**
- * 返回游戏库按钮与主题切换
- * @returns {JSX.Element}
- */
-export const ToLibraries = () => {
-    const { t } = useTranslation();
-    return (
-        <>
-            <Button
-                component={Link}
-                to="/libraries"
-                startIcon={<GamesIcon />}
-                color="primary"
-                variant="text"
-            >
-                {t('components.Toolbar.gameLibrary')}
-            </Button>
-            <ThemeSwitcher />
-        </>
-    );
 }
 
 /**
@@ -225,7 +202,10 @@ const MoreButton = () => {
             await toggleGameClearStatus(selectedGame.id, getGameById, (_, updatedGame) => {
                 // 更新store中的游戏数据
                 setSelectedGame(updatedGame);
-            }, updateGameClearStatusInStore);
+            }, (gameId, newStatus) => {
+                // 在详情页时跳过全局刷新，避免影响编辑页面状态
+                updateGameClearStatusInStore(gameId, newStatus, true); // skipRefresh = true
+            });
         } catch (error) {
             console.error('更新游戏通关状态失败:', error);
         }
@@ -340,7 +320,7 @@ export const Toolbars = () => {
     return (
         <Stack direction="row">
             <Buttongroup isLibraries={isLibraries} isDetail={isDetail} />
-            {!isLibraries && !isDetail && <ToLibraries />}
+            {!isLibraries && !isDetail && <ThemeSwitcher />}
         </Stack>
     );
 }

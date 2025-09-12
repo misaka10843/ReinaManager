@@ -136,7 +136,7 @@ export interface AppState {
     setTagTranslation: (enabled: boolean) => void;
 
     // 更新游戏通关状态
-    updateGameClearStatusInStore: (gameId: number, newClearStatus: 1 | 0) => void;
+    updateGameClearStatusInStore: (gameId: number, newClearStatus: 1 | 0, skipRefresh?: boolean) => void;
 
     // 更新窗口状态管理
     showUpdateModal: boolean;
@@ -357,7 +357,6 @@ export const useStore = create<AppState>()(
             },
 
             updateGame: async (id: number, gameUpdates: Partial<GameData>) => {
-                set({loading: true});
                 try {
                     if (isTauri()) {
                         await updateGameRepository(id, gameUpdates);
@@ -366,14 +365,21 @@ export const useStore = create<AppState>()(
                         if (currentGame && currentGame.id === id) {
                             set({selectedGame: {...currentGame, ...gameUpdates}});
                         }
-                        await get().refreshGameData();
+                        
+                        // 只有当更新的字段可能影响游戏列表显示时才刷新列表
+                        // 游戏设置类字段（如 savepath, autosave）不需要刷新列表
+                        const listAffectingFields = ['name', 'custom_name', 'developer', 'date', 'score', 'rank', 'tags', 'custom_cover'];
+                        const shouldRefreshList = Object.keys(gameUpdates).some(key => listAffectingFields.includes(key));
+                        
+                        if (shouldRefreshList) {
+                            await get().refreshGameData();
+                        }
                     } else {
                         console.warn("updateGameLocal is not implemented for browser environment.");
                     }
                 } catch (error) {
                     console.error('更新游戏数据失败:', error);
-                } finally {
-                    set({loading: false});
+                    throw error; 
                 }
             },
 
@@ -569,7 +575,7 @@ export const useStore = create<AppState>()(
             },
 
 // 更新games数组中特定游戏的通关状态
-            updateGameClearStatusInStore: async (gameId: number, newClearStatus: 1 | 0) => {
+            updateGameClearStatusInStore: async (gameId: number, newClearStatus: 1 | 0, skipRefresh?: boolean) => {
                 const {games, allGames} = get();
 
                 // 更新当前显示的游戏列表
@@ -585,8 +591,13 @@ export const useStore = create<AppState>()(
                         ? {...game, clear: newClearStatus}
                         : game
                 );
+                
                 set({games: updatedGames, allGames: updatedAllGames});
-                await get().refreshGameData();
+                
+                // 只有在不跳过刷新时才调用 refreshGameData
+                if (!skipRefresh) {
+                    await get().refreshGameData();
+                }
             },
 
             // 更新窗口状态管理
