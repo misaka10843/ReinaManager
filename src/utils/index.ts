@@ -8,6 +8,7 @@ import {updateGame, saveSavedataRecord} from './repository';
 import {getSavePathRepository} from './settingsConfig';
 import {resourceDir} from '@tauri-apps/api/path';
 import {snackbar} from "@/components/Snackbar";
+import { useScrollStore } from '@/store/scrollStore';
 
 // 缓存资源目录路径
 let cachedResourceDirPath: string | null = null;
@@ -163,6 +164,14 @@ export function formatPlayTime(minutes: number): string {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
 
+    // 如果总小时数大于或等于 100
+    if (hours >= 100) {
+        // 将总分钟数换算成带一位小数的小时
+        const totalHoursAsFloat = Math.floor(minutes / 60 * 10) / 10;
+        // 使用一个新的 i18next key 来格式化这个带小数的小时数
+        return i18next.t('utils.formatPlayTime.hours', { count: totalHoursAsFloat });
+    }
+    
     if (hours === 0) {
         return i18next.t('utils.formatPlayTime.minutes', {count: mins});
     }
@@ -496,3 +505,20 @@ export function isNsfwGame(tags: string[]): boolean {
     const allEnglish = tags.every(tag => /^[\x00-\x7F]+$/.test(tag));
     return allEnglish && !tags.includes("No Sexual Content");
 }
+
+//主动保存指定路径的滚动条位置
+export const saveScrollPosition = (path: string) => {
+    const SCROLL_CONTAINER_SELECTOR = 'main';
+    const container = document.querySelector<HTMLElement>(SCROLL_CONTAINER_SELECTOR);
+    
+    // 增加一个检查，确保容器是可滚动的，避免无效保存
+    if (container && container.scrollHeight > container.clientHeight) {
+        const scrollTop = container.scrollTop;
+        useScrollStore.setState(state => ({
+            scrollPositions: {
+                ...state.scrollPositions,
+                [path]: scrollTop,
+            }
+        }));
+    }
+};

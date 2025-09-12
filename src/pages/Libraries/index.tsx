@@ -13,6 +13,7 @@
  */
 
 import { Outlet } from "react-router";
+import { useScrollRestore } from "@/hooks/useScrollRestore";
 
 /**
  * Libraries 组件
@@ -22,6 +23,7 @@ import { Outlet } from "react-router";
  * @returns {JSX.Element} 路由出口容器
  */
 export const Libraries = () => {
+    useScrollRestore('/libraries');
     return (
         <Outlet />
     )

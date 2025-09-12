@@ -18,20 +18,23 @@
  * - react-i18next
  */
 
-import { Outlet, useLocation } from 'react-router'
+import { Outlet, useLocation } from 'react-router-dom'
 import Stack from '@mui/material/Stack';
 import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
 import { Avatar } from '@mui/material';
 import {
     DashboardLayout,
+    DashboardSidebarPageItem,
     type SidebarFooterProps,
 } from '@toolpad/core/DashboardLayout';
 import { Toolbars } from '@/components/Toolbar';
 import { SearchBox } from '@/components/SearchBox';
-import { PageContainer } from '@toolpad/core/PageContainer';
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import { PageContainer } from '@toolpad/core/PageContainer';
+import { LinkWithScrollSave } from '../LinkWithScrollSave';
+import { NavigationPageItem } from '@toolpad/core/AppProvider';
 
 /**
  * 自定义应用标题组件属性类型
@@ -86,13 +89,28 @@ export const Layout: React.FC = () => {
         return () => <CustomAppTitle isLibraries={isLibraries} />;
     }, [isLibraries]);
 
+    const handleRenderPageItem = useCallback((item: NavigationPageItem, params: any) => {
+        const to = `/${item.segment || ''}`;
+
+        // 外层不渲染 <a>，而是使用可访问的 div 进行编程式导航，
+        // 在导航前 LinkWithScrollSave 会保存滚动位置，避免嵌套 <a>。
+        return (
+            <LinkWithScrollSave to={to} style={{ textDecoration: 'none', color: 'inherit' }}>
+                <DashboardSidebarPageItem item={item} {...params} />
+            </LinkWithScrollSave>
+        );
+    }, []);
+
     return (
         <DashboardLayout
             slots={{
                 appTitle: AppTitle,
                 toolbarActions: Toolbars,
                 sidebarFooter: SidebarFooter,
-            }} sidebarExpandedWidth={isja_JP ? 250 : 220} defaultSidebarCollapsed={true}
+            }}
+            sidebarExpandedWidth={isja_JP ? 250 : 220}
+            defaultSidebarCollapsed={true}
+            renderPageItem={handleRenderPageItem}
         >
             {isLibraries ?
                 <PageContainer sx={{ maxWidth: '100% !important' }}>

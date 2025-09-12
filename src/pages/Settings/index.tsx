@@ -25,7 +25,6 @@ import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import Select, { type SelectChangeEvent } from '@mui/material/Select';
 import { useTranslation } from 'react-i18next';
-import { PageContainer } from '@toolpad/core';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
@@ -43,6 +42,8 @@ import UpdateIcon from '@mui/icons-material/Update';
 import { isTauri } from '@tauri-apps/api/core';
 import { checkForUpdates } from '@/components/Update';
 import pkg from '../../../package.json';
+import { PageContainer } from '@toolpad/core/PageContainer';
+import { useScrollRestore } from '@/hooks/useScrollRestore';
 
 
 /**
@@ -54,7 +55,6 @@ import pkg from '../../../package.json';
  */
 const LanguageSelect = () => {
     const { t, i18n } = useTranslation(); // 使用i18n实例和翻译函数
-    const [language, setLanguage] = useState(i18n.language); // 使用当前语言初始化状态
 
     // 语言名称映射
     const languageNames = {
@@ -64,18 +64,12 @@ const LanguageSelect = () => {
         "ja-JP": "日本語(ja-JP)",
     };
 
-    // 当i18n.language变化时更新state
-    useEffect(() => {
-        setLanguage(i18n.language);
-    }, [i18n.language]);
-
     /**
      * 处理语言切换
      * @param {SelectChangeEvent} event
      */
     const handleChange = (event: SelectChangeEvent) => {
         const newLang = event.target.value;
-        setLanguage(newLang);
         i18n.changeLanguage(newLang); // 切换语言
     };
 
@@ -90,7 +84,7 @@ const LanguageSelect = () => {
             <Select
                 labelId="language-select-label"
                 id="language-select"
-                value={language}
+                value={i18n.language}
                 onChange={handleChange}
                 className="w-60"
                 renderValue={(value) => languageNames[value as keyof typeof languageNames]}
@@ -692,6 +686,7 @@ const AboutSection: React.FC = () => {
  * @returns {JSX.Element} 设置页面
  */
 export const Settings: React.FC = () => {
+    useScrollRestore('/settings');
     return (
         <PageContainer className="max-w-full">
             <Box className="py-4">

@@ -23,8 +23,7 @@ import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import EmojiEventsOutlinedIcon from '@mui/icons-material/EmojiEventsOutlined';
-import {useEffect, useRef, useState} from 'react';
-import { Link } from 'react-router';
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '@/store';
 import { handleOpenFolder, toggleGameClearStatus } from '@/utils';
 import { AlertDeleteBox } from '@/components/AlertBox';
@@ -32,6 +31,7 @@ import { useTranslation } from 'react-i18next';
 import { isTauri } from '@tauri-apps/api/core';
 import { useGamePlayStore } from '@/store/gamePlayStore';
 import type { GameData } from '@/types';
+import { LinkWithScrollSave } from '../LinkWithScrollSave';
 
 /**
  * RightMenu 组件属性类型
@@ -117,7 +117,7 @@ const RightMenu: React.FC<RightMenuProps> = ({ isopen, anchorPosition, setAnchor
             document.removeEventListener('scroll', handleInteraction, true);
             window.removeEventListener('resize', handleInteraction);
         };
-    }, [isopen, setAnchorEl,anchorPosition]);
+    }, [isopen, setAnchorEl, anchorPosition]);
 
     if (!isopen) return null;
     if (!anchorPosition) return null;
@@ -163,7 +163,10 @@ const RightMenu: React.FC<RightMenuProps> = ({ isopen, anchorPosition, setAnchor
             await toggleGameClearStatus(id, getGameById, (_, updatedGame) => {
                 // 更新本地状态
                 setGameData(updatedGame);
-            }, updateGameClearStatusInStore);
+            }, (gameId, newStatus) => {
+                // 在库列表页面，需要保持全局刷新以更新筛选视图
+                updateGameClearStatusInStore(gameId, newStatus, false); // skipRefresh = false
+            });
             setAnchorEl(null);
         } catch (error) {
             console.error('更新游戏通关状态失败:', error);
@@ -194,12 +197,12 @@ const RightMenu: React.FC<RightMenuProps> = ({ isopen, anchorPosition, setAnchor
                     <span>{t('components.RightMenu.startGame')}</span>
                 </div>
                 {/* 进入详情 */}
-                <Link
+                <LinkWithScrollSave
                     className="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer no-underline text-black dark:text-white visited:text-black dark:visited:text-white"
                     to={`/libraries/${id}`}>
                     <ArticleIcon className="mr-2" />
                     <span>{t('components.RightMenu.enterDetails')}</span>
-                </Link>
+                </LinkWithScrollSave>
                 {/* 删除游戏 */}
                 <div
                     className="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-black dark:text-white"

@@ -24,8 +24,8 @@ import { useGamePlayStore } from '@/store/gamePlayStore';
 import type { GameData } from '@/types';
 import KeepAlive from 'react-activation';
 import { useTranslation } from 'react-i18next';
-import { getGameDisplayName, isNsfwGame, getGameCover } from '@/utils';
-import { useNavigate } from 'react-router';
+import { getGameDisplayName, isNsfwGame, getGameCover, saveScrollPosition } from '@/utils';
+import { useNavigate } from 'react-router-dom';
 
 /**
  * Cards 组件用于展示游戏卡片列表。
@@ -192,6 +192,7 @@ const Cards = () => {
         if (cardClickMode === 'navigate') {
             // 单击导航到详情页面
             setSelectedGameId(cardId);
+            saveScrollPosition(location.pathname);
             navigate(`/libraries/${cardId}`);
         } else {
             // 单击选择游戏
@@ -242,7 +243,7 @@ const Cards = () => {
         setSelectedGameId(cardId);
     };
     return (
-        <KeepAlive cacheKey='cards'>
+        <KeepAlive name='cards' cacheKey='cards' saveScrollPosition={false}>
             <div
                 className="flex-1 text-center grid grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-4 p-4">
                 {/* 右键菜单组件 */}
