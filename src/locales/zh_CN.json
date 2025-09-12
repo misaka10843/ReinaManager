@@ -103,6 +103,8 @@
         "Detail": {
             "loading": "加载中...",
             "notFound": "未找到游戏数据",
+            "collapseTags": "折叠标签",
+            "expandTags": "展开标签",
             "introduction": "简介",
             "gameScore": "游戏评分",
             "releaseDate": "发布时间",
@@ -140,14 +142,13 @@
                 "mixedFetchError": "Mixed 获取错误",
                 "updatePathFailed": "更新路径失败",
                 "dataSourceUpdate": "数据源更新",
-                "gameInfoEdit": "游戏资料编辑",
-                "collapseTags": "折叠标签",
-                "expandTags": "展开标签"
+                "gameInfoEdit": "游戏资料编辑"
             },
             "Backup": {
                 "openBackupFolder": "打开备份文件夹",
                 "openSaveDataFolder": "打开存档文件夹",
                 "pathRequired": "请先选择存档文件夹",
+                "setPathForAutosave": "请先设置存档路径以启用自动备份",
                 "unknownError": "未知错误",
                 "saveDataPath": "存档文件夹路径",
                 "selectSaveDataFolder": "选择存档文件夹",

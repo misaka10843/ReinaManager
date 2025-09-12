@@ -103,6 +103,8 @@
         "Detail": {
             "loading": "Loading...",
             "notFound": "Game data not found",
+            "collapseTags": "Collapse Tags",
+            "expandTags": "Expand Tags",
             "introduction": "Introduction",
             "gameScore": "Game Score",
             "releaseDate": "Release Date",
@@ -140,12 +142,11 @@
                 "mixedFetchError": "Mixed fetch error",
                 "updatePathFailed": "Failed to update path",
                 "dataSourceUpdate": "Data Source Update",
-                "gameInfoEdit": "Game Info Edit",
-                "collapseTags": "Collapse Tags",
-                "expandTags": "Expand Tags"
+                "gameInfoEdit": "Game Info Edit"
             },
             "Backup": {
                 "pathRequired": "Please select a save data folder first",
+                "setPathForAutosave": "Please set the save path first to enable auto backup",
                 "unknownError": "Unknown error",
                 "saveDataPath": "Save Data Folder Path",
                 "selectSaveDataFolder": "Select Save Data Folder",

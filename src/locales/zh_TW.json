@@ -102,7 +102,9 @@
         },
         "Detail": {
             "loading": "加載中...",
-            "notFound": "未找到遊戲資料",
+            "notFound": "未找到該遊戲",
+            "collapseTags": "折疊標籤",
+            "expandTags": "展開標籤",
             "introduction": "簡介",
             "gameScore": "遊戲評分",
             "releaseDate": "發佈時間",
@@ -140,12 +142,11 @@
                 "mixedFetchError": "Mixed 獲取錯誤",
                 "updatePathFailed": "更新路徑失敗",
                 "dataSourceUpdate": "數據源更新",
-                "gameInfoEdit": "遊戲資料編輯",
-                "collapseTags": "折疊標籤",
-                "expandTags": "展開標籤"
+                "gameInfoEdit": "遊戲資料編輯"
             },
             "Backup": {
                 "pathRequired": "請先選擇存檔資料夾",
+                "setPathForAutosave": "請先設定存檔路徑以啟用自動備份",
                 "unknownError": "未知錯誤",
                 "saveDataPath": "存檔資料夾路徑",
                 "selectSaveDataFolder": "選擇存檔資料夾",

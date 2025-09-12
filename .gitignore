@@ -27,5 +27,6 @@ dist-ssr
 test
 
 #claude
+.claude
 CLAUDE.md
 

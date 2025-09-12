@@ -16,7 +16,8 @@ import {
     CardContent,
     Switch,
     FormControlLabel,
-    Divider
+    Divider,
+    Tooltip
 } from "@mui/material";
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import BackupIcon from '@mui/icons-material/Backup';
@@ -25,10 +26,9 @@ import SaveIcon from '@mui/icons-material/Save';
 import { handleGetFolder, deleteSavedataBackup, getAppDataDir, createGameSavedataBackup, openGameBackupFolder, openGameSaveDataFolder } from '@/utils';
 import {
     getSavedataRecords,
-    deleteSavedataRecord,
-    getGameById
+    deleteSavedataRecord
 } from '@/utils/repository';
-import type { SavedataRecord } from '@/types';
+import type { SavedataRecord, GameData } from '@/types';
 import { useTranslation } from 'react-i18next';
 import { AlertDeleteBox } from '@/components/AlertBox';
 import { snackbar } from '@/components/Snackbar';
@@ -55,29 +55,30 @@ export const Backup = (): JSX.Element => {
     const [autoSaveEnabled, setAutoSaveEnabled] = useState<boolean>(false);
     const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
 
-    // 初始化组件，加载备份列表和游戏设置
+    // 初始化组件，加载备份列表
     useEffect(() => {
         if (selectedGame) {
+            // 同步 selectedGame prop 到本地状态
+            setSaveDataPath(selectedGame.savepath || "");
+            setAutoSaveEnabled(selectedGame.autosave === 1);
+
+            // 加载备份列表
             loadBackupList();
-            loadGameSettings();
+        } else {
+            // 清理状态
+            setSaveDataPath("");
+            setAutoSaveEnabled(false);
+            setBackupList([]);
         }
-    }, [selectedGame]);
+    }, [selectedGame?.id]); // 只在游戏ID变化时重新加载，避免设置更新时的重复加载
 
-    // 从数据库加载游戏的最新设置
-    const loadGameSettings = async () => {
-        if (!selectedGame?.id) return;
-
-        try {
-            // 从数据库获取最新的游戏信息
-            const latestGame = await getGameById(selectedGame.id);
-            if (latestGame) {
-                setSaveDataPath(latestGame.savepath || "");
-                setAutoSaveEnabled(latestGame.autosave === 1);
-            }
-        } catch (error) {
-            console.error('加载游戏设置失败:', error);
+    // 单独监听游戏数据变化，同步到本地状态（但不重新加载备份列表）
+    useEffect(() => {
+        if (selectedGame) {
+            setSaveDataPath(selectedGame.savepath || "");
+            setAutoSaveEnabled(selectedGame.autosave === 1);
         }
-    };
+    }, [selectedGame?.savepath, selectedGame?.autosave]); // 只监听相关字段
 
     // 加载备份列表
     const loadBackupList = async () => {
@@ -92,6 +93,31 @@ export const Backup = (): JSX.Element => {
         }
     };
 
+    // 统一的设置更新逻辑
+    const handleSettingUpdate = async (updateData: Partial<GameData>, successMessage: string, failureMessage: string) => {
+        if (!selectedGame?.id) return;
+
+        setIsUpdatingSettings(true);
+
+        try {
+            await updateGame(selectedGame.id, updateData);
+            snackbar.success(successMessage);
+
+            // 移除本地状态同步，由 useEffect 负责
+            // 这样可以避免重复的状态更新和备份列表刷新
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : t('pages.Detail.Backup.unknownError', '未知错误');
+            snackbar.error(`${failureMessage}: ${errorMessage}`);
+
+            // 如果设置失败，由于没有调用 updateGame，useEffect 不会被触发
+            // selectedGame 保持原值，所以不需要手动恢复状态
+
+            throw error; // 重新抛出错误以便调用者处理
+        } finally {
+            setIsUpdatingSettings(false);
+        }
+    };
+
     // 选择存档文件夹
     const handleSelectSaveDataPath = async () => {
         const selectedPath = await handleGetFolder();
@@ -102,46 +128,24 @@ export const Backup = (): JSX.Element => {
 
     // 更新存档路径
     const handleUpdateSaveDataPath = async () => {
-        if (!selectedGame?.id) return;
-
-        setIsUpdatingSettings(true);
-
-        try {
-            // 使用统一的updateGame函数更新存档路径
-            await updateGame(selectedGame.id, { savepath: saveDataPath });
-
-            snackbar.success(t('pages.Detail.Backup.pathUpdateSuccess', '存档路径更新成功'));
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : t('pages.Detail.Backup.unknownError', '未知错误');
-            snackbar.error(`${t('pages.Detail.Backup.pathUpdateFailed', '路径更新失败')}: ${errorMessage}`);
-        } finally {
-            setIsUpdatingSettings(false);
-        }
+        await handleSettingUpdate(
+            { savepath: saveDataPath },
+            t('pages.Detail.Backup.pathUpdateSuccess', '存档路径更新成功'),
+            t('pages.Detail.Backup.pathUpdateFailed', '路径更新失败')
+        );
     };
 
     // 处理自动备份开关
     const handleAutoSaveToggle = async (enabled: boolean) => {
-        if (!selectedGame?.id) return;
+        const message = enabled
+            ? t('pages.Detail.Backup.autoSaveEnabled', '自动备份已启用')
+            : t('pages.Detail.Backup.autoSaveDisabled', '自动备份已禁用');
 
-        setIsUpdatingSettings(true);
-
-        try {
-            // 使用统一的updateGame函数更新自动保存状态
-            await updateGame(selectedGame.id, { autosave: enabled ? 1 as const : 0 as const });
-            setAutoSaveEnabled(enabled);
-
-            const message = enabled
-                ? t('pages.Detail.Backup.autoSaveEnabled', '自动备份已启用')
-                : t('pages.Detail.Backup.autoSaveDisabled', '自动备份已禁用');
-            snackbar.success(message);
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : t('pages.Detail.Backup.unknownError', '未知错误');
-            snackbar.error(`${t('pages.Detail.Backup.autoSaveUpdateFailed', '自动备份设置失败')}: ${errorMessage}`);
-            // 恢复原状态
-            setAutoSaveEnabled(!enabled);
-        } finally {
-            setIsUpdatingSettings(false);
-        }
+        await handleSettingUpdate(
+            { autosave: enabled ? 1 as const : 0 as const },
+            message,
+            t('pages.Detail.Backup.autoSaveUpdateFailed', '自动备份设置失败')
+        );
     };
 
     // 创建备份
@@ -259,16 +263,23 @@ export const Backup = (): JSX.Element => {
 
                         <Stack spacing={2}>
                             {/* 自动备份开关 */}
-                            <FormControlLabel
-                                control={
-                                    <Switch
-                                        checked={autoSaveEnabled}
-                                        onChange={(e) => handleAutoSaveToggle(e.target.checked)}
-                                        disabled={isUpdatingSettings || !selectedGame?.savepath}
+                            <Tooltip
+                                title={!selectedGame?.savepath ? t('pages.Detail.Backup.setPathForAutosave', '请先设置存档路径以启用自动备份') : ''}
+                            >
+                                {/* 需要一个 div 包裹来让 Tooltip 在 disabled 元素上生效 */}
+                                <div>
+                                    <FormControlLabel
+                                        control={
+                                            <Switch
+                                                checked={autoSaveEnabled}
+                                                onChange={(e) => handleAutoSaveToggle(e.target.checked)}
+                                                disabled={isUpdatingSettings || !selectedGame?.savepath}
+                                            />
+                                        }
+                                        label={t('pages.Detail.Backup.autoSave', '自动备份')}
                                     />
-                                }
-                                label={t('pages.Detail.Backup.autoSave', '自动备份')}
-                            />
+                                </div>
+                            </Tooltip>
 
                             <Divider />
 

@@ -103,6 +103,8 @@
         "Detail": {
             "loading": "読み込み中...",
             "notFound": "ゲームデータが見つかりません",
+            "collapseTags": "タグを折りたたむ",
+            "expandTags": "タグを展開する",
             "introduction": "紹介",
             "gameScore": "ゲームスコア",
             "releaseDate": "公開日",
@@ -140,12 +142,12 @@
                 "mixedFetchError": "Mixed 取得エラー",
                 "updatePathFailed": "パスの更新に失敗しました",
                 "dataSourceUpdate": "データソース更新",
-                "gameInfoEdit": "ゲーム情報編集",
-                "collapseTags": "タグを折りたたむ",
-                "expandTags": "タグを展開する"
+                "gameInfoEdit": "ゲーム情報編集"
+                
             },
             "Backup": {
                 "pathRequired": "まずセーブデータフォルダを選択してください",
+                "setPathForAutosave": "自動バックアップを有効にするには、まずセーブパスを設定してください",
                 "unknownError": "不明なエラー",
                 "saveDataPath": "セーブデータフォルダパス",
                 "selectSaveDataFolder": "セーブデータフォルダを選択",

@@ -38,11 +38,10 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
     disabled = false
 }) => {
     const { t } = useTranslation();
-    const gameCustomName = selectedGame ? getGameDisplayName(selectedGame, i18n.language) : t('pages.Detail.GameInfoEdit.enterGameNote', '请输入游戏备注');
 
     // 游戏信息编辑相关状态
-    const [localPath, setLocalPath] = useState<string>(selectedGame?.localpath || "");
-    const [gameNote, setGameNote] = useState<string>(gameCustomName);
+    const [localPath, setLocalPath] = useState<string>("");
+    const [gameNote, setGameNote] = useState<string>("");
     const [isLoading, setIsLoading] = useState(false);
 
     // 图片预览相关状态
@@ -50,7 +49,22 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
     // 添加临时封面状态，用于平滑过渡
-    const [tempCoverUrl, setTempCoverUrl] = useState<string | null>(null);    // 清理预览URL避免内存泄漏
+    const [tempCoverUrl, setTempCoverUrl] = useState<string | null>(null);
+
+    // 同步 selectedGame prop 到内部状态
+    useEffect(() => {
+        if (selectedGame) {
+            setLocalPath(selectedGame.localpath || "");
+            const displayName = getGameDisplayName(selectedGame, i18n.language);
+            setGameNote(selectedGame.custom_name || displayName);
+        } else {
+            // 处理 selectedGame 为 null 的情况
+            setLocalPath("");
+            setGameNote("");
+        }
+    }, [selectedGame]);
+
+    // 清理预览URL避免内存泄漏
     useEffect(() => {
         return () => {
             if (previewUrl) {
@@ -61,9 +75,13 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 
     // 检查是否有任何更改
     const hasChanges = () => {
+        if (!selectedGame) return false;
+        const currentDisplayName = getGameDisplayName(selectedGame, i18n.language);
+        const currentCustomName = selectedGame.custom_name || currentDisplayName;
+
         return (
-            localPath !== (selectedGame?.localpath || "") ||
-            gameNote !== (gameCustomName) ||
+            localPath !== (selectedGame.localpath || "") ||
+            gameNote !== currentCustomName ||
             selectedImagePath !== null // 有选择的图片但未保存
         );
     };
@@ -167,7 +185,10 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
                 updateData.localpath = localPath;
             }
 
-            if (gameNote !== (selectedGame.name || "")) {
+            // 检查自定义名称是否有变化
+            const currentDisplayName = getGameDisplayName(selectedGame, i18n.language);
+            const currentCustomName = selectedGame.custom_name || currentDisplayName;
+            if (gameNote !== currentCustomName) {
                 updateData.custom_name = gameNote;
             }
 

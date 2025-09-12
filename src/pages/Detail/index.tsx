@@ -23,12 +23,11 @@ import { PageContainer } from '@toolpad/core/PageContainer';
 import { useActivePage } from '@toolpad/core/useActivePage';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Typography, Box, Stack, Chip, Tabs, Tab } from '@mui/material';
-import { useLocation } from 'react-router';
+import { Typography, Box, Stack, Chip, Tabs, Tab, CircularProgress } from '@mui/material';
+import { useLocation } from 'react-router-dom';
 import { InfoBox } from './InfoBox';
 import { Edit } from './Edit';
 import { Backup } from './Backup';
-import { getGameById } from '@/utils/repository';
 import i18n from '@/utils/i18n';
 import { getGameDisplayName, getGameCover } from '@/utils';
 import { translateTags } from '@/utils/tagTranslation';
@@ -71,11 +70,8 @@ const TabPanel = (props: TabPanelProps) => {
 export const Detail: React.FC = () => {
     const id = Number(useLocation().pathname.split('/').pop());
     const { t } = useTranslation();
-    const { setSelectedGameId, selectedGame, fetchGame, tagTranslation } = useStore();
+    const { setSelectedGameId, selectedGame, fetchGame, tagTranslation, loading } = useStore();
     const [tabIndex, setTabIndex] = useState(0);
-    const [isLoading, setIsLoading] = useState(true); // 添加加载状态
-    const [currentId, setCurrentId] = useState<number | null>(null); // 跟踪当前显示的游戏ID
-    const [gameAddTime, setGameAddTime] = useState<Date | undefined>(undefined);
     const [showAllTags, setShowAllTags] = useState(false); // 控制标签折叠状态
 
     const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -88,7 +84,7 @@ export const Detail: React.FC = () => {
 
     const activePage = useActivePage();
     const location = useLocation();
-    const title = selectedGame ? getGameDisplayName(selectedGame, i18n.language) : String(id);
+    const title = selectedGame ? getGameDisplayName(selectedGame, i18n.language) : t('pages.Detail.loading');
     const breadcrumbs = useMemo(() => {
         const base = activePage?.breadcrumbs ?? [];
         // 使用当前路径，避免手动拼接出重复斜杠或错误段
@@ -99,34 +95,39 @@ export const Detail: React.FC = () => {
             : base;
     }, [activePage?.breadcrumbs, location.pathname, title]);
 
-    // 加载游戏数据
+    // 优化后的 useEffect - 统一数据获取逻辑
     useEffect(() => {
-        setIsLoading(true); // 开始加载时设置加载状态为true
-        const loadGame = async () => {
-            const game = await getGameById(id);
-            setGameAddTime(game?.time);
-            await fetchGame(id);
-            setIsLoading(false); // 加载完成后设置为false
-            setCurrentId(id); // 记录当前加载的ID
-        };
+        if (id) {
+            setSelectedGameId(id); // 立即设置ID，以便其他组件（如LaunchModal）能响应
+            fetchGame(id);
+        }
 
-        loadGame();
-        // 设置当前选中的游戏ID，以便LaunchModal可以正确工作
-        setSelectedGameId(id);
-    }, [id, fetchGame, setSelectedGameId]);    // 显示加载状态或未找到游戏的消息
-    if (isLoading || currentId !== id) {
+        // 返回清理函数，防止快速切换时显示上一个游戏的数据
+        return () => {
+            useStore.setState({ selectedGame: null });
+        };
+    }, [id, fetchGame, setSelectedGameId]);
+
+    // 派生状态：基于selectedGame和loading计算当前状态
+    const isLoading = loading || !selectedGame || selectedGame.id !== id;
+    const isNotFound = !loading && !selectedGame && id; // 加载完成但仍然没有数据
+
+    // 加载状态UI - 使用骨架屏
+    if (isLoading) {
         return (
-            <PageContainer sx={{ maxWidth: '100% !important' }}>
+            <PageContainer key={id} sx={{ maxWidth: '100% !important' }}>
                 <Box className="p-2" display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
-                    <Typography>{t('pages.Detail.loading')}</Typography>
+                    <CircularProgress />
+                    <Typography sx={{ ml: 2 }}>{t('pages.Detail.loading')}</Typography>
                 </Box>
             </PageContainer>
         );
     }
 
-    if (!selectedGame) {
+    // 未找到游戏UI
+    if (isNotFound) {
         return (
-            <PageContainer sx={{ maxWidth: '100% !important' }}>
+            <PageContainer key={id} sx={{ maxWidth: '100% !important' }}>
                 <Box className="p-2" display="flex" justifyContent="center" alignItems="center" minHeight="50vh">
                     <Typography>{t('pages.Detail.notFound')}</Typography>
                 </Box>
@@ -135,7 +136,7 @@ export const Detail: React.FC = () => {
     }
 
     return (
-        <PageContainer title={title} breadcrumbs={breadcrumbs} sx={{ maxWidth: '100% !important' }}>
+        <PageContainer key={id} title={title} breadcrumbs={breadcrumbs} sx={{ maxWidth: '100% !important' }}>
             <Box className="p-2">
                 {/* 顶部区域：图片和基本信息 */}
                 <Stack direction={{ xs: 'column', md: 'row' }} spacing={3}>
@@ -143,6 +144,7 @@ export const Detail: React.FC = () => {
                     <Box>
                         <img
                             src={getGameCover(selectedGame)}
+                            loading='lazy'
                             alt={selectedGame.name}
                             className="max-h-65 max-w-40 lg:max-w-80 rounded-lg shadow-lg select-none"
                             onDragStart={(event) => event.preventDefault()}
@@ -174,7 +176,7 @@ export const Detail: React.FC = () => {
                             <Box>
                                 <Typography variant="subtitle2" fontWeight="bold" component="div">{t('pages.Detail.addTime')}</Typography>
                                 <Typography component="div">
-                                    {new Date(gameAddTime as Date).toLocaleDateString()}
+                                    {selectedGame.time ? new Date(selectedGame.time).toLocaleDateString() : '-'}
                                 </Typography>
                             </Box>
                             {selectedGame.rank !== 0 && selectedGame.rank !== null &&
@@ -235,20 +237,22 @@ export const Detail: React.FC = () => {
 
                     {/* 统计信息Tab */}
                     <TabPanel value={tabIndex} index={0}>
-                        <InfoBox gameID={id} />
+                        {tabIndex === 0 && <InfoBox gameID={id} />}
                     </TabPanel>
                     <TabPanel value={tabIndex} index={1}>
-                        {/* 游戏简介 */}
-                        <Box>
-                            <Typography variant="h6" fontWeight="bold" component="div">{t('pages.Detail.introduction')}</Typography>
-                            <Typography className="mt-1" component="div">{selectedGame.summary}</Typography>
-                        </Box>
+                        {tabIndex === 1 && (
+                            /* 游戏简介 */
+                            <Box>
+                                <Typography variant="h6" fontWeight="bold" component="div">{t('pages.Detail.introduction')}</Typography>
+                                <Typography className="mt-1" component="div">{selectedGame.summary}</Typography>
+                            </Box>
+                        )}
                     </TabPanel>
                     <TabPanel value={tabIndex} index={2}>
-                        <Edit />
+                        {tabIndex === 2 && <Edit />}
                     </TabPanel>
                     <TabPanel value={tabIndex} index={3}>
-                        <Backup />
+                        {tabIndex === 3 && <Backup />}
                     </TabPanel>
 
                 </Box>

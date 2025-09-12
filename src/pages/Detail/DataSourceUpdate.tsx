@@ -21,7 +21,7 @@ import { snackbar } from "@/components/Snackbar";
 interface DataSourceUpdateProps {
     bgmToken: string;
     selectedGame: GameData | null;
-    onDataFetched: (data: GameData | string) => void;
+    onDataFetched: (data: GameData) => void;
     disabled?: boolean;
 }
 
@@ -50,34 +50,34 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
     }, [selectedGame]);
 
     // 重构的数据获取逻辑
-    const fetchGameData = useCallback(async (): Promise<GameData | string> => {
+    const fetchGameData = useCallback(async (): Promise<GameData> => {
         let fetchedData: GameData | string | null = null;
 
         switch (idType) {
             case "bgm": {
-                if (!bgmId) return t('pages.Detail.DataSourceUpdate.bgmIdRequired', 'Bangumi ID 不能为空');
+                if (!bgmId) throw new Error(t('pages.Detail.DataSourceUpdate.bgmIdRequired', 'Bangumi ID 不能为空'));
                 try {
                     fetchedData = await fetchFromBgm(bgmId, bgmToken, bgmId);
                 } catch (error) {
                     const errorMessage = error instanceof Error ? error.message : t('pages.Detail.DataSourceUpdate.unknownError', '未知错误');
                     console.error("Bangumi 数据获取失败:", errorMessage);
-                    return `${t('pages.Detail.DataSourceUpdate.bangumiFetchError', 'Bangumi 获取错误')}: ${errorMessage}`;
+                    throw new Error(`${t('pages.Detail.DataSourceUpdate.bangumiFetchError', 'Bangumi 获取错误')}: ${errorMessage}`);
                 }
                 break;
             }
             case "vndb": {
-                if (!vndbId) return t('pages.Detail.DataSourceUpdate.vndbIdRequired', 'VNDB ID 不能为空');
+                if (!vndbId) throw new Error(t('pages.Detail.DataSourceUpdate.vndbIdRequired', 'VNDB ID 不能为空'));
                 try {
                     fetchedData = await fetchFromVNDB(vndbId, vndbId);
                 } catch (error) {
                     const errorMessage = error instanceof Error ? error.message : t('pages.Detail.DataSourceUpdate.unknownError', '未知错误');
                     console.error("VNDB 数据获取失败:", errorMessage);
-                    return `${t('pages.Detail.DataSourceUpdate.vndbFetchError', 'VNDB 获取错误')}: ${errorMessage}`;
+                    throw new Error(`${t('pages.Detail.DataSourceUpdate.vndbFetchError', 'VNDB 获取错误')}: ${errorMessage}`);
                 }
                 break;
             }
             case "mixed": {
-                if (!bgmId && !vndbId) return t('pages.Detail.DataSourceUpdate.bgmOrVndbIdRequired', 'Bangumi ID 或 VNDB ID 不能为空');
+                if (!bgmId && !vndbId) throw new Error(t('pages.Detail.DataSourceUpdate.bgmOrVndbIdRequired', 'Bangumi ID 或 VNDB ID 不能为空'));
                 try {
                     fetchedData = await fetchMixedData(
                         bgmId || vndbId,
@@ -88,18 +88,22 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
                 } catch (error) {
                     const errorMessage = error instanceof Error ? error.message : t('pages.Detail.DataSourceUpdate.unknownError', '未知错误');
                     console.error("Mixed 数据获取失败:", errorMessage);
-                    return `${t('pages.Detail.DataSourceUpdate.mixedFetchError', 'Mixed 获取错误')}: ${errorMessage}`;
+                    throw new Error(`${t('pages.Detail.DataSourceUpdate.mixedFetchError', 'Mixed 获取错误')}: ${errorMessage}`);
                 }
                 break;
             }
             case "custom": {
-                return t('pages.Detail.DataSourceUpdate.customModeWarning', '自定义模式无法从数据源更新。');
+                throw new Error(t('pages.Detail.DataSourceUpdate.customModeWarning', '自定义模式无法从数据源更新。'));
             }
             default:
-                return t('pages.Detail.DataSourceUpdate.invalidDataSource', '选择了无效的数据源。');
+                throw new Error(t('pages.Detail.DataSourceUpdate.invalidDataSource', '选择了无效的数据源。'));
         }
 
-        return fetchedData ?? t('pages.Detail.DataSourceUpdate.noDataFetched', '未获取到数据或数据源无效。');
+        if (!fetchedData || typeof fetchedData === 'string') {
+            throw new Error(t('pages.Detail.DataSourceUpdate.noDataFetched', '未获取到数据或数据源无效。'));
+        }
+
+        return fetchedData;
     }, [idType, bgmId, vndbId, bgmToken, t]);
 
     // 获取并预览游戏数据
@@ -107,10 +111,7 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
         setIsLoading(true);
         try {
             const result = await fetchGameData();
-            onDataFetched(result);
-            if (typeof result === 'string') {
-                snackbar.error(result);
-            }
+            onDataFetched(result); // 现在 result 一定是 GameData 类型
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : t('pages.Detail.DataSourceUpdate.unknownError', '未知错误');
             snackbar.error(errorMessage);

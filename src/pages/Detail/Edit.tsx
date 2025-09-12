@@ -28,27 +28,25 @@ export const Edit = (): JSX.Element => {
     const { t } = useTranslation();
 
     // UI 状态
-    const [gameData, setGameData] = useState<GameData | string | null>(null);
+    const [gameData, setGameData] = useState<GameData | null>(null);
     const [openViewBox, setOpenViewBox] = useState(false);
-
 
     // 确认更新游戏数据（从数据源）
     const handleConfirmGameUpdate = () => {
-        if (gameData && typeof gameData !== 'string') {
+        if (gameData) {
             updateGame(id, gameData);
             setOpenViewBox(false);
-            snackbar.success('游戏信息已更新');
+            snackbar.success(t('pages.Detail.Edit.updateSuccess', '游戏信息已更新'));
         }
     };
+
     // 处理数据源获取的数据
-    const handleDataSourceFetched = (result: GameData | string) => {
-        if (result && typeof result !== 'string') {
-            const updatedResult = {
-                ...result
-            }
-            setGameData(updatedResult);
-            setOpenViewBox(true);
-        }
+    const handleDataSourceFetched = (result: GameData) => {
+        const updatedResult = {
+            ...result
+        };
+        setGameData(updatedResult);
+        setOpenViewBox(true);
     };
 
     // 处理游戏信息保存
@@ -62,7 +60,7 @@ export const Edit = (): JSX.Element => {
         } catch (error) {
             const errorMsg = error instanceof Error ? error.message : t('pages.Detail.Edit.unknownError', '未知错误');
             snackbar.error(errorMsg);
-            throw error; // 让子组件处理错误显示
+            throw error; // 重新抛出错误，让子组件知道操作失败
         }
     };
 
