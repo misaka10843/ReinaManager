@@ -1,79 +1,50 @@
-/**
- * @file App 入口组件
- * @description 应用主入口，配置全局导航菜单，集成国际化与路由，作为所有页面的顶层容器。
- * @module src/App
- * @author ReinaManager
- * @copyright AGPL-3.0
- *
- * 依赖：
- * - @toolpad/core
- * - @mui/icons-material
- * - react-router
- * - react-i18next
- * - @/store
- * - @/utils/i18n
- * - ./App.css
- */
-
-import './App.css'
+import './App.css';
 import '@/utils/i18n';
-import {Outlet} from "react-router";
-import type {Navigation} from '@toolpad/core/AppProvider';
-import {ReactRouterAppProvider} from '@toolpad/core/react-router'
-import HomeIcon from '@mui/icons-material/Home';
-import GamesIcon from '@mui/icons-material/Games';
-import SettingsIcon from '@mui/icons-material/Settings';
-import {useTranslation} from 'react-i18next';
-import {AliveScope} from 'react-activation';
-import {SnackbarProvider} from "notistack";
-import {SnackbarUtilsConfigurator} from "@/components/Snackbar";
+import { Outlet } from "react-router-dom";
+import type { Navigation } from '@toolpad/core/AppProvider';
+import { ReactRouterAppProvider } from '@toolpad/core/react-router';
+import { useTranslation } from 'react-i18next';
+import { AliveScope } from 'react-activation';
+import { SnackbarProvider } from "notistack";
+import { SnackbarUtilsConfigurator } from "@/components/Snackbar";
+import { appRoutes } from '@/routes'; // 引入新的统一配置
 
-/**
- * App 组件
- * 应用主入口，配置全局导航菜单，集成国际化与路由。
- *
- * @component
- * @returns {JSX.Element} 应用主容器
- */
 const App: React.FC = () => {
-    const {t} = useTranslation();
-    // 全局导航配置
+    const { t } = useTranslation();
+
+    // 从路由配置动态生成导航菜单
+    const generatedNavigation = appRoutes
+        .filter(route => !route.hideInMenu) // 过滤掉标记为隐藏的路由
+        .map(route => ({
+            segment: route.path,
+            title: t(route.title), // 使用 t 函数翻译标题
+            icon: route.icon,
+            pattern: route.navPattern, // 使用 navPattern
+        }));
+
+    // 最终的导航配置
     const NAVIGATION: Navigation = [
         {
             kind: 'header',
             title: t('app.NAVIGATION.menu'),
         },
-        {
-            title: t('app.NAVIGATION.home'),
-            icon: <HomeIcon/>,
-        },
-        {
-            segment: 'libraries',
-            title: t('app.NAVIGATION.gameLibrary'),
-            icon: <GamesIcon/>,
-            pattern: 'libraries/:id'
-        },
-        {
-            segment: 'settings',
-            title: t('app.NAVIGATION.settings'),
-            icon: <SettingsIcon/>,
-        }
+        ...generatedNavigation,
     ];
 
     return (
         <SnackbarProvider
             maxSnack={3}
             autoHideDuration={3000}
-            anchorOrigin={{vertical: 'top', horizontal: 'center'}}
+            anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
         >
-            <SnackbarUtilsConfigurator/>
+            <SnackbarUtilsConfigurator />
             <ReactRouterAppProvider navigation={NAVIGATION}>
                 <AliveScope>
-                    <Outlet/>
+                    <Outlet />
                 </AliveScope>
             </ReactRouterAppProvider>
         </SnackbarProvider>
-    )
+    );
 }
 
-export default App
+export default App;

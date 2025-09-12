@@ -1,28 +1,3 @@
-/**
- * @file 路由配置
- * @description 定义应用的主路由结构，支持菜单分组、嵌套路由、动态路由与 index 路由，适配 Tauri 环境。
- * @module src/routes/index
- * @author ReinaManager
- * @copyright AGPL-3.0
- *
- * 主要导出：
- * - routes：菜单分组与页面配置
- * - routers：react-router 路由对象
- *
- * 依赖：
- * - @mui/icons-material
- * - @/pages/Home
- * - @/pages/Settings
- * - @/components/Cards
- * - @/pages/Libraries
- * - @/pages/Detail
- * - @/pages/Edit
- * - @/components/Layout
- * - @/App
- * - react-router
- * - @tauri-apps/api/core
- */
-
 import HomeIcon from '@mui/icons-material/Home';
 import GamesIcon from '@mui/icons-material/Games';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -31,95 +6,99 @@ import { Settings } from '@/pages/Settings';
 import Card from '@/components/Cards';
 import { Libraries } from '@/pages/Libraries';
 import { Detail } from '@/pages/Detail';
-import { createBrowserRouter, createHashRouter, type RouteObject } from 'react-router';
-import React from 'react';
+import { createBrowserRouter, createHashRouter, type RouteObject } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import App from '@/App';
 import { isTauri } from '@tauri-apps/api/core';
+import React from 'react';
 
-/**
- * 路由配置项类型
- */
-export interface RouteConfig {
+export interface AppRoute {
+    // 路由路径
+    path: string;
+    // 页面组件
+    component: React.ComponentType;
+    // 页面标题 (用于导航菜单, 建议使用 i18n key)
     title: string;
-    path?: string;
-    component?: React.ComponentType;
+    // 导航菜单图标
     icon?: React.ReactNode;
+    // 是否在导航菜单中隐藏
+    hideInMenu?: boolean;
+    // 子路由
+    children?: AppRoute[];
+    // 是否为索引路由 (index route)
     index?: boolean;
-    children?: RouteConfig[];
+    // 用于导航匹配的特殊 pattern (对应 @toolpad/core 的 pattern 属性)
+    navPattern?: string;
 }
 
-/**
- * 路由分组类型
- */
-export interface RouteGroup {
-    groupTitle: string;
-    items: RouteConfig[];
-}
-
-// 统一的路由配置，包含菜单分组与页面结构
-export const routes: RouteGroup[] = [
+// 统一的路由配置数组
+export const appRoutes: AppRoute[] = [
     {
-        groupTitle: 'menu',
-        items: [
+        path: '',
+        title: 'app.NAVIGATION.home', // 使用 i18n key
+        component: Home,
+        icon: <HomeIcon />,
+    },
+    {
+        path: 'libraries',
+        title: 'app.NAVIGATION.gameLibrary',
+        component: Libraries, // Libraries 组件内部使用 <Outlet />
+        icon: <GamesIcon />,
+        navPattern: 'libraries/:id', // 用于高亮匹配 /libraries/123 等路径
+        children: [
             {
-                title: 'home',
-                path: '',
-                component: Home,
-                icon: <HomeIcon />,
+                index: true,
+                path: '', // index route path is empty
+                title: 'Library Default',
+                component: Card,
+                hideInMenu: true, // 列表页默认视图，不在侧边栏显示
             },
             {
-                title: 'game library ',
-                path: 'libraries',
-                component: Libraries,
-                icon: <GamesIcon />,
-                children: [
-                    // 默认子路由使用 index
-                    { title: 'default', index: true, component: Card },
-                    { title: 'detail', path: ':id', component: Detail },
-                ]
+                path: ':id',
+                title: 'Game Detail',
+                component: Detail,
+                hideInMenu: true, // 详情页，不在侧边栏显示
             },
-            {
-                title: 'settings',
-                path: 'settings',
-                component: Settings,
-                icon: <SettingsIcon />,
-            },
-        ],
+        ]
+    },
+    {
+        path: 'settings',
+        title: 'app.NAVIGATION.settings',
+        component: Settings,
+        icon: <SettingsIcon />,
     },
 ];
 
-/**
- * 根据路由配置生成 react-router 路由定义，支持 index 路由
- * @param {RouteGroup[]} routes 路由分组配置
- * @returns {RouteObject[]} 路由对象数组
- */
-const generateRoutes = (routes: RouteGroup[]): RouteObject[] => {
-    return routes.flatMap(group =>
-        group.items.map(route => ({
+const buildRouterObjects = (routes: AppRoute[]): RouteObject[] => {
+    return routes.map((route) => {
+        // 如果是索引路由 (Index Route)
+        if (route.index) {
+            return {
+                index: true,
+                element: React.createElement(route.component),
+                // 索引路由不能有 path 或 children
+            };
+        }
+
+        // 否则，是非索引路由 (Path Route)
+        return {
             path: route.path,
-            element: route.component ? React.createElement(route.component) : undefined,
-            children: route.children
-                ? route.children.map(child => ({
-                    // 如果为 index 路由，不传 path
-                    index: child.index || false,
-                    path: child.index ? undefined : child.path,
-                    element: child.component ? React.createElement(child.component) : undefined,
-                }))
-                : undefined,
-        }))
-    );
+            element: React.createElement(route.component),
+            children: route.children ? buildRouterObjects(route.children) : undefined,
+            // 非索引路由的 index 属性不能为 true
+        };
+    });
 };
 
-// 顶层路由配置，包含 App、Layout 及所有页面
-const routeConfig = [
+// 顶层路由配置
+const routeConfig: RouteObject[] = [
     {
         Component: App,
         children: [
             {
                 path: '/',
                 Component: Layout,
-                children: generateRoutes(routes),
+                children: buildRouterObjects(appRoutes), // 直接使用转换后的配置
             },
         ],
     },
