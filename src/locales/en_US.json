@@ -301,10 +301,11 @@
         },
         "FilterModal": {
             "filter": "Filter",
-            "filterTitle": "Filter Games",
+            "filterTitle": "Filter",
             "allGames": "All Games",
             "localGames": "Local Games",
             "onlineGames": "Online Games",
+            "noclearGames": "Not Completed Games",
             "clearGames": "Completed Games",
             "cancel": "Cancel",
             "apply": "Apply"

@@ -302,10 +302,11 @@
         },
         "FilterModal": {
             "filter": "フィルター",
-            "filterTitle": "ゲームをフィルター",
+            "filterTitle": "フィルター",
             "allGames": "すべてのゲーム",
             "localGames": "ローカルゲーム",
             "onlineGames": "オンラインゲーム",
+            "noclearGames": "未クリアのゲーム",
             "clearGames": "クリア済みゲーム",
             "cancel": "キャンセル",
             "apply": "適用"

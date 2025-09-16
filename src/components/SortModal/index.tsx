@@ -124,14 +124,12 @@ const SortOption = ({ value, onChange }: { value: string, onChange: (value: stri
     };
 
     return (
-        <div>
-            <Select value={value} onChange={handleChange}>
-                <MenuItem value="addtime">{t('components.SortModal.addTime')}</MenuItem>
-                <MenuItem value="datetime">{t('components.SortModal.releaseTime')}</MenuItem>
-                <MenuItem value="rank">{t('components.SortModal.Ranking')}</MenuItem>
-                <MenuItem value="lastplayed">{t('components.SortModal.lastPlayed')}</MenuItem>
-            </Select>
-        </div>
+        <Select value={value} onChange={handleChange}>
+            <MenuItem value="addtime">{t('components.SortModal.addTime')}</MenuItem>
+            <MenuItem value="datetime">{t('components.SortModal.releaseTime')}</MenuItem>
+            <MenuItem value="rank">{t('components.SortModal.Ranking')}</MenuItem>
+            <MenuItem value="lastplayed">{t('components.SortModal.lastPlayed')}</MenuItem>
+        </Select>
     );
 }
 

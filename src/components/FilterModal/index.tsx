@@ -21,15 +21,13 @@ import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
-import FormControl from '@mui/material/FormControl';
-import RadioGroup from '@mui/material/RadioGroup';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Radio from '@mui/material/Radio';
+import Select from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import { useStore } from '@/store';
 import { useTranslation } from 'react-i18next';
 
-export type GameFilterType = 'all' | 'local' | 'online' | 'clear';
+export type GameFilterType = 'all' | 'local' | 'online' | 'noclear' | 'clear';
 
 /**
  * FilterModal 组件用于筛选游戏类型。
@@ -59,7 +57,7 @@ export const FilterModal: React.FC = () => {
      * 切换筛选类型
      * @param event React.ChangeEvent<HTMLInputElement>
      */
-    const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleChange = (event: { target: { value: string; }; }) => {
         setFilterValue(event.target.value as GameFilterType);
     };
 
@@ -83,30 +81,18 @@ export const FilterModal: React.FC = () => {
             <Dialog open={open} onClose={handleClose}>
                 <DialogTitle>{t('components.FilterModal.filterTitle')}</DialogTitle>
                 <DialogContent>
-                    <FormControl component="fieldset">
-                        <RadioGroup value={filterValue} onChange={handleChange}>
-                            <FormControlLabel
-                                value="all"
-                                control={<Radio />}
-                                label={t('components.FilterModal.allGames')}
-                            />
-                            <FormControlLabel
-                                value="local"
-                                control={<Radio />}
-                                label={t('components.FilterModal.localGames')}
-                            />
-                            <FormControlLabel
-                                value="online"
-                                control={<Radio />}
-                                label={t('components.FilterModal.onlineGames')}
-                            />
-                            <FormControlLabel
-                                value="clear"
-                                control={<Radio />}
-                                label={t('components.FilterModal.clearGames')}
-                            />
-                        </RadioGroup>
-                    </FormControl>
+                    <Select
+                        value={filterValue}
+                        onChange={handleChange}
+                        displayEmpty
+                        fullWidth
+                    >
+                        <MenuItem value="all">{t('components.FilterModal.allGames')}</MenuItem>
+                        <MenuItem value="local">{t('components.FilterModal.localGames')}</MenuItem>
+                        <MenuItem value="online">{t('components.FilterModal.onlineGames')}</MenuItem>
+                        <MenuItem value="noclear">{t('components.FilterModal.noclearGames')}</MenuItem>
+                        <MenuItem value="clear">{t('components.FilterModal.clearGames')}</MenuItem>
+                    </Select>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleClose}>

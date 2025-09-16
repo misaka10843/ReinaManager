@@ -301,10 +301,11 @@
         },
         "FilterModal": {
             "filter": "筛选",
-            "filterTitle": "筛选游戏",
+            "filterTitle": "筛选",
             "allGames": "全部游戏",
             "localGames": "本地游戏",
             "onlineGames": "网络游戏",
+            "noclearGames": "未通关游戏",
             "clearGames": "已通关游戏",
             "cancel": "取消",
             "apply": "应用"

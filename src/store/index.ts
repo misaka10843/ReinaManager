@@ -109,8 +109,8 @@ export interface AppState {
     refreshGameData: (customSortOption?: string, customSortOrder?: 'asc' | 'desc') => Promise<void>;
 
     // 筛选相关
-    gameFilterType: 'all' | 'local' | 'online' | 'clear';
-    setGameFilterType: (type: 'all' | 'local' | 'online' | 'clear') => void;
+    gameFilterType: 'all' | 'local' | 'online' | 'noclear' | 'clear';
+    setGameFilterType: (type: 'all' | 'local' | 'online' | 'noclear' | 'clear') => void;
     useIsLocalGame: (gameId: number) => boolean;
 
     // NSFW相关
@@ -512,7 +512,7 @@ export const useStore = create<AppState>()(
             },
 
             // 修改 setGameFilterType 函数，避免循环引用
-            setGameFilterType: (type: 'all' | 'local' | 'online' | 'clear') => {
+            setGameFilterType: (type: 'all' | 'local' | 'online' | 'noclear' | 'clear') => {
                 const prevType = get().gameFilterType;
 
                 // 如果类型没变，不做任何操作

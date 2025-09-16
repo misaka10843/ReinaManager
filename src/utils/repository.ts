@@ -147,7 +147,7 @@ export async function deleteGame(gameId: number) {
 // 更新搜索游戏函数，添加类型筛选功能和增强搜索
 export async function searchGames(
   keyword: string,
-  type: 'all' | 'local' | 'online' | 'clear' = 'all',
+  type: 'all' | 'local' | 'online' | 'noclear' | 'clear' = 'all',
   sortOption = 'addtime',
   sortOrder: 'asc' | 'desc' = 'asc'
 ): Promise<GameData[]> {
@@ -190,7 +190,7 @@ export async function searchGames(
 
 // 根据游戏类型进行筛选（全部/本地/网络）
 export async function filterGamesByType(
-  type: 'all' | 'local' | 'online' | 'clear',
+  type: 'all' | 'local' | 'online' | 'noclear' | 'clear',
   sortOption = 'addtime',
   sortOrder: 'asc' | 'desc' = 'asc'
 ): Promise<GameData[]> {
@@ -206,6 +206,8 @@ export async function filterGamesByType(
     filterCondition = 'WHERE localpath IS NOT NULL AND localpath != ""';
   } else if (type === 'online') {
     filterCondition = 'WHERE localpath IS NULL OR localpath = ""';
+  } else if (type === 'noclear') {
+    filterCondition = 'WHERE clear = 0';
   } else if (type === 'clear') {
     filterCondition = 'WHERE clear = 1';
   }

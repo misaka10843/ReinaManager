@@ -211,7 +211,7 @@ export function setSetting<K extends keyof Settings>(key: K, value: Settings[K])
 // 纯前端搜索游戏，使用增强搜索功能
 export function searchGamesLocal(
   keyword: string,
-  type: 'all' | 'local' | 'online' | 'clear' = 'all',
+  type: 'all' | 'local' | 'online' | 'noclear' | 'clear' = 'all',
   sortOption = 'addtime',
   sortOrder: 'asc' | 'desc' = 'asc'
 ): GameData[] {
@@ -265,7 +265,7 @@ export function searchGamesLocal(
 }
 
 export function filterGamesByTypeLocal(
-  type: 'all' | 'local' | 'online' | 'clear',
+  type: 'all' | 'local' | 'online' | 'noclear' | 'clear',
   sortOption = 'addtime',
   sortOrder: 'asc' | 'desc' = 'asc'
 ): GameData[] {
@@ -281,10 +281,12 @@ export function filterGamesByTypeLocal(
     return games;
   }
 
+  if (type === 'noclear') {
+    return games.filter(game => game.clear === 0);
+  }
   if (type === 'clear') {
     return games.filter(game => game.clear === 1);
-  }
-
+  } 
   // 浏览器环境中没有本地游戏
   return [];
 }
