@@ -153,15 +153,19 @@ jobs:
             # 使用 jq 修改 URL，在前面添加 CDN 前缀
             jq '
               .platforms |= with_entries(
-                .value.url |= "https://cdn.akaere.online/\(.)"
+                .value.url |= "https://gh.huoshen80.top/\(.)"
               )
             ' latest.json > latest_modified.json
             
             echo "Modified latest.json:"
             cat latest_modified.json
+
+            # 用修改后的文件覆盖本地 latest.json
+            mv -f latest_modified.json latest.json
             
             # 重新上传修改后的 latest.json
-            gh release upload $TAG_NAME "latest_modified.json#latest.json" --clobber
+            gh release delete-asset "$TAG_NAME" "latest.json" || true
+            gh release upload $TAG_NAME "latest.json" --clobber
             
             echo "Successfully updated latest.json with CDN URLs"
           else
