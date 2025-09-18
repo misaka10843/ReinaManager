@@ -1,6 +1,7 @@
 import type { GameData, SavedataRecord } from '@/types';
 import { getDb } from './database';
 import {isNsfwGame} from "@/utils/index.ts";
+import { enhancedSearch } from './enhancedSearch';
 
 // 处理排序选项的工具函数
 function getSortConfig(sortOption = 'addtime', sortOrder: 'asc' | 'desc' = 'asc') {
@@ -160,9 +161,6 @@ export async function searchGames(
   if ((!keyword || keyword.trim() === '') && type !== 'all') {
     return filterGamesByType(type, sortOption, sortOrder);
   }
-
-  // 使用增强搜索：先获取所有游戏数据，然后使用客户端搜索
-  const { enhancedSearch } = await import('./enhancedSearch');
   
   // 根据类型筛选获取基础数据
   let baseGames: GameData[];

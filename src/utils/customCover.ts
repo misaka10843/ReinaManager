@@ -6,6 +6,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from '@tauri-apps/plugin-dialog';
 import { getcustomCoverFolder } from './index';
+import { readFile } from '@tauri-apps/plugin-fs'
 
 /**
  * 获取文件扩展名
@@ -96,29 +97,7 @@ export const uploadSelectedImage = async (gameId: number, imagePath: string): Pr
  */
 export const getPreviewUrlFromPath = async (imagePath: string): Promise<string> => {
   try {
-    // 动态导入 plugin-fs，尝试常见的二进制读取函数
-    const fsModule: any = await import('@tauri-apps/plugin-fs').catch(() => null);
-    if (!fsModule) throw new Error('@tauri-apps/plugin-fs not available');
-
-    // 常见 API 名称按优先级尝试
-    const reader = fsModule.readBinaryFile ?? fsModule.readFile ?? fsModule.read ?? null;
-    if (!reader) throw new Error('plugin-fs 不支持二进制读取（找不到 readBinaryFile/readFile/read）');
-
-    const result = await reader(imagePath);
-
-    // 兼容返回类型：Uint8Array / ArrayBuffer / TypedArray
-    let uint8: Uint8Array;
-    if (result instanceof Uint8Array) {
-      uint8 = result as Uint8Array;
-    } else if (result instanceof ArrayBuffer) {
-      uint8 = new Uint8Array(result as ArrayBuffer);
-    } else if (ArrayBuffer.isView(result)) {
-      // TypedArray 或 DataView
-      // @ts-ignore
-      uint8 = new Uint8Array((result as any).buffer);
-    } else {
-      throw new Error('plugin-fs 返回的类型不可识别，期望二进制数据');
-    }
+    const result = await readFile(imagePath);
 
     // 根据扩展名确定 mimeType
     const fileName = imagePath.split(/[/\\]/).pop() || '';
@@ -126,7 +105,7 @@ export const getPreviewUrlFromPath = async (imagePath: string): Promise<string> 
     const mime = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
 
   // 将 Uint8Array 转为标准 ArrayBuffer 子段，构造 Blob 并创建对象 URL
-  const arrayBuffer = uint8.buffer.slice(uint8.byteOffset, uint8.byteOffset + uint8.byteLength);
+  const arrayBuffer = result.buffer.slice(result.byteOffset, result.byteOffset + result.byteLength);
   const blob = new Blob([arrayBuffer as ArrayBuffer], { type: mime });
     const url = URL.createObjectURL(blob);
     return url;
