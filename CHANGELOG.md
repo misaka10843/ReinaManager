@@ -1,3 +1,35 @@
+## [0.6.9](https://github.com/huoshen80/ReinaManager/compare/v0.6.8...v0.6.9) (2025-09-18)
+
+<details>
+<summary>查看中文版本</summary>
+
+### Bug 修复
+
+* 优化游戏结束后的详情页闪烁的问题，优化最近游玩更新的刷新条件 ([f8cdafe](https://github.com/huoshen80/ReinaManager/commit/f8cdafe779b1bb15e18b970d5017e43e6db45295))
+* 修复发布流程无法上传正确的 `latest.json`的问题,为`latest.json`更换cdn链接，更换`endpoints` ([766606b](https://github.com/huoshen80/ReinaManager/commit/766606be6a942da14935fd9f99b30cd7a5adf079))
+* 修复部分组件在暗黑模式下显示异常的问题 ([e28a0df](https://github.com/huoshen80/ReinaManager/commit/e28a0dff478f756088cc8173130b255b77ba71d7))
+
+### 新功能
+
+* 添加未通关游戏（noclear）筛选选项 ([85f9531](https://github.com/huoshen80/ReinaManager/commit/85f9531cde9b9ca200bf945b450e9b78a49b6d1a))
+* 添加对 `win_arm64` 的支持 ([c8ae9de](https://github.com/huoshen80/ReinaManager/commit/c8ae9de5227c67e2b2ec20bec847dc956a054dec))
+
+</details>
+
+### Bug Fixes
+
+* details page flash after the game end, optimizing the refresh condition for recent play update ([f8cdafe](https://github.com/huoshen80/ReinaManager/commit/f8cdafe779b1bb15e18b970d5017e43e6db45295))
+* release workflow can't upload correct latest.json and update cdn urls in latest.json,updater endpoints ([766606b](https://github.com/huoshen80/ReinaManager/commit/766606be6a942da14935fd9f99b30cd7a5adf079))
+* some components display abnormally in dark mode ([e28a0df](https://github.com/huoshen80/ReinaManager/commit/e28a0dff478f756088cc8173130b255b77ba71d7))
+
+
+### Features
+
+* add noclear games filter ([85f9531](https://github.com/huoshen80/ReinaManager/commit/85f9531cde9b9ca200bf945b450e9b78a49b6d1a))
+* add win_arm64 support ([c8ae9de](https://github.com/huoshen80/ReinaManager/commit/c8ae9de5227c67e2b2ec20bec847dc956a054dec))
+
+
+
 ## [0.6.8](https://github.com/huoshen80/ReinaManager/compare/v0.6.7...v0.6.8) (2025-09-12)
 
 <details>
