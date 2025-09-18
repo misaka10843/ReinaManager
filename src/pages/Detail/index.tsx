@@ -70,9 +70,10 @@ const TabPanel = (props: TabPanelProps) => {
 export const Detail: React.FC = () => {
     const id = Number(useLocation().pathname.split('/').pop());
     const { t } = useTranslation();
-    const { setSelectedGameId, selectedGame, fetchGame, tagTranslation, loading } = useStore();
+    const { setSelectedGameId, selectedGame, fetchGame, tagTranslation } = useStore();
     const [tabIndex, setTabIndex] = useState(0);
     const [showAllTags, setShowAllTags] = useState(false); // 控制标签折叠状态
+    const [isDetailLoading, setIsDetailLoading] = useState(false); // 详情页面专用的加载状态
 
     const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
         setTabIndex(newValue);
@@ -98,8 +99,11 @@ export const Detail: React.FC = () => {
     // 优化后的 useEffect - 统一数据获取逻辑
     useEffect(() => {
         if (id) {
+            setIsDetailLoading(true); // 开始加载
             setSelectedGameId(id); // 立即设置ID，以便其他组件（如LaunchModal）能响应
-            fetchGame(id);
+            fetchGame(id).finally(() => {
+                setIsDetailLoading(false); // 加载完成
+            });
         }
 
         // 返回清理函数，防止快速切换时显示上一个游戏的数据
@@ -108,9 +112,9 @@ export const Detail: React.FC = () => {
         };
     }, [id, fetchGame, setSelectedGameId]);
 
-    // 派生状态：基于selectedGame和loading计算当前状态
-    const isLoading = loading || !selectedGame || selectedGame.id !== id;
-    const isNotFound = !loading && !selectedGame && id; // 加载完成但仍然没有数据
+    // 派生状态：基于selectedGame和isDetailLoading计算当前状态
+    const isLoading = isDetailLoading || !selectedGame || selectedGame.id !== id;
+    const isNotFound = !isDetailLoading && !selectedGame && id; // 加载完成但仍然没有数据
 
     // 加载状态UI - 使用骨架屏
     if (isLoading) {
