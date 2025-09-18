@@ -13,7 +13,6 @@ import './index.css'
 import 'virtual:uno.css'
 import { initializeStores } from './store';
 import { initTray } from '@/components/Tray'
-import WindowsHandler from '@/components/Window'
 import { isTauri } from '@tauri-apps/api/core'
 import { initResourceDirPath } from '@/utils'
 
@@ -42,7 +41,6 @@ initializeStores().then(async () => {
 
   createRoot(document.getElementById('root') as HTMLElement).render(
     <StrictMode>
-      {isTauri() && <WindowsHandler />}
       <RouterProvider router={routers} />
     </StrictMode>
   )

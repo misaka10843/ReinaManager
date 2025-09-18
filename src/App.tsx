@@ -8,6 +8,9 @@ import { AliveScope } from 'react-activation';
 import { SnackbarProvider } from "notistack";
 import { SnackbarUtilsConfigurator } from "@/components/Snackbar";
 import { appRoutes } from '@/routes'; // 引入新的统一配置
+import WindowsHandler from '@/components/Window'
+import { isTauri } from '@tauri-apps/api/core';
+
 
 const App: React.FC = () => {
     const { t } = useTranslation();
@@ -39,6 +42,7 @@ const App: React.FC = () => {
         >
             <SnackbarUtilsConfigurator />
             <ReactRouterAppProvider navigation={NAVIGATION}>
+                {isTauri() && <WindowsHandler />}
                 <AliveScope>
                     <Outlet />
                 </AliveScope>

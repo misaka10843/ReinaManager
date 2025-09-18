@@ -251,7 +251,6 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
                                             maxWidth: '200px',
                                             maxHeight: '300px',
                                             objectFit: 'contain',
-                                            border: '1px solid #ddd',
                                             borderRadius: '8px'
                                         }}
                                     />

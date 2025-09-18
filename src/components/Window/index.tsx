@@ -130,11 +130,12 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ open, onClose, update }) => {
                             </Typography>
                             <Box
                                 sx={{
-                                    backgroundColor: 'grey.50',
                                     p: 2,
                                     borderRadius: 1,
                                     maxHeight: 250,
                                     overflow: 'auto',
+                                    border: '1px solid',
+                                    borderColor: 'divider',
                                     '& details': {
                                         mb: 1,
                                         border: '1px solid',
@@ -368,7 +369,9 @@ const WindowsHandler: React.FC = () => {
             <Dialog open={open} onClose={handleCancel}>
                 <DialogTitle>{t('components.Window.closeDialog.title')}</DialogTitle>
                 <DialogContent>
-                    <div>{t('components.Window.closeDialog.message')}</div>
+                    <Typography variant="body1" sx={{ mb: 2 }}>
+                        {t('components.Window.closeDialog.message')}
+                    </Typography>
                     <FormControlLabel
                         control={
                             <Checkbox

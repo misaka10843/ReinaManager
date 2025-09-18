@@ -15,12 +15,13 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import IconButton from '@mui/material/IconButton';
-import TextField from '@mui/material/TextField';
-import InputAdornment from '@mui/material/InputAdornment';
-import Autocomplete from '@mui/material/Autocomplete';
-import ClearIcon from '@mui/icons-material/Clear';
-import SearchIcon from '@mui/icons-material/Search';
+import {
+    IconButton,
+    TextField,
+    InputAdornment,
+    Autocomplete
+} from '@mui/material';
+import { Clear as ClearIcon, Search as SearchIcon } from '@mui/icons-material';
 import { useStore } from '@/store';
 import { useTranslation } from 'react-i18next';
 import { getSearchSuggestions } from '@/utils/enhancedSearch';
@@ -177,12 +178,7 @@ export const SearchBox = () => {
     };
 
     return (
-        <div style={{
-            // 固定宽度，不再变化
-            width: '300px',
-            maxWidth: 'min(40vw, 400px)', // 最大不超过40%视窗宽度
-            overflow: 'visible', // 允许下拉框溢出
-        }}>
+        <div className="w-75 max-w-[min(40vw,400px)] overflow-visible">
             <Autocomplete
                 freeSolo
                 open={isOpen && suggestions.length > 0}
@@ -190,10 +186,10 @@ export const SearchBox = () => {
                 onClose={() => setIsOpen(false)}
                 options={suggestions}
                 inputValue={keyword}
-                selectOnFocus={false}  // 不要在焦点时自动选择
-                clearOnBlur={false}    // 失去焦点时不清除  
-                handleHomeEndKeys={false}  // 禁用 Home/End 键处理
-                blurOnSelect={false}    // 选择后不失去焦点
+                selectOnFocus={false}
+                clearOnBlur={false}
+                handleHomeEndKeys={false}
+                blurOnSelect={false}
                 onInputChange={(_event, newInputValue, reason) => {
                     if (reason === 'input') {
                         setKeyword(newInputValue);
@@ -204,25 +200,21 @@ export const SearchBox = () => {
                     }
                 }}
                 onChange={handleAutocompleteChange}
+                className="w-full"
                 sx={{
-                    // 在容器内占满宽度
-                    width: '100%',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', // 平滑过渡动画
                     '& .MuiOutlinedInput-root': {
-                        borderRadius: 3,
-                        backgroundColor: 'background.paper',
-                        transition: 'all 0.3s ease',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                         '&:hover': {
-                            boxShadow: 1,
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                             '& .MuiOutlinedInput-notchedOutline': {
-                                borderColor: 'primary.main',
+                                borderColor: 'rgb(59, 130, 246)',
                             },
                         },
                         '&.Mui-focused': {
-                            boxShadow: 2,
+                            boxShadow: '0 4px 16px rgba(59, 130, 246, 0.2)',
                             '& .MuiOutlinedInput-notchedOutline': {
-                                borderColor: 'primary.main',
-                                borderWidth: 2,
+                                borderColor: 'rgb(59, 130, 246)',
+                                borderWidth: '2px',
                             },
                         },
                     },
@@ -240,24 +232,20 @@ export const SearchBox = () => {
                         slotProps={{
                             input: {
                                 ...params.InputProps,
+                                className: "transition-all duration-300",
                                 startAdornment: (
                                     <InputAdornment position="start">
                                         <SearchIcon
                                             fontSize="small"
-                                            sx={{
-                                                color: isFocused || keyword ? 'primary.main' : 'text.secondary',
-                                                transition: 'color 0.3s ease',
-                                            }}
+                                            className={`transition-colors duration-300 ${isFocused || keyword ? 'text-blue-600' : 'text-gray-500'
+                                                }`}
                                         />
                                     </InputAdornment>
                                 ),
-                                // 确保原生输入行为正常工作
                                 onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => {
-                                    // 让原生快捷键正常工作
                                     if (event.ctrlKey || event.metaKey) {
                                         event.stopPropagation();
                                     }
-                                    // 调用我们的处理器
                                     handleKeyDown(event);
                                 },
                             },
@@ -272,12 +260,7 @@ export const SearchBox = () => {
                                                 onClick={handleClear}
                                                 size="small"
                                                 aria-label={t('components.SearchBox.clearSearch')}
-                                                sx={{
-                                                    p: 0.5,
-                                                    '&:hover': {
-                                                        backgroundColor: 'action.hover',
-                                                    },
-                                                }}
+                                                className="p-1 hover:bg-gray-100 rounded"
                                             >
                                                 <ClearIcon fontSize="small" />
                                             </IconButton>
@@ -295,73 +278,23 @@ export const SearchBox = () => {
                         <li
                             key={option}
                             {...otherProps}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                padding: '12px 16px',
-                                borderRadius: '8px',
-                                margin: '4px 8px',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease',
-                                backgroundColor: 'transparent',
-                            }}
+                            className="flex items-center px-4 py-3 mx-2 my-1 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-blue-100 group"
                         >
-                            <SearchIcon
-                                fontSize="small"
-                                style={{
-                                    marginRight: 12,
-                                    color: '#1976d2',
-                                    flexShrink: 0,
-                                }}
-                            />
-                            <span style={{
-                                flex: 1,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                                fontSize: '14px',
-                                color: 'inherit',
-                            }}>
+                            <SearchIcon className="w-4 h-4 mr-3 flex-shrink-0 text-blue-600" />
+                            <span className="flex-1 truncate text-sm group-hover:text-blue-700 transition-colors duration-200">
                                 {option}
                             </span>
                         </li>
                     );
                 }}
-                ListboxProps={{
-                    style: {
-                        maxHeight: '60vh',
-                        padding: '8px 0',
+                slotProps={{
+                    paper: {
+                        className: "mt-2 rounded-xl shadow-lg border border-gray-200 bg-white overflow-hidden"
                     },
-                    sx: {
-                        '& .MuiAutocomplete-option': {
-                            '&:hover': {
-                                backgroundColor: 'rgba(25, 118, 210, 0.08) !important',
-                            },
-                            '&[aria-selected="true"]': {
-                                backgroundColor: 'rgba(25, 118, 210, 0.12) !important',
-                                fontWeight: 500,
-                            },
-                            '&.Mui-focused': {
-                                backgroundColor: 'rgba(25, 118, 210, 0.08) !important',
-                            },
-                        },
-                    },
+                    listbox: {
+                        className: "max-h-[60vh] py-2"
+                    }
                 }}
-                PaperComponent={(props) => (
-                    <div
-                        {...props}
-                        style={{
-                            ...props.style,
-                            marginTop: 8,
-                            borderRadius: 12,
-                            boxShadow: '0 4px 20px rgba(0,0,0,0.1), 0 8px 40px rgba(0,0,0,0.05)',
-                            border: '1px solid rgba(0,0,0,0.06)',
-                            backgroundColor: '#ffffff',
-                            minWidth: props.style?.width || 'auto',
-                            overflow: 'hidden',
-                        }}
-                    />
-                )}
             />
         </div>
     );

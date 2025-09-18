@@ -24,6 +24,14 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import EmojiEventsOutlinedIcon from '@mui/icons-material/EmojiEventsOutlined';
 import { useEffect, useRef, useState } from 'react';
+import {
+    Paper,
+    MenuList,
+    MenuItem,
+    ListItemIcon,
+    ListItemText,
+    Divider
+} from '@mui/material';
 import { useStore } from '@/store';
 import { handleOpenFolder, toggleGameClearStatus } from '@/utils';
 import { AlertDeleteBox } from '@/components/AlertBox';
@@ -175,77 +183,92 @@ const RightMenu: React.FC<RightMenuProps> = ({ isopen, anchorPosition, setAnchor
 
     return (
         <div
-            className="fixed z-50 animate-fade-in animate-duration-200 select-none"
+            className="fixed z-50 animate-fade-in animate-duration-100 select-none"
             ref={menuRef}
             onClick={(e) => e.stopPropagation()}
         >
             {/* 删除确认弹窗 */}
             <AlertDeleteBox open={openAlert} setOpen={setOpenAlert} onConfirm={handleDeleteGame} isLoading={isDeleting} />
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg min-w-[200px] py-1 border border-gray-200 dark:border-gray-700">
-                {/* 启动游戏 */}
-                <div
-                    className={`flex items-center px-4 py-2 text-black dark:text-white ${canUse()
-                        ? 'hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer'
-                        : 'opacity-50 cursor-not-allowed'
-                        }`}
-                    onClick={() => {
-                        handleStartGame();
-                        setAnchorEl(null);
-                    }}
-                >
-                    <PlayCircleOutlineIcon className="mr-2" />
-                    <span>{t('components.RightMenu.startGame')}</span>
-                </div>
-                {/* 进入详情 */}
-                <LinkWithScrollSave
-                    className="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer no-underline text-black dark:text-white visited:text-black dark:visited:text-white"
-                    to={`/libraries/${id}`}>
-                    <ArticleIcon className="mr-2" />
-                    <span>{t('components.RightMenu.enterDetails')}</span>
-                </LinkWithScrollSave>
-                {/* 删除游戏 */}
-                <div
-                    className="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-black dark:text-white"
-                    onClick={() => {
-                        setOpenAlert(true);
-                    }}
-                >
-                    <DeleteIcon className="mr-2" />
-                    <span>{t('components.RightMenu.deleteGame')}</span>
-                </div>
-                <div className="h-[1px] bg-gray-200 dark:bg-gray-700 my-1" />
-                {/* 打开游戏文件夹 */}
-                <div
-                    className={`flex items-center px-4 py-2 text-black dark:text-white ${isTauri() && id !== undefined && id !== null && useIsLocalGame(id)
-                        ? 'hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer'
-                        : 'opacity-50 cursor-not-allowed'
-                        }`}
-                    onClick={() => {
-                        handleOpenFolder({ id, getGameById });
-                        setAnchorEl(null);
-                    }}
-                >
-                    <FolderOpenIcon className="mr-2" />
-                    <span>{t('components.RightMenu.openGameFolder')}</span>
-                </div>
-                {/* 通关状态切换 */}
-                <div
-                    className="flex items-center px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-black dark:text-white"
-                    onClick={handleSwitchClearStatus}
-                >
-                    {gameData?.clear === 1 ? (
-                        <EmojiEventsIcon className="mr-2 text-yellow-500" />
-                    ) : (
-                        <EmojiEventsOutlinedIcon className="mr-2" />
-                    )}
-                    <span>
-                        {gameData?.clear === 1 ?
-                            t('components.RightMenu.markAsNotCompleted') :
-                            t('components.RightMenu.markAsCompleted')
-                        }
-                    </span>
-                </div>
-            </div>
+
+            <Paper
+                elevation={8}
+                sx={{
+                    minWidth: '200px',
+                    borderRadius: 2,
+                    textAlign: 'left'
+                }}
+            >
+                <MenuList sx={{ py: 1 }}>
+                    {/* 启动游戏 */}
+                    <MenuItem
+                        disabled={!canUse()}
+                        onClick={() => {
+                            handleStartGame();
+                            setAnchorEl(null);
+                        }}
+                    >
+                        <ListItemIcon>
+                            <PlayCircleOutlineIcon />
+                        </ListItemIcon>
+                        <ListItemText primary={t('components.RightMenu.startGame')} />
+                    </MenuItem>
+
+                    {/* 进入详情 */}
+                    <LinkWithScrollSave
+                        to={`/libraries/${id}`}
+                        style={{ textDecoration: 'none', color: 'inherit' }}
+                    >
+                        <MenuItem>
+                            <ListItemIcon>
+                                <ArticleIcon />
+                            </ListItemIcon>
+                            <ListItemText primary={t('components.RightMenu.enterDetails')} />
+                        </MenuItem>
+                    </LinkWithScrollSave>
+
+                    {/* 删除游戏 */}
+                    <MenuItem onClick={() => setOpenAlert(true)}>
+                        <ListItemIcon>
+                            <DeleteIcon />
+                        </ListItemIcon>
+                        <ListItemText primary={t('components.RightMenu.deleteGame')} />
+                    </MenuItem>
+
+                    <Divider />
+
+                    {/* 打开游戏文件夹 */}
+                    <MenuItem
+                        disabled={!(isTauri() && id !== undefined && id !== null && useIsLocalGame(id))}
+                        onClick={() => {
+                            handleOpenFolder({ id, getGameById });
+                            setAnchorEl(null);
+                        }}
+                    >
+                        <ListItemIcon>
+                            <FolderOpenIcon />
+                        </ListItemIcon>
+                        <ListItemText primary={t('components.RightMenu.openGameFolder')} />
+                    </MenuItem>
+
+                    {/* 通关状态切换 */}
+                    <MenuItem onClick={handleSwitchClearStatus}>
+                        <ListItemIcon>
+                            {gameData?.clear === 1 ? (
+                                <EmojiEventsIcon className="text-yellow-500" />
+                            ) : (
+                                <EmojiEventsOutlinedIcon />
+                            )}
+                        </ListItemIcon>
+                        <ListItemText
+                            primary={
+                                gameData?.clear === 1 ?
+                                    t('components.RightMenu.markAsNotCompleted') :
+                                    t('components.RightMenu.markAsCompleted')
+                            }
+                        />
+                    </MenuItem>
+                </MenuList>
+            </Paper>
         </div>
     );
 };
