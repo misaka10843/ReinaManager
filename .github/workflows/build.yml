@@ -10,6 +10,9 @@ on:
 jobs:
   build:
     runs-on: windows-latest
+    strategy:
+      matrix:
+        rust_target: [ x86_64-pc-windows-msvc, aarch64-pc-windows-msvc ]
     environment: TAURI_KEY  # 指定使用这个环境
     permissions:
       contents: read
@@ -45,7 +48,7 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: x86_64-pc-windows-msvc
+          targets: ${{ matrix.rust_target }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
@@ -63,6 +66,17 @@ jobs:
           echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
           echo "Version is $VERSION"
 
+      - name: Compute short target name
+        id: short
+        shell: bash
+        run: |
+          case "${{ matrix.rust_target }}" in
+            *x86_64*) SHORT=win_x64 ;;
+            *aarch64*) SHORT=win_arm64 ;;
+            *) SHORT=unknown ;;
+          esac
+          echo "SHORT=$SHORT" >> $GITHUB_OUTPUT
+
       - name: Build with Tauri Action
         uses: tauri-apps/tauri-action@v0
         env:
@@ -70,7 +84,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
         with:
-          # 不发布 release，只构建
+          # 不在这里创建 GitHub release，仅构建
+          args: --target ${{ matrix.rust_target }}
           tagName: ""
           releaseName: ""
           releaseBody: ""
@@ -80,24 +95,24 @@ jobs:
           includeRelease: true
           tauriScript: pnpm tauri
 
-      # Upload build artifacts for testing
+      # Upload build artifacts for testings
       - name: Upload Executable (Artifact)
         uses: actions/upload-artifact@v4
         with:
-          name: ReinaManager-${{ steps.get_version.outputs.VERSION }}-win_x64-exe
-          path: src-tauri/target/release/ReinaManager.exe
+          name: ReinaManager-${{ steps.get_version.outputs.VERSION }}-${{ steps.short.outputs.SHORT }}-exe
+          path: src-tauri/target/${{ matrix.rust_target }}/release/ReinaManager.exe
           if-no-files-found: warn
 
       - name: Upload MSI Installer (Artifact)
         uses: actions/upload-artifact@v4
         with:
-          name: ReinaManager-${{ steps.get_version.outputs.VERSION }}-win_x64-msi
-          path: src-tauri/target/release/bundle/msi/*.msi
+          name: ReinaManager-${{ steps.get_version.outputs.VERSION }}-${{ steps.short.outputs.SHORT }}-msi
+          path: src-tauri/target/${{ matrix.rust_target }}/release/bundle/msi/*.msi
           if-no-files-found: warn
 
       - name: Upload NSIS Installer (Artifact)
         uses: actions/upload-artifact@v4
         with:
-          name: ReinaManager-${{ steps.get_version.outputs.VERSION }}-win_x64-setup
-          path: src-tauri/target/release/bundle/nsis/*.exe
+          name: ReinaManager-${{ steps.get_version.outputs.VERSION }}-${{ steps.short.outputs.SHORT }}-setup
+          path: src-tauri/target/${{ matrix.rust_target }}/release/bundle/nsis/*.exe
           if-no-files-found: warn

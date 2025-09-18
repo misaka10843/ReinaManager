@@ -19,10 +19,12 @@ on:
 jobs:
   release:
     runs-on: windows-latest
+    strategy:
+      matrix:
+        rust_target: [ x86_64-pc-windows-msvc, aarch64-pc-windows-msvc ]
     environment: TAURI_KEY
     permissions:
       contents: write
-    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -57,7 +59,7 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: x86_64-pc-windows-msvc
+          targets: ${{ matrix.rust_target }}
 
       - name: Rust cache
         uses: swatinem/rust-cache@v2
@@ -67,15 +69,35 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Determine release type
-        id: release-type
-        shell: bash
-        run: |
-          if [[ "${{ github.ref_name }}" == *"alpha"* ]] || [[ "${{ github.ref_name }}" == *"beta"* ]] || [[ "${{ github.ref_name }}" == *"rc"* ]] || [[ "${{ github.ref_name }}" == *"pre"* ]] || [[ "${{ github.event.inputs.prerelease }}" == "true" ]]; then
-            echo "IS_PRERELEASE=true" >> $GITHUB_OUTPUT
-          else
-            echo "IS_PRERELEASE=false" >> $GITHUB_OUTPUT
-          fi
+      - name: Build and Release with Tauri Action
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+          TAURI_UPDATER_ACTIVE: true
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: ${{ github.ref_name }}
+          releaseBody: "Draft release, will be updated later."
+          releaseDraft: true
+          prerelease: false
+          includeUpdaterJson: true
+          includeRelease: true
+          releaseCommitish: ${{ github.sha }}
+          tauriScript: pnpm tauri
+          args: --target ${{ matrix.rust_target }}
+
+  finalize_release:
+    name: Finalize Release
+    runs-on: ubuntu-latest
+    needs: release
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Extract changelog for current version
         id: changelog
@@ -119,32 +141,54 @@ jobs:
             echo "CHANGELOG.md not found"
           fi
 
-      - name: Build and Release with Tauri Action
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
-          TAURI_UPDATER_ACTIVE: true
+      - name: Determine release type
+        id: release-type
+        shell: bash
+        run: |
+          if [[ "${{ github.ref_name }}" == *"alpha"* ]] || [[ "${{ github.ref_name }}" == *"beta"* ]] || [[ "${{ github.ref_name }}" == *"rc"* ]] || [[ "${{ github.ref_name }}" == *"pre"* ]] || [[ "${{ github.event.inputs.prerelease }}" == "true" ]]; then
+            echo "IS_PRERELEASE=true" >> $GITHUB_OUTPUT
+          else
+            echo "IS_PRERELEASE=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Publish Final Release
+        uses: softprops/action-gh-release@v2
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: ${{ github.ref_name }}
-          releaseBody: ${{ steps.changelog.outputs.CHANGELOG_CONTENT }}
-          releaseDraft: ${{ github.event.inputs.prerelease || false }}
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          body: ${{ steps.changelog.outputs.CHANGELOG_CONTENT }}
+          draft: false
           prerelease: ${{ steps.release-type.outputs.IS_PRERELEASE }}
-          includeUpdaterJson: true
-          includeRelease: true
-          releaseCommitish: ${{ github.sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+  update_cdn_urls:
+    name: Update CDN URLs in latest.json
+    runs-on: ubuntu-latest
+    needs: finalize_release
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Update latest.json with CDN URLs
         shell: bash
         run: |
-          # 等待一下确保 latest.json 已经上传
-          sleep 10
-          
-          # 下载当前的 latest.json
           TAG_NAME="${{ github.ref_name }}"
-          curl -L -o latest.json "https://github.com/huoshen80/ReinaManager/releases/download/$TAG_NAME/latest.json"
+          URL="https://github.com/huoshen80/ReinaManager/releases/download/$TAG_NAME/latest.json"
+
+          # 尝试下载，最多重试5次，每次间隔5秒
+          n=0
+          until [ "$n" -ge 5 ]
+          do
+            curl -L -f -o latest.json "$URL" && break
+            n=$((n+1))
+            sleep 5
+          done
+
+          if [ ! -f "latest.json" ]; then
+              echo "Error: Could not download latest.json after several retries."
+              exit 1
+          fi
           
           if [ -f "latest.json" ]; then
             echo "Original latest.json:"
