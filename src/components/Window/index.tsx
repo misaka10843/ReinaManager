@@ -291,7 +291,7 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ open, onClose, update }) => {
 };
 
 const WindowsHandler: React.FC = () => {
-    const { setSkipCloseRemind, showUpdateModal, pendingUpdate, setShowUpdateModal, setPendingUpdate } = useStore();
+    const { showUpdateModal, pendingUpdate, setDefaultCloseAction, setSkipCloseRemind, setShowUpdateModal, setPendingUpdate } = useStore();
     const { t } = useTranslation();
     const [open, setOpen] = useState(false);
 
@@ -344,7 +344,7 @@ const WindowsHandler: React.FC = () => {
                     }, 5000); // 5秒后显示更新提醒
                 }
             } catch (error) {
-                // 静默忽略错误
+                console.error('检查更新失败', error);
             }
         };
 
@@ -356,10 +356,12 @@ const WindowsHandler: React.FC = () => {
         setOpen(false);
     };
     const handleHide = () => {
+        setDefaultCloseAction('hide');
         setOpen(false);
         getCurrentWindow().hide();
     };
-    const handleExit = () => {
+    const handleClose = () => {
+        setDefaultCloseAction('close');
         setOpen(false);
         getCurrentWindow().destroy();
     };
@@ -387,7 +389,7 @@ const WindowsHandler: React.FC = () => {
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={handleHide}>{t('components.Window.closeDialog.minimizeToTray')}</Button>
-                    <Button onClick={handleExit} color="primary">{t('components.Window.closeDialog.exitApp')}</Button>
+                    <Button onClick={handleClose} color="primary">{t('components.Window.closeDialog.exitApp')}</Button>
                 </DialogActions>
             </Dialog>
 
