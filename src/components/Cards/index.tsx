@@ -1,20 +1,4 @@
-/**
- * @file Cards 组件
- * @description 游戏卡片列表组件，负责展示所有游戏的封面、名称，并支持右键菜单操作与选中高亮，适配响应式布局。
- * @module src/components/Cards/index
- * @author ReinaManager
- * @copyright AGPL-3.0
- *
- * 主要导出：
- * - Cards：游戏卡片列表主组件
- *
- * 依赖：
- * - @mui/material
- * - @/components/RightMenu
- * - @/store
- **/
-
-import { memo, useState } from 'react';
+import { memo, useState, useMemo } from 'react';
 import Card from '@mui/material/Card';
 import CardMedia from '@mui/material/CardMedia';
 import CardActionArea from '@mui/material/CardActionArea';
@@ -22,19 +6,12 @@ import RightMenu from '@/components/RightMenu';
 import { useStore } from '@/store';
 import { useGamePlayStore } from '@/store/gamePlayStore';
 import type { GameData } from '@/types';
-import KeepAlive from 'react-activation';
 import { useTranslation } from 'react-i18next';
 import { getGameDisplayName, isNsfwGame, getGameCover, saveScrollPosition } from '@/utils';
 import { useNavigate } from 'react-router-dom';
+import { useScrollRestore } from "@/hooks/useScrollRestore";
 
-/**
- * Cards 组件用于展示游戏卡片列表。
- * 支持右键弹出菜单、点击选中高亮、响应式布局等功能。
- *
- * @component
- * @returns {JSX.Element} 游戏卡片列表
- */
-// 单个卡片项，使用memo避免无关渲染
+// CardItem 组件保持不变...
 const CardItem = memo(({ card, isActive, onContextMenu, onClick, onDoubleClick, onLongPress, displayName, useDelayedClick }: {
     card: GameData;
     isActive: boolean;
@@ -51,19 +28,16 @@ const CardItem = memo(({ card, isActive, onContextMenu, onClick, onDoubleClick, 
     const [isLongPressing, setIsLongPressing] = useState(false);
     const [hasLongPressed, setHasLongPressed] = useState(false);
 
-    // 确保 tags 统一为数组
     const tags = typeof card.tags === "string" ? JSON.parse(card.tags) : card.tags;
     const isNsfw = isNsfwGame(tags);
 
     const handleClick = () => {
-        // 如果刚刚完成了长按，则忽略此次点击
         if (hasLongPressed) {
             setHasLongPressed(false);
             return;
         }
 
         if (useDelayedClick) {
-            // 启用双击启动时使用延迟点击
             if (clickTimeout) {
                 clearTimeout(clickTimeout);
                 setClickTimeout(null);
@@ -72,18 +46,16 @@ const CardItem = memo(({ card, isActive, onContextMenu, onClick, onDoubleClick, 
             const timeout = setTimeout(() => {
                 onClick();
                 setClickTimeout(null);
-            }, 200); // 200ms 延迟
+            }, 200);
 
             setClickTimeout(timeout);
         } else {
-            // 不启用双击启动时直接执行点击（选择模式下即时响应）
             onClick();
         }
     };
 
     const handleDoubleClick = () => {
         if (useDelayedClick) {
-            // 双击时清除单击定时器，防止单击事件执行
             if (clickTimeout) {
                 clearTimeout(clickTimeout);
                 setClickTimeout(null);
@@ -92,9 +64,7 @@ const CardItem = memo(({ card, isActive, onContextMenu, onClick, onDoubleClick, 
         onDoubleClick();
     };
 
-    // 长按事件处理
     const handleMouseDown = () => {
-        // 重置长按标志
         setHasLongPressed(false);
 
         if (longPressTimeout) {
@@ -103,9 +73,9 @@ const CardItem = memo(({ card, isActive, onContextMenu, onClick, onDoubleClick, 
 
         const timeout = setTimeout(() => {
             setIsLongPressing(true);
-            setHasLongPressed(true); // 标记已完成长按
+            setHasLongPressed(true);
             onLongPress();
-        }, 800); // 800ms 长按时间
+        }, 800);
 
         setLongPressTimeout(timeout);
     };
@@ -117,7 +87,6 @@ const CardItem = memo(({ card, isActive, onContextMenu, onClick, onDoubleClick, 
         }
         setIsLongPressing(false);
 
-        // 延迟重置长按标志，确保 click 事件能够检查到
         setTimeout(() => {
             if (hasLongPressed) {
                 setHasLongPressed(false);
@@ -169,7 +138,6 @@ const CardItem = memo(({ card, isActive, onContextMenu, onClick, onDoubleClick, 
 });
 
 const Cards = () => {
-    // 只订阅需要的状态，减少重渲染
     const selectedGameId = useStore(s => s.selectedGameId);
     const setSelectedGameId = useStore(s => s.setSelectedGameId);
     const cardClickMode = useStore(s => s.cardClickMode);
@@ -184,28 +152,42 @@ const Cards = () => {
         mouseY: number;
         cardId: number | null;
     } | null>(null);
+    useScrollRestore('/libraries', { useKeepAlive: true });
 
-    /**
-     * 处理卡片单击事件
-     */
+
+    // 使用 useMemo 缓存渲染项，减少不必要的重渲染
+    const cardItems = useMemo(() => {
+        return games.map((card) => {
+            const displayName = getGameDisplayName(card, i18n.language);
+
+            return (
+                <CardItem
+                    key={card.id}
+                    card={card}
+                    isActive={selectedGameId === card.id}
+                    onContextMenu={(e) => handleContextMenu(e, card.id)}
+                    onClick={() => handleCardClick(card.id!, card)}
+                    onDoubleClick={() => handleCardDoubleClick(card.id!, card)}
+                    onLongPress={() => handleCardLongPress(card.id!, card)}
+                    displayName={displayName}
+                    useDelayedClick={cardClickMode === 'navigate' && doubleClickLaunch}
+                />
+            );
+        });
+    }, [games, selectedGameId, i18n.language, cardClickMode, doubleClickLaunch]);
+
     const handleCardClick = (cardId: number, _card: GameData) => {
         if (cardClickMode === 'navigate') {
-            // 单击导航到详情页面
             setSelectedGameId(cardId);
             saveScrollPosition(location.pathname);
             navigate(`/libraries/${cardId}`);
         } else {
-            // 单击选择游戏
             setSelectedGameId(cardId);
         }
     };
 
-    /**
-     * 处理卡片双击事件
-     */
     const handleCardDoubleClick = async (cardId: number, card: GameData) => {
         if (doubleClickLaunch && card.localpath) {
-            // 只有启用双击启动功能时才启动游戏
             setSelectedGameId(cardId);
             try {
                 await launchGame(card.localpath, cardId);
@@ -215,12 +197,8 @@ const Cards = () => {
         }
     };
 
-    /**
-     * 处理卡片长按事件
-     */
     const handleCardLongPress = async (cardId: number, card: GameData) => {
         if (longPressLaunch && card.localpath) {
-            // 只有启用长按启动功能时才启动游戏
             setSelectedGameId(cardId);
             try {
                 await launchGame(card.localpath, cardId);
@@ -230,9 +208,6 @@ const Cards = () => {
         }
     };
 
-    /**
-     * 右键菜单事件处理，弹出菜单并设置选中卡片
-     */
     const handleContextMenu = (event: React.MouseEvent, cardId: number | undefined) => {
         if (!cardId) return;
         setMenuPosition({
@@ -242,39 +217,25 @@ const Cards = () => {
         });
         setSelectedGameId(cardId);
     };
-    return (
-        <KeepAlive name='cards' cacheKey='cards' saveScrollPosition={false}>
-            <div
-                className="flex-1 text-center grid grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-4 p-4">
-                {/* 右键菜单组件 */}
-                <RightMenu id={menuPosition?.cardId} isopen={Boolean(menuPosition)}
-                    anchorPosition={
-                        menuPosition
-                            ? { top: menuPosition.mouseY, left: menuPosition.mouseX }
-                            : undefined
-                    }
-                    setAnchorEl={(value) => {
-                        if (!value) setMenuPosition(null);
-                    }} /> {/* 游戏卡片渲染 */}
-                {games.map((card) => {
-                    const displayName = getGameDisplayName(card, i18n.language);
 
-                    return (
-                        <CardItem
-                            key={card.id}
-                            card={card}
-                            isActive={selectedGameId === card.id}
-                            onContextMenu={(e) => handleContextMenu(e, card.id)}
-                            onClick={() => handleCardClick(card.id!, card)}
-                            onDoubleClick={() => handleCardDoubleClick(card.id!, card)}
-                            onLongPress={() => handleCardLongPress(card.id!, card)}
-                            displayName={displayName}
-                            useDelayedClick={cardClickMode === 'navigate' && doubleClickLaunch}
-                        />
-                    );
-                })}
-            </div>
-        </KeepAlive>
+    return (
+        <div className="flex-1 text-center grid grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-4 p-4">
+            <RightMenu
+                id={menuPosition?.cardId}
+                isopen={Boolean(menuPosition)}
+                anchorPosition={
+                    menuPosition
+                        ? { top: menuPosition.mouseY, left: menuPosition.mouseX }
+                        : undefined
+                }
+                setAnchorEl={(value) => {
+                    if (!value) setMenuPosition(null);
+                }}
+            />
+
+            {/* 使用缓存的卡片列表 */}
+            {cardItems}
+        </div>
     );
 };
 

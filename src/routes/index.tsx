@@ -3,9 +3,9 @@ import GamesIcon from '@mui/icons-material/Games';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { Home } from '@/pages/Home/';
 import { Settings } from '@/pages/Settings';
-import Card from '@/components/Cards';
 import { Libraries } from '@/pages/Libraries';
 import { Detail } from '@/pages/Detail';
+import { Category } from '@/pages/Category';
 import { createBrowserRouter, createHashRouter, type RouteObject } from 'react-router-dom';
 import Layout from '@/components/Layout';
 import App from '@/App';
@@ -42,24 +42,20 @@ export const appRoutes: AppRoute[] = [
     {
         path: 'libraries',
         title: 'app.NAVIGATION.gameLibrary',
-        component: Libraries, // Libraries 组件内部使用 <Outlet />
         icon: <GamesIcon />,
-        navPattern: 'libraries/:id', // 用于高亮匹配 /libraries/123 等路径
-        children: [
-            {
-                index: true,
-                path: '', // index route path is empty
-                title: 'Library Default',
-                component: Card,
-                hideInMenu: true, // 列表页默认视图，不在侧边栏显示
-            },
-            {
-                path: ':id',
-                title: 'Game Detail',
-                component: Detail,
-                hideInMenu: true, // 详情页，不在侧边栏显示
-            },
-        ]
+        navPattern: 'libraries/:id',
+        component: Libraries,
+    },
+    {
+        path: 'libraries/:id',
+        title: 'Game Detail',
+        component: Detail,
+        hideInMenu: true, // 详情页，不在侧边栏显示
+    },
+    {
+        path: 'category',
+        title: 'app.NAVIGATION.category',
+        component: Category,
     },
     {
         path: 'settings',

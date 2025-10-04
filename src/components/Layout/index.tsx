@@ -35,6 +35,7 @@ import { useTranslation } from 'react-i18next';
 import { PageContainer } from '@toolpad/core/PageContainer';
 import { LinkWithScrollSave } from '../LinkWithScrollSave';
 import { NavigationPageItem } from '@toolpad/core/AppProvider';
+import KeepAlive from 'react-activation';
 
 /**
  * 自定义应用标题组件属性类型
@@ -112,11 +113,15 @@ export const Layout: React.FC = () => {
             defaultSidebarCollapsed={true}
             renderPageItem={handleRenderPageItem}
         >
+
             {isLibraries ?
                 <PageContainer sx={{ maxWidth: '100% !important' }}>
-                    <Outlet />
+                    <KeepAlive name="libraries" cacheKey="libraries" saveScrollPosition={false}>
+                        <Outlet />
+                    </KeepAlive>
                 </PageContainer>
-                : <Outlet />}
+                : <Outlet />
+            }
         </DashboardLayout>
     );
 }
