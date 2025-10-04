@@ -32,11 +32,10 @@ import {
     filterGamesByTypeLocal,
     getBgmTokenLocal,
     getGameByIdLocal,
-    getGames as getGamesLocal, getSetting,
+    getGames as getGamesLocal,
     insertGame as insertGameLocal,
     searchGamesLocal,
-    setBgmTokenLocal,
-    setSetting
+    setBgmTokenLocal
 } from '@/utils/localStorage';
 import {isTauri} from '@tauri-apps/api/core';
 import {initializeGamePlayTracking} from './gamePlayStore';
@@ -52,14 +51,15 @@ export interface AppState {
     games: GameData[]; // 当前显示的游戏列表（受筛选和排序影响）
     allGames: GameData[]; // 所有游戏的完整列表（不受筛选影响，供统计使用）
     loading: boolean;
-    // 排序选项
-    sortOption: string;
-    sortOrder: 'asc' | 'desc';
     // BGM 令牌
     bgmToken: string;
     // UI 状态
     selectedGameId: number | null;
     selectedGame: GameData | null;
+    
+    // 排序选项
+    sortOption: string;
+    sortOrder: 'asc' | 'desc';
 
     // 关闭应用时的提醒设置，skip=不再提醒，行为为 'hide' 或 'close'
     skipCloseRemind: boolean;
@@ -76,10 +76,6 @@ export interface AppState {
     deleteGame: (gameId: number) => Promise<void>;
     getGameById: (gameId: number) => Promise<GameData>;
     updateGame: (id: number, gameUpdates: Partial<FullGameData> | Partial<GameData>) => Promise<void>;
-
-    // 排序方法
-    setSortOption: (option: string) => void;
-    setSortOrder: (order: 'asc' | 'desc') => void;
 
     // BGM 令牌方法
     fetchBgmToken: () => Promise<void>;
@@ -100,10 +96,18 @@ export interface AppState {
     // 通用刷新方法
     refreshGameData: (customSortOption?: string, customSortOrder?: 'asc' | 'desc') => Promise<void>;
 
+    // 排序方法
+    setSortOption: (option: string) => void;
+    setSortOrder: (order: 'asc' | 'desc') => void;
+
     // 筛选相关
     gameFilterType: 'all' | 'local' | 'online' | 'noclear' | 'clear';
     setGameFilterType: (type: 'all' | 'local' | 'online' | 'noclear' | 'clear') => void;
     useIsLocalGame: (gameId: number) => boolean;
+
+    // 数据来源选择
+    apiSource: 'bgm' | 'vndb' | 'mixed';
+    setApiSource: (source: 'bgm' | 'vndb' | 'mixed') => void;
 
     // NSFW相关
     nsfwFilter: boolean;
@@ -149,16 +153,21 @@ export const useStore = create<AppState>()(
             allGames: [], // 所有游戏的完整列表（不受筛选影响，供统计使用）
             loading: false,
 
-            // 排序选项默认值
-            sortOption: 'addtime',
-            sortOrder: 'asc',
-
             // BGM 令牌
             bgmToken: '',
 
             // UI 状态
             selectedGameId: null,
             selectedGame: null,
+
+            searchKeyword: '',
+
+            gameFilterType: 'all',
+
+            // 排序选项默认值
+            sortOption: 'addtime',
+            sortOrder: 'asc',        
+
             // 关闭应用时的提醒设置，skip=不再提醒，行为为 'hide' 或 'close'
             skipCloseRemind: false,
             defaultCloseAction: 'hide',
@@ -166,49 +175,44 @@ export const useStore = create<AppState>()(
             setSkipCloseRemind: (skip: boolean) => set({skipCloseRemind: skip}),
             setDefaultCloseAction: (action: 'hide' | 'close') => set({defaultCloseAction: action}),
 
-            searchKeyword: '',
-
-            gameFilterType: 'all',
+            // 数据来源选择
+            apiSource: 'vndb',
+            setApiSource: (source: 'bgm' | 'vndb' | 'mixed') => {
+                set({apiSource: source});
+            },
 
             // NSFW相关
             nsfwFilter: false,
-            setNsfwFilter: async (enabled: boolean) => {
+            setNsfwFilter:(enabled: boolean) => {
                 set({nsfwFilter: enabled});
-                await get().refreshGameData();
-                setSetting('nsfwFilter', enabled);
             },
             nsfwCoverReplace: false,
             setNsfwCoverReplace: (enabled: boolean) => {
                 set({nsfwCoverReplace: enabled});
-                setSetting('nsfwCoverReplace', enabled);
             },
 
             // 卡片交互模式
             cardClickMode: 'navigate',
             setCardClickMode: (mode: 'navigate' | 'select') => {
                 set({cardClickMode: mode});
-                setSetting('cardClickMode', mode);
             },
 
             // 双击启动游戏功能
             doubleClickLaunch: false,
             setDoubleClickLaunch: (enabled: boolean) => {
                 set({doubleClickLaunch: enabled});
-                setSetting('doubleClickLaunch', enabled);
             },
 
             // 长按启动游戏功能
             longPressLaunch: false,
             setLongPressLaunch: (enabled: boolean) => {
                 set({longPressLaunch: enabled});
-                setSetting('longPressLaunch', enabled);
             },
 
             // TAG翻译功能（默认关闭）
             tagTranslation: false,
             setTagTranslation: (enabled: boolean) => {
                 set({tagTranslation: enabled});
-                setSetting('tagTranslation', enabled);
             },
 
             // 优化刷新数据的方法，减少状态更新
@@ -515,7 +519,6 @@ export const useStore = create<AppState>()(
                 }
             },
 
-// 修改这两个方法，让它们调用新的 updateSort 方法
             setSortOption: (option: string) => {
                 get().updateSort(option, get().sortOrder);
             },
@@ -676,23 +679,6 @@ export const useStore = create<AppState>()(
 
             // 初始化方法，先初始化数据库，然后加载所有需要的数据
             initialize: async () => {
-
-                // 获取NSFW数据
-                const nsfwFilter = getSetting('nsfwFilter') ?? false;
-                const nsfwCoverReplace = getSetting('nsfwCoverReplace') ?? false;
-                const cardClickMode = getSetting('cardClickMode') ?? 'navigate';
-                const doubleClickLaunch = getSetting('doubleClickLaunch') ?? false;
-                const longPressLaunch = getSetting('longPressLaunch') ?? false;
-                const tagTranslation = getSetting('tagTranslation') ?? false;
-                set({
-                    nsfwFilter,
-                    nsfwCoverReplace,
-                    cardClickMode,
-                    doubleClickLaunch,
-                    longPressLaunch,
-                    tagTranslation,
-                });
-
                 // 然后并行加载其他数据
                 await Promise.all([
                     get().fetchGames(),
@@ -709,10 +695,25 @@ export const useStore = create<AppState>()(
             name: 'reina-manager-store',
             // 可选：定义哪些字段需要持久化存储
             partialize: (state) => ({
+                // 排序偏好
                 sortOption: state.sortOption,
                 sortOrder: state.sortOrder,
+                // 筛选偏好
+                gameFilterType: state.gameFilterType,
+                // 关闭应用相关
                 skipCloseRemind: state.skipCloseRemind,
-                defaultCloseAction: state.defaultCloseAction
+                defaultCloseAction: state.defaultCloseAction,
+                // 数据来源选择
+                apiSource: state.apiSource,
+                // nsfw相关
+                nsfwFilter: state.nsfwFilter,
+                nsfwCoverReplace: state.nsfwCoverReplace,
+                // 卡片点击模式
+                cardClickMode: state.cardClickMode,
+                doubleClickLaunch: state.doubleClickLaunch,
+                longPressLaunch: state.longPressLaunch,
+                // VNDB标签翻译
+                tagTranslation: state.tagTranslation,
             })
         }
     )

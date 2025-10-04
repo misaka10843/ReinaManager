@@ -39,7 +39,6 @@ import { isTauri } from '@tauri-apps/api/core';
 import Switch from '@mui/material/Switch';
 import { RadioGroup, FormControlLabel, Radio } from '@mui/material';
 import { transformApiGameData } from '@/utils/apiDataTransform';
-import { getSetting, setSetting } from '@/utils/localStorage';
 import { useTranslation } from 'react-i18next';
 import { handleDirectory } from '@/utils';
 
@@ -56,15 +55,13 @@ import { handleDirectory } from '@/utils';
  */
 const AddModal: React.FC = () => {
     const { t } = useTranslation();
-    const { bgmToken, games, addGame } = useStore();
+    const { bgmToken, games, apiSource, setApiSource, addGame } = useStore();
     const { isopen, handleOpen, handleClose } = useModal();
     const [formText, setFormText] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [path, setPath] = useState('');
     const [customMode, setCustomMode] = useState(false);
-    // 将 boolean 切换改为多种模式选择
-    const [apiSource, setApiSource] = useState<'bgm' | 'vndb' | 'mixed'>(getSetting('apiSource') || 'vndb');
     // 保留 ID 搜索状态
     const [isID, setisID] = useState(false);
     /**
@@ -76,14 +73,6 @@ const AddModal: React.FC = () => {
             setFormText(folderName);
         }
     }, [path]);
-
-    // 持久化：apiSource 变化时写入设置
-    useEffect(() => {
-        // 仅在值有效时保存
-        if (apiSource) {
-            setSetting('apiSource', apiSource);
-        }
-    }, [apiSource]);
 
     /**
      * 提交表单，处理添加游戏的逻辑。

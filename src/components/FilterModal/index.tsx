@@ -57,8 +57,8 @@ export const FilterModal: React.FC = () => {
      * 切换筛选类型
      * @param event React.ChangeEvent<HTMLInputElement>
      */
-    const handleChange = (event: { target: { value: string; }; }) => {
-        setFilterValue(event.target.value as GameFilterType);
+    const handleChange = (event: { target: { value: GameFilterType; }; }) => {
+        setFilterValue(event.target.value);
     };
 
     /**

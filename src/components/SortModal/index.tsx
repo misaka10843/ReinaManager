@@ -15,7 +15,7 @@
  * - react-i18next
  */
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -30,6 +30,22 @@ import { useStore } from '@/store';
 import { useTranslation } from 'react-i18next';
 
 /**
+ * SortOption 组件的 props 接口
+ */
+interface SortOptionProps {
+    value: string;
+    onChange: (value: string) => void;
+}
+
+/**
+ * UpDownSwitches 组件的 props 接口
+ */
+interface UpDownSwitchesProps {
+    value: string;
+    onChange: (value: string) => void;
+}
+
+/**
  * SortModal 组件
  * 游戏排序弹窗，支持多种排序方式和升降序切换。
  *
@@ -40,21 +56,11 @@ const SortModal: React.FC = () => {
     const { t } = useTranslation();
     const { isopen, handleOpen, handleClose } = useModal();
     // 从 store 获取排序状态
-    const { sortOption, sortOrder } = useStore();
+    const { sortOption, sortOrder, updateSort } = useStore();
 
     // 本地状态，用于在对话框内部跟踪更改
     const [localSortOption, setLocalSortOption] = useState(sortOption);
     const [localSortOrder, setLocalSortOrder] = useState(sortOrder);
-
-    /**
-     * 每次打开对话框时，重置本地状态
-     */
-    useEffect(() => {
-        if (isopen) {
-            setLocalSortOption(sortOption);
-            setLocalSortOrder(sortOrder);
-        }
-    }, [isopen, sortOption, sortOrder]);
 
     /**
      * 提交排序设置，应用到全局 store
@@ -63,8 +69,6 @@ const SortModal: React.FC = () => {
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
 
-        // 使用新的updateSort方法一次性更新排序并获取数据
-        const { updateSort } = useStore.getState();
         await updateSort(localSortOption, localSortOrder);
 
         // 关闭对话框
@@ -78,13 +82,13 @@ const SortModal: React.FC = () => {
                 open={isopen}
                 onClose={handleClose}
                 closeAfterTransition={false}
-                TransitionProps={{
-                    timeout: 0, // 禁用过渡动画
-                }}
                 aria-labelledby="sort-dialog-title"
-                PaperProps={{
-                    component: 'form',
-                    onSubmit: handleSubmit,
+                slotProps={{
+                    transition: { timeout: 0 },
+                    paper: {
+                        component: 'form',
+                        onSubmit: handleSubmit,
+                    }
                 }}
             >
                 <DialogTitle>{t('components.SortModal.sort')}</DialogTitle>
@@ -112,12 +116,10 @@ const SortModal: React.FC = () => {
  * SortOption 组件
  * 排序方式选择下拉框
  *
- * @param {object} props
- * @param {string} props.value 当前排序方式
- * @param {(value: string) => void} props.onChange 排序方式变更回调
+ * @param {SortOptionProps} props
  * @returns {JSX.Element}
  */
-const SortOption = ({ value, onChange }: { value: string, onChange: (value: string) => void }) => {
+const SortOption: React.FC<SortOptionProps> = ({ value, onChange }) => {
     const { t } = useTranslation();
     const handleChange = (event: SelectChangeEvent) => {
         onChange(event.target.value);
@@ -138,12 +140,10 @@ const SortOption = ({ value, onChange }: { value: string, onChange: (value: stri
  * UpDownSwitches 组件
  * 升序/降序切换开关
  *
- * @param {object} props
- * @param {string} props.value 当前排序顺序（'asc' 或 'desc'）
- * @param {(value: string) => void} props.onChange 排序顺序变更回调
+ * @param {UpDownSwitchesProps} props
  * @returns {JSX.Element}
  */
-const UpDownSwitches = ({ value, onChange }: { value: string, onChange: (value: string) => void }) => {
+const UpDownSwitches: React.FC<UpDownSwitchesProps> = ({ value, onChange }) => {
     const { t } = useTranslation();
     // 使用 asc/desc 而不是布尔值
     const isDesc = value === 'desc';
@@ -158,7 +158,7 @@ const UpDownSwitches = ({ value, onChange }: { value: string, onChange: (value: 
             <Switch
                 checked={isDesc}
                 onChange={handleChange}
-                inputProps={{ 'aria-label': 'controlled' }}
+                slotProps={{ input: { 'aria-label': 'controlled' } }}
             />
             <span className={`ml-2 ${isDesc ? 'opacity-100' : 'opacity-50'}`}>{t('components.SortModal.descending')}</span>
         </div>
