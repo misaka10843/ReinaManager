@@ -14,7 +14,7 @@
  */
 
 import { tauriHttp } from './http'
-import pkg from '../../package.json'
+import { version } from '@pkg'
 import i18n from '@/utils/i18n'
 import { ApiBgmData, RawGameData } from '@/types';
 
@@ -70,7 +70,7 @@ export async function fetchBgmById(id: string, BGM_TOKEN: string) {
   const BGM_HEADER = {
     headers: {
       'Accept': 'application/json',
-      'User-Agent': `huoshen80/ReinaManager/${pkg.version} (https://github.com/huoshen80/ReinaManager)`,
+      'User-Agent': `huoshen80/ReinaManager/${version} (https://github.com/huoshen80/ReinaManager)`,
       ...(BGM_TOKEN ? { Authorization: `Bearer ${BGM_TOKEN}` } : {}),
     },
   };
@@ -109,7 +109,7 @@ export async function fetchBgmByName(name: string, BGM_TOKEN: string) {
   const BGM_HEADER = {
     headers: {
       'Accept': 'application/json',
-      'User-Agent': `huoshen80/ReinaManager/${pkg.version} (https://github.com/huoshen80/ReinaManager)`,
+      'User-Agent': `huoshen80/ReinaManager/${version} (https://github.com/huoshen80/ReinaManager)`,
       ...(BGM_TOKEN ? { Authorization: `Bearer ${BGM_TOKEN}` } : {}),
     },
   };

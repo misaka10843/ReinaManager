@@ -3,7 +3,8 @@ import type { TrayIconEvent } from '@tauri-apps/api/tray';
 import { defaultWindowIcon } from '@tauri-apps/api/app';
 import { Menu, MenuItem } from '@tauri-apps/api/menu';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import pkg from '../../../package.json';
+import { version } from '@pkg';
+import i18n from 'i18next';
 
 /**
  * 创建并初始化托盘图标
@@ -12,8 +13,8 @@ export const initTray = async () => {
     try {
         // 创建退出菜单项
         const quitItem = await MenuItem.new({
-            id: 'quit',
-            text: 'Quit',
+            id: 'exit',
+            text: i18n.t('components.Tray.exit'),
             action: async () => {
                 console.log('Exiting application...');
                 const window = getCurrentWindow();
@@ -28,7 +29,7 @@ export const initTray = async () => {
 
         // 获取默认窗口图标
         const windowIcon = await defaultWindowIcon();
-        const tooltipText = `ReinaManager v${pkg.version}`;
+        const tooltipText = `ReinaManager v${version}`;
         // 创建托盘图标
         const tray = await TrayIcon.new({
             id: 'main',

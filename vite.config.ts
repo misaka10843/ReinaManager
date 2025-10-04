@@ -30,6 +30,10 @@ export default defineConfig({
       {
         find: '@',
         replacement: resolve(__dirname, './src')
+      },
+      {
+        find: '@pkg',
+        replacement: resolve(__dirname, './package.json')
       }
     ]
   }

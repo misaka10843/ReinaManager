@@ -41,7 +41,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import UpdateIcon from '@mui/icons-material/Update';
 import { isTauri } from '@tauri-apps/api/core';
 import { checkForUpdates } from '@/components/Update';
-import pkg from '../../../package.json';
+import pkg from '@pkg';
 import { PageContainer } from '@toolpad/core/PageContainer';
 import { useScrollRestore } from '@/hooks/useScrollRestore';
 
@@ -149,19 +149,21 @@ const BgmTokenSettings = () => {
                     variant="outlined"
                     size="medium"
                     className="min-w-60"
-                    InputProps={{
-                        endAdornment: inputToken && (
-                            <InputAdornment position="end">
-                                <IconButton
-                                    onClick={handleClearToken}
-                                    edge="end"
-                                    size="small"
-                                    aria-label={t('pages.Settings.bgmTokenSettings.clearToken', '清除令牌')}
-                                >
-                                    <ClearIcon />
-                                </IconButton>
-                            </InputAdornment>
-                        ),
+                    slotProps={{
+                        input: {
+                            endAdornment: inputToken && (
+                                <InputAdornment position="end">
+                                    <IconButton
+                                        onClick={handleClearToken}
+                                        edge="end"
+                                        size="small"
+                                        aria-label={t('pages.Settings.bgmTokenSettings.clearToken', '清除令牌')}
+                                    >
+                                        <ClearIcon />
+                                    </IconButton>
+                                </InputAdornment>
+                            ),
+                        }
                     }}
                 />
                 <Button
