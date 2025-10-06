@@ -252,7 +252,7 @@ impl GamesRepository {
         sort_order: SortOrder,
     ) -> Result<Vec<FullGameData>, DbErr> {
         // 1. 使用通用方法获取排序后的游戏列表
-        let games = Self::find_with_sort(db, GameType::All, None, sort_option, sort_order).await?;
+        let games = Self::find_with_sort(db, GameType::All, sort_option, sort_order).await?;
 
         // 2. 如果没有游戏，直接返回空列表
         if games.is_empty() {
@@ -310,72 +310,7 @@ impl GamesRepository {
         sort_order: SortOrder,
     ) -> Result<Vec<FullGameData>, DbErr> {
         // 1. 使用通用方法获取排序后的游戏列表
-        let games = Self::find_with_sort(db, game_type, None, sort_option, sort_order).await?;
-
-        // 2. 如果没有游戏，直接返回空列表
-        if games.is_empty() {
-            return Ok(Vec::new());
-        }
-
-        // 3. 批量查询关联数据
-        let game_ids: Vec<i32> = games.iter().map(|g| g.id).collect();
-
-        let bgm_data_list = BgmData::find()
-            .filter(bgm_data::Column::GameId.is_in(game_ids.clone()))
-            .all(db)
-            .await?;
-
-        let vndb_data_list = VndbData::find()
-            .filter(vndb_data::Column::GameId.is_in(game_ids.clone()))
-            .all(db)
-            .await?;
-
-        let other_data_list = OtherData::find()
-            .filter(other_data::Column::GameId.is_in(game_ids))
-            .all(db)
-            .await?;
-
-        // 4. 构建 HashMap 方便查找
-        use std::collections::HashMap;
-        let bgm_map: HashMap<i32, bgm_data::Model> =
-            bgm_data_list.into_iter().map(|d| (d.game_id, d)).collect();
-        let vndb_map: HashMap<i32, vndb_data::Model> =
-            vndb_data_list.into_iter().map(|d| (d.game_id, d)).collect();
-        let other_map: HashMap<i32, other_data::Model> = other_data_list
-            .into_iter()
-            .map(|d| (d.game_id, d))
-            .collect();
-
-        // 5. 组合数据
-        let full_games = games
-            .into_iter()
-            .map(|game| FullGameData {
-                game: game.clone(),
-                bgm_data: bgm_map.get(&game.id).cloned(),
-                vndb_data: vndb_map.get(&game.id).cloned(),
-                other_data: other_map.get(&game.id).cloned(),
-            })
-            .collect();
-
-        Ok(full_games)
-    }
-
-    /// 搜索完整游戏数据（包含关联）
-    pub async fn search_full(
-        db: &DatabaseConnection,
-        keyword: &str,
-        game_type: GameType,
-        sort_option: SortOption,
-        sort_order: SortOrder,
-    ) -> Result<Vec<FullGameData>, DbErr> {
-        // 1. 使用通用方法获取排序后的游戏列表
-        let keyword_opt = if keyword.trim().is_empty() {
-            None
-        } else {
-            Some(keyword)
-        };
-        let games =
-            Self::find_with_sort(db, game_type, keyword_opt, sort_option, sort_order).await?;
+        let games = Self::find_with_sort(db, game_type, sort_option, sort_order).await?;
 
         // 2. 如果没有游戏，直接返回空列表
         if games.is_empty() {
@@ -465,7 +400,7 @@ impl GamesRepository {
     }
 
     /// 通用的查询构建器：应用类型筛选和关键词搜索
-    fn build_base_query(game_type: GameType, keyword: Option<&str>) -> Select<Games> {
+    fn build_base_query(game_type: GameType) -> Select<Games> {
         let mut query = Games::find();
 
         // 应用类型筛选
@@ -484,19 +419,6 @@ impl GamesRepository {
             GameType::NoClear => query.filter(games::Column::Clear.eq(0)),
             GameType::Clear => query.filter(games::Column::Clear.eq(1)),
         };
-
-        // 应用关键词搜索
-        if let Some(kw) = keyword {
-            if !kw.trim().is_empty() {
-                let keyword_pattern = format!("%{}%", kw);
-                query = query.filter(
-                    Condition::any()
-                        .add(games::Column::CustomName.like(&keyword_pattern))
-                        .add(games::Column::Localpath.like(&keyword_pattern)),
-                );
-            }
-        }
-
         query
     }
 
@@ -504,7 +426,6 @@ impl GamesRepository {
     async fn find_with_sort(
         db: &DatabaseConnection,
         game_type: GameType,
-        keyword: Option<&str>,
         sort_option: SortOption,
         sort_order: SortOrder,
     ) -> Result<Vec<games::Model>, DbErr> {
@@ -518,7 +439,7 @@ impl GamesRepository {
         // 根据排序选项决定是否需要 JOIN
         match sort_option {
             SortOption::Addtime => {
-                let mut query = Self::build_base_query(game_type, keyword);
+                let mut query = Self::build_base_query(game_type);
                 query = match sort_order {
                     SortOrder::Asc => query.order_by_asc(games::Column::Id),
                     SortOrder::Desc => query.order_by_desc(games::Column::Id),
@@ -526,7 +447,7 @@ impl GamesRepository {
                 query.all(db).await
             }
             SortOption::Datetime => {
-                let mut query = Self::build_base_query(game_type, keyword);
+                let mut query = Self::build_base_query(game_type);
                 query = match sort_order {
                     SortOrder::Asc => query.order_by_asc(games::Column::Date),
                     SortOrder::Desc => query.order_by_desc(games::Column::Date),
@@ -536,7 +457,7 @@ impl GamesRepository {
             SortOption::LastPlayed => {
                 // LEFT JOIN game_statistics
                 let mut query =
-                    Self::build_base_query(game_type, keyword).left_join(game_statistics::Entity);
+                    Self::build_base_query(game_type).left_join(game_statistics::Entity);
                 query = query
                     .order_by(game_statistics::Column::LastPlayed, Order::Desc)
                     .order_by_asc(games::Column::Id);
@@ -545,7 +466,7 @@ impl GamesRepository {
             SortOption::BGMRank => {
                 // LEFT JOIN bgm_data
                 // 注意：rank 越小越好（第1名 > 第100名），所以排序需要反转
-                let mut query = Self::build_base_query(game_type, keyword).left_join(BgmData);
+                let mut query = Self::build_base_query(game_type).left_join(BgmData);
                 let bgm_order = match sort_order {
                     SortOrder::Asc => Order::Desc, // 用户要升序 -> rank 从大到小
                     SortOrder::Desc => Order::Asc, // 用户要降序 -> rank 从小到大（最佳在前）
@@ -557,7 +478,7 @@ impl GamesRepository {
             }
             SortOption::VNDBRank => {
                 // LEFT JOIN vndb_data
-                let mut query = Self::build_base_query(game_type, keyword).left_join(VndbData);
+                let mut query = Self::build_base_query(game_type).left_join(VndbData);
                 query = query
                     .order_by(vndb_data::Column::Score, order)
                     .order_by_asc(games::Column::Id);

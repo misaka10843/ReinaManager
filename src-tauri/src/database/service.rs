@@ -64,20 +64,6 @@ pub async fn find_full_games_by_type(
         .map_err(|e| format!("根据类型筛选完整游戏失败: {}", e))
 }
 
-/// 搜索完整游戏数据（包含关联）
-#[tauri::command]
-pub async fn search_full_games(
-    db: State<'_, DatabaseConnection>,
-    keyword: String,
-    game_type: GameType,
-    sort_option: SortOption,
-    sort_order: SortOrder,
-) -> Result<Vec<FullGameData>, String> {
-    GamesRepository::search_full(&db, &keyword, game_type, sort_option, sort_order)
-        .await
-        .map_err(|e| format!("搜索完整游戏失败: {}", e))
-}
-
 /// 批量更新游戏数据（包含关联数据）
 #[tauri::command]
 pub async fn update_game_with_related(

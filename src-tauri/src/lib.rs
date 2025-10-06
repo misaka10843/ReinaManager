@@ -47,7 +47,6 @@ pub fn run() {
             find_full_game_by_id,
             find_all_full_games,
             find_full_games_by_type,
-            search_full_games,
             update_game_with_related,
             delete_game,
             delete_bgm_data,
