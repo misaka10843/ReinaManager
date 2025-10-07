@@ -1,7 +1,7 @@
 import Cards from "@/components/Cards";
+import { useScrollRestore } from "@/hooks/useScrollRestore";
 
 export const Libraries: React.FC = () => {
-	return (
-		<Cards />
-	)
-}
+	useScrollRestore("/libraries", { useKeepAlive: true });
+	return <Cards />;
+};

@@ -20,594 +20,646 @@
  * - @/store/gamePlayStore
  */
 
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import type { FullGameData, GameData } from '@/types';
-import type { Update } from '@tauri-apps/plugin-updater';
-import { gameService, settingsService } from '@/services';
-import { applyNsfwFilter, getDisplayGameData, getDisplayGameDataList } from '@/utils';
-import i18next from 'i18next';
+import { isTauri } from "@tauri-apps/api/core";
+import type { Update } from "@tauri-apps/plugin-updater";
+import i18next from "i18next";
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
+import { gameService, settingsService } from "@/services";
+import type { FullGameData, GameData } from "@/types";
 import {
-    deleteGame as deleteGameLocal,
-    filterGamesByTypeLocal,
-    getBgmTokenLocal,
-    getGameByIdLocal,
-    getGames as getGamesLocal,
-    insertGame as insertGameLocal,
-    searchGamesLocal,
-    setBgmTokenLocal
-} from '@/utils/localStorage';
-import { isTauri } from '@tauri-apps/api/core';
-import { initializeGamePlayTracking } from './gamePlayStore';
-import { enhancedSearch } from '@/utils/enhancedSearch';
+	applyNsfwFilter,
+	getDisplayGameData,
+	getDisplayGameDataList,
+} from "@/utils";
+import { enhancedSearch } from "@/utils/enhancedSearch";
+import {
+	deleteGame as deleteGameLocal,
+	filterGamesByTypeLocal,
+	getBgmTokenLocal,
+	getGameByIdLocal,
+	getGames as getGamesLocal,
+	insertGame as insertGameLocal,
+	searchGamesLocal,
+	setBgmTokenLocal,
+} from "@/utils/localStorage";
+import { initializeGamePlayTracking } from "./gamePlayStore";
 
 /**
  * AppState 全局状态类型定义
  */
 export interface AppState {
-    updateSort(option: string, sortOrder: string): Promise<void>;
+	updateSort(option: string, sortOrder: string): Promise<void>;
 
-    // 游戏相关状态与方法
-    fullGames: FullGameData[]; // 所有完整的游戏数据（包含关联表）
-    games: GameData[]; // 当前显示的游戏列表（受筛选和排序影响）
-    allGames: GameData[]; // 所有游戏的完整列表（不受筛选影响，供统计使用）
-    loading: boolean;
-    // BGM 令牌
-    bgmToken: string;
-    // UI 状态
-    selectedGameId: number | null;
-    selectedGame: GameData | null;
+	// 游戏相关状态与方法
+	fullGames: FullGameData[]; // 所有完整的游戏数据（包含关联表）
+	games: GameData[]; // 当前显示的游戏列表（受筛选和排序影响）
+	allGames: GameData[]; // 所有游戏的完整列表（不受筛选影响，供统计使用）
+	loading: boolean;
+	// BGM 令牌
+	bgmToken: string;
+	// UI 状态
+	selectedGameId: number | null;
+	selectedGame: GameData | null;
 
-    // 排序选项
-    sortOption: string;
-    sortOrder: 'asc' | 'desc';
+	// 排序选项
+	sortOption: string;
+	sortOrder: "asc" | "desc";
 
-    // 关闭应用时的提醒设置，skip=不再提醒，行为为 'hide' 或 'close'
-    skipCloseRemind: boolean;
-    defaultCloseAction: 'hide' | 'close';
-    // 设置不再提醒及默认关闭行为
-    setSkipCloseRemind: (skip: boolean) => void;
-    setDefaultCloseAction: (action: 'hide' | 'close') => void;
+	// 关闭应用时的提醒设置，skip=不再提醒，行为为 'hide' 或 'close'
+	skipCloseRemind: boolean;
+	defaultCloseAction: "hide" | "close";
+	// 设置不再提醒及默认关闭行为
+	setSkipCloseRemind: (skip: boolean) => void;
+	setDefaultCloseAction: (action: "hide" | "close") => void;
 
+	// 游戏操作方法
+	fetchGames: (
+		sortOption?: string,
+		sortOrder?: "asc" | "desc",
+		resetSearch?: boolean,
+	) => Promise<void>;
+	fetchGame: (id: number) => Promise<void>;
+	addGame: (fullgame: FullGameData) => Promise<void>;
+	deleteGame: (gameId: number) => Promise<void>;
+	getGameById: (gameId: number) => Promise<GameData>;
+	updateGame: (
+		id: number,
+		gameUpdates: Partial<FullGameData> | Partial<GameData>,
+	) => Promise<void>;
 
-    // 游戏操作方法
-    fetchGames: (sortOption?: string, sortOrder?: 'asc' | 'desc', resetSearch?: boolean) => Promise<void>;
-    fetchGame: (id: number) => Promise<void>;
-    addGame: (fullgame: FullGameData) => Promise<void>;
-    deleteGame: (gameId: number) => Promise<void>;
-    getGameById: (gameId: number) => Promise<GameData>;
-    updateGame: (id: number, gameUpdates: Partial<FullGameData> | Partial<GameData>) => Promise<void>;
+	// BGM 令牌方法
+	fetchBgmToken: () => Promise<void>;
+	setBgmToken: (token: string) => Promise<void>;
 
-    // BGM 令牌方法
-    fetchBgmToken: () => Promise<void>;
-    setBgmToken: (token: string) => Promise<void>;
+	// UI 操作方法
+	setSelectedGameId: (id: number | null | undefined) => void;
+	setSelectedGame: (game: GameData | null) => void;
 
-    // UI 操作方法
-    setSelectedGameId: (id: number | null | undefined) => void;
-    setSelectedGame: (game: GameData | null) => void;
+	// 初始化
+	initialize: () => Promise<void>;
 
-    // 初始化
-    initialize: () => Promise<void>;
+	// 搜索相关
+	searchKeyword: string;
+	setSearchKeyword: (keyword: string) => void;
 
-    // 搜索相关
-    searchKeyword: string;
-    setSearchKeyword: (keyword: string) => void;
+	// 通用刷新方法
+	refreshGameData: (
+		customSortOption?: string,
+		customSortOrder?: "asc" | "desc",
+	) => Promise<void>;
 
-    // 通用刷新方法
-    refreshGameData: (customSortOption?: string, customSortOrder?: 'asc' | 'desc') => Promise<void>;
+	// 筛选相关
+	gameFilterType: "all" | "local" | "online" | "noclear" | "clear";
+	setGameFilterType: (
+		type: "all" | "local" | "online" | "noclear" | "clear",
+	) => void;
+	isLocalGame: (gameId: number) => boolean;
 
-    // 筛选相关
-    gameFilterType: 'all' | 'local' | 'online' | 'noclear' | 'clear';
-    setGameFilterType: (type: 'all' | 'local' | 'online' | 'noclear' | 'clear') => void;
-    useIsLocalGame: (gameId: number) => boolean;
+	// 数据来源选择
+	apiSource: "bgm" | "vndb" | "mixed";
+	setApiSource: (source: "bgm" | "vndb" | "mixed") => void;
 
-    // 数据来源选择
-    apiSource: 'bgm' | 'vndb' | 'mixed';
-    setApiSource: (source: 'bgm' | 'vndb' | 'mixed') => void;
+	// NSFW相关
+	nsfwFilter: boolean;
+	setNsfwFilter: (enabled: boolean) => void;
+	nsfwCoverReplace: boolean;
+	setNsfwCoverReplace: (enabled: boolean) => void;
 
-    // NSFW相关
-    nsfwFilter: boolean;
-    setNsfwFilter: (enabled: boolean) => void;
-    nsfwCoverReplace: boolean;
-    setNsfwCoverReplace: (enabled: boolean) => void;
+	// 卡片交互模式
+	cardClickMode: "navigate" | "select";
+	setCardClickMode: (mode: "navigate" | "select") => void;
 
-    // 卡片交互模式
-    cardClickMode: 'navigate' | 'select';
-    setCardClickMode: (mode: 'navigate' | 'select') => void;
+	// 双击启动游戏功能
+	doubleClickLaunch: boolean;
+	setDoubleClickLaunch: (enabled: boolean) => void;
 
-    // 双击启动游戏功能
-    doubleClickLaunch: boolean;
-    setDoubleClickLaunch: (enabled: boolean) => void;
+	// 长按启动游戏功能
+	longPressLaunch: boolean;
+	setLongPressLaunch: (enabled: boolean) => void;
 
-    // 长按启动游戏功能
-    longPressLaunch: boolean;
-    setLongPressLaunch: (enabled: boolean) => void;
+	// TAG翻译功能
+	tagTranslation: boolean;
+	setTagTranslation: (enabled: boolean) => void;
 
-    // TAG翻译功能
-    tagTranslation: boolean;
-    setTagTranslation: (enabled: boolean) => void;
+	// 更新游戏通关状态
+	updateGameClearStatusInStore: (
+		gameId: number,
+		newClearStatus: 1 | 0,
+		skipRefresh?: boolean,
+	) => void;
 
-    // 更新游戏通关状态
-    updateGameClearStatusInStore: (gameId: number, newClearStatus: 1 | 0, skipRefresh?: boolean) => void;
-
-    // 更新窗口状态管理
-    showUpdateModal: boolean;
-    pendingUpdate: Update | null;
-    setShowUpdateModal: (show: boolean) => void;
-    setPendingUpdate: (update: Update | null) => void;
-    triggerUpdateModal: (update: Update) => void;
+	// 更新窗口状态管理
+	showUpdateModal: boolean;
+	pendingUpdate: Update | null;
+	setShowUpdateModal: (show: boolean) => void;
+	setPendingUpdate: (update: Update | null) => void;
+	triggerUpdateModal: (update: Update) => void;
 }
 
 // 创建持久化的全局状态
 export const useStore = create<AppState>()(
-    // @ts-ignore
-    persist(
-        (set, get) => ({
-            // 游戏相关状态
-            fullGames: [], // 所有完整的游戏数据（包含关联表）
-            games: [], // 当前显示的游戏列表（受筛选和排序影响）
-            allGames: [], // 所有游戏的完整列表（不受筛选影响，供统计使用）
-            loading: false,
+	persist(
+		(set, get) => ({
+			// 游戏相关状态
+			fullGames: [], // 所有完整的游戏数据（包含关联表）
+			games: [], // 当前显示的游戏列表（受筛选和排序影响）
+			allGames: [], // 所有游戏的完整列表（不受筛选影响，供统计使用）
+			loading: false,
 
-            // BGM 令牌
-            bgmToken: '',
+			// BGM 令牌
+			bgmToken: "",
 
-            // UI 状态
-            selectedGameId: null,
-            selectedGame: null,
+			// UI 状态
+			selectedGameId: null,
+			selectedGame: null,
 
-            searchKeyword: '',
+			searchKeyword: "",
 
-            gameFilterType: 'all',
+			gameFilterType: "all",
 
-            // 排序选项默认值
-            sortOption: 'addtime',
-            sortOrder: 'asc',
+			// 排序选项默认值
+			sortOption: "addtime",
+			sortOrder: "asc",
 
-            // 关闭应用时的提醒设置，skip=不再提醒，行为为 'hide' 或 'close'
-            skipCloseRemind: false,
-            defaultCloseAction: 'hide',
-            // Setter: 不再提醒和默认关闭行为
-            setSkipCloseRemind: (skip: boolean) => set({ skipCloseRemind: skip }),
-            setDefaultCloseAction: (action: 'hide' | 'close') => set({ defaultCloseAction: action }),
+			// 关闭应用时的提醒设置，skip=不再提醒，行为为 'hide' 或 'close'
+			skipCloseRemind: false,
+			defaultCloseAction: "hide",
+			// Setter: 不再提醒和默认关闭行为
+			setSkipCloseRemind: (skip: boolean) => set({ skipCloseRemind: skip }),
+			setDefaultCloseAction: (action: "hide" | "close") =>
+				set({ defaultCloseAction: action }),
 
-            // 数据来源选择
-            apiSource: 'vndb',
-            setApiSource: (source: 'bgm' | 'vndb' | 'mixed') => {
-                set({ apiSource: source });
-            },
+			// 数据来源选择
+			apiSource: "vndb",
+			setApiSource: (source: "bgm" | "vndb" | "mixed") => {
+				set({ apiSource: source });
+			},
 
-            // NSFW相关
-            nsfwFilter: false,
-            setNsfwFilter: (enabled: boolean) => {
-                set({ nsfwFilter: enabled });
-            },
-            nsfwCoverReplace: false,
-            setNsfwCoverReplace: (enabled: boolean) => {
-                set({ nsfwCoverReplace: enabled });
-            },
+			// NSFW相关
+			nsfwFilter: false,
+			setNsfwFilter: (enabled: boolean) => {
+				set({ nsfwFilter: enabled });
+			},
+			nsfwCoverReplace: false,
+			setNsfwCoverReplace: (enabled: boolean) => {
+				set({ nsfwCoverReplace: enabled });
+			},
 
-            // 卡片交互模式
-            cardClickMode: 'navigate',
-            setCardClickMode: (mode: 'navigate' | 'select') => {
-                set({ cardClickMode: mode });
-            },
+			// 卡片交互模式
+			cardClickMode: "navigate",
+			setCardClickMode: (mode: "navigate" | "select") => {
+				set({ cardClickMode: mode });
+			},
 
-            // 双击启动游戏功能
-            doubleClickLaunch: false,
-            setDoubleClickLaunch: (enabled: boolean) => {
-                set({ doubleClickLaunch: enabled });
-            },
+			// 双击启动游戏功能
+			doubleClickLaunch: false,
+			setDoubleClickLaunch: (enabled: boolean) => {
+				set({ doubleClickLaunch: enabled });
+			},
 
-            // 长按启动游戏功能
-            longPressLaunch: false,
-            setLongPressLaunch: (enabled: boolean) => {
-                set({ longPressLaunch: enabled });
-            },
+			// 长按启动游戏功能
+			longPressLaunch: false,
+			setLongPressLaunch: (enabled: boolean) => {
+				set({ longPressLaunch: enabled });
+			},
 
-            // TAG翻译功能（默认关闭）
-            tagTranslation: false,
-            setTagTranslation: (enabled: boolean) => {
-                set({ tagTranslation: enabled });
-            },
+			// TAG翻译功能（默认关闭）
+			tagTranslation: false,
+			setTagTranslation: (enabled: boolean) => {
+				set({ tagTranslation: enabled });
+			},
 
-            // 通用刷新函数，统一处理搜索、筛选、排序、NSFW筛选
-            refreshGameData: async (customSortOption?: string, customSortOrder?: 'asc' | 'desc') => {
-                set({ loading: true });
+			// 通用刷新函数，统一处理搜索、筛选、排序、NSFW筛选
+			refreshGameData: async (
+				customSortOption?: string,
+				customSortOrder?: "asc" | "desc",
+			) => {
+				set({ loading: true });
 
-                try {
-                    const { searchKeyword, gameFilterType, nsfwFilter } = get();
-                    const option = customSortOption || get().sortOption;
-                    const order = customSortOrder || get().sortOrder;
+				try {
+					const { searchKeyword, gameFilterType, nsfwFilter } = get();
+					const option = customSortOption || get().sortOption;
+					const order = customSortOrder || get().sortOrder;
 
-                    let data: GameData[];
+					let data: GameData[];
 
-                    // 第一步：获取基础数据（根据筛选类型）
-                    let baseData: GameData[];
-                    if (gameFilterType !== 'all') {
-                        if (isTauri()) {
-                            const fullGames = await gameService.getFullGamesByType(gameFilterType, option, order);
-                            baseData = getDisplayGameDataList(fullGames, i18next.language);
-                        } else {
-                            baseData = filterGamesByTypeLocal(gameFilterType, option, order);
-                        }
-                    } else {
-                        if (isTauri()) {
-                            const fullGames = await gameService.getAllFullGames(option, order);
-                            baseData = getDisplayGameDataList(fullGames, i18next.language);
-                        } else {
-                            baseData = getGamesLocal(option, order);
-                        }
-                    }
+					// 第一步：获取基础数据（根据筛选类型）
+					let baseData: GameData[];
+					if (gameFilterType !== "all") {
+						if (isTauri()) {
+							const fullGames = await gameService.getFullGamesByType(
+								gameFilterType,
+								option,
+								order,
+							);
+							baseData = getDisplayGameDataList(fullGames, i18next.language);
+						} else {
+							baseData = filterGamesByTypeLocal(gameFilterType, option, order);
+						}
+					} else {
+						if (isTauri()) {
+							const fullGames = await gameService.getAllFullGames(
+								option,
+								order,
+							);
+							baseData = getDisplayGameDataList(fullGames, i18next.language);
+						} else {
+							baseData = getGamesLocal(option, order);
+						}
+					}
 
-                    // 第二步：应用NSFW筛选
-                    baseData = applyNsfwFilter(baseData, nsfwFilter);
+					// 第二步：应用NSFW筛选
+					baseData = applyNsfwFilter(baseData, nsfwFilter);
 
-                    // 第三步：应用搜索（如果有搜索关键词）
-                    if (searchKeyword && searchKeyword.trim() !== '') {
-                        if (isTauri()) {
-                            // 使用前端增强搜索
-                            const searchResults = enhancedSearch(baseData, searchKeyword);
-                            data = searchResults.map(result => result.item);
-                        } else {
-                            // 浏览器环境使用本地搜索（本地搜索已经包含筛选）
-                            data = searchGamesLocal(searchKeyword, gameFilterType, option, order);
-                            data = applyNsfwFilter(data, nsfwFilter);
-                        }
-                    } else {
-                        data = baseData;
-                    }
+					// 第三步：应用搜索（如果有搜索关键词）
+					if (searchKeyword && searchKeyword.trim() !== "") {
+						if (isTauri()) {
+							// 使用前端增强搜索
+							const searchResults = enhancedSearch(baseData, searchKeyword);
+							data = searchResults.map((result) => result.item);
+						} else {
+							// 浏览器环境使用本地搜索（本地搜索已经包含筛选）
+							data = searchGamesLocal(
+								searchKeyword,
+								gameFilterType,
+								option,
+								order,
+							);
+							data = applyNsfwFilter(data, nsfwFilter);
+						}
+					} else {
+						data = baseData;
+					}
 
-                    // 更新完整的游戏列表（用于统计）
-                    let allData: GameData[];
-                    if (isTauri()) {
-                        const allFullGames = await gameService.getAllFullGames('addtime', 'asc');
-                        allData = getDisplayGameDataList(allFullGames, i18next.language);
-                    } else {
-                        allData = getGamesLocal('addtime', 'asc');
-                    }
+					// 更新完整的游戏列表（用于统计）
+					let allData: GameData[];
+					if (isTauri()) {
+						const allFullGames = await gameService.getAllFullGames(
+							"addtime",
+							"asc",
+						);
+						allData = getDisplayGameDataList(allFullGames, i18next.language);
+					} else {
+						allData = getGamesLocal("addtime", "asc");
+					}
 
-                    // 一次性设置数据和状态
-                    set({ games: data, allGames: allData, loading: false });
-                } catch (error) {
-                    console.error('刷新游戏数据失败:', error);
-                    set({ loading: false });
-                }
-            },
+					// 一次性设置数据和状态
+					set({ games: data, allGames: allData, loading: false });
+				} catch (error) {
+					console.error("刷新游戏数据失败:", error);
+					set({ loading: false });
+				}
+			},
 
-            // 修改 fetchGames 方法，添加覆盖 searchKeyword 的选项
-            fetchGames: async (sortOption?: string, sortOrder?: 'asc' | 'desc', resetSearch?: boolean) => {
-                set({ loading: true });
-                try {
-                    const option = sortOption || get().sortOption;
-                    const order = sortOrder || get().sortOrder;
+			// 修改 fetchGames 方法，添加覆盖 searchKeyword 的选项
+			fetchGames: async (
+				sortOption?: string,
+				sortOrder?: "asc" | "desc",
+				resetSearch?: boolean,
+			) => {
+				set({ loading: true });
+				try {
+					const option = sortOption || get().sortOption;
+					const order = sortOrder || get().sortOrder;
 
-                    let data: GameData[];
-                    if (isTauri()) {
-                        // 获取完整数据并转换
-                        const fullGames = await gameService.getAllFullGames(option, order);
-                        data = getDisplayGameDataList(fullGames, i18next.language);
-                    } else {
-                        data = getGamesLocal(option, order);
-                    }
+					let data: GameData[];
+					if (isTauri()) {
+						// 获取完整数据并转换
+						const fullGames = await gameService.getAllFullGames(option, order);
+						data = getDisplayGameDataList(fullGames, i18next.language);
+					} else {
+						data = getGamesLocal(option, order);
+					}
 
-                    // 获取完整的游戏列表（不排序）用于统计
-                    let allData: GameData[];
-                    if (isTauri()) {
-                        const allFullGames = await gameService.getAllFullGames('addtime', 'asc');
-                        allData = getDisplayGameDataList(allFullGames, i18next.language);
-                    } else {
-                        allData = getGamesLocal('addtime', 'asc');
-                    }
+					// 获取完整的游戏列表（不排序）用于统计
+					let allData: GameData[];
+					if (isTauri()) {
+						const allFullGames = await gameService.getAllFullGames(
+							"addtime",
+							"asc",
+						);
+						allData = getDisplayGameDataList(allFullGames, i18next.language);
+					} else {
+						allData = getGamesLocal("addtime", "asc");
+					}
 
-                    // 应用nsfw筛选
-                    const { nsfwFilter } = get();
-                    data = applyNsfwFilter(data, nsfwFilter);
+					// 应用nsfw筛选
+					const { nsfwFilter } = get();
+					data = applyNsfwFilter(data, nsfwFilter);
 
-                    // 只有在明确指定 resetSearch=true 时才重置搜索关键字
-                    if (resetSearch) {
-                        set({ games: data, allGames: allData, searchKeyword: '' });
-                    } else {
-                        set({ games: data, allGames: allData });
-                    }
-                } catch (error) {
-                    console.error("获取游戏数据失败", error);
-                    set({ games: [], allGames: [] });
-                } finally {
-                    set({ loading: false });
-                }
-            },
-            fetchGame: async (id: number) => {
-                set({ loading: true });
-                try {
-                    if (isTauri()) {
-                        // 从后端获取完整游戏数据(包含 BGM/VNDB/Other 数据)
-                        const fullGameData = await gameService.getGameById(id);
+					// 只有在明确指定 resetSearch=true 时才重置搜索关键字
+					if (resetSearch) {
+						set({ games: data, allGames: allData, searchKeyword: "" });
+					} else {
+						set({ games: data, allGames: allData });
+					}
+				} catch (error) {
+					console.error("获取游戏数据失败", error);
+					set({ games: [], allGames: [] });
+				} finally {
+					set({ loading: false });
+				}
+			},
+			fetchGame: async (id: number) => {
+				set({ loading: true });
+				try {
+					if (isTauri()) {
+						// 从后端获取完整游戏数据(包含 BGM/VNDB/Other 数据)
+						const fullGameData = await gameService.getGameById(id);
 
-                        if (fullGameData) {
-                            // 转换为展平的 GameData
-                            const displayGame = getDisplayGameData(fullGameData, i18next.language);
-                            set({ selectedGame: displayGame });
-                        } else {
-                            console.warn(`Game with ID ${id} not found`);
-                        }
-                    } else {
-                        // Web 环境下使用本地存储
-                        const game = getGameByIdLocal(id);
-                        if (game) {
-                            set({ selectedGame: game as GameData });
-                        } else {
-                            console.warn(`Game with ID ${id} not found`);
-                        }
-                    }
-                } catch (error) {
-                    console.error('获取游戏数据失败:', error);
-                } finally {
-                    set({ loading: false });
-                }
-            },
+						if (fullGameData) {
+							// 转换为展平的 GameData
+							const displayGame = getDisplayGameData(
+								fullGameData,
+								i18next.language,
+							);
+							set({ selectedGame: displayGame });
+						} else {
+							console.warn(`Game with ID ${id} not found`);
+						}
+					} else {
+						// Web 环境下使用本地存储
+						const game = getGameByIdLocal(id);
+						if (game) {
+							set({ selectedGame: game as GameData });
+						} else {
+							console.warn(`Game with ID ${id} not found`);
+						}
+					}
+				} catch (error) {
+					console.error("获取游戏数据失败:", error);
+				} finally {
+					set({ loading: false });
+				}
+			},
 
-            // 使用通用函数简化 addGame
-            addGame: async (fullgame: FullGameData) => {
-                try {
-                    if (isTauri()) {
-                        await gameService.insertGame(fullgame.game, fullgame.bgm_data, fullgame.vndb_data, fullgame.other_data);
-                    } else {
-                        insertGameLocal(fullgame);
-                    }
-                    // 使用通用刷新函数
-                    await get().refreshGameData();
-                } catch (error) {
-                    console.error('Error adding game:', error);
-                }
-            },
+			// 使用通用函数简化 addGame
+			addGame: async (fullgame: FullGameData) => {
+				try {
+					if (isTauri()) {
+						await gameService.insertGame(
+							fullgame.game,
+							fullgame.bgm_data,
+							fullgame.vndb_data,
+							fullgame.other_data,
+						);
+					} else {
+						insertGameLocal(fullgame);
+					}
+					// 使用通用刷新函数
+					await get().refreshGameData();
+				} catch (error) {
+					console.error("Error adding game:", error);
+				}
+			},
 
-            // 使用通用函数简化 deleteGame
-            deleteGame: async (gameId: number): Promise<void> => {
-                try {
-                    if (isTauri()) {
-                        await gameService.deleteGame(gameId);
-                    } else {
-                        deleteGameLocal(gameId);
-                    }
-                    // 使用通用刷新函数
-                    await get().refreshGameData();
-                    get().setSelectedGameId(null);
-                } catch (error) {
-                    console.error('删除游戏数据失败:', error);
-                }
-            },
+			// 使用通用函数简化 deleteGame
+			deleteGame: async (gameId: number): Promise<void> => {
+				try {
+					if (isTauri()) {
+						await gameService.deleteGame(gameId);
+					} else {
+						deleteGameLocal(gameId);
+					}
+					// 使用通用刷新函数
+					await get().refreshGameData();
+					get().setSelectedGameId(null);
+				} catch (error) {
+					console.error("删除游戏数据失败:", error);
+				}
+			},
 
-            getGameById: async (gameId: number): Promise<GameData> => {
-                if (isTauri()) {
-                    const fullData = await gameService.getGameById(gameId);
-                    const game = fullData ? getDisplayGameData(fullData, i18next.language) : null;
-                    if (game === null) {
-                        throw new Error(`Game with ID ${gameId} not found`);
-                    }
-                    return game;
-                }
-                return await Promise.resolve(getGameByIdLocal(gameId));
-            },
+			getGameById: async (gameId: number): Promise<GameData> => {
+				if (isTauri()) {
+					const fullData = await gameService.getGameById(gameId);
+					const game = fullData
+						? getDisplayGameData(fullData, i18next.language)
+						: null;
+					if (game === null) {
+						throw new Error(`Game with ID ${gameId} not found`);
+					}
+					return game;
+				}
+				return await Promise.resolve(getGameByIdLocal(gameId));
+			},
 
-            updateGame: async (id: number, gameUpdates: Partial<FullGameData>) => {
-                try {
-                    if (isTauri()) {
-                        await gameService.updateGameWithRelated(id, gameUpdates);
-                        // gameUpdates 的键会在下面被遍历，直接使用 gameUpdates 而不是解构未使用的变量
-                        // 只有当更新的字段可能影响游戏列表显示时才刷新列表
-                        // 游戏设置类字段（如 savepath, autosave）不需要刷新列表
-                        const listAffectingFields = ['name', 'custom_name', 'developer', 'date', 'score', 'rank', 'tags', 'custom_cover'];
+			updateGame: async (id: number, gameUpdates: Partial<FullGameData>) => {
+				try {
+					if (isTauri()) {
+						await gameService.updateGameWithRelated(id, gameUpdates);
+						// gameUpdates 的键会在下面被遍历，直接使用 gameUpdates 而不是解构未使用的变量
+						// 只有当更新的字段可能影响游戏列表显示时才刷新列表
+						// 游戏设置类字段（如 savepath, autosave）不需要刷新列表
+						const listAffectingFields = [
+							"name",
+							"custom_name",
+							"developer",
+							"date",
+							"score",
+							"rank",
+							"tags",
+							"custom_cover",
+						];
 
-                        // 将 gameUpdates 展开为一组字段名（支持一层嵌套：game / bgm_data / vndb_data / other_data）
-                        const updatedFieldNames = new Set<string>();
+						// 将 gameUpdates 展开为一组字段名（支持一层嵌套：game / bgm_data / vndb_data / other_data）
+						const updatedFieldNames = new Set<string>();
 
-                        // 如果外层直接包含字段（理论上 FullGameData 只有四个键，但保持通用）
-                        Object.keys(gameUpdates).forEach(key => {
-                            const value = (gameUpdates as any)[key];
-                            if (value && typeof value === 'object' && !Array.isArray(value)) {
-                                // 展开一层嵌套的字段名
-                                Object.keys(value).forEach((subKey) => updatedFieldNames.add(subKey));
-                            } else {
-                                updatedFieldNames.add(key);
-                            }
-                        });
+						// 如果外层直接包含字段（理论上 FullGameData 只有四个键，但保持通用）
+						Object.keys(gameUpdates).forEach((key) => {
+							const value = gameUpdates[key as keyof FullGameData];
+							if (value && typeof value === "object" && !Array.isArray(value)) {
+								// 展开一层嵌套的字段名
+								Object.keys(value).forEach((subKey) => {
+									updatedFieldNames.add(subKey);
+								});
+							} else {
+								updatedFieldNames.add(key);
+							}
+						});
 
-                        // 检查是否有任一影响显示的字段被更新
-                        const shouldRefreshList = Array.from(updatedFieldNames).some(field => listAffectingFields.includes(field));
-                        await get().fetchGame(id);
-                        if (shouldRefreshList) {
-                            await get().fetchGame(id);
-                            await get().refreshGameData();
-                        }
-                    } else {
-                        console.warn("updateGameLocal is not implemented for browser environment.");
-                    }
-                } catch (error) {
-                    console.error('更新游戏数据失败:', error);
-                    throw error;
-                }
-            },
+						// 检查是否有任一影响显示的字段被更新
+						const shouldRefreshList = Array.from(updatedFieldNames).some(
+							(field) => listAffectingFields.includes(field),
+						);
+						await get().fetchGame(id);
+						if (shouldRefreshList) {
+							await get().fetchGame(id);
+							await get().refreshGameData();
+						}
+					} else {
+						console.warn(
+							"updateGameLocal is not implemented for browser environment.",
+						);
+					}
+				} catch (error) {
+					console.error("更新游戏数据失败:", error);
+					throw error;
+				}
+			},
 
-            setSearchKeyword: (keyword: string) => {
-                set({ searchKeyword: keyword });
-                get().refreshGameData();
-            },
+			setSearchKeyword: (keyword: string) => {
+				set({ searchKeyword: keyword });
+				get().refreshGameData();
+			},
 
+			// 排序更新函数：设置排序选项，然后调用 refreshGameData 统一处理
+			updateSort: async (option: string, order: "asc" | "desc") => {
+				const prevOption = get().sortOption;
+				const prevOrder = get().sortOrder;
 
+				// 如果排序选项和顺序都没变，不做任何操作
+				if (prevOption === option && prevOrder === order) return;
 
-            // 排序更新函数：设置排序选项，然后调用 refreshGameData 统一处理
-            updateSort: async (option: string, order: 'asc' | 'desc') => {
-                const prevOption = get().sortOption;
-                const prevOrder = get().sortOrder;
+				// 设置排序选项
+				set({
+					sortOption: option,
+					sortOrder: order,
+				});
 
-                // 如果排序选项和顺序都没变，不做任何操作
-                if (prevOption === option && prevOrder === order) return;
+				// 调用统一的刷新函数，会自动应用当前的搜索、筛选和排序
+				await get().refreshGameData();
+			},
 
-                // 设置排序选项
-                set({
-                    sortOption: option,
-                    sortOrder: order
-                });
+			// BGM 令牌方法
+			fetchBgmToken: async () => {
+				try {
+					let token = "";
+					if (isTauri()) {
+						token = await settingsService.getBgmToken();
+					} else {
+						token = getBgmTokenLocal();
+					}
+					set({ bgmToken: token });
+				} catch (error) {
+					console.error("Error fetching BGM token:", error);
+				}
+			},
 
-                // 调用统一的刷新函数，会自动应用当前的搜索、筛选和排序
-                await get().refreshGameData();
-            },
+			setBgmToken: async (token: string) => {
+				try {
+					if (isTauri()) {
+						await settingsService.setBgmToken(token);
+					} else {
+						setBgmTokenLocal(token);
+					}
+					set({ bgmToken: token });
+				} catch (error) {
+					console.error("Error setting BGM token:", error);
+				}
+			},
 
-            // BGM 令牌方法
-            fetchBgmToken: async () => {
-                try {
-                    let token = '';
-                    if (isTauri()) {
-                        token = await settingsService.getBgmToken();
-                    } else {
-                        token = getBgmTokenLocal();
-                    }
-                    set({ bgmToken: token });
-                } catch (error) {
-                    console.error('Error fetching BGM token:', error);
-                }
-            },
+			// UI 操作方法
+			setSelectedGameId: (id: number | null | undefined) => {
+				set({ selectedGameId: id });
+			},
+			setSelectedGame: (game: GameData | null) => {
+				set({ selectedGame: game });
+			},
 
-            setBgmToken: async (token: string) => {
-                try {
-                    if (isTauri()) {
-                        await settingsService.setBgmToken(token);
-                    } else {
-                        setBgmTokenLocal(token);
-                    }
-                    set({ bgmToken: token });
-                } catch (error) {
-                    console.error('Error setting BGM token:', error);
-                }
-            },
+			// 筛选类型设置函数：设置筛选类型，然后调用 refreshGameData 统一处理
+			setGameFilterType: async (
+				type: "all" | "local" | "online" | "noclear" | "clear",
+			) => {
+				const prevType = get().gameFilterType;
 
-            // UI 操作方法
-            setSelectedGameId: (id: number | null | undefined) => {
-                set({ selectedGameId: id });
-            },
-            setSelectedGame: (game: GameData | null) => {
-                set({ selectedGame: game });
-            },
+				// 如果类型没变，不做任何操作
+				if (prevType === type) return;
 
-            // 筛选类型设置函数：设置筛选类型，然后调用 refreshGameData 统一处理
-            setGameFilterType: async (type: 'all' | 'local' | 'online' | 'noclear' | 'clear') => {
-                const prevType = get().gameFilterType;
+				// 设置新的筛选类型
+				set({ gameFilterType: type });
 
-                // 如果类型没变，不做任何操作
-                if (prevType === type) return;
+				// 调用统一的刷新函数，会自动应用当前的搜索、筛选和排序
+				await get().refreshGameData();
+			},
+			isLocalGame(gameId: number): boolean {
+				const allGames = useStore.getState().allGames;
+				const game = allGames.find((g) => g.id === gameId);
+				if (!game || !game.localpath) {
+					return false;
+				}
+				return game.localpath.trim() !== "";
+			},
 
-                // 设置新的筛选类型
-                set({ gameFilterType: type });
+			// 更新games数组中特定游戏的通关状态
+			updateGameClearStatusInStore: async (
+				gameId: number,
+				newClearStatus: 1 | 0,
+				skipRefresh?: boolean,
+			) => {
+				const { games, allGames } = get();
 
-                // 调用统一的刷新函数，会自动应用当前的搜索、筛选和排序
-                await get().refreshGameData();
-            },
-            useIsLocalGame(gameId: number): boolean {
-                const allGames = useStore.getState().allGames; // 使用 allGames 而不是 games
+				// 更新当前显示的游戏列表
+				const updatedGames = games.map((game) =>
+					game.id === gameId ? { ...game, clear: newClearStatus } : game,
+				);
 
-                // 查找游戏
-                const game = allGames.find(g => g.id === gameId);
+				// 更新完整的游戏列表
+				const updatedAllGames = allGames.map((game) =>
+					game.id === gameId ? { ...game, clear: newClearStatus } : game,
+				);
 
-                // 检查游戏是否存在并且有localpath属性
-                if (!game || !game.localpath) {
-                    return false;
-                }
+				set({ games: updatedGames, allGames: updatedAllGames });
 
-                // 检查localpath是否为非空字符串
-                return game.localpath.trim() !== '';
-            },
+				// 只有在不跳过刷新时才调用 refreshGameData
+				if (!skipRefresh) {
+					await get().refreshGameData();
+				}
+			},
 
-            // 更新games数组中特定游戏的通关状态
-            updateGameClearStatusInStore: async (gameId: number, newClearStatus: 1 | 0, skipRefresh?: boolean) => {
-                const { games, allGames } = get();
+			// 更新窗口状态管理
+			showUpdateModal: false,
+			pendingUpdate: null,
+			setShowUpdateModal: (show: boolean) => {
+				set({ showUpdateModal: show });
+			},
+			setPendingUpdate: (update: Update | null) => {
+				set({ pendingUpdate: update });
+			},
+			triggerUpdateModal: (update: Update) => {
+				set({
+					pendingUpdate: update,
+					showUpdateModal: true,
+				});
+			},
 
-                // 更新当前显示的游戏列表
-                let updatedGames = games.map(game =>
-                    game.id === gameId
-                        ? { ...game, clear: newClearStatus }
-                        : game
-                );
+			// 初始化方法，先初始化数据库，然后加载所有需要的数据
+			initialize: async () => {
+				// 然后并行加载其他数据
+				await Promise.all([get().fetchGames(), get().fetchBgmToken()]);
 
-                // 更新完整的游戏列表
-                const updatedAllGames = allGames.map(game =>
-                    game.id === gameId
-                        ? { ...game, clear: newClearStatus }
-                        : game
-                );
-
-                set({ games: updatedGames, allGames: updatedAllGames });
-
-                // 只有在不跳过刷新时才调用 refreshGameData
-                if (!skipRefresh) {
-                    await get().refreshGameData();
-                }
-            },
-
-            // 更新窗口状态管理
-            showUpdateModal: false,
-            pendingUpdate: null,
-            setShowUpdateModal: (show: boolean) => {
-                set({ showUpdateModal: show });
-            },
-            setPendingUpdate: (update: Update | null) => {
-                set({ pendingUpdate: update });
-            },
-            triggerUpdateModal: (update: Update) => {
-                set({
-                    pendingUpdate: update,
-                    showUpdateModal: true
-                });
-            },
-
-            // 初始化方法，先初始化数据库，然后加载所有需要的数据
-            initialize: async () => {
-                // 然后并行加载其他数据
-                await Promise.all([
-                    get().fetchGames(),
-                    get().fetchBgmToken()
-                ]);
-
-                // 初始化游戏时间跟踪
-                if (isTauri()) {
-                    initializeGamePlayTracking();
-                }
-
-                // 初始化分类系统（仅在 Tauri 环境下）
-                if (isTauri()) {
-                    const { initializeCollectionSystem } = await import('@/services/collectionHelper');
-                    initializeCollectionSystem().catch(err => {
-                        console.error('分类系统初始化失败:', err);
-                    });
-                }
-            }
-        }),
-        {
-            name: 'reina-manager-store',
-            // 可选：定义哪些字段需要持久化存储
-            partialize: (state) => ({
-                // 排序偏好
-                sortOption: state.sortOption,
-                sortOrder: state.sortOrder,
-                // 筛选偏好
-                gameFilterType: state.gameFilterType,
-                // 关闭应用相关
-                skipCloseRemind: state.skipCloseRemind,
-                defaultCloseAction: state.defaultCloseAction,
-                // 数据来源选择
-                apiSource: state.apiSource,
-                // nsfw相关
-                nsfwFilter: state.nsfwFilter,
-                nsfwCoverReplace: state.nsfwCoverReplace,
-                // 卡片点击模式
-                cardClickMode: state.cardClickMode,
-                doubleClickLaunch: state.doubleClickLaunch,
-                longPressLaunch: state.longPressLaunch,
-                // VNDB标签翻译
-                tagTranslation: state.tagTranslation,
-            })
-        }
-    )
+				// 初始化游戏时间跟踪
+				if (isTauri()) {
+					initializeGamePlayTracking();
+				}
+			},
+		}),
+		{
+			name: "reina-manager-store",
+			// 可选：定义哪些字段需要持久化存储
+			partialize: (state) => ({
+				// 排序偏好
+				sortOption: state.sortOption,
+				sortOrder: state.sortOrder,
+				// 筛选偏好
+				gameFilterType: state.gameFilterType,
+				// 关闭应用相关
+				skipCloseRemind: state.skipCloseRemind,
+				defaultCloseAction: state.defaultCloseAction,
+				// 数据来源选择
+				apiSource: state.apiSource,
+				// nsfw相关
+				nsfwFilter: state.nsfwFilter,
+				nsfwCoverReplace: state.nsfwCoverReplace,
+				// 卡片点击模式
+				cardClickMode: state.cardClickMode,
+				doubleClickLaunch: state.doubleClickLaunch,
+				longPressLaunch: state.longPressLaunch,
+				// VNDB标签翻译
+				tagTranslation: state.tagTranslation,
+			}),
+		},
+	),
 );
 
 /**
@@ -615,5 +667,5 @@ export const useStore = create<AppState>()(
  * 初始化全局状态，加载游戏数据与 BGM Token，并初始化游戏时间跟踪（Tauri 环境下）。
  */
 export const initializeStores = async (): Promise<void> => {
-    await useStore.getState().initialize();
+	await useStore.getState().initialize();
 };

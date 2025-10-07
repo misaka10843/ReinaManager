@@ -15,19 +15,19 @@
  * - react-i18next
  */
 
-import { useState } from 'react';
-import Button from '@mui/material/Button';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import FilterListIcon from '@mui/icons-material/FilterList';
-import { useStore } from '@/store';
-import { useTranslation } from 'react-i18next';
+import FilterListIcon from "@mui/icons-material/FilterList";
+import Button from "@mui/material/Button";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogTitle from "@mui/material/DialogTitle";
+import MenuItem from "@mui/material/MenuItem";
+import Select from "@mui/material/Select";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useStore } from "@/store";
 
-export type GameFilterType = 'all' | 'local' | 'online' | 'noclear' | 'clear';
+export type GameFilterType = "all" | "local" | "online" | "noclear" | "clear";
 
 /**
  * FilterModal 组件用于筛选游戏类型。
@@ -37,72 +37,81 @@ export type GameFilterType = 'all' | 'local' | 'online' | 'noclear' | 'clear';
  * @returns {JSX.Element} 游戏筛选弹窗
  */
 export const FilterModal: React.FC = () => {
-    const { t } = useTranslation();
-    const { gameFilterType, setGameFilterType } = useStore();
+	const { t } = useTranslation();
+	const { gameFilterType, setGameFilterType } = useStore();
 
-    const [open, setOpen] = useState(false);
-    const [filterValue, setFilterValue] = useState<GameFilterType>(gameFilterType || 'all');
+	const [open, setOpen] = useState(false);
+	const [filterValue, setFilterValue] = useState<GameFilterType>(
+		gameFilterType || "all",
+	);
 
-    /**
-     * 打开筛选弹窗
-     */
-    const handleOpen = () => setOpen(true);
+	/**
+	 * 打开筛选弹窗
+	 */
+	const handleOpen = () => setOpen(true);
 
-    /**
-     * 关闭筛选弹窗
-     */
-    const handleClose = () => setOpen(false);
+	/**
+	 * 关闭筛选弹窗
+	 */
+	const handleClose = () => setOpen(false);
 
-    /**
-     * 切换筛选类型
-     * @param event React.ChangeEvent<HTMLInputElement>
-     */
-    const handleChange = (event: { target: { value: GameFilterType; }; }) => {
-        setFilterValue(event.target.value);
-    };
+	/**
+	 * 切换筛选类型
+	 * @param event React.ChangeEvent<HTMLInputElement>
+	 */
+	const handleChange = (event: { target: { value: GameFilterType } }) => {
+		setFilterValue(event.target.value);
+	};
 
-    /**
-     * 应用筛选条件
-     */
-    const handleApply = () => {
-        setGameFilterType(filterValue);
-        handleClose();
-    };
+	/**
+	 * 应用筛选条件
+	 */
+	const handleApply = () => {
+		setGameFilterType(filterValue);
+		handleClose();
+	};
 
-    return (
-        <>
-            <Button
-                startIcon={<FilterListIcon />}
-                onClick={handleOpen}
-            >
-                {t('components.FilterModal.filter')}
-            </Button>
+	return (
+		<>
+			<Button startIcon={<FilterListIcon />} onClick={handleOpen}>
+				{t("components.FilterModal.filter")}
+			</Button>
 
-            <Dialog open={open} onClose={handleClose}>
-                <DialogTitle>{t('components.FilterModal.filterTitle')}</DialogTitle>
-                <DialogContent>
-                    <Select
-                        value={filterValue}
-                        onChange={handleChange}
-                        displayEmpty
-                        fullWidth
-                    >
-                        <MenuItem value="all">{t('components.FilterModal.allGames')}</MenuItem>
-                        <MenuItem value="local">{t('components.FilterModal.localGames')}</MenuItem>
-                        <MenuItem value="online">{t('components.FilterModal.onlineGames')}</MenuItem>
-                        <MenuItem value="noclear">{t('components.FilterModal.noclearGames')}</MenuItem>
-                        <MenuItem value="clear">{t('components.FilterModal.clearGames')}</MenuItem>
-                    </Select>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleClose}>
-                        {t('components.FilterModal.cancel')}
-                    </Button>
-                    <Button onClick={handleApply} color="primary">
-                        {t('components.FilterModal.apply')}
-                    </Button>
-                </DialogActions>
-            </Dialog>
-        </>
-    );
-}
+			<Dialog open={open} onClose={handleClose}>
+				<DialogTitle>{t("components.FilterModal.filterTitle")}</DialogTitle>
+				<DialogContent>
+					<Select
+						value={filterValue}
+						onChange={handleChange}
+						displayEmpty
+						fullWidth
+					>
+						<MenuItem value="all">
+							{t("components.FilterModal.allGames")}
+						</MenuItem>
+						<MenuItem value="local">
+							{t("components.FilterModal.localGames")}
+						</MenuItem>
+						<MenuItem value="online">
+							{t("components.FilterModal.onlineGames")}
+						</MenuItem>
+						<MenuItem value="noclear">
+							{t("components.FilterModal.noclearGames")}
+						</MenuItem>
+						<MenuItem value="clear">
+							{t("components.FilterModal.clearGames")}
+						</MenuItem>
+					</Select>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={handleClose}>
+						{t("components.FilterModal.cancel")}
+					</Button>
+					<Button onClick={handleApply} color="primary">
+						{t("components.FilterModal.apply")}
+					</Button>
+				</DialogActions>
+			</Dialog>
+		</>
+	);
+};

@@ -5,43 +5,46 @@
  * @copyright AGPL-3.0
  */
 
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import { RouterProvider } from 'react-router-dom'
-import { routers } from '@/routes'
-import './index.css'
-import 'virtual:uno.css'
-import { initializeStores } from './store';
-import { initTray } from '@/components/Tray'
-import { isTauri } from '@tauri-apps/api/core'
-import { initResourceDirPath } from '@/utils'
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { RouterProvider } from "react-router-dom";
+import { routers } from "@/routes";
+import "./index.css";
+import "virtual:uno.css";
+import { isTauri } from "@tauri-apps/api/core";
+import { initTray } from "@/components/Tray";
+import { initResourceDirPath } from "@/utils";
+import { initializeStores } from "./store";
 
 // 禁止拖拽、右键菜单和部分快捷键，提升桌面体验
 document.addEventListener("drop", (e) => e.preventDefault());
-document.addEventListener("dragover", (e) => e.preventDefault(),);
-document.addEventListener('contextmenu', (e) => e.preventDefault())
-document.addEventListener('keydown', (e) => {
-  if (['F3', 'F5', 'F7'].includes(e.key.toUpperCase())) {
-    e.preventDefault()
-  }
+document.addEventListener("dragover", (e) => e.preventDefault());
+document.addEventListener("contextmenu", (e) => e.preventDefault());
+document.addEventListener("keydown", (e) => {
+	if (["F3", "F5", "F7"].includes(e.key.toUpperCase())) {
+		e.preventDefault();
+	}
 
-  if (e.ctrlKey && ['r', 'u', 'p', 'l', 'j', 'g', 'f', 's', 'a'].includes(e.key.toLowerCase())) {
-    e.preventDefault()
-  }
-})
+	if (
+		e.ctrlKey &&
+		["r", "u", "p", "l", "j", "g", "f", "s", "a"].includes(e.key.toLowerCase())
+	) {
+		e.preventDefault();
+	}
+});
 
 // 初始化全局状态后，挂载 React 应用
 initializeStores().then(async () => {
-  await initTray()
+	await initTray();
 
-  // 初始化资源目录路径缓存
-  if (isTauri()) {
-    await initResourceDirPath()
-  }
+	// 初始化资源目录路径缓存
+	if (isTauri()) {
+		await initResourceDirPath();
+	}
 
-  createRoot(document.getElementById('root') as HTMLElement).render(
-    <StrictMode>
-      <RouterProvider router={routers} />
-    </StrictMode>
-  )
-})
+	createRoot(document.getElementById("root") as HTMLElement).render(
+		<StrictMode>
+			<RouterProvider router={routers} />
+		</StrictMode>,
+	);
+});

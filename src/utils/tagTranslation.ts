@@ -6,11 +6,13 @@
  * @copyright AGPL-3.0
  */
 
-import vndbTagTranslationsRaw from '@/locales/VndbTag_zh_CN.json';
+import vndbTagTranslationsRaw from "@/locales/VndbTag_zh_CN.json";
 
 // 过滤掉元数据字段，只保留翻译内容
 const vndbTagTranslations = Object.fromEntries(
-    Object.entries(vndbTagTranslationsRaw).filter(([key]) => !key.startsWith('_'))
+	Object.entries(vndbTagTranslationsRaw).filter(
+		([key]) => !key.startsWith("_"),
+	),
 ) as Record<string, string>;
 
 /**
@@ -19,9 +21,9 @@ const vndbTagTranslations = Object.fromEntries(
  * @returns 翻译后的中文TAG，如果没有找到翻译则返回原TAG
  */
 export function translateTag(tag: string): string {
-    // 直接从翻译对象中查找翻译
-    const translation = vndbTagTranslations[tag];
-    return translation || tag;
+	// 直接从翻译对象中查找翻译
+	const translation = vndbTagTranslations[tag];
+	return translation || tag;
 }
 
 /**
@@ -30,12 +32,15 @@ export function translateTag(tag: string): string {
  * @param enableTranslation 是否启用翻译，默认为true
  * @returns 翻译后的TAG数组
  */
-export function translateTags(tags: string[], enableTranslation: boolean = true): string[] {
-    if (!enableTranslation || !tags) {
-        return tags || [];
-    }
+export function translateTags(
+	tags: string[],
+	enableTranslation: boolean = true,
+): string[] {
+	if (!enableTranslation || !tags) {
+		return tags || [];
+	}
 
-    return tags.map(tag => translateTag(tag));
+	return tags.map((tag) => translateTag(tag));
 }
 
 /**
@@ -43,5 +48,5 @@ export function translateTags(tags: string[], enableTranslation: boolean = true)
  * @returns VNDB TAG翻译对象
  */
 export function getTagTranslations(): Record<string, string> {
-    return vndbTagTranslations;
+	return vndbTagTranslations;
 }

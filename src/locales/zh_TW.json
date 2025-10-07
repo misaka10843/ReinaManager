@@ -1,374 +1,375 @@
 {
-    "api": {
-        "bgm": {
-            "notFound": "未找到BGM數據"
-        },
-        "vndb": {
-            "notFound": "未找到VNDB數據",
-            "fetchFailed": "獲取數據失敗，請稍後重試",
-            "apiCallFailed": "VNDB API 調用失敗"
-        },
-        "http": {
-            "notFound": "HTTP請求失敗",
-            "authFailed": "認證失敗，請檢查你的BGM_TOKEN是否正確",
-            "networkError": "請求錯誤，請檢查你的網絡連接",
-            "requestError": "請求錯誤"
-        },
-        "mixed": {
-            "fetchError": "獲取數據失敗",
-            "noDataSource": "無法從任何數據源獲取遊戲信息",
-            "bgmFetchFailed": "Bangumi 數據獲取失敗",
-            "vndbFetchFailed": "VNDB 數據獲取失敗",
-            "noDataForMerge": "沒有可用的數據進行合併"
-        }
-    },
-    "app": {
-        "NAVIGATION": {
-            "menu": "選單",
-            "home": "首頁",
-            "gameLibrary": "遊戲倉庫 ",
-            "settings": "設定"
-        }
-    },
-    "pages": {
-        "Settings": {
-            "language": "語言",
-            "bgmToken": "BGM令牌",
-            "saveBtn": "儲存",
-            "getToken": "獲取令牌",
-            "tokenPlaceholder": "請填寫你的BGM_TOKEN",
-            "autoStart": "開機自啟",
-            "closeSettings": "關閉設定",
-            "skipCloseRemind": "不再提醒",
-            "closeToTray": "最小化到系統匣",
-            "closeApp": "直接退出應用",
-            "bgmTokenSettings": {
-                "saveSuccess": "BGM Token 儲存成功",
-                "saveError": "BGM Token 儲存失敗",
-                "clearToken": "清除令牌"
-            },
-            "nsfw": {
-                "title": "NSFW設定",
-                "filter": "過濾NSFW内容",
-                "coverReplace": "模糊NSFW替換"
-            },
-            "tagTranslation": {
-                "title": "TAG翻譯",
-                "description": "開啟後將使用中文翻譯顯示遊戲標籤"
-            },
-            "cardClickMode": {
-                "title": "卡片點擊模式",
-                "navigate": "導航模式（單擊跳轉詳情頁）",
-                "select": "選擇模式（單擊選擇遊戲）",
-                "doubleClickLaunch": "雙擊啟動遊戲",
-                "doubleClickLaunchNote": "開啟後會導致左鍵單擊延遲200ms（僅導航模式）",
-                "longPressLaunch": "長按啟動遊戲",
-                "longPressLaunchNote": "長按卡片800ms後啟動遊戲"
-            },
-            "savePath": {
-                "title": "遊戲存檔備份路徑",
-                "pathLabel": "備份根目錄路徑",
-                "pathPlaceholder": "選擇遊戲存檔備份的根目錄",
-                "selectFolder": "選擇目錄",
-                "saving": "儲存中...",
-                "saveSuccess": "備份路徑儲存成功",
-                "saveFailed": "儲存失敗",
-                "saveError": "儲存備份路徑失敗",
-                "selectFolderError": "選擇資料夾失敗",
-                "movingBackups": "正在移動備份資料夾到新位置...",
-                "moveSuccess": "備份路徑儲存成功，備份資料夾已移動到新位置",
-                "moveWarning": "備份路徑已儲存，但移動備份資料夾時出現問題"
-            },
-            "databaseBackup": {
-                "title": "資料庫備份",
-                "backup": "備份資料庫",
-                "backing": "備份中...",
-                "openFolder": "開啟備份資料夾",
-                "backupSuccess": "資料庫備份成功",
-                "backupFailed": "備份失敗",
-                "backupError": "資料庫備份失敗",
-                "openFolderFailed": "開啟資料夾失敗",
-                "openFolderError": "開啟備份資料夾失敗"
-            },
-            "about": {
-                "title": "關於",
-                "version": "版本",
-                "author": "作者",
-                "github": "專案倉庫",
-                "blog": "作者部落格",
-                "checkUpdate": "檢查更新",
-                "checking": "檢查中..."
-            }
-        },
-        "Detail": {
-            "loading": "加載中...",
-            "notFound": "未找到該遊戲",
-            "collapseTags": "折疊標籤",
-            "expandTags": "展開標籤",
-            "introduction": "簡介",
-            "gameScore": "遊戲評分",
-            "releaseDate": "發佈時間",
-            "gameRanking": "遊戲排行",
-            "gameTags": "遊戲標籤",
-            "addTime": "添加時間",
-            "gameDeveloper": "開發",
-            "gameStats": "遊戲統計",
-            "playCount": "累計遊戲次數",
-            "totalPlayTime": "累計總時長",
-            "todayPlayTime": "今日遊戲時長",
-            "backupCount": "存檔備份數",
-            "gameDatafrom": "資料來源",
-            "expected_hours": "預計時長",
-            "playTimeMinutes": "遊戲時長(分鐘)",
-            "editPart": "編輯",
-            "backup": "備份",
-            "Edit": {
-                "error": "錯誤",
-                "warning": "警告",
-                "notFound": "未找到遊戲資料",
-                "success": "成功",
-                "updateSuccess": "遊戲資訊已成功更新",
-                "pathUpdateSuccess": "遊戲路徑已成功更新",
-                "dataSource": "資料來源",
-                "bgmId": "Bangumi ID",
-                "vndbId": "VNDB ID",
-                "loading": "正在獲取...",
-                "updateFromSource": "從資料來源更新資料",
-                "localPath": "可執行檔路徑",
-                "updateLocalPath": "更新可執行檔路徑",
-                "invalidDataSource": "選擇了無效的資料來源。",
-                "noDataFetched": "未獲取到資料或資料來源無效。",
-                "unknownError": "未知錯誤",
-                "mixedFetchError": "Mixed 獲取錯誤",
-                "updatePathFailed": "更新路徑失敗",
-                "dataSourceUpdate": "數據源更新",
-                "gameInfoEdit": "遊戲資料編輯"
-            },
-            "Backup": {
-                "pathRequired": "請先選擇存檔資料夾",
-                "setPathForAutosave": "請先設定存檔路徑以啟用自動備份",
-                "unknownError": "未知錯誤",
-                "saveDataPath": "存檔資料夾路徑",
-                "selectSaveDataFolder": "選擇存檔資料夾",
-                "createBackup": "建立備份",
-                "creating": "正在建立備份...",
-                "backupSuccess": "備份建立成功",
-                "backupFailed": "備份失敗",
-                "deleteSuccess": "備份刪除成功",
-                "deleteFailed": "刪除失敗",
-                "loadBackupsFailed": "載入備份清單失敗",
-                "backupHistory": "備份歷史",
-                "noBackups": "暫無備份記錄",
-                "backupTime": "備份時間",
-                "fileSize": "檔案大小",
-                "confirmDelete": "確定要刪除備份",
-                "confirmDeleteSuffix": "嗎？此操作不可撤銷。",
-                "settings": "備份設定",
-                "autoSave": "自動備份",
-                "savePathSettings": "存檔路徑設定",
-                "updatePath": "更新路徑",
-                "updating": "更新中...",
-                "manualBackup": "手動備份",
-                "pathUpdateSuccess": "存檔路徑更新成功",
-                "pathUpdateFailed": "路徑更新失敗",
-                "autoSaveEnabled": "自動備份已啟用",
-                "autoSaveDisabled": "自動備份已禁用",
-                "autoSaveUpdateFailed": "自動備份設定失敗",
-                "openBackupFolder": "開啟備份資料夾",
-                "openSaveDataFolder": "開啟存檔資料夾"
-            },
-            "DataSourceUpdate": {
-                "bgmIdRequired": "Bangumi ID 不能為空",
-                "unknownError": "未知錯誤",
-                "bangumiFetchError": "Bangumi 獲取錯誤",
-                "vndbIdRequired": "VNDB ID 不能為空",
-                "vndbFetchError": "VNDB 獲取錯誤",
-                "bgmOrVndbIdRequired": "Bangumi ID 或 VNDB ID 不能為空",
-                "mixedFetchError": "Mixed 獲取錯誤",
-                "customModeWarning": "自定模式無法從數據源更新。",
-                "invalidDataSource": "選擇了無效的數據源。",
-                "noDataFetched": "未獲取到數據或數據源無效。",
-                "dataSource": "數據源",
-                "bgmId": "Bangumi ID",
-                "vndbId": "VNDB ID",
-                "loading": "正在獲取...",
-                "updateFromSource": "從數據源更新數據"
-            },
-            "GameInfoEdit": {
-                "enterGameNote": "請輸入遊戲備註",
-                "selectPathFailed": "選擇路徑失敗",
-                "invalidGameId": "無效的遊戲ID",
-                "selectImageFailed": "選擇圖片失敗",
-                "removeCustomCoverFailed": "移除自定封面失敗",
-                "saveGameInfoFailed": "保存遊戲信息失敗",
-                "customizeGame": "自定遊戲信息",
-                "customName": "自定名稱",
-                "customCover": "自定封面",
-                "selectImage": "選擇圖片",
-                "removeCustomCover": "移除自定封面",
-                "hasCustomCover": "已設置自定封面",
-                "previewSelected": "已選擇新圖片，保存後生效",
-                "gameNote": "遊戲備註",
-                "customGameName": "自定遊戲名稱",
-                "noteHelperText": "您可以為遊戲設置一個自定的顯示名稱，留空則使用默認名稱",
-                "localPath": "可執行文件路徑",
-                "saving": "保存中...",
-                "saveAllChanges": "保存所有更改"
-            }
-        }
-    },
-    "components": {
-        "SearchBox": {
-            "search": "搜尋",
-            "searchGame": "搜尋遊戲",
-            "inputGameName": "輸入遊戲名稱",
-            "clearSearch": "清除搜尋"
-        },
-        "Toolbar": {
-            "gameLibrary": "遊戲倉庫",
-            "openGameFolder": "開啟遊戲目錄",
-            "deleteGame": "刪除遊戲",
-            "deleting": "刪除中...",
-            "bgmlink": "查看Bangumi頁面",
-            "vndblink": "查看Vndb頁面",
-            "more": "更多",
-            "markAsCompleted": "標記為已通關",
-            "markAsNotCompleted": "標記為未通關"
-        },
-        "LaunchModal": {
-            "launchGame": "啟動遊戲",
-            "gamePathNotFound": "遊戲路徑未找到",
-            "launchFailed": "遊戲啟動失敗:",
-            "playing": "遊戲中..."
-        },
-        "SortModal": {
-            "sort": "排序",
-            "sortMethod": "排序方法：",
-            "addTime": "添加時間(默認)",
-            "releaseTime": "遊戲發布時間",
-            "Ranking": "綜合評分排名",
-            "lastPlayed": "最近遊玩",
-            "ascending": "升序",
-            "descending": "降序",
-            "cancel": "取消",
-            "confirm": "確認"
-        },
-        "RightMenu": {
-            "startGame": "啟動遊戲",
-            "enterDetails": "進入詳情頁",
-            "deleteGame": "刪除遊戲",
-            "openGameFolder": "開啟遊戲目錄",
-            "more": "更多",
-            "markAsCompleted": "標記為已通關",
-            "markAsNotCompleted": "標記為未通關"
-        },
-        "AlertBox": {
-            "cancel": "取消",
-            "confirm": "確認",
-            "confirmDelete": "確認刪除",
-            "deleteGameTitle": "刪除遊戲",
-            "deleteGameMessage": "確定要刪除這個遊戲嗎？此操作不可撤銷。",
-            "processing": "處理中...",
-            "confirmUpdateTitle": "確認更新遊戲資訊",
-            "gameName": "遊戲名稱",
-            "noData": "無可用資料",
-            "error": "錯誤",
-            "success": "成功",
-            "warning": "警告",
-            "gameNotFound": "未找到遊戲資料",
-            "deleteBackupTitle": "刪除備份"
-        },
-      "Snackbar": {
-        "failedOpenGameFolder": "打開遊戲文件夾失敗",
-        "failedOpenBackupFolder": "打開備份文件夾失敗",
-        "failedOpenSaveFolder":"打開存檔文件夾失敗",
-        "failedOpenDatabaseBackupFolder": "打開數據庫備份文件夾失敗"
-      },
-        "AddModal": {
-            "addGame": "添加遊戲",
-            "noExecutableSelected": "未選擇可執行程序",
-            "gameExists": "遊戲已存在",
-            "selectLauncher": "選擇啟動程序",
-            "selectExecutable": "請選擇一個可執行程序",
-            "enableCustomMode": "啟用自定義模式",
-            "enableVNDB": "使用VNDB api(默認使用BGM api)",
-            "gameName": "遊戲名稱",
-            "gameIDTips": "遊戲ID（輸入BGM ID或VNDB ID）",
-            "cancel": "取消",
-            "processing": "處理中...",
-            "confirm": "確認",
-            "idSearch": "啟用ID搜尋模式"
-        },
-        "FilterModal": {
-            "filter": "篩選",
-            "filterTitle": "篩選",
-            "allGames": "全部遊戲",
-            "localGames": "本地遊戲",
-            "onlineGames": "網路遊戲",
-            "noclearGames": "未通關遊戲",
-            "clearGames": "已通關遊戲",
-            "cancel": "取消",
-            "apply": "應用"
-        },
-        "Window": {
-            "closeDialog": {
-                "title": "關閉應用",
-                "message": "請選擇操作：退出 或 最小化到系統匣？",
-                "dontRemind": "不再提醒",
-                "minimizeToTray": "最小化到系統匣",
-                "exitApp": "退出應用"
-            },
-            "UpdateModal": {
-                "title": "發現新版本",
-                "newVersion": "新版本",
-                "releaseDate": "發布日期",
-                "changelog": "更新說明",
-                "downloading": "正在下載更新...",
-                "cancel": "取消",
-                "update": "立即更新"
-            }
-        }
-    },
-    "home": {
-        "title": "首頁",
-        "stats": {
-            "totalGames": "總遊戲數",
-            "localGames": "本地遊戲數",
-            "completedGames": "通關遊戲數",
-            "totalPlayTime": "總遊戲時長",
-            "weekPlayTime": "本週遊戲時長",
-            "todayPlayTime": "今日遊戲時長"
-        },
-        "repository": "遊戲倉庫",
-        "activityTitle": "動態",
-        "activity": {
-            "added": "添加了 {{title}}",
-            "played": "遊玩了 {{title}}",
-            "addedAt": "添加於 {{time}}",
-            "playedAtTime": "遊玩於 {{time}}",
-            "duration": "遊戲時長: {{duration}}"
-        },
-        "lastPlayed": "最後遊玩: {{time}}",
-        "addedAt": "添加時間: {{time}}",
-        "recentlyPlayed": "最近遊玩",
-        "recentlyAdded": "最近添加"
-    },
-    "utils":{
-        "relativetime":{
-            "justNow": "剛剛",
-            "minutesAgo": "{{count}}分鐘前",
-            "hoursAgo": "{{count}}小時前",
-            "daysAgo": "{{count}}天前",
-            "lastWeek": "上週"
-        },
-        "formatPlayTime":{
-            "minutes": "{{count}}分鐘",
-            "hours": "{{count}}小時",
-            "hoursAndMinutes": "{{hours}}小時{{minutes}}分鐘"
-        },
-        "handleDirectory":{
-            "executable": "可執行檔",
-            "allFiles": "所有檔案"
-        }
-    }
+	"api": {
+		"bgm": {
+			"notFound": "未找到BGM數據"
+		},
+		"vndb": {
+			"notFound": "未找到VNDB數據",
+			"fetchFailed": "獲取數據失敗，請稍後重試",
+			"apiCallFailed": "VNDB API 調用失敗"
+		},
+		"http": {
+			"notFound": "HTTP請求失敗",
+			"authFailed": "認證失敗，請檢查你的BGM_TOKEN是否正確",
+			"networkError": "請求錯誤，請檢查你的網絡連接",
+			"requestError": "請求錯誤"
+		},
+		"mixed": {
+			"fetchError": "獲取數據失敗",
+			"noDataSource": "無法從任何數據源獲取遊戲信息",
+			"bgmFetchFailed": "Bangumi 數據獲取失敗",
+			"vndbFetchFailed": "VNDB 數據獲取失敗",
+			"noDataForMerge": "沒有可用的數據進行合併"
+		}
+	},
+	"app": {
+		"NAVIGATION": {
+			"menu": "選單",
+			"home": "首頁",
+			"gameLibrary": "遊戲倉庫 ",
+			"settings": "設定"
+		}
+	},
+	"pages": {
+		"Settings": {
+			"language": "語言",
+			"bgmToken": "BGM令牌",
+			"saveBtn": "儲存",
+			"getToken": "獲取令牌",
+			"tokenPlaceholder": "請填寫你的BGM_TOKEN",
+			"autoStart": "開機自啟",
+			"closeSettings": "關閉設定",
+			"skipCloseRemind": "不再提醒",
+			"closeToTray": "最小化到系統匣",
+			"closeApp": "直接退出應用",
+			"bgmTokenSettings": {
+				"saveSuccess": "BGM Token 儲存成功",
+				"saveError": "BGM Token 儲存失敗",
+				"clearToken": "清除令牌"
+			},
+			"nsfw": {
+				"title": "NSFW設定",
+				"filter": "過濾NSFW内容",
+				"coverReplace": "模糊NSFW替換"
+			},
+			"tagTranslation": {
+				"title": "TAG翻譯",
+				"description": "開啟後將使用中文翻譯顯示遊戲標籤"
+			},
+			"cardClickMode": {
+				"title": "卡片點擊模式",
+				"navigate": "導航模式（單擊跳轉詳情頁）",
+				"select": "選擇模式（單擊選擇遊戲）",
+				"doubleClickLaunch": "雙擊啟動遊戲",
+				"doubleClickLaunchNote": "開啟後會導致左鍵單擊延遲200ms（僅導航模式）",
+				"longPressLaunch": "長按啟動遊戲",
+				"longPressLaunchNote": "長按卡片800ms後啟動遊戲"
+			},
+			"savePath": {
+				"title": "遊戲存檔備份路徑",
+				"pathLabel": "備份根目錄路徑",
+				"pathPlaceholder": "選擇遊戲存檔備份的根目錄",
+				"selectFolder": "選擇目錄",
+				"saving": "儲存中...",
+				"saveSuccess": "備份路徑儲存成功",
+				"saveFailed": "儲存失敗",
+				"saveError": "儲存備份路徑失敗",
+				"selectFolderError": "選擇資料夾失敗",
+				"movingBackups": "正在移動備份資料夾到新位置...",
+				"moveSuccess": "備份路徑儲存成功，備份資料夾已移動到新位置",
+				"moveWarning": "備份路徑已儲存，但移動備份資料夾時出現問題"
+			},
+			"databaseBackup": {
+				"title": "資料庫備份",
+				"backup": "備份資料庫",
+				"backing": "備份中...",
+				"openFolder": "開啟備份資料夾",
+				"backupSuccess": "資料庫備份成功",
+				"backupFailed": "備份失敗",
+				"backupError": "資料庫備份失敗",
+				"openFolderFailed": "開啟資料夾失敗",
+				"openFolderError": "開啟備份資料夾失敗"
+			},
+			"about": {
+				"title": "關於",
+				"version": "版本",
+				"author": "作者",
+				"github": "專案倉庫",
+				"blog": "作者部落格",
+				"checkUpdate": "檢查更新",
+				"checking": "檢查中..."
+			}
+		},
+		"Detail": {
+			"loading": "加載中...",
+			"notFound": "未找到該遊戲",
+			"collapseTags": "折疊標籤",
+			"expandTags": "展開標籤",
+			"introduction": "簡介",
+			"gameScore": "遊戲評分",
+			"releaseDate": "發佈時間",
+			"gameRanking": "遊戲排行",
+			"gameTags": "遊戲標籤",
+			"addTime": "添加時間",
+			"gameDeveloper": "開發",
+			"gameStats": "遊戲統計",
+			"playCount": "累計遊戲次數",
+			"totalPlayTime": "累計總時長",
+			"todayPlayTime": "今日遊戲時長",
+			"backupCount": "存檔備份數",
+			"gameDatafrom": "資料來源",
+			"expected_hours": "預計時長",
+			"playTimeMinutes": "遊戲時長(分鐘)",
+			"editPart": "編輯",
+			"backup": "備份",
+			"Edit": {
+				"error": "錯誤",
+				"warning": "警告",
+				"notFound": "未找到遊戲資料",
+				"success": "成功",
+				"updateSuccess": "遊戲資訊已成功更新",
+				"pathUpdateSuccess": "遊戲路徑已成功更新",
+				"dataSource": "資料來源",
+				"bgmId": "Bangumi ID",
+				"vndbId": "VNDB ID",
+				"loading": "正在獲取...",
+				"updateFromSource": "從資料來源更新資料",
+				"localPath": "可執行檔路徑",
+				"updateLocalPath": "更新可執行檔路徑",
+				"invalidDataSource": "選擇了無效的資料來源。",
+				"noDataFetched": "未獲取到資料或資料來源無效。",
+				"unknownError": "未知錯誤",
+				"mixedFetchError": "Mixed 獲取錯誤",
+				"updatePathFailed": "更新路徑失敗",
+				"dataSourceUpdate": "數據源更新",
+				"gameInfoEdit": "遊戲資料編輯"
+			},
+			"Backup": {
+				"pathRequired": "請先選擇存檔資料夾",
+				"setPathForAutosave": "請先設定存檔路徑以啟用自動備份",
+				"unknownError": "未知錯誤",
+				"saveDataPath": "存檔資料夾路徑",
+				"selectSaveDataFolder": "選擇存檔資料夾",
+				"createBackup": "建立備份",
+				"creating": "正在建立備份...",
+				"backupSuccess": "備份建立成功",
+				"backupFailed": "備份失敗",
+				"deleteSuccess": "備份刪除成功",
+				"deleteFailed": "刪除失敗",
+				"loadBackupsFailed": "載入備份清單失敗",
+				"backupHistory": "備份歷史",
+				"noBackups": "暫無備份記錄",
+				"backupTime": "備份時間",
+				"fileSize": "檔案大小",
+				"confirmDelete": "確定要刪除備份",
+				"confirmDeleteSuffix": "嗎？此操作不可撤銷。",
+				"settings": "備份設定",
+				"autoSave": "自動備份",
+				"savePathSettings": "存檔路徑設定",
+				"updatePath": "更新路徑",
+				"updating": "更新中...",
+				"manualBackup": "手動備份",
+				"pathUpdateSuccess": "存檔路徑更新成功",
+				"pathUpdateFailed": "路徑更新失敗",
+				"autoSaveEnabled": "自動備份已啟用",
+				"autoSaveDisabled": "自動備份已禁用",
+				"autoSaveUpdateFailed": "自動備份設定失敗",
+				"openBackupFolder": "開啟備份資料夾",
+				"openSaveDataFolder": "開啟存檔資料夾"
+			},
+			"DataSourceUpdate": {
+				"bgmIdRequired": "Bangumi ID 不能為空",
+				"unknownError": "未知錯誤",
+				"bangumiFetchError": "Bangumi 獲取錯誤",
+				"vndbIdRequired": "VNDB ID 不能為空",
+				"vndbFetchError": "VNDB 獲取錯誤",
+				"bgmOrVndbIdRequired": "Bangumi ID 或 VNDB ID 不能為空",
+				"mixedFetchError": "Mixed 獲取錯誤",
+				"customModeWarning": "自定模式無法從數據源更新。",
+				"invalidDataSource": "選擇了無效的數據源。",
+				"noDataFetched": "未獲取到數據或數據源無效。",
+				"dataSource": "數據源",
+				"bgmId": "Bangumi ID",
+				"vndbId": "VNDB ID",
+				"loading": "正在獲取...",
+				"updateFromSource": "從數據源更新數據"
+			},
+			"GameInfoEdit": {
+				"enterGameNote": "請輸入遊戲備註",
+				"selectPathFailed": "選擇路徑失敗",
+				"invalidGameId": "無效的遊戲ID",
+				"selectImageFailed": "選擇圖片失敗",
+				"removeCustomCoverFailed": "移除自定封面失敗",
+				"saveGameInfoFailed": "保存遊戲信息失敗",
+				"customizeGame": "自定遊戲信息",
+				"customName": "自定名稱",
+				"customCover": "自定封面",
+				"selectImage": "選擇圖片",
+				"removeCustomCover": "移除自定封面",
+				"hasCustomCover": "已設置自定封面",
+				"previewSelected": "已選擇新圖片，保存後生效",
+				"gameNote": "遊戲備註",
+				"customGameName": "自定遊戲名稱",
+				"noteHelperText": "您可以為遊戲設置一個自定的顯示名稱，留空則使用默認名稱",
+				"localPath": "可執行文件路徑",
+				"saving": "保存中...",
+				"saveAllChanges": "保存所有更改"
+			}
+		}
+	},
+	"components": {
+		"SearchBox": {
+			"search": "搜尋",
+			"searchGame": "搜尋遊戲",
+			"inputGameName": "輸入遊戲名稱",
+			"clearSearch": "清除搜尋"
+		},
+		"Toolbar": {
+			"gameLibrary": "遊戲倉庫",
+			"openGameFolder": "開啟遊戲目錄",
+			"deleteGame": "刪除遊戲",
+			"deleting": "刪除中...",
+			"bgmlink": "查看Bangumi頁面",
+			"vndblink": "查看Vndb頁面",
+			"more": "更多",
+			"markAsCompleted": "標記為已通關",
+			"markAsNotCompleted": "標記為未通關"
+		},
+		"LaunchModal": {
+			"launchGame": "啟動遊戲",
+			"gamePathNotFound": "遊戲路徑未找到",
+			"launchFailed": "遊戲啟動失敗:",
+			"playing": "遊戲中..."
+		},
+		"SortModal": {
+			"sort": "排序",
+			"sortMethod": "排序方法：",
+			"addTime": "添加時間(默認)",
+			"releaseTime": "遊戲發布時間",
+			"lastPlayed": "最近遊玩",
+			"bgmRank": "BGM 排名",
+			"vndbRank": "VNDB 排名",
+			"ascending": "升序",
+			"descending": "降序",
+			"cancel": "取消",
+			"confirm": "確認"
+		},
+		"RightMenu": {
+			"startGame": "啟動遊戲",
+			"enterDetails": "進入詳情頁",
+			"deleteGame": "刪除遊戲",
+			"openGameFolder": "開啟遊戲目錄",
+			"more": "更多",
+			"markAsCompleted": "標記為已通關",
+			"markAsNotCompleted": "標記為未通關"
+		},
+		"AlertBox": {
+			"cancel": "取消",
+			"confirm": "確認",
+			"confirmDelete": "確認刪除",
+			"deleteGameTitle": "刪除遊戲",
+			"deleteGameMessage": "確定要刪除這個遊戲嗎？此操作不可撤銷。",
+			"processing": "處理中...",
+			"confirmUpdateTitle": "確認更新遊戲資訊",
+			"bgmData": "Bangumi 資料",
+			"vndbData": "VNDB 資料",
+			"gameName": "遊戲名稱",
+			"noData": "無可用資料"
+		},
+		"Snackbar": {
+			"failedOpenGameFolder": "打開遊戲文件夾失敗",
+			"failedOpenBackupFolder": "打開備份文件夾失敗",
+			"failedOpenSaveFolder": "打開存檔文件夾失敗",
+			"failedOpenDatabaseBackupFolder": "打開數據庫備份文件夾失敗"
+		},
+		"AddModal": {
+			"addGame": "添加遊戲",
+			"noExecutableSelected": "未選擇可執行程序",
+			"gameExists": "遊戲已存在",
+			"selectLauncher": "選擇啟動程序",
+			"selectExecutable": "請選擇一個可執行程序",
+			"enableCustomMode": "啟用自定義模式",
+			"enableVNDB": "使用VNDB api(默認使用BGM api)",
+			"gameName": "遊戲名稱",
+			"gameIDTips": "遊戲ID（輸入BGM ID或VNDB ID）",
+			"cancel": "取消",
+			"processing": "處理中...",
+			"confirm": "確認",
+			"idSearch": "啟用ID搜尋模式"
+		},
+		"FilterModal": {
+			"filter": "篩選",
+			"filterTitle": "篩選",
+			"allGames": "全部遊戲",
+			"localGames": "本地遊戲",
+			"onlineGames": "網路遊戲",
+			"noclearGames": "未通關遊戲",
+			"clearGames": "已通關遊戲",
+			"cancel": "取消",
+			"apply": "應用"
+		},
+		"Window": {
+			"closeDialog": {
+				"title": "關閉應用",
+				"message": "請選擇操作：退出 或 最小化到系統匣？",
+				"dontRemind": "不再提醒",
+				"minimizeToTray": "最小化到系統匣",
+				"exitApp": "退出應用"
+			},
+			"UpdateModal": {
+				"title": "發現新版本",
+				"newVersion": "新版本",
+				"releaseDate": "發布日期",
+				"changelog": "更新說明",
+				"downloading": "正在下載更新...",
+				"cancel": "取消",
+				"update": "立即更新"
+			}
+		},
+		"Tray": {
+			"exit": "退出"
+		}
+	},
+	"home": {
+		"title": "首頁",
+		"stats": {
+			"totalGames": "總遊戲數",
+			"localGames": "本地遊戲數",
+			"completedGames": "通關遊戲數",
+			"totalPlayTime": "總遊戲時長",
+			"weekPlayTime": "本週遊戲時長",
+			"todayPlayTime": "今日遊戲時長"
+		},
+		"repository": "遊戲倉庫",
+		"activityTitle": "動態",
+		"activity": {
+			"added": "添加了 {{title}}",
+			"played": "遊玩了 {{title}}",
+			"addedAt": "添加於 {{time}}",
+			"playedAtTime": "遊玩於 {{time}}",
+			"duration": "遊戲時長: {{duration}}"
+		},
+		"lastPlayed": "最後遊玩: {{time}}",
+		"addedAt": "添加時間: {{time}}",
+		"recentlyPlayed": "最近遊玩",
+		"recentlyAdded": "最近添加"
+	},
+	"utils": {
+		"relativetime": {
+			"justNow": "剛剛",
+			"minutesAgo": "{{count}}分鐘前",
+			"hoursAgo": "{{count}}小時前",
+			"daysAgo": "{{count}}天前",
+			"lastWeek": "上週"
+		},
+		"formatPlayTime": {
+			"minutes": "{{count}}分鐘",
+			"hours": "{{count}}小時",
+			"hoursAndMinutes": "{{hours}}小時{{minutes}}分鐘"
+		},
+		"handleDirectory": {
+			"executable": "可執行檔",
+			"allFiles": "所有檔案"
+		}
+	}
 }

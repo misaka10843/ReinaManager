@@ -6,30 +6,33 @@
  */
 
 /* 禁用弹性滚动，防止页面回弹 */
-html, body {
-  overscroll-behavior: none; /* 禁用弹性滚动 */
+html,
+body {
+	overscroll-behavior: none; /* 禁用弹性滚动 */
 }
 
 /* 侧边栏菜单项文字：默认溢出省略号显示 */
-.MuiDrawer-paper .MuiListItemText-root .MuiTypography-root  {
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  display: inline-block;
-  /* 保证定位基础，用于动画计算 */
-  position: relative;
+.MuiDrawer-paper .MuiListItemText-root .MuiTypography-root {
+	white-space: nowrap;
+	text-overflow: ellipsis;
+	display: inline-block;
+	/* 保证定位基础，用于动画计算 */
+	position: relative;
 }
 
 /* 鼠标悬停时，菜单项文字横向滚动动画 */
-.MuiDrawer-paper .MuiCollapse-vertical .MuiListItemText-root:hover .MuiTypography-root  {
-  animation: marquee 5s linear infinite;
+.MuiDrawer-paper .MuiCollapse-vertical
+	.MuiListItemText-root:hover
+	.MuiTypography-root {
+	animation: marquee 5s linear infinite;
 }
 
 /* 横向滚动关键帧动画 */
 @keyframes marquee {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-60%);
-  }
+	0% {
+		transform: translateX(0);
+	}
+	100% {
+		transform: translateX(-60%);
+	}
 }

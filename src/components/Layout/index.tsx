@@ -18,30 +18,30 @@
  * - react-i18next
  */
 
-import { Outlet, useLocation } from 'react-router-dom'
-import Stack from '@mui/material/Stack';
-import Chip from '@mui/material/Chip';
-import Typography from '@mui/material/Typography';
-import { Avatar } from '@mui/material';
+import { Avatar } from "@mui/material";
+import Chip from "@mui/material/Chip";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
+import type { NavigationPageItem } from "@toolpad/core/AppProvider";
 import {
-    DashboardLayout,
-    DashboardSidebarPageItem,
-    type SidebarFooterProps,
-} from '@toolpad/core/DashboardLayout';
-import { Toolbars } from '@/components/Toolbar';
-import { SearchBox } from '@/components/SearchBox';
-import { useMemo, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
-import { PageContainer } from '@toolpad/core/PageContainer';
-import { LinkWithScrollSave } from '../LinkWithScrollSave';
-import { NavigationPageItem } from '@toolpad/core/AppProvider';
-import KeepAlive from 'react-activation';
+	DashboardLayout,
+	DashboardSidebarPageItem,
+	type SidebarFooterProps,
+} from "@toolpad/core/DashboardLayout";
+import { PageContainer } from "@toolpad/core/PageContainer";
+import { useCallback, useMemo } from "react";
+import KeepAlive from "react-activation";
+import { useTranslation } from "react-i18next";
+import { Outlet, useLocation } from "react-router-dom";
+import { SearchBox } from "@/components/SearchBox";
+import { Toolbars } from "@/components/Toolbar";
+import { LinkWithScrollSave } from "../LinkWithScrollSave";
 
 /**
  * 自定义应用标题组件属性类型
  */
 interface CustomAppTitleProps {
-    isLibraries: boolean;
+	isLibraries: boolean;
 }
 
 /**
@@ -50,12 +50,16 @@ interface CustomAppTitleProps {
  * @returns {JSX.Element}
  */
 function SidebarFooter({ mini }: SidebarFooterProps) {
-    return (
-        <Typography variant="caption"
-            className="absolute bottom-0 left-0 right-0 w-full text-center border-t border-gray-200 dark:border-gray-700  dark:bg-gray-800 whitespace-nowrap overflow-hidden select-none">
-            {mini ? `© ${new Date().getFullYear()}` : `© ${new Date().getFullYear()} Made by huoshen80`}
-        </Typography>
-    );
+	return (
+		<Typography
+			variant="caption"
+			className="absolute bottom-0 left-0 right-0 w-full text-center border-t border-gray-200 dark:border-gray-700  dark:bg-gray-800 whitespace-nowrap overflow-hidden select-none"
+		>
+			{mini
+				? `© ${new Date().getFullYear()}`
+				: `© ${new Date().getFullYear()} Made by huoshen80`}
+		</Typography>
+	);
 }
 
 /**
@@ -64,15 +68,24 @@ function SidebarFooter({ mini }: SidebarFooterProps) {
  * @returns {JSX.Element}
  */
 const CustomAppTitle = ({ isLibraries }: CustomAppTitleProps) => {
-    return (
-        <Stack direction="row" alignItems="center" spacing={2} className='select-none'>
-            <Avatar alt='Reina' src='/images/reina.png' onDragStart={(event) => event.preventDefault()} />
-            <Typography variant="h6">ReinaManager</Typography>
-            <Chip size="small" label="BETA" color="info" />
-            {isLibraries && <SearchBox />}
-        </Stack>
-    );
-}
+	return (
+		<Stack
+			direction="row"
+			alignItems="center"
+			spacing={2}
+			className="select-none"
+		>
+			<Avatar
+				alt="Reina"
+				src="/images/reina.png"
+				onDragStart={(event) => event.preventDefault()}
+			/>
+			<Typography variant="h6">ReinaManager</Typography>
+			<Chip size="small" label="BETA" color="info" />
+			{isLibraries && <SearchBox />}
+		</Stack>
+	);
+};
 
 /**
  * 应用主布局组件
@@ -82,47 +95,56 @@ const CustomAppTitle = ({ isLibraries }: CustomAppTitleProps) => {
  * @returns {JSX.Element} 应用主布局
  */
 export const Layout: React.FC = () => {
-    const { i18n } = useTranslation();
-    const isja_JP = i18n.language === 'ja-JP';
-    const path = useLocation().pathname;
-    const isLibraries = path === "/libraries";
-    const AppTitle = useMemo(() => {
-        return () => <CustomAppTitle isLibraries={isLibraries} />;
-    }, [isLibraries]);
+	const { i18n } = useTranslation();
+	const isja_JP = i18n.language === "ja-JP";
+	const path = useLocation().pathname;
+	const isLibraries = path === "/libraries";
+	const AppTitle = useMemo(() => {
+		return () => <CustomAppTitle isLibraries={isLibraries} />;
+	}, [isLibraries]);
 
-    const handleRenderPageItem = useCallback((item: NavigationPageItem, params: any) => {
-        const to = `/${item.segment || ''}`;
+	const handleRenderPageItem = useCallback(
+		(item: NavigationPageItem, params: { mini: boolean }) => {
+			const to = `/${item.segment || ""}`;
+			// 外层不渲染 <a>，而是使用可访问的 span 进行编程式导航，
+			// 在导航前 LinkWithScrollSave 会保存滚动位置，避免嵌套 <a>。
+			return (
+				<LinkWithScrollSave
+					to={to}
+					style={{ textDecoration: "none", color: "inherit" }}
+				>
+					<DashboardSidebarPageItem item={item} mini={params.mini} />
+				</LinkWithScrollSave>
+			);
+		},
+		[],
+	);
 
-        // 外层不渲染 <a>，而是使用可访问的 div 进行编程式导航，
-        // 在导航前 LinkWithScrollSave 会保存滚动位置，避免嵌套 <a>。
-        return (
-            <LinkWithScrollSave to={to} style={{ textDecoration: 'none', color: 'inherit' }}>
-                <DashboardSidebarPageItem item={item} {...params} />
-            </LinkWithScrollSave>
-        );
-    }, []);
-
-    return (
-        <DashboardLayout
-            slots={{
-                appTitle: AppTitle,
-                toolbarActions: Toolbars,
-                sidebarFooter: SidebarFooter,
-            }}
-            sidebarExpandedWidth={isja_JP ? 250 : 220}
-            defaultSidebarCollapsed={true}
-            renderPageItem={handleRenderPageItem}
-        >
-
-            {isLibraries ?
-                <PageContainer sx={{ maxWidth: '100% !important' }}>
-                    <KeepAlive name="libraries" cacheKey="libraries" saveScrollPosition={false}>
-                        <Outlet />
-                    </KeepAlive>
-                </PageContainer>
-                : <Outlet />
-            }
-        </DashboardLayout>
-    );
-}
+	return (
+		<DashboardLayout
+			slots={{
+				appTitle: AppTitle,
+				toolbarActions: Toolbars,
+				sidebarFooter: SidebarFooter,
+			}}
+			sidebarExpandedWidth={isja_JP ? 250 : 220}
+			defaultSidebarCollapsed={true}
+			renderPageItem={handleRenderPageItem}
+		>
+			{isLibraries ? (
+				<PageContainer sx={{ maxWidth: "100% !important" }}>
+					<KeepAlive
+						name="libraries"
+						cacheKey="libraries"
+						saveScrollPosition={false}
+					>
+						<Outlet />
+					</KeepAlive>
+				</PageContainer>
+			) : (
+				<Outlet />
+			)}
+		</DashboardLayout>
+	);
+};
 export default Layout;

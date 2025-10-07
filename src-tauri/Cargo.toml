@@ -15,21 +15,43 @@ name = "reina_manager_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2.3.1", features = [] }
+tauri-build = { version = "2.4.1", features = [] }
 
 [dependencies]
+# Serialization & logging
+serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0"
-serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
-tauri = { version = "^2.7.0", features = ["protocol-asset", "tray-icon"] }
-tauri-plugin-http = "2.5.1"
-tauri-plugin-log = "2.0.0-rc"
-tauri-plugin-dialog = "^2.3.2"
-tauri-plugin-fs = "2"
-tauri-plugin-shell = "2"
+
+# Tauri core and plugins
+tauri = { version = "2.8.5", features = ["protocol-asset", "tray-icon"] }
+tauri-plugin-autostart = "2.5.0"
+tauri-plugin-dialog = "2.4.0"
+tauri-plugin-fs = "2.4.2"
+tauri-plugin-http = "2.5.2"
+tauri-plugin-log = "2.7.0"
+tauri-plugin-shell = "2.3.1"
+tauri-plugin-single-instance = "2.3.2"
+tauri-plugin-updater = "2.9.0"
+
+# System / utilities
 sysinfo = "0.29.11"
-sevenz-rust = "0.6.0"
-chrono = { version = "0.4", features = ["serde"] }
+sevenz-rust = "0.6.1"
+chrono = { version = "0.4.42", features = ["serde"] }
+
+# Async runtime / DB
+tokio = { version = "1.47.1", features = ["full"] }
+sea-orm = { version = "1.1.16", features = [
+    "sqlx-sqlite",
+    "runtime-tokio-native-tls",
+    "macros",
+] }
+
+# Misc
+url = "2.5.7"
+migration = { path = "migration" }
+
+# Windows system APIs
 [target.'cfg(target_os = "windows")'.dependencies]
 windows = { version = "0.58", features = [
     "Win32_Foundation",
@@ -39,19 +61,6 @@ windows = { version = "0.58", features = [
     "Win32_System_Registry",
     "Win32_System_Diagnostics_ToolHelp",
 ] }
-tokio = { version = "1.47.1", features = ["full"] }
-sea-orm = { version = "1.1.0", features = [
-    "sqlx-sqlite",
-    "runtime-tokio-native-tls",
-    "macros",
-] }
-url = "2.5.7"
-migration = { path = "migration" }
-
-[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
-tauri-plugin-autostart = "2.5.0"
-tauri-plugin-single-instance = "2.3.2"
-tauri-plugin-updater = "2"
 
 [profile.dev]
 incremental = true # 以较小的步骤编译您的二进制文件。

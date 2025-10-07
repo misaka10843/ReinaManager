@@ -17,13 +17,13 @@
  * - react-i18next
  */
 
-import Button from '@mui/material/Button';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import TimerIcon from '@mui/icons-material/Timer';
-import { useStore } from '@/store';
-import { useGamePlayStore } from '@/store/gamePlayStore';
-import { isTauri } from '@tauri-apps/api/core';
-import { useTranslation } from 'react-i18next';
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import TimerIcon from "@mui/icons-material/Timer";
+import Button from "@mui/material/Button";
+import { isTauri } from "@tauri-apps/api/core";
+import { useTranslation } from "react-i18next";
+import { useStore } from "@/store";
+import { useGamePlayStore } from "@/store/gamePlayStore";
 
 /**
  * LaunchModal 组件
@@ -33,70 +33,69 @@ import { useTranslation } from 'react-i18next';
  * @returns {JSX.Element} 启动按钮或运行中提示
  */
 export const LaunchModal = () => {
-    const { t } = useTranslation();
-    const { selectedGameId, getGameById, useIsLocalGame } = useStore();
-    const { launchGame, isGameRunning } = useGamePlayStore();
+	const { t } = useTranslation();
+	const { selectedGameId, getGameById, isLocalGame } = useStore();
+	const { launchGame, isGameRunning } = useGamePlayStore();
 
-    // 检查这个特定游戏是否在运行
-    const isThisGameRunning = isGameRunning(selectedGameId === null ? undefined : selectedGameId);
+	// 检查这个特定游戏是否在运行
+	const isThisGameRunning = isGameRunning(
+		selectedGameId === null ? undefined : selectedGameId,
+	);
 
-    /**
-     * 判断当前游戏是否可以启动
-     * @returns {boolean} 是否可启动
-     */
-    const canUse = (): boolean => {
-        // 如果不是Tauri环境，无法启动游戏
-        if (!isTauri()) return false;
+	/**
+	 * 判断当前游戏是否可以启动
+	 * @returns {boolean} 是否可启动
+	 */
+	const canUse = (): boolean => {
+		// 如果不是Tauri环境，无法启动游戏
+		if (!isTauri()) return false;
 
-        // 如果没有有效的游戏ID，无法启动
-        if (!selectedGameId) return false;
+		// 如果没有有效的游戏ID，无法启动
+		if (!selectedGameId) return false;
 
-        // 如果该游戏已在运行，不能再次启动
-        if (isThisGameRunning) return false;
+		// 如果该游戏已在运行，不能再次启动
+		if (isThisGameRunning) return false;
 
-        // 检查是否为本地游戏，只有本地游戏才能启动
-        return useIsLocalGame(selectedGameId);
-    };
+		// 检查是否为本地游戏，只有本地游戏才能启动
+		return isLocalGame(selectedGameId);
+	};
 
-    /**
-     * 启动游戏按钮点击事件
-     */
-    const handleStartGame = async () => {
-        if (!selectedGameId) return;
+	/**
+	 * 启动游戏按钮点击事件
+	 */
+	const handleStartGame = async () => {
+		if (!selectedGameId) return;
 
-        try {
-            const selectedGame = await getGameById(selectedGameId);
-            if (!selectedGame || !selectedGame.localpath) {
-                console.error(t('components.LaunchModal.gamePathNotFound'));
-                return;
-            }
+		try {
+			const selectedGame = await getGameById(selectedGameId);
+			if (!selectedGame || !selectedGame.localpath) {
+				console.error(t("components.LaunchModal.gamePathNotFound"));
+				return;
+			}
 
-            // 使用游戏启动函数
-            await launchGame(selectedGame.localpath, selectedGameId);
-        } catch (error) {
-            console.error(t('components.LaunchModal.launchFailed'), error);
-        }
-    };
+			// 使用游戏启动函数
+			await launchGame(selectedGame.localpath, selectedGameId);
+		} catch (error) {
+			console.error(t("components.LaunchModal.launchFailed"), error);
+		}
+	};
 
-    // 渲染不同状态的按钮
-    if (isThisGameRunning) {
-        return (
-            <Button
-                startIcon={<TimerIcon />}
-                disabled
-            >
-                {t('components.LaunchModal.playing')}
-            </Button>
-        );
-    }
+	// 渲染不同状态的按钮
+	if (isThisGameRunning) {
+		return (
+			<Button startIcon={<TimerIcon />} disabled>
+				{t("components.LaunchModal.playing")}
+			</Button>
+		);
+	}
 
-    return (
-        <Button
-            startIcon={<PlayArrowIcon />}
-            onClick={handleStartGame}
-            disabled={!canUse()}
-        >
-            {t('components.LaunchModal.launchGame')}
-        </Button>
-    );
+	return (
+		<Button
+			startIcon={<PlayArrowIcon />}
+			onClick={handleStartGame}
+			disabled={!canUse()}
+		>
+			{t("components.LaunchModal.launchGame")}
+		</Button>
+	);
 };
