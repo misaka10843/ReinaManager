@@ -8,6 +8,7 @@ import { BaseService } from "./base";
 export interface UserSettings {
 	bgm_token?: string | null;
 	save_root_path?: string | null;
+	db_backup_path?: string | null;
 }
 
 class SettingsService extends BaseService {
@@ -40,6 +41,20 @@ class SettingsService extends BaseService {
 	}
 
 	/**
+	 * 获取数据库备份保存路径
+	 */
+	async getDbBackupPath(): Promise<string> {
+		return this.invoke<string>("get_db_backup_path");
+	}
+
+	/**
+	 * 设置数据库备份保存路径
+	 */
+	async setDbBackupPath(path: string): Promise<void> {
+		return this.invoke<void>("set_db_backup_path", { path });
+	}
+
+	/**
 	 * 获取所有设置
 	 */
 	async getAllSettings(): Promise<UserSettings> {
@@ -52,25 +67,13 @@ class SettingsService extends BaseService {
 	async updateSettings(
 		bgmToken?: string | null,
 		saveRootPath?: string | null,
+		dbBackupPath?: string | null,
 	): Promise<void> {
 		return this.invoke<void>("update_settings", {
 			bgmToken,
 			saveRootPath,
+			dbBackupPath,
 		});
-	}
-
-	/**
-	 * 清除 BGM Token
-	 */
-	async clearBgmToken(): Promise<void> {
-		return this.invoke<void>("clear_bgm_token");
-	}
-
-	/**
-	 * 清除存档根路径
-	 */
-	async clearSaveRootPath(): Promise<void> {
-		return this.invoke<void>("clear_save_root_path");
 	}
 }
 

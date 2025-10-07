@@ -81,6 +81,13 @@
 			},
 			"databaseBackup": {
 				"title": "資料庫備份",
+				"pathLabel": "資料庫備份儲存路徑",
+				"pathPlaceholder": "選擇或輸入儲存路徑",
+				"selectFolder": "選擇目錄",
+				"selectFolderError": "選擇資料夾失敗",
+				"savePathBtn": "儲存",
+				"savePathSuccess": "備份路徑已儲存",
+				"savePathError": "儲存失敗",
 				"backup": "備份資料庫",
 				"backing": "備份中...",
 				"openFolder": "開啟備份資料夾",

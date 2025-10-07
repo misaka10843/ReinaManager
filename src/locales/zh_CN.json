@@ -82,6 +82,13 @@
 			},
 			"databaseBackup": {
 				"title": "数据库备份",
+				"pathLabel": "数据库备份保存路径",
+				"pathPlaceholder": "选择或输入保存路径",
+				"selectFolder": "选择目录",
+				"selectFolderError": "选择文件夹失败",
+				"savePathBtn": "保存",
+				"savePathSuccess": "备份路径已保存",
+				"savePathError": "保存失败",
 				"backup": "备份数据库",
 				"backing": "备份中...",
 				"openFolder": "打开备份文件夹",

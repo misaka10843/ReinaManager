@@ -60,7 +60,7 @@ where
             "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
             "bgm_id" TEXT,
             "vndb_id" TEXT,
-            "id_type" TEXT NOT NULL DEFAULT 'custom',
+            "id_type" TEXT NOT NULL,
             "date" TEXT,
             "localpath" TEXT,
             "savepath" TEXT,
@@ -69,8 +69,7 @@ where
             "custom_name" TEXT,
             "custom_cover" TEXT,
             "created_at" INTEGER DEFAULT (strftime('%s', 'now')),
-            "updated_at" INTEGER DEFAULT (strftime('%s', 'now')),
-            CONSTRAINT "ck_id_type" CHECK ("id_type" IN ('bgm', 'vndb', 'custom', 'mixed', 'other'))
+            "updated_at" INTEGER DEFAULT (strftime('%s', 'now'))
         )"#,
     ))
     .await?;
@@ -132,7 +131,19 @@ where
     // 5. 创建关联表
     create_related_tables(conn).await?;
 
-    // 6. 创建现代结构的索引
+    // 6. 创建用户表
+    conn.execute(Statement::from_string(
+        DatabaseBackend::Sqlite,
+        r#"CREATE TABLE "user" (
+            "id" INTEGER PRIMARY KEY,
+            "BGM_TOKEN" TEXT,
+            "save_root_path" TEXT,
+            "db_backup_path" TEXT
+        )"#,
+    ))
+    .await?;
+
+    // 7. 创建现代结构的索引
     create_modern_indexes(conn).await?;
 
     Ok(())
@@ -164,8 +175,8 @@ where
         DatabaseBackend::Sqlite,
         r#"CREATE TABLE "game_statistics" (
             "game_id" INTEGER PRIMARY KEY,
-            "total_time" INTEGER DEFAULT 0,
-            "session_count" INTEGER DEFAULT 0,
+            "total_time" INTEGER,
+            "session_count" INTEGER,
             "last_played" INTEGER,
             "daily_stats" TEXT,
             FOREIGN KEY("game_id") REFERENCES "games"("id") ON DELETE CASCADE

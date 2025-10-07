@@ -473,10 +473,13 @@ export async function openGameSaveDataFolder(
 /**
  * 打开数据库备份文件夹
  */
-export async function openDatabaseBackupFolder(): Promise<void> {
+export async function openDatabaseBackupFolder(
+	dbBackupPath?: string,
+): Promise<void> {
 	try {
 		const appDataDir = await getAppDataDir();
-		const backupDir = `${appDataDir}/data/backups`;
+		const backupDir =
+			dbBackupPath !== "" ? dbBackupPath : `${appDataDir}/data/backups`;
 		// 使用后端函数打开文件夹
 		await invoke("open_directory", { dirPath: backupDir });
 	} catch (error) {

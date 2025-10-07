@@ -458,11 +458,30 @@ const DatabaseBackupSettings = () => {
 	const { t } = useTranslation();
 	const [isBackingUp, setIsBackingUp] = useState(false);
 
+	// db backup path state
+	const [dbBackupPath, setDbBackupPath] = useState("");
+	const [isLoadingDbPath, setIsLoadingDbPath] = useState(false);
+
+	useEffect(() => {
+		const load = async () => {
+			setIsLoadingDbPath(true);
+			try {
+				const path = await settingsService.getDbBackupPath();
+				setDbBackupPath(path);
+			} catch (e) {
+				console.error("加载数据库备份路径失败", e);
+			} finally {
+				setIsLoadingDbPath(false);
+			}
+		};
+		load();
+	}, []);
+
 	const handleBackupDatabase = async () => {
 		setIsBackingUp(true);
 
 		try {
-			const backupPath = await backupDatabase();
+			const backupPath = await backupDatabase(dbBackupPath);
 			snackbar.success(
 				t(
 					"pages.Settings.databaseBackup.backupSuccess",
@@ -487,7 +506,7 @@ const DatabaseBackupSettings = () => {
 
 	const handleOpenBackupFolder = async () => {
 		try {
-			await openDatabaseBackupFolder();
+			await openDatabaseBackupFolder(dbBackupPath);
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error
@@ -505,12 +524,79 @@ const DatabaseBackupSettings = () => {
 		}
 	};
 
+	const handleSaveDbBackupPath = async () => {
+		setIsLoadingDbPath(true);
+		try {
+			await settingsService.setDbBackupPath(dbBackupPath);
+			snackbar.success(
+				t("pages.Settings.databaseBackup.savePathSuccess", "备份路径已保存"),
+			);
+		} catch (e) {
+			console.error(e);
+			snackbar.error(
+				t("pages.Settings.databaseBackup.savePathError", "保存失败"),
+			);
+		} finally {
+			setIsLoadingDbPath(false);
+		}
+	};
+
+	const handleSelectFolder = async () => {
+		try {
+			const selectedPath = await handleGetFolder();
+			if (selectedPath) {
+				setDbBackupPath(selectedPath);
+			}
+		} catch (error) {
+			console.error(error);
+			snackbar.error(
+				t("pages.Settings.databaseBackup.selectFolderError", "选择文件夹失败"),
+			);
+		}
+	};
+
 	return (
 		<Box className="mb-6">
 			<InputLabel className="font-semibold mb-4">
 				{t("pages.Settings.databaseBackup.title", "数据库备份")}
 			</InputLabel>
 
+			<Stack direction="row" spacing={2} alignItems="center" className="mb-3">
+				<TextField
+					label={t(
+						"pages.Settings.databaseBackup.pathLabel",
+						"数据库备份保存路径",
+					)}
+					variant="outlined"
+					value={dbBackupPath}
+					onChange={(e) => setDbBackupPath(e.target.value)}
+					className="min-w-60 flex-grow"
+					placeholder={t(
+						"pages.Settings.databaseBackup.pathPlaceholder",
+						"选择或输入保存路径",
+					)}
+					disabled={isLoadingDbPath}
+				/>
+
+				<Button
+					variant="outlined"
+					onClick={handleSelectFolder}
+					disabled={isLoadingDbPath || !isTauri()}
+					startIcon={<FolderOpenIcon />}
+					className="px-4 py-2"
+				>
+					{t("pages.Settings.databaseBackup.selectFolder", "选择目录")}
+				</Button>
+				<Button
+					variant="contained"
+					color="primary"
+					onClick={handleSaveDbBackupPath}
+					startIcon={<SaveIcon />}
+					className="px-4 py-2 ml-2"
+				>
+					{t("pages.Settings.databaseBackup.savePathBtn", "保存")}
+				</Button>
+			</Stack>
 			<Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
 				<Button
 					variant="contained"

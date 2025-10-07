@@ -521,7 +521,7 @@ impl GamesRepository {
             file: Set(file_name.to_string()),
             backup_time: Set(backup_time),
             file_size: Set(file_size),
-            created_at: Set(Some(backup_time)),
+            created_at: NotSet,
         };
         let result = savedata_record.insert(db).await?;
         Ok(result.id)

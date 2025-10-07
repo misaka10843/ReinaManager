@@ -130,7 +130,6 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 			};
 		}
 		const transformedData = transformApiGameData(apiData);
-		console.log(transformedData);
 		return transformedData;
 	}, [idType, bgmId, vndbId, bgmToken, selectedGame, t]);
 

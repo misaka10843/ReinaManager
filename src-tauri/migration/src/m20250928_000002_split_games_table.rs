@@ -161,7 +161,7 @@ async fn split_games_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
     txn.execute_unprepared("DROP TABLE game_sessions;").await?;
     txn.execute_unprepared(
         r#"CREATE TABLE "game_sessions" (
-            "session_id" INTEGER PRIMARY KEY,
+            "session_id" INTEGER PRIMARY KEY AUTOINCREMENT,
             "game_id" INTEGER NOT NULL,
             "start_time" INTEGER NOT NULL,
             "end_time" INTEGER NOT NULL,
@@ -206,12 +206,12 @@ async fn split_games_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
     txn.execute_unprepared("DROP TABLE savedata;").await?;
     txn.execute_unprepared(
         r#"CREATE TABLE "savedata" (
-            "id" INTEGER PRIMARY KEY,
+            "id" INTEGER PRIMARY KEY AUTOINCREMENT,
             "game_id" INTEGER NOT NULL,
             "file" TEXT NOT NULL,
             "backup_time" INTEGER NOT NULL,
             "file_size" INTEGER NOT NULL,
-            "created_at" INTEGER,
+            "created_at" INTEGER DEFAULT (strftime('%s', 'now')),
             FOREIGN KEY("game_id") REFERENCES "games_new"("id") ON DELETE CASCADE
         )"#,
     )
@@ -225,6 +225,14 @@ async fn split_games_table(manager: &SchemaManager<'_>) -> Result<(), DbErr> {
     txn.execute_unprepared("DROP TABLE games;").await?;
     txn.execute_unprepared(r#"ALTER TABLE "games_new" RENAME TO "games""#)
         .await?;
+
+    // 为 user 表添加新列 db_backup_path，用于存储用户选择的数据库备份保存路径（可为空）
+    // 使用 ALTER TABLE ADD COLUMN 不会影响原有数据，SQLite 会把新列设为 NULL
+    txn.execute_unprepared(
+        r#"-- Add db_backup_path column to user table
+        ALTER TABLE "user" ADD COLUMN "db_backup_path" TEXT;"#,
+    )
+    .await?;
 
     // 8. 提交事务
     txn.commit().await?;

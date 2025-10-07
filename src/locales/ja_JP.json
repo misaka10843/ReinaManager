@@ -81,6 +81,13 @@
 			},
 			"databaseBackup": {
 				"title": "データベースバックアップ",
+				"pathLabel": "データベースバックアップ保存パス",
+				"pathPlaceholder": "保存パスを選択または入力",
+				"selectFolder": "ディレクトリを選択",
+				"selectFolderError": "フォルダの選択に失敗しました",
+				"savePathBtn": "保存",
+				"savePathSuccess": "バックアップパスが保存されました",
+				"savePathError": "保存に失敗しました",
 				"backup": "データベースをバックアップ",
 				"backing": "バックアップ中...",
 				"openFolder": "バックアップフォルダを開く",

@@ -81,6 +81,13 @@
 			},
 			"databaseBackup": {
 				"title": "Database Backup",
+				"pathLabel": "Database Backup Save Path",
+				"pathPlaceholder": "Select or enter save path",
+				"selectFolder": "Select Directory",
+				"selectFolderError": "Failed to select folder",
+				"savePathBtn": "Save",
+				"savePathSuccess": "Backup path saved",
+				"savePathError": "Save failed",
 				"backup": "Backup Database",
 				"backing": "Backing up...",
 				"openFolder": "Open Backup Folder",

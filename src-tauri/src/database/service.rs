@@ -413,6 +413,25 @@ pub async fn set_save_root_path(
         .map_err(|e| format!("设置存档根路径失败: {}", e))
 }
 
+/// 获取数据库备份保存路径
+#[tauri::command]
+pub async fn get_db_backup_path(db: State<'_, DatabaseConnection>) -> Result<String, String> {
+    SettingsRepository::get_db_backup_path(&db)
+        .await
+        .map_err(|e| format!("获取数据库备份保存路径失败: {}", e))
+}
+
+/// 设置数据库备份保存路径
+#[tauri::command]
+pub async fn set_db_backup_path(
+    db: State<'_, DatabaseConnection>,
+    path: String,
+) -> Result<(), String> {
+    SettingsRepository::set_db_backup_path(&db, path)
+        .await
+        .map_err(|e| format!("设置数据库备份保存路径失败: {}", e))
+}
+
 /// 获取所有设置
 #[tauri::command]
 pub async fn get_all_settings(db: State<'_, DatabaseConnection>) -> Result<user::Model, String> {
@@ -427,26 +446,11 @@ pub async fn update_settings(
     db: State<'_, DatabaseConnection>,
     bgm_token: Option<String>,
     save_root_path: Option<String>,
+    db_backup_path: Option<String>,
 ) -> Result<(), String> {
-    SettingsRepository::update_settings(&db, bgm_token, save_root_path)
+    SettingsRepository::update_settings(&db, bgm_token, save_root_path, db_backup_path)
         .await
         .map_err(|e| format!("更新设置失败: {}", e))
-}
-
-/// 清除 BGM Token
-#[tauri::command]
-pub async fn clear_bgm_token(db: State<'_, DatabaseConnection>) -> Result<(), String> {
-    SettingsRepository::clear_bgm_token(&db)
-        .await
-        .map_err(|e| format!("清除 BGM Token 失败: {}", e))
-}
-
-/// 清除存档根路径
-#[tauri::command]
-pub async fn clear_save_root_path(db: State<'_, DatabaseConnection>) -> Result<(), String> {
-    SettingsRepository::clear_save_root_path(&db)
-        .await
-        .map_err(|e| format!("清除存档根路径失败: {}", e))
 }
 
 // ==================== 合集相关 ====================

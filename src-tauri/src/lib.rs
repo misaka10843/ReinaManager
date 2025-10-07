@@ -80,10 +80,10 @@ pub fn run() {
             set_bgm_token,
             get_save_root_path,
             set_save_root_path,
+            get_db_backup_path,
+            set_db_backup_path,
             get_all_settings,
             update_settings,
-            clear_bgm_token,
-            clear_save_root_path,
             // 合集相关 commands
             create_collection,
             find_collection_by_id,

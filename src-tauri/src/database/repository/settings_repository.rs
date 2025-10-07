@@ -15,6 +15,7 @@ impl SettingsRepository {
                 id: Set(1),
                 bgm_token: Set(None),
                 save_root_path: Set(None),
+                db_backup_path: Set(None),
             };
 
             user.insert(db).await?;
@@ -79,6 +80,34 @@ impl SettingsRepository {
         Ok(())
     }
 
+    /// 获取数据库备份保存路径
+    pub async fn get_db_backup_path(db: &DatabaseConnection) -> Result<String, DbErr> {
+        Self::ensure_user_exists(db).await?;
+
+        let user = User::find_by_id(1)
+            .one(db)
+            .await?
+            .ok_or(DbErr::RecordNotFound("User record not found".to_string()))?;
+
+        Ok(user.db_backup_path.unwrap_or_default())
+    }
+
+    /// 设置数据库备份保存路径
+    pub async fn set_db_backup_path(db: &DatabaseConnection, path: String) -> Result<(), DbErr> {
+        Self::ensure_user_exists(db).await?;
+
+        let user = User::find_by_id(1)
+            .one(db)
+            .await?
+            .ok_or(DbErr::RecordNotFound("User record not found".to_string()))?;
+
+        let mut active: user::ActiveModel = user.into();
+        active.db_backup_path = Set(Some(path));
+
+        active.update(db).await?;
+        Ok(())
+    }
+
     /// 获取所有设置
     pub async fn get_all_settings(db: &DatabaseConnection) -> Result<user::Model, DbErr> {
         Self::ensure_user_exists(db).await?;
@@ -94,6 +123,7 @@ impl SettingsRepository {
         db: &DatabaseConnection,
         bgm_token: Option<String>,
         save_root_path: Option<String>,
+        db_backup_path: Option<String>,
     ) -> Result<(), DbErr> {
         Self::ensure_user_exists(db).await?;
 
@@ -112,37 +142,9 @@ impl SettingsRepository {
             active.save_root_path = Set(Some(path));
         }
 
-        active.update(db).await?;
-        Ok(())
-    }
-
-    /// 清除 BGM Token
-    pub async fn clear_bgm_token(db: &DatabaseConnection) -> Result<(), DbErr> {
-        Self::ensure_user_exists(db).await?;
-
-        let user = User::find_by_id(1)
-            .one(db)
-            .await?
-            .ok_or(DbErr::RecordNotFound("User record not found".to_string()))?;
-
-        let mut active: user::ActiveModel = user.into();
-        active.bgm_token = Set(None);
-
-        active.update(db).await?;
-        Ok(())
-    }
-
-    /// 清除存档根路径
-    pub async fn clear_save_root_path(db: &DatabaseConnection) -> Result<(), DbErr> {
-        Self::ensure_user_exists(db).await?;
-
-        let user = User::find_by_id(1)
-            .one(db)
-            .await?
-            .ok_or(DbErr::RecordNotFound("User record not found".to_string()))?;
-
-        let mut active: user::ActiveModel = user.into();
-        active.save_root_path = Set(None);
+        if let Some(path) = db_backup_path {
+            active.db_backup_path = Set(Some(path));
+        }
 
         active.update(db).await?;
         Ok(())
