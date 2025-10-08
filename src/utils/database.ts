@@ -5,7 +5,13 @@ import { BaseDirectory, copyFile, mkdir } from "@tauri-apps/plugin-fs";
 export async function backupDatabase(backup_path?: string): Promise<string> {
 	// 生成带时间戳的备份文件名
 	const AppData = await appDataDir();
-	const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+	function formatTimestampLocal() {
+		const d = new Date();
+		const pad = (n: number) => String(n).padStart(2, "0");
+		return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+	}
+
+	const timestamp = formatTimestampLocal();
 	const backupName = `reina_manager_${timestamp}.db`;
 	const backupPath = `data/backups/${backupName}`;
 

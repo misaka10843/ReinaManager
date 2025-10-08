@@ -2,6 +2,8 @@ use sea_orm::{ConnectionTrait, DatabaseBackend, Statement};
 use sea_orm_migration::prelude::*;
 use sea_orm_migration::sea_orm::TransactionTrait;
 
+use crate::backup::{backup_sqlite, get_db_path};
+
 #[derive(DeriveMigrationName)]
 pub struct Migration;
 
@@ -20,6 +22,11 @@ impl MigrationTrait for Migration {
             println!("[MIGRATION] New user detected, creating modern split table structure");
             create_modern_schema(&txn).await?;
         } else {
+            // 迁移前备份数据库
+            match backup_sqlite("v0.6.9").await {
+                Ok(path) => println!("[MIGRATION] Database backed up to: {}", path.display()),
+                Err(e) => println!("[MIGRATION] Backup failed (continuing anyway): {}", e),
+            }
             println!("[MIGRATION] Existing user detected, running legacy migration catch-up");
             run_legacy_migrations_with_sqlx().await?;
         }
@@ -271,27 +278,6 @@ async fn run_legacy_migrations_with_sqlx() -> Result<(), DbErr> {
     pool.close().await;
     println!("[MIGRATION] Legacy migrations completed successfully");
     Ok(())
-}
-
-/// 从系统目录推导数据库连接字符串（无需外部参数）
-fn get_db_path() -> Result<String, DbErr> {
-    use std::path::PathBuf;
-
-    // 使用 config_dir (Roaming on Windows) 来匹配原先的 app_data_dir 行为
-    let base = dirs_next::config_dir()
-        .or_else(dirs_next::data_dir)
-        .ok_or_else(|| DbErr::Custom("Failed to resolve user data directory".to_string()))?;
-
-    let db_path: PathBuf = base
-        .join("com.reinamanager.dev")
-        .join("data")
-        .join("reina_manager.db");
-
-    // 使用 url::Url::from_file_path 保证路径格式正确
-    let db_url = url::Url::from_file_path(&db_path)
-        .map_err(|_| DbErr::Custom("Invalid database path".to_string()))?;
-    let conn = format!("sqlite:{}?mode=rwc", db_url.path());
-    Ok(conn)
 }
 
 /// 运行旧迁移 001 - 数据库初始化

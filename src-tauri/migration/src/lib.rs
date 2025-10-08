@@ -1,5 +1,6 @@
 pub use sea_orm_migration::prelude::*;
 
+mod backup;
 mod m20250927_000001_baseline_migration;
 mod m20250928_000002_split_games_table;
 mod m20250930_000003_add_collections;
