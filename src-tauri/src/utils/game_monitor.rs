@@ -1,11 +1,10 @@
 use serde_json::json;
 use std::{
     path::Path,
-    thread,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 // 导入 sysinfo 相关类型和 trait
-use sysinfo::{PidExt, ProcessExt, System, SystemExt};
+use sysinfo::{ProcessesToUpdate, System};
 use tauri::{AppHandle, Emitter, Runtime};
 
 #[cfg(target_os = "windows")]
@@ -29,27 +28,26 @@ fn get_timestamp() -> u64 {
         .as_secs()
 }
 
-/// Tauri 命令：启动指定游戏进程的监控。
+/// 启动指定游戏进程的监控。
 ///
 /// # Arguments
 /// * `app_handle` - Tauri 应用句柄，用于发送事件到前端。
 /// * `game_id` - 游戏的唯一标识符。
 /// * `process_id` - 要开始监控的游戏进程的初始 PID。
 /// * `executable_path` - 游戏主可执行文件的完整路径，用于在进程重启或切换后重新查找。
-#[tauri::command]
 pub async fn monitor_game<R: Runtime>(
     app_handle: AppHandle<R>,
     game_id: u32,
     process_id: u32,
     executable_path: String,
 ) {
-    // 在新线程中运行监控逻辑，避免阻塞 Tauri 的主事件循环。
+    // 使用 Tauri 的异步运行时启动监控任务，与事件循环深度集成
     let app_handle_clone = app_handle.clone();
-    // 优化：在监控线程启动前创建 System 实例，避免在循环中重复创建。
+    // 优化：在监控任务启动前创建 System 实例，避免在循环中重复创建。
     // 使用 System::new() 可避免首次加载所有系统信息，按需刷新。
     let mut sys = System::new();
 
-    thread::spawn(move || {
+    tauri::async_runtime::spawn(async move {
         // 将 System 实例的可变引用传递给实际的监控循环。
         if let Err(e) = run_game_monitor(
             app_handle_clone,
@@ -57,8 +55,10 @@ pub async fn monitor_game<R: Runtime>(
             process_id,
             executable_path,
             &mut sys,
-        ) {
-            eprintln!("游戏监控线程 (game_id: {}) 出错: {}", game_id, e);
+        )
+        .await
+        {
+            eprintln!("游戏监控任务 (game_id: {}) 出错: {}", game_id, e);
         }
     });
 }
@@ -71,7 +71,7 @@ pub async fn monitor_game<R: Runtime>(
 /// * `process_id` - 初始监控的进程 PID。
 /// * `executable_path` - 游戏主可执行文件路径。
 /// * `sys` - 对 `sysinfo::System` 的可变引用，用于进程信息查询。
-fn run_game_monitor<R: Runtime>(
+async fn run_game_monitor<R: Runtime>(
     app_handle: AppHandle<R>,
     game_id: u32,
     process_id: u32, // 初始监控的进程 PID，可能会在检测后改变。
@@ -80,7 +80,7 @@ fn run_game_monitor<R: Runtime>(
 ) -> Result<(), String> {
     let mut accumulated_seconds = 0u64; // 使用 u64 避免溢出
     let start_time = get_timestamp();
-    thread::sleep(Duration::from_secs(1));
+    tokio::time::sleep(Duration::from_secs(1)).await;
 
     // 使用智能选择函数获取最佳的 PID
     let mut process_id = select_best_pid(process_id, &executable_path, sys);
@@ -172,7 +172,7 @@ fn run_game_monitor<R: Runtime>(
             if is_window_foreground_for_pid(process_id) {
                 accumulated_seconds += 1;
                 // 大约每 30 秒向前端发送一次累计时间更新。
-                if accumulated_seconds > 0 && accumulated_seconds % 30 == 0 {
+                if accumulated_seconds > 0 && accumulated_seconds.is_multiple_of(30) {
                     let minutes = accumulated_seconds / 60;
                     app_handle
                         .emit(
@@ -187,8 +187,8 @@ fn run_game_monitor<R: Runtime>(
             }
         }
 
-        // 每次循环等待 1 秒，以降低 CPU 占用。
-        thread::sleep(Duration::from_secs(1));
+        // 每次循环等待 1 秒，以降低 CPU 占用。使用异步等待避免阻塞事件循环。
+        tokio::time::sleep(Duration::from_secs(1)).await;
     }
 
     // 监控循环结束后的处理逻辑。
@@ -254,8 +254,8 @@ fn is_process_running(pid: u32) -> bool {
     // 注意：这个实现效率不高，因为它每次都创建新的 System 对象。
     // 理想情况下，如果需要跨平台支持，应该也将共享的 `sys` 实例传递到这里。
     let mut s = System::new();
-    s.refresh_processes();
-    s.process(sysinfo::Pid::from_u32(pid)).is_some()
+    s.refresh_processes(ProcessesToUpdate::All, true);
+    s.process(Pid::from_u32(pid)).is_some()
 }
 
 /// 检查目标目录下的任意进程是否拥有前台窗口 (仅 Windows)。
@@ -285,7 +285,8 @@ fn is_window_foreground_for_pid(_pid: u32) -> bool {
 #[cfg(target_os = "windows")]
 fn has_window_for_pid(pid: u32) -> bool {
     use std::sync::atomic::{AtomicBool, Ordering};
-    use windows::Win32::Foundation::{BOOL, HWND, LPARAM};
+    use windows::core::BOOL;
+    use windows::Win32::Foundation::{HWND, LPARAM};
     use windows::Win32::UI::WindowsAndMessaging::{
         EnumWindows, GetWindowThreadProcessId, IsWindowVisible,
     };
@@ -336,7 +337,7 @@ fn has_window_for_pid(_pid: u32) -> bool {
 /// # Returns
 /// 返回该目录及子目录下所有正在运行进程的 PID 列表。
 fn get_processes_in_directory(executable_path: &str, sys: &mut System) -> Vec<u32> {
-    sys.refresh_processes();
+    sys.refresh_processes(ProcessesToUpdate::All, true);
     let target_dir = Path::new(executable_path).parent();
     if target_dir.is_none() {
         return Vec::new();
@@ -345,11 +346,12 @@ fn get_processes_in_directory(executable_path: &str, sys: &mut System) -> Vec<u3
 
     let mut pids = Vec::new();
     for (pid, process) in sys.processes() {
-        let process_exe_path = process.exe();
-        if let Some(process_dir) = process_exe_path.parent() {
-            // 检查进程是否在目标目录或其子目录中
-            if process_dir == target_dir || process_dir.starts_with(target_dir) {
-                pids.push(pid.as_u32());
+        if let Some(process_exe_path) = process.exe() {
+            if let Some(process_dir) = process_exe_path.parent() {
+                // 检查进程是否在目标目录或其子目录中
+                if process_dir == target_dir || process_dir.starts_with(target_dir) {
+                    pids.push(pid.as_u32());
+                }
             }
         }
     }

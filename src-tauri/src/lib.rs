@@ -9,7 +9,6 @@ use migration::MigratorTrait;
 use tauri::Manager;
 use utils::{
     fs::{copy_file, delete_file, delete_game_covers, move_backup_folder, open_directory},
-    game_monitor::monitor_game,
     launch::launch_game,
 };
 
@@ -37,7 +36,6 @@ pub fn run() {
             open_directory,
             move_backup_folder,
             copy_file,
-            monitor_game,
             create_savedata_backup,
             delete_savedata_backup,
             delete_file,
@@ -122,7 +120,6 @@ pub fn run() {
 
                         // 将数据库连接注册到 Tauri 状态管理
                         app_handle.manage(conn);
-                        log::info!("数据库连接已注册到状态管理");
                     }
                     Err(e) => {
                         log::error!("无法建立数据库连接: {}", e);
@@ -135,6 +132,12 @@ pub fn run() {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()
                         .level(log::LevelFilter::Info)
+                        .build(),
+                )?;
+            } else {
+                app.handle().plugin(
+                    tauri_plugin_log::Builder::default()
+                        .level(log::LevelFilter::Warn)
                         .build(),
                 )?;
             }

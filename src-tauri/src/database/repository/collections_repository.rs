@@ -1,14 +1,6 @@
 use crate::entity::prelude::*;
 use crate::entity::{collections, game_collection_link};
 use sea_orm::*;
-use serde::{Deserialize, Serialize};
-
-/// 完整的合集数据（包含游戏列表）
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CollectionWithGames {
-    pub collection: collections::Model,
-    pub game_ids: Vec<i32>,
-}
 
 /// 合集数据仓库
 pub struct CollectionsRepository;
