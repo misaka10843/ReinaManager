@@ -7,6 +7,7 @@ use backup::savedata::{create_savedata_backup, delete_savedata_backup};
 use database::*;
 use migration::MigratorTrait;
 use tauri::Manager;
+use tauri_plugin_log::{Target, TargetKind};
 use utils::{
     fs::{copy_file, delete_file, delete_game_covers, move_backup_folder, open_directory},
     launch::launch_game,
@@ -132,6 +133,10 @@ pub fn run() {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()
                         .level(log::LevelFilter::Info)
+                        .targets([Target::new(TargetKind::LogDir {
+                            // set custom log file name for debug
+                            file_name: Some("debug".into()),
+                        })])
                         .build(),
                 )?;
             } else {
