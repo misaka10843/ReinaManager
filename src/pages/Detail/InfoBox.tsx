@@ -31,11 +31,9 @@ interface InfoBoxProps {
  * 展示游戏统计信息（游玩次数、今日时长、总时长、备份次数）及近7天游玩时长折线图。
  *
  * @param {InfoBoxProps} props 组件属性
- * @returns {JSX.Element} 统计信息卡片与折线图
+ * @returns 统计信息卡片与折线图
  */
-export const InfoBox: React.FC<InfoBoxProps> = ({
-	gameID,
-}: InfoBoxProps): JSX.Element => {
+export const InfoBox: React.FC<InfoBoxProps> = ({ gameID }: InfoBoxProps) => {
 	const { t } = useTranslation();
 	const { loadGameStats, runningGameIds } = useGamePlayStore();
 	const [stats, setStats] = useState<GameTimeStats | null>(null);

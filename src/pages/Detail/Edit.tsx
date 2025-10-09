@@ -15,9 +15,9 @@ import { GameInfoEdit } from "./GameInfoEdit";
  * 游戏信息编辑页面主组件，管理子组件之间的状态和交互
  *
  * @component
- * @returns {JSX.Element} 编辑页面
+ * @returns 编辑页面
  */
-export const Edit = (): JSX.Element => {
+export const Edit: React.FC = () => {
 	const { bgmToken, updateGame, selectedGame } = useStore();
 	const id = Number(useLocation().pathname.split("/").pop());
 	const { t } = useTranslation();

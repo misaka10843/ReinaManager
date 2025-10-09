@@ -103,22 +103,19 @@ export const Layout: React.FC = () => {
 		return () => <CustomAppTitle isLibraries={isLibraries} />;
 	}, [isLibraries]);
 
-	const handleRenderPageItem = useCallback(
-		(item: NavigationPageItem, params: { mini: boolean }) => {
-			const to = `/${item.segment || ""}`;
-			// 外层不渲染 <a>，而是使用可访问的 span 进行编程式导航，
-			// 在导航前 LinkWithScrollSave 会保存滚动位置，避免嵌套 <a>。
-			return (
-				<LinkWithScrollSave
-					to={to}
-					style={{ textDecoration: "none", color: "inherit" }}
-				>
-					<DashboardSidebarPageItem item={item} mini={params.mini} />
-				</LinkWithScrollSave>
-			);
-		},
-		[],
-	);
+	const handleRenderPageItem = useCallback((item: NavigationPageItem) => {
+		const to = `/${item.segment || ""}`;
+		// 外层不渲染 <a>，而是使用可访问的 span 进行编程式导航，
+		// 在导航前 LinkWithScrollSave 会保存滚动位置，避免嵌套 <a>。
+		return (
+			<LinkWithScrollSave
+				to={to}
+				style={{ textDecoration: "none", color: "inherit" }}
+			>
+				<DashboardSidebarPageItem item={item} />
+			</LinkWithScrollSave>
+		);
+	}, []);
 
 	return (
 		<DashboardLayout

@@ -1,4 +1,3 @@
-import type React from "react";
 import type { LinkProps, To } from "react-router-dom";
 import { useLocation, useNavigate } from "react-router-dom";
 import { saveScrollPosition } from "@/utils";

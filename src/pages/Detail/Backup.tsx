@@ -41,9 +41,9 @@ import {
  * 游戏存档备份页面
  *
  * @component
- * @returns {JSX.Element} 备份页面
+ * @returns 备份页面
  */
-export const Backup = (): JSX.Element => {
+export const Backup: React.FC = () => {
 	const { selectedGame, updateGame } = useStore();
 	const { t } = useTranslation();
 
