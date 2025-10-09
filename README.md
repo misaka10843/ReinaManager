@@ -33,6 +33,8 @@ The `Reina` in the name is the character <a href="https://vndb.org/c64303"><b>å¦
 
 - Rust
 
+- SeaORM
+
 ## Todo
 
 - [x] Add exe to Launch games
@@ -54,6 +56,7 @@ The `Reina` in the name is the character <a href="https://vndb.org/c64303"><b>å¦
 - [x] Add hide NSFW filter
 - [x] Add custom cover and custom name for games
 - [x] enhance search function to include alias, all titles and custom name
+- [ ] Add category page for manage games
 
 ## Demo
 ##### Frontend Demo
@@ -69,6 +72,41 @@ The `Reina` in the name is the character <a href="https://vndb.org/c64303"><b>å¦
 ![Setting](screenshots/setting.png)
 
 For more, you can download the latest Release Version: [Download](https://github.com/huoshen80/ReinaManager/releases)
+
+## Contribution
+##### Start
+Contributions are welcome! If you have suggestions for improvements, bug reports, or want to submit a pull request, please follow these steps:
+
+1. Fork this repository and create your branch from `main`.
+2. If you have fixed a bug or added a feature, please try to conduct the corresponding tests.
+3. Ensure your code follows the existing style and passes all checks.
+4. Submit a pull request with a clear description of your changes.
+
+##### How to build and run the project locally
+1. Make sure you have [Node.js](https://nodejs.org/) and [Rust](https://www.rust-lang.org/) installed on your machine.
+2. Clone the repository:
+   ```bash
+   git clone https://github.com/huoshen80/ReinaManager.git
+   cd ReinaManager
+   ```
+3. Install the dependencies:
+   ```bash
+   pnpm install
+   ```
+4. Run the development server:
+   ```bash
+   pnpm tauri dev
+   ```
+5. Build the application for production:
+   ```bash
+   pnpm tauri build
+   ```
+
+Thank you for all the contributions you have made to ReinaManager!
+
+## Donate
+If you find this project helpful and would like to support its development, you can consider donating. Your support is greatly appreciated!
+- [donate link](https://cdn.huoshen80.top/233.html)
 
 ## License
 

@@ -33,6 +33,8 @@
 
 - Rust
 
+- SeaORM
+
 ## 待辦事項
 
 - [x] 添加可執行文件以啟動遊戲
@@ -54,6 +56,7 @@
 - [x] 添加NSFW內容過濾
 - [x] 添加自定封面和自定名稱功能
 - [x] 增強搜索功能以包括別名、所有標題和自定名稱
+- [ ] 添加分類頁面以管理遊戲
 
 ## 展示
 
@@ -70,6 +73,41 @@
 ![設定頁](screenshots/setting.png)
 
 更多資訊，您可以下載最新的發布版本：[下載](https://github.com/huoshen80/ReinaManager/releases)
+
+## 貢獻
+##### 開始
+歡迎各種形式的貢獻！如果你有改進建議、發現了 bug，或想提交 Pull Request，請依照以下步驟：
+
+1. Fork 本倉庫，並從 `main` 分支建立新分支。
+2. 若修復了 bug 或新增功能，請盡量進行相關測試。
+3. 請確保程式碼風格與現有代碼一致，並通過所有檢查。
+4. 提交 Pull Request，並清楚描述你的更改內容。
+
+##### 本機建構與執行專案
+1. 確保已安裝 [Node.js](https://nodejs.org/) 及 [Rust](https://www.rust-lang.org/)。
+2. Clone 倉庫：
+   ```bash
+   git clone https://github.com/huoshen80/ReinaManager.git
+   cd ReinaManager
+   ```
+3. 安裝依賴：
+   ```bash
+   pnpm install
+   ```
+4. 啟動開發伺服器：
+   ```bash
+   pnpm tauri dev
+   ```
+5. 建構生產版本：
+   ```bash
+   pnpm tauri build
+   ```
+
+感謝你為 ReinaManager 做出的所有貢獻！
+
+## Donate
+如果你覺得這個專案好用，並希望支持項目的開發，可以考慮捐贈。非常感謝每個支持者！
+- [donate link](https://cdn.huoshen80.top/233.html)
 
 ## 許可證
 
