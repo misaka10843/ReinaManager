@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'  # 匹配所有以v开头的tag，如v1.0.0
+      - 'v*'
   workflow_dispatch:
     inputs:
       tag_name:
@@ -17,82 +17,11 @@ on:
         type: boolean
 
 jobs:
-  release:
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        rust_target: [ x86_64-pc-windows-msvc, aarch64-pc-windows-msvc ]
-    environment: TAURI_KEY
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # 获取完整的git历史用于changelog
-
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.19.0'
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 8
-          run_install: false
-
-      - name: Get pnpm store directory
-        id: pnpm-store
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ steps.pnpm-store.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.rust_target }}
-
-      - name: Rust cache
-        uses: swatinem/rust-cache@v2
-        with:
-          workspaces: "./src-tauri -> target"
-
-      - name: Install dependencies
-        run: pnpm install
-
-      - name: Build and Release with Tauri Action
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
-          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
-          TAURI_UPDATER_ACTIVE: true
-        with:
-          tagName: ${{ github.ref_name }}
-          releaseName: ${{ github.ref_name }}
-          releaseBody: "Draft release, will be updated later."
-          releaseDraft: true
-          prerelease: false
-          includeUpdaterJson: true
-          includeRelease: true
-          releaseCommitish: ${{ github.sha }}
-          tauriScript: pnpm tauri
-          args: --target ${{ matrix.rust_target }}
-
-  finalize_release:
-    name: Finalize Release
+  prepare:
+    name: Prepare Release
     runs-on: ubuntu-latest
-    needs: release
-    if: startsWith(github.ref, 'refs/tags/')
+    outputs:
+      changelog: ${{ steps.changelog.outputs.CHANGELOG_CONTENT }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -105,41 +34,79 @@ jobs:
         run: |
           VERSION=$(node -p "require('./package.json').version")
           echo "Looking for version: $VERSION"
+          CHANGELOG_FILE=$(mktemp)
+          awk "/^## \\[?v?${VERSION//./\\.}\]?/ {flag=1; next} /^## / && flag {flag=0} flag {print}" CHANGELOG.md > "$CHANGELOG_FILE"
           
-          if [ -f "CHANGELOG.md" ]; then
-            # 使用更安全的方式处理多行内容，支持多种版本格式
-            CHANGELOG_FILE=$(mktemp)
-            # 支持 0.6.6-1, v0.6.6-1, [0.6.6-1], [v0.6.6-1] 等格式
-            awk "
-            /^## \[?v?${VERSION//./\\.}\]?/ ||
-            /^## \[?v?${VERSION//./\\.}[[:space:]]*\]/ ||
-            /^## v?${VERSION//./\\.}[[:space:]]*$/ ||
-            /^## \[?v?${VERSION//./\\.}\)?[[:space:]]*\(/ {
-              flag=1; next
-            } 
-            /^## / && flag {
-              flag=0
-            } 
-            flag {
-              print
-            }" CHANGELOG.md > "$CHANGELOG_FILE"
-            
-            if [ -s "$CHANGELOG_FILE" ]; then
-              {
-                echo "CHANGELOG_CONTENT<<EOF"
-                cat "$CHANGELOG_FILE"
-                echo "EOF"
-              } >> $GITHUB_OUTPUT
-              echo "Found changelog content"
-            else
-              echo "CHANGELOG_CONTENT=See the assets to download and install this version." >> $GITHUB_OUTPUT
-              echo "No matching changelog found for version $VERSION"
-            fi
-            rm -f "$CHANGELOG_FILE"
+          if [ -s "$CHANGELOG_FILE" ]; then
+            {
+              echo "CHANGELOG_CONTENT<<EOF"
+              cat "$CHANGELOG_FILE"
+              echo "EOF"
+            } >> $GITHUB_OUTPUT
+            echo "Found changelog content"
           else
             echo "CHANGELOG_CONTENT=See the assets to download and install this version." >> $GITHUB_OUTPUT
-            echo "CHANGELOG.md not found"
+            echo "No matching changelog found for version $VERSION"
           fi
+          rm -f "$CHANGELOG_FILE"
+
+  build-and-upload:
+    name: Build and Upload
+    runs-on: windows-latest
+    needs: prepare
+    strategy:
+      # 控制上传顺序：将 x86_64 放在前面
+      matrix:
+        rust_target: [ x86_64-pc-windows-msvc, aarch64-pc-windows-msvc ]
+    environment: TAURI_KEY
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.19.0'
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_target }}
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+      - name: Install dependencies
+        run: pnpm install
+      - name: Build and Upload to Draft Release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+          TAURI_UPDATER_ACTIVE: true
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: ${{ github.ref_name }}
+          releaseBody: ${{ needs.prepare.outputs.changelog }}
+          releaseDraft: true
+          prerelease: false
+          includeUpdaterJson: true
+          includeRelease: true 
+          tauriScript: pnpm tauri
+          args: --target ${{ matrix.rust_target }}
+
+  finalize-release:
+    name: Finalize Release
+    runs-on: ubuntu-latest
+    needs: [prepare, build-and-upload] # 等待所有构建和上传完成
+    permissions:
+      contents: write # 需要权限来编辑 release
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Determine release type
         id: release-type
@@ -151,20 +118,60 @@ jobs:
             echo "IS_PRERELEASE=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Prepare Release Body
+        id: release_body
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          TAG_NAME="${{ github.ref_name }}"
+          # 从 GitHub API 获取草稿 release 的所有资源文件名
+          ASSETS_JSON=$(gh release view "$TAG_NAME" --json assets --jq '.assets | .[] | .name')
+          
+          # 查找 MSI 和 EXE 文件
+          X64_MSI=$(echo "$ASSETS_JSON" | grep -E "_x64_.*\.msi$" || echo "")
+          ARM64_MSI=$(echo "$ASSETS_JSON" | grep -E "_arm64_.*\.msi$" || echo "")
+          
+          CHANGELOG="${{ needs.prepare.outputs.changelog }}"
+          
+          # 为所有文件创建 URL
+          X64_MSI_URL="https://github.com/${{ github.repository }}/releases/download/$TAG_NAME/$X64_MSI"
+          ARM64_MSI_URL="https://github.com/${{ github.repository }}/releases/download/$TAG_NAME/$ARM64_MSI"
+          
+          DOWNLOAD_SECTION=$(cat <<EOF
+          ---
+          ### 📥 下载地址 (Download)
+          **Windows** (不支持 Win7)
+            - [**64位 (x64)**]($X64_MSI_URL)
+            - [**ARM64**]($ARM64_MSI_URL)
+          EOF
+          )
+            
+          FINAL_BODY=$(cat <<EOF
+          $CHANGELOG
+
+          $DOWNLOAD_SECTION
+          EOF
+          )
+          
+          {
+            echo "body<<EOF"
+            echo "$FINAL_BODY"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+
       - name: Publish Final Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: ${{ github.ref_name }}
-          body: ${{ steps.changelog.outputs.CHANGELOG_CONTENT }}
+          body: ${{ steps.release_body.outputs.body }}
           draft: false
           prerelease: ${{ steps.release-type.outputs.IS_PRERELEASE }}
-          token: ${{ secrets.GITHUB_TOKEN }}
 
   update_cdn_urls:
     name: Update CDN URLs in latest.json
     runs-on: ubuntu-latest
-    needs: finalize_release
+    needs: finalize-release # 等待 release 正式发布
     if: startsWith(github.ref, 'refs/tags/')
     steps:
       - name: Checkout repository
@@ -172,49 +179,27 @@ jobs:
 
       - name: Update latest.json with CDN URLs
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG_NAME="${{ github.ref_name }}"
-          URL="https://github.com/huoshen80/ReinaManager/releases/download/$TAG_NAME/latest.json"
+          URL="https://github.com/${{ github.repository }}/releases/download/$TAG_NAME/latest.json"
 
-          # 尝试下载，最多重试5次，每次间隔5秒
           n=0
-          until [ "$n" -ge 5 ]
-          do
+          until [ "$n" -ge 5 ]; do
             curl -L -f -o latest.json "$URL" && break
             n=$((n+1))
             sleep 5
           done
 
           if [ ! -f "latest.json" ]; then
-              echo "Error: Could not download latest.json after several retries."
-              exit 1
-          fi
-          
-          if [ -f "latest.json" ]; then
-            echo "Original latest.json:"
-            cat latest.json
-            
-            # 使用 jq 修改 URL，在前面添加 CDN 前缀
-            jq '
-              .platforms |= with_entries(
-                .value.url |= "https://gh.huoshen80.top/\(.)"
-              )
-            ' latest.json > latest_modified.json
-            
-            echo "Modified latest.json:"
-            cat latest_modified.json
-
-            # 用修改后的文件覆盖本地 latest.json
-            mv -f latest_modified.json latest.json
-            
-            # 重新上传修改后的 latest.json
-            gh release delete-asset "$TAG_NAME" "latest.json" || true
-            gh release upload $TAG_NAME "latest.json" --clobber
-            
-            echo "Successfully updated latest.json with CDN URLs"
-          else
-            echo "Error: Could not download latest.json"
+            echo "Error: Could not download latest.json after several retries."
             exit 1
           fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+          jq '.platforms |= with_entries(.value.url |= "https://gh.huoshen80.top/\(.)")' latest.json > latest_modified.json
+          mv -f latest_modified.json latest.json
+          
+          gh release upload $TAG_NAME "latest.json" --clobber
+          echo "Successfully updated latest.json with CDN URLs"
+

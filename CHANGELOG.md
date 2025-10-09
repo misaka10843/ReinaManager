@@ -1,3 +1,46 @@
+## [0.7.0](https://github.com/huoshen80/ReinaManager/compare/v0.6.9...v0.7.0) (2025-10-09)
+
+<details>
+<summary>查看中文版本</summary>
+
+### Bug 修复
+
+* 修复勾选“不再提醒”后，关闭按钮的默认行为无法保存的问题 ([54aab08](https://github.com/huoshen80/ReinaManager/commit/54aab0818c79ddc8790d2b33ecf159bd61eb93c5))
+
+### 新功能
+
+* 新增自定义数据库备份路径功能，调整部分数据库表结构与约束，解决 [#19](https://github.com/huoshen80/ReinaManager/issues/19) ([40d089b](https://github.com/huoshen80/ReinaManager/commit/40d089b7983fb9a2848ed812d96ca763626a2966))
+* 新增调试与发布日志功能 ([7bc734a](https://github.com/huoshen80/ReinaManager/commit/7bc734ab80438f8d6e395be276b7a9e9fb5e9b4b))
+* 集成 tauri-plugin-window-state，支持窗口状态保存，格式化部分代码并更新路由依赖 ([20086a6](https://github.com/huoshen80/ReinaManager/commit/20086a6fdd73801c9d0a003121354a8bccae5182))
+* 数据库迁移前自动备份数据库 ([36c71bf](https://github.com/huoshen80/ReinaManager/commit/36c71bf1c6ea093fd2b94e92c370c4df7904d2dd))
+* 持久化管理筛选偏好，使用 Zustand 替代 localStorage 管理持久化字段，规范排序与筛选组件代码 ([232e2bf](https://github.com/huoshen80/ReinaManager/commit/232e2bf331d3baf22ac344af3f42aff2bd5fd45b))
+
+### 性能改进
+
+* 路由配置扁平化，增强滚动恢复 hook 以更好适配 KeepAlive，优化卡片组件，新增分类页面文件夹 ([5d7427f](https://github.com/huoshen80/ReinaManager/commit/5d7427f063cd83ad54f2b4fb00cfd0a4f0c3d217))
+
+</details>
+
+### Bug Fixes
+
+* after checking 'Do not remind again,' the default behavior of the close button cannot save ([54aab08](https://github.com/huoshen80/ReinaManager/commit/54aab0818c79ddc8790d2b33ecf159bd61eb93c5))
+
+
+### Features
+
+* add a custom database backup path feature and adjust the structure and constraints of certain database tables resolve [#19](https://github.com/huoshen80/ReinaManager/issues/19) ([40d089b](https://github.com/huoshen80/ReinaManager/commit/40d089b7983fb9a2848ed812d96ca763626a2966))
+* add log for debug and release ([7bc734a](https://github.com/huoshen80/ReinaManager/commit/7bc734ab80438f8d6e395be276b7a9e9fb5e9b4b))
+* add tauri-plugin-window-state to save window state after exit,format some code  and update router dependences ([20086a6](https://github.com/huoshen80/ReinaManager/commit/20086a6fdd73801c9d0a003121354a8bccae5182))
+* auto backup database before migration ([36c71bf](https://github.com/huoshen80/ReinaManager/commit/36c71bf1c6ea093fd2b94e92c370c4df7904d2dd))
+* persistently manage filter preferences, use Zustand instead of localStorage to manage persistent fields, and standardize the code for sort and filter components. ([232e2bf](https://github.com/huoshen80/ReinaManager/commit/232e2bf331d3baf22ac344af3f42aff2bd5fd45b))
+
+
+### Performance Improvements
+
+* use a flattened routing config, enhance the scroll recovery hook to better adapt to KeepAlive, and optimize the cards component,create a new category page folder ([5d7427f](https://github.com/huoshen80/ReinaManager/commit/5d7427f063cd83ad54f2b4fb00cfd0a4f0c3d217))
+
+
+
 ## [0.6.9](https://github.com/huoshen80/ReinaManager/compare/v0.6.8...v0.6.9) (2025-09-18)
 
 <details>
