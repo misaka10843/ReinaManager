@@ -39,29 +39,17 @@ pub async fn find_full_game_by_id(
         .map_err(|e| format!("查询完整游戏数据失败: {}", e))
 }
 
-/// 获取所有游戏的完整数据（包含关联）
+/// 获取完整游戏数据（包含关联），支持按类型筛选和排序
 #[tauri::command]
-pub async fn find_all_full_games(
-    db: State<'_, DatabaseConnection>,
-    sort_option: SortOption,
-    sort_order: SortOrder,
-) -> Result<Vec<FullGameData>, String> {
-    GamesRepository::find_all_full(&db, sort_option, sort_order)
-        .await
-        .map_err(|e| format!("获取完整游戏列表失败: {}", e))
-}
-
-/// 根据类型筛选完整游戏数据（包含关联）
-#[tauri::command]
-pub async fn find_full_games_by_type(
+pub async fn find_full_games(
     db: State<'_, DatabaseConnection>,
     game_type: GameType,
     sort_option: SortOption,
     sort_order: SortOrder,
 ) -> Result<Vec<FullGameData>, String> {
-    GamesRepository::find_full_by_type(&db, game_type, sort_option, sort_order)
+    GamesRepository::find_full_games(&db, game_type, sort_option, sort_order)
         .await
-        .map_err(|e| format!("根据类型筛选完整游戏失败: {}", e))
+        .map_err(|e| format!("获取完整游戏数据失败: {}", e))
 }
 
 /// 批量更新游戏数据（包含关联数据）

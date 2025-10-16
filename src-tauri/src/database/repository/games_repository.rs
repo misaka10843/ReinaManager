@@ -245,65 +245,14 @@ impl GamesRepository {
         }))
     }
 
-    /// 获取所有游戏的完整数据（包含关联）
-    pub async fn find_all_full(
-        db: &DatabaseConnection,
-        sort_option: SortOption,
-        sort_order: SortOrder,
-    ) -> Result<Vec<FullGameData>, DbErr> {
-        // 1. 使用通用方法获取排序后的游戏列表
-        let games = Self::find_with_sort(db, GameType::All, sort_option, sort_order).await?;
-
-        // 2. 如果没有游戏，直接返回空列表
-        if games.is_empty() {
-            return Ok(Vec::new());
-        }
-
-        // 3. 批量查询关联数据
-        let game_ids: Vec<i32> = games.iter().map(|g| g.id).collect();
-
-        let bgm_data_list = BgmData::find()
-            .filter(bgm_data::Column::GameId.is_in(game_ids.clone()))
-            .all(db)
-            .await?;
-
-        let vndb_data_list = VndbData::find()
-            .filter(vndb_data::Column::GameId.is_in(game_ids.clone()))
-            .all(db)
-            .await?;
-
-        let other_data_list = OtherData::find()
-            .filter(other_data::Column::GameId.is_in(game_ids))
-            .all(db)
-            .await?;
-
-        // 4. 构建 HashMap 方便查找
-        use std::collections::HashMap;
-        let bgm_map: HashMap<i32, bgm_data::Model> =
-            bgm_data_list.into_iter().map(|d| (d.game_id, d)).collect();
-        let vndb_map: HashMap<i32, vndb_data::Model> =
-            vndb_data_list.into_iter().map(|d| (d.game_id, d)).collect();
-        let other_map: HashMap<i32, other_data::Model> = other_data_list
-            .into_iter()
-            .map(|d| (d.game_id, d))
-            .collect();
-
-        // 5. 组合数据
-        let full_games = games
-            .into_iter()
-            .map(|game| FullGameData {
-                game: game.clone(),
-                bgm_data: bgm_map.get(&game.id).cloned(),
-                vndb_data: vndb_map.get(&game.id).cloned(),
-                other_data: other_map.get(&game.id).cloned(),
-            })
-            .collect();
-
-        Ok(full_games)
-    }
-
-    /// 根据类型筛选完整游戏数据（包含关联）
-    pub async fn find_full_by_type(
+    /// 获取完整游戏数据（包含关联），支持按类型筛选和排序
+    ///
+    /// # 参数
+    /// * `db` - 数据库连接
+    /// * `game_type` - 游戏类型筛选（All、Local、Online、NoClear、Clear），默认为 All
+    /// * `sort_option` - 排序选项
+    /// * `sort_order` - 排序顺序
+    pub async fn find_full_games(
         db: &DatabaseConnection,
         game_type: GameType,
         sort_option: SortOption,

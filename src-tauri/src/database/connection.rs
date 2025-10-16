@@ -47,7 +47,7 @@ pub async fn establish_connection(app: &AppHandle) -> Result<DatabaseConnection,
     // 5. 在开发模式下启用日志，在发布模式下禁用
     #[cfg(debug_assertions)]
     {
-        options.sqlx_logging(true);
+        options.sqlx_logging(false);
         println!("Database connection string: {}", options.get_url());
     }
     #[cfg(not(debug_assertions))]

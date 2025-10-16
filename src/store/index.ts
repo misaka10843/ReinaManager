@@ -246,24 +246,16 @@ export const useStore = create<AppState>()(
 
 					// 第一步：获取基础数据（根据筛选类型）
 					let baseData: GameData[];
-					if (gameFilterType !== "all") {
-						if (isTauri()) {
-							const fullGames = await gameService.getFullGamesByType(
-								gameFilterType,
-								option,
-								order,
-							);
-							baseData = getDisplayGameDataList(fullGames, i18next.language);
-						} else {
-							baseData = filterGamesByTypeLocal(gameFilterType, option, order);
-						}
+					if (isTauri()) {
+						const fullGames = await gameService.getFullGames(
+							gameFilterType,
+							option,
+							order,
+						);
+						baseData = getDisplayGameDataList(fullGames, i18next.language);
 					} else {
-						if (isTauri()) {
-							const fullGames = await gameService.getAllFullGames(
-								option,
-								order,
-							);
-							baseData = getDisplayGameDataList(fullGames, i18next.language);
+						if (gameFilterType !== "all") {
+							baseData = filterGamesByTypeLocal(gameFilterType, option, order);
 						} else {
 							baseData = getGamesLocal(option, order);
 						}
@@ -295,10 +287,7 @@ export const useStore = create<AppState>()(
 					// 更新完整的游戏列表（用于统计）
 					let allData: GameData[];
 					if (isTauri()) {
-						const allFullGames = await gameService.getAllFullGames(
-							"addtime",
-							"asc",
-						);
+						const allFullGames = await gameService.getFullGames();
 						allData = getDisplayGameDataList(allFullGames, i18next.language);
 					} else {
 						allData = getGamesLocal("addtime", "asc");
@@ -326,7 +315,11 @@ export const useStore = create<AppState>()(
 					let data: GameData[];
 					if (isTauri()) {
 						// 获取完整数据并转换
-						const fullGames = await gameService.getAllFullGames(option, order);
+						const fullGames = await gameService.getFullGames(
+							"all",
+							option,
+							order,
+						);
 						data = getDisplayGameDataList(fullGames, i18next.language);
 					} else {
 						data = getGamesLocal(option, order);
@@ -335,10 +328,7 @@ export const useStore = create<AppState>()(
 					// 获取完整的游戏列表（不排序）用于统计
 					let allData: GameData[];
 					if (isTauri()) {
-						const allFullGames = await gameService.getAllFullGames(
-							"addtime",
-							"asc",
-						);
+						const allFullGames = await gameService.getFullGames();
 						allData = getDisplayGameDataList(allFullGames, i18next.language);
 					} else {
 						allData = getGamesLocal("addtime", "asc");

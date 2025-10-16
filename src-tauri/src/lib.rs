@@ -7,7 +7,7 @@ use backup::savedata::{create_savedata_backup, delete_savedata_backup};
 use database::*;
 use migration::MigratorTrait;
 use tauri::Manager;
-use tauri_plugin_log::{Target, TargetKind};
+use tauri_plugin_log::{Target, TargetKind, TimezoneStrategy};
 use utils::{
     fs::{copy_file, delete_file, delete_game_covers, move_backup_folder, open_directory},
     launch::launch_game,
@@ -45,8 +45,7 @@ pub fn run() {
             // 游戏数据相关 commands
             insert_game_with_related,
             find_full_game_by_id,
-            find_all_full_games,
-            find_full_games_by_type,
+            find_full_games,
             update_game_with_related,
             delete_game,
             delete_bgm_data,
@@ -133,17 +132,22 @@ pub fn run() {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()
+                        .timezone_strategy(TimezoneStrategy::UseLocal)
                         .level(log::LevelFilter::Info)
-                        .targets([Target::new(TargetKind::LogDir {
-                            // set custom log file name for debug
-                            file_name: Some("debug".into()),
-                        })])
+                        .targets([
+                            Target::new(TargetKind::LogDir {
+                                // set custom log file name for debug
+                                file_name: Some("debug".into()),
+                            }),
+                            Target::new(TargetKind::Stdout),
+                        ])
                         .build(),
                 )?;
             } else {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()
-                        .level(log::LevelFilter::Warn)
+                        .timezone_strategy(TimezoneStrategy::UseLocal)
+                        .level(log::LevelFilter::Error)
                         .build(),
                 )?;
             }

@@ -39,27 +39,14 @@ class GameService extends BaseService {
 	}
 
 	/**
-	 * 获取所有完整游戏数据（包含关联）
+	 * 获取完整游戏数据（包含关联），支持按类型筛选和排序
 	 */
-	async getAllFullGames(
+	async getFullGames(
+		gameType: GameType = "all",
 		sortOption: SortOption = "addtime",
 		sortOrder: SortOrder = "asc",
 	): Promise<FullGameData[]> {
-		return this.invoke<FullGameData[]>("find_all_full_games", {
-			sortOption,
-			sortOrder,
-		});
-	}
-
-	/**
-	 * 根据类型筛选完整游戏数据（包含关联）
-	 */
-	async getFullGamesByType(
-		gameType: GameType,
-		sortOption: SortOption = "addtime",
-		sortOrder: SortOrder = "asc",
-	): Promise<FullGameData[]> {
-		return this.invoke<FullGameData[]>("find_full_games_by_type", {
+		return this.invoke<FullGameData[]>("find_full_games", {
 			gameType,
 			sortOption,
 			sortOrder,
