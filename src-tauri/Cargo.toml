@@ -1,6 +1,6 @@
 [package]
 name = "ReinaManager"
-version = "0.7.0"
+version = "0.7.1"
 description = "A lightweight visual novel manager"
 authors = ["huoshen80"]
 license = "GNU AFFERO GENERAL PUBLIC LICENSE"
@@ -33,7 +33,7 @@ tauri-plugin-log = "2.7.0"
 tauri-plugin-shell = "2.3.1"
 tauri-plugin-single-instance = "2.3.2"
 tauri-plugin-updater = "2.9.0"
-tauri-plugin-window-state = "2.4.0"
+tauri-plugin-window-state = "2.3.0"
 
 # System / utilities
 sysinfo = "0.37.2"
@@ -63,8 +63,6 @@ windows = { version = "0.62.2", features = [
     "Win32_System_Diagnostics_ToolHelp",
 ] }
 
-[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
-tauri-plugin-window-state = "2"
 
 [profile.dev]
 incremental = true # 以较小的步骤编译您的二进制文件。
