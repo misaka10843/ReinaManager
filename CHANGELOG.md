@@ -1,3 +1,20 @@
+## [0.7.2](https://github.com/huoshen80/ReinaManager/compare/v0.7.1...v0.7.2) (2025-10-22)
+
+<details>
+<summary>查看中文版本</summary>
+
+### Bug 修复
+
+* 由window-state插件引起的自动退出(降级到2.2.3)，更新部分依赖 ([1102e5a](https://github.com/huoshen80/ReinaManager/commit/1102e5ac8f527e4296b44ae7dfe734d89ad766fa))
+
+</details>
+
+### Bug Fixes
+
+* auto exit caused by the window-state plugin(downgrade to 2.2.3) and update some dependencies ([1102e5a](https://github.com/huoshen80/ReinaManager/commit/1102e5ac8f527e4296b44ae7dfe734d89ad766fa))
+
+
+
 ## [0.7.1](https://github.com/huoshen80/ReinaManager/compare/v0.7.0...v0.7.1) (2025-10-20)
 
 <details>
