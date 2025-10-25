@@ -1,7 +1,8 @@
 {
 	"api": {
 		"bgm": {
-			"notFound": "未找到BGM數據"
+			"notFound": "未找到BGM數據",
+			"missingToken": "未設置 BGM Token，請先設置後重試"
 		},
 		"vndb": {
 			"notFound": "未找到VNDB數據",
@@ -15,11 +16,8 @@
 			"requestError": "請求錯誤"
 		},
 		"mixed": {
-			"fetchError": "獲取數據失敗",
-			"noDataSource": "無法從任何數據源獲取遊戲信息",
-			"bgmFetchFailed": "Bangumi 數據獲取失敗",
-			"vndbFetchFailed": "VNDB 數據獲取失敗",
-			"noDataForMerge": "沒有可用的數據進行合併"
+			"noParameterProvided": "必須提供 BGM ID、VNDB ID 或遊戲名稱",
+			"noDataSource": "無法從任何數據源獲取遊戲信息"
 		}
 	},
 	"app": {
@@ -52,9 +50,19 @@
 				"filter": "過濾NSFW内容",
 				"coverReplace": "模糊NSFW替換"
 			},
+			"vndbData": {
+				"title": "VNDB資料設定"
+			},
 			"tagTranslation": {
 				"title": "TAG翻譯",
 				"description": "開啟後將使用中文翻譯顯示遊戲標籤"
+			},
+			"spoilerLevel": {
+				"title": "TAG劇透等級",
+				"description": "選擇劇透等級以獲取適當的標籤內容",
+				"level0": "0 - 無劇透",
+				"level1": "1 - 輕微劇透",
+				"level2": "2 - 嚴重劇透"
 			},
 			"cardClickMode": {
 				"title": "卡片點擊模式",
@@ -97,6 +105,22 @@
 				"openFolderFailed": "開啟資料夾失敗",
 				"openFolderError": "開啟備份資料夾失敗"
 			},
+			"batchUpdate": {
+				"title": "批量更新數據",
+				"updateVndb": "批量更新 VNDB 數據",
+				"updateBgm": "批量更新 BGM 數據",
+				"updating": "更新中...",
+				"updatingBgm": "正在批量更新 BGM 數據...",
+				"success": "成功更新 {{success}}/{{total}} 個遊戲",
+				"partialFailed": "{{failed}} 個遊戲更新失敗",
+				"noGames": "沒有找到包含 VNDB ID 的遊戲",
+				"noBgmGames": "沒有找到包含 BGM ID 的遊戲",
+				"failed": "批量更新失敗",
+				"error": "批量更新 VNDB 數據失敗: {{message}}",
+				"errorBgm": "批量更新 BGM 數據失敗: {{message}}",
+				"noBgmToken": "更新失敗：未設置 BGM Token",
+				"description": "批量更新功能可用於更新已存在遊戲的 BGM/VNDB 數據。當遊戲的元數據發生變化時，您可以使用此功能來同步最新的信息。一旦點擊更新按鈕請耐心等待，更新過程可能需要一些時間。推薦軟件更新數據源獲取字段時使用。"
+			},
 			"about": {
 				"title": "關於",
 				"version": "版本",
@@ -105,6 +129,10 @@
 				"blog": "作者部落格",
 				"checkUpdate": "檢查更新",
 				"checking": "檢查中..."
+			},
+			"dev": {
+				"title": "實驗性功能",
+				"tooltip": "以下功能為實驗性功能，請謹慎使用"
 			}
 		},
 		"Detail": {
@@ -130,24 +158,8 @@
 			"editPart": "編輯",
 			"backup": "備份",
 			"Edit": {
-				"error": "錯誤",
-				"warning": "警告",
-				"notFound": "未找到遊戲資料",
-				"success": "成功",
 				"updateSuccess": "遊戲資訊已成功更新",
-				"pathUpdateSuccess": "遊戲路徑已成功更新",
-				"dataSource": "資料來源",
-				"bgmId": "Bangumi ID",
-				"vndbId": "VNDB ID",
-				"loading": "正在獲取...",
-				"updateFromSource": "從資料來源更新資料",
-				"localPath": "可執行檔路徑",
-				"updateLocalPath": "更新可執行檔路徑",
-				"invalidDataSource": "選擇了無效的資料來源。",
-				"noDataFetched": "未獲取到資料或資料來源無效。",
 				"unknownError": "未知錯誤",
-				"mixedFetchError": "Mixed 獲取錯誤",
-				"updatePathFailed": "更新路徑失敗",
 				"dataSourceUpdate": "數據源更新",
 				"gameInfoEdit": "遊戲資料編輯"
 			},
@@ -187,13 +199,9 @@
 			"DataSourceUpdate": {
 				"bgmIdRequired": "Bangumi ID 不能為空",
 				"unknownError": "未知錯誤",
-				"bangumiFetchError": "Bangumi 獲取錯誤",
 				"vndbIdRequired": "VNDB ID 不能為空",
-				"vndbFetchError": "VNDB 獲取錯誤",
 				"bgmOrVndbIdRequired": "Bangumi ID 或 VNDB ID 不能為空",
-				"mixedFetchError": "Mixed 獲取錯誤",
 				"customModeWarning": "自定模式無法從數據源更新。",
-				"invalidDataSource": "選擇了無效的數據源。",
 				"noDataFetched": "未獲取到數據或數據源無效。",
 				"dataSource": "數據源",
 				"bgmId": "Bangumi ID",
@@ -209,7 +217,6 @@
 				"removeCustomCoverFailed": "移除自定封面失敗",
 				"saveGameInfoFailed": "保存遊戲信息失敗",
 				"customizeGame": "自定遊戲信息",
-				"customName": "自定名稱",
 				"customCover": "自定封面",
 				"selectImage": "選擇圖片",
 				"removeCustomCover": "移除自定封面",
@@ -232,7 +239,6 @@
 			"clearSearch": "清除搜尋"
 		},
 		"Toolbar": {
-			"gameLibrary": "遊戲倉庫",
 			"openGameFolder": "開啟遊戲目錄",
 			"deleteGame": "刪除遊戲",
 			"deleting": "刪除中...",
@@ -266,7 +272,6 @@
 			"enterDetails": "進入詳情頁",
 			"deleteGame": "刪除遊戲",
 			"openGameFolder": "開啟遊戲目錄",
-			"more": "更多",
 			"markAsCompleted": "標記為已通關",
 			"markAsNotCompleted": "標記為未通關"
 		},
@@ -296,7 +301,6 @@
 			"selectLauncher": "選擇啟動程序",
 			"selectExecutable": "請選擇一個可執行程序",
 			"enableCustomMode": "啟用自定義模式",
-			"enableVNDB": "使用VNDB api(默認使用BGM api)",
 			"gameName": "遊戲名稱",
 			"gameIDTips": "遊戲ID（輸入BGM ID或VNDB ID）",
 			"cancel": "取消",
@@ -377,6 +381,13 @@
 		"handleDirectory": {
 			"executable": "可執行檔",
 			"allFiles": "所有檔案"
+		},
+		"batchUpdate": {
+			"noVndbGames": "沒有找到包含 VNDB ID 的遊戲",
+			"noBgmGames": "沒有找到包含 BGM ID 的遊戲",
+			"vndbNotFound": "遊戲 ID {{gameId}} (VNDB: {{vndbId}}) 未找到資料",
+			"bgmNotFound": "遊戲 ID {{gameId}} (BGM: {{bgmId}}) 未找到資料",
+			"unknownError": "未知錯誤"
 		}
 	}
 }

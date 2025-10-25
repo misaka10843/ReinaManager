@@ -166,7 +166,7 @@ const BgmTokenSettings = () => {
 
 			<Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
 				<TextField
-					type="password"
+					autoComplete="off"
 					placeholder={t("pages.Settings.tokenPlaceholder")}
 					value={inputToken}
 					onChange={(e) => setInputToken(e.target.value)}
@@ -174,6 +174,12 @@ const BgmTokenSettings = () => {
 					size="medium"
 					className="min-w-60"
 					slotProps={{
+						htmlInput: {
+							style: {
+								WebkitTextSecurity: "disc",
+								textSecurity: "disc",
+							},
+						},
 						input: {
 							endAdornment: inputToken && (
 								<InputAdornment position="end">
@@ -1065,6 +1071,14 @@ const BatchUpdateSettings: React.FC = () => {
 				t("pages.Settings.batchUpdate.updatingBgm", "正在批量更新 BGM 数据..."),
 			);
 
+			if (bgmToken.trim() === "") {
+				throw new Error(
+					t(
+						"pages.Settings.batchUpdate.noBgmToken",
+						"更新失败：未设置 BGM Token",
+					),
+				);
+			}
 			const result = await batchUpdateBgmData(bgmToken);
 
 			if (result.success > 0) {
@@ -1107,6 +1121,7 @@ const BatchUpdateSettings: React.FC = () => {
 				t(
 					"pages.Settings.batchUpdate.errorBgm",
 					`批量更新 BGM 数据失败: ${errorMessage}`,
+					{ message: errorMessage },
 				),
 			);
 		} finally {
@@ -1177,7 +1192,10 @@ const BatchUpdateSettings: React.FC = () => {
 					<Typography
 						variant="body2"
 						color={
-							updateStatus.includes("失败") || updateStatus.includes("错误")
+							updateStatus.includes("失败") ||
+							updateStatus.includes("fail") ||
+							updateStatus.includes("错误") ||
+							updateStatus.includes("error")
 								? "error"
 								: "primary"
 						}

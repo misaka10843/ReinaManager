@@ -9,7 +9,8 @@
 	},
 	"api": {
 		"bgm": {
-			"notFound": "No related entries found, please check the game name and try again, or BGM_TOKEN is not set"
+			"notFound": "No related entries found, please check the game name and try again, or BGM_TOKEN is not set",
+			"missingToken": "BGM Token is not set, please set it first and try again"
 		},
 		"vndb": {
 			"notFound": "No related entries found, please check the ID or game name and try again",
@@ -23,11 +24,8 @@
 			"requestError": "Request error"
 		},
 		"mixed": {
-			"fetchError": "Failed to fetch data",
-			"noDataSource": "Unable to get game information from any data source",
-			"bgmFetchFailed": "Failed to fetch Bangumi data",
-			"vndbFetchFailed": "Failed to fetch VNDB data",
-			"noDataForMerge": "No available data for merging"
+			"noParameterProvided": "Must provide BGM ID, VNDB ID or game name",
+			"noDataSource": "Unable to get game information from any data source"
 		}
 	},
 	"pages": {
@@ -52,9 +50,19 @@
 				"filter": "Filter NSFW content",
 				"coverReplace": "NSFW cover replace"
 			},
+			"vndbData": {
+				"title": "VNDB Data Settings"
+			},
 			"tagTranslation": {
 				"title": "TAG Translation",
 				"description": "Enable Chinese translation for game tags"
+			},
+			"spoilerLevel": {
+				"title": "TAG Spoiler Level",
+				"description": "Select spoiler level to get appropriate tag content",
+				"level0": "0 - No Spoiler",
+				"level1": "1 - Mild Spoiler",
+				"level2": "2 - Severe Spoiler"
 			},
 			"cardClickMode": {
 				"title": "Card Click Mode",
@@ -97,6 +105,22 @@
 				"openFolderFailed": "Failed to open folder",
 				"openFolderError": "Failed to open backup folder"
 			},
+			"batchUpdate": {
+				"title": "Batch Update Data",
+				"updateVndb": "Batch Update VNDB Data",
+				"updateBgm": "Batch Update BGM Data",
+				"updating": "Updating...",
+				"updatingBgm": "Batch updating BGM data...",
+				"success": "Successfully updated {{success}}/{{total}} games",
+				"partialFailed": "{{failed}} games failed to update",
+				"noGames": "No games with VNDB ID found",
+				"noBgmGames": "No games with BGM ID found",
+				"failed": "Batch update failed",
+				"error": "Failed to batch update VNDB data: {{message}}",
+				"errorBgm": "Failed to batch update BGM data: {{message}}",
+				"noBgmToken": "Update failed: BGM Token is not set",
+				"description": "The batch update feature can be used to update BGM/VNDB data for existing games. When game metadata changes, you can use this feature to sync the latest information. Once you click the update button, please wait patiently as the update process may take some time. It is recommended to use when updating game data sources."
+			},
 			"about": {
 				"title": "About",
 				"version": "Version",
@@ -105,6 +129,10 @@
 				"blog": "Author's Blog",
 				"checkUpdate": "Check for Updates",
 				"checking": "Checking..."
+			},
+			"dev": {
+				"title": "Experimental Features",
+				"tooltip": "The following features are experimental, please use with caution"
 			}
 		},
 		"Detail": {
@@ -130,24 +158,8 @@
 			"editPart": "Edit",
 			"backup": "Backup",
 			"Edit": {
-				"error": "Error",
-				"warning": "Warning",
-				"notFound": "Game data not found",
-				"success": "Success",
 				"updateSuccess": "Game information updated successfully",
-				"pathUpdateSuccess": "Game path updated successfully",
-				"dataSource": "Data Source",
-				"bgmId": "Bangumi ID",
-				"vndbId": "VNDB ID",
-				"loading": "Loading...",
-				"updateFromSource": "Update from data source",
-				"localPath": "Executable Path",
-				"updateLocalPath": "Update Executable Path",
-				"invalidDataSource": "Invalid data source selected.",
-				"noDataFetched": "No data fetched or invalid data source.",
 				"unknownError": "Unknown error",
-				"mixedFetchError": "Mixed fetch error",
-				"updatePathFailed": "Failed to update path",
 				"dataSourceUpdate": "Data Source Update",
 				"gameInfoEdit": "Game Info Edit"
 			},
@@ -187,13 +199,9 @@
 			"DataSourceUpdate": {
 				"bgmIdRequired": "Bangumi ID cannot be empty",
 				"unknownError": "Unknown error",
-				"bangumiFetchError": "Bangumi fetch error",
 				"vndbIdRequired": "VNDB ID cannot be empty",
-				"vndbFetchError": "VNDB fetch error",
 				"bgmOrVndbIdRequired": "Bangumi ID or VNDB ID cannot be empty",
-				"mixedFetchError": "Mixed fetch error",
 				"customModeWarning": "Custom mode cannot update from data source.",
-				"invalidDataSource": "Invalid data source selected.",
 				"noDataFetched": "No data fetched or data source invalid.",
 				"dataSource": "Data Source",
 				"bgmId": "Bangumi ID",
@@ -209,7 +217,6 @@
 				"removeCustomCoverFailed": "Failed to remove custom cover",
 				"saveGameInfoFailed": "Failed to save game info",
 				"customizeGame": "Customize Game Info",
-				"customName": "Custom Name",
 				"customCover": "Custom Cover",
 				"selectImage": "Select Image",
 				"removeCustomCover": "Remove Custom Cover",
@@ -232,7 +239,6 @@
 			"clearSearch": "Clear search"
 		},
 		"Toolbar": {
-			"gameLibrary": "Game Library",
 			"openGameFolder": "Open Game Folder",
 			"deleteGame": "Delete Game",
 			"deleting": "Deleting...",
@@ -266,7 +272,6 @@
 			"enterDetails": "Game Details",
 			"deleteGame": "Delete Game",
 			"openGameFolder": "Open Game Folder",
-			"more": "More",
 			"markAsCompleted": "Mark as Completed",
 			"markAsNotCompleted": "Mark as Not Completed"
 		},
@@ -296,7 +301,6 @@
 			"selectLauncher": "Select Launcher",
 			"selectExecutable": "Please select an executable file",
 			"enableCustomMode": "Enable Custom Mode",
-			"enableVNDB": "Use VNDB API (BGM API by default)",
 			"gameName": "Game Name",
 			"gameIDTips": "Game ID (Enter BGM ID or VNDB ID)",
 			"cancel": "Cancel",
@@ -377,6 +381,13 @@
 		"handleDirectory": {
 			"executable": "Executable File",
 			"allFiles": "All Files"
+		},
+		"batchUpdate": {
+			"noVndbGames": "No games with VNDB ID found",
+			"noBgmGames": "No games with BGM ID found",
+			"vndbNotFound": "Game ID {{gameId}} (VNDB: {{vndbId}}) data not found",
+			"bgmNotFound": "Game ID {{gameId}} (BGM: {{bgmId}}) data not found",
+			"unknownError": "Unknown error"
 		}
 	}
 }

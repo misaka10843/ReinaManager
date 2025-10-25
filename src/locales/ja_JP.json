@@ -1,7 +1,8 @@
 {
 	"api": {
 		"bgm": {
-			"notFound": "BGMデータが見つかりません"
+			"notFound": "BGMデータが見つかりません",
+			"missingToken": "BGM Tokenが設定されていません。先に設定してからもう一度お試しください"
 		},
 		"vndb": {
 			"notFound": "VNDBデータが見つかりません",
@@ -15,11 +16,8 @@
 			"requestError": "リクエストエラー"
 		},
 		"mixed": {
-			"fetchError": "データの取得に失敗しました",
-			"noDataSource": "どのデータソースからもゲーム情報を取得できません",
-			"bgmFetchFailed": "Bangumi データの取得に失敗しました",
-			"vndbFetchFailed": "VNDB データの取得に失敗しました",
-			"noDataForMerge": "マージに利用できるデータがありません"
+			"noParameterProvided": "BGM ID、VNDB ID またはゲーム名を指定する必要があります",
+			"noDataSource": "どのデータソースからもゲーム情報を取得できません"
 		}
 	},
 	"app": {
@@ -52,9 +50,19 @@
 				"filter": "NSFWコンテンツのフィルタリング",
 				"coverReplace": "NSFW表紙の置き換え"
 			},
+			"vndbData": {
+				"title": "VNDBデータ設定"
+			},
 			"tagTranslation": {
 				"title": "TAG翻訳",
 				"description": "ゲームタグの中国語翻訳を有効にする"
+			},
+			"spoilerLevel": {
+				"title": "TAGネタバレレベル",
+				"description": "ネタバレレベルを選択して、適切なタグコンテンツを取得する",
+				"level0": "0 - ネタバレなし",
+				"level1": "1 - 軽いネタバレ",
+				"level2": "2 - 深刻なネタバレ"
 			},
 			"cardClickMode": {
 				"title": "カードクリックモード",
@@ -97,6 +105,22 @@
 				"openFolderFailed": "フォルダを開くのに失敗しました",
 				"openFolderError": "バックアップフォルダを開くのに失敗しました"
 			},
+			"batchUpdate": {
+				"title": "バッチ更新データ",
+				"updateVndb": "VNDBデータを一括更新",
+				"updateBgm": "BGMデータを一括更新",
+				"updating": "更新中...",
+				"updatingBgm": "BGMデータを一括更新中...",
+				"success": "{{success}}/{{total}} 個のゲームを正常に更新しました",
+				"partialFailed": "{{failed}} 個のゲームの更新に失敗しました",
+				"noGames": "VNDB IDを含むゲームが見つかりません",
+				"noBgmGames": "BGM IDを含むゲームが見つかりません",
+				"failed": "バッチ更新に失敗しました",
+				"error": "VNDBデータの一括更新に失敗しました: {{message}}",
+				"errorBgm": "BGMデータの一括更新に失敗しました: {{message}}",
+				"noBgmToken": "更新失敗: BGM Tokenが設定されていません",
+				"description": "バッチ更新機能は、既存のゲームのBGM/VNDBデータを更新するために使用できます。ゲームのメタデータが変更されると、この機能を使用して最新の情報を同期できます。更新ボタンをクリックしたら、更新プロセスに時間がかかる可能性があるので、お待ちください。ゲームデータソースを更新する際の使用をお勧めします。"
+			},
 			"about": {
 				"title": "について",
 				"version": "バージョン",
@@ -105,6 +129,10 @@
 				"blog": "作者のブログ",
 				"checkUpdate": "アップデートを確認",
 				"checking": "確認中..."
+			},
+			"dev": {
+				"title": "実験性機能",
+				"tooltip": "以下の機能は実験的な機能です。慎重にお使いください"
 			}
 		},
 		"Detail": {
@@ -130,24 +158,8 @@
 			"editPart": "編集",
 			"backup": "バックアップ",
 			"Edit": {
-				"error": "エラー",
-				"warning": "警告",
-				"notFound": "ゲームデータが見つかりません",
-				"success": "成功",
 				"updateSuccess": "ゲーム情報が正常に更新されました",
-				"pathUpdateSuccess": "ゲームパスが正常に更新されました",
-				"dataSource": "データソース",
-				"bgmId": "Bangumi ID",
-				"vndbId": "VNDB ID",
-				"loading": "取得中...",
-				"updateFromSource": "データソースから更新",
-				"localPath": "実行ファイルパス",
-				"updateLocalPath": "実行ファイルパスを更新",
-				"invalidDataSource": "無効なデータソースが選択されました。",
-				"noDataFetched": "データが取得できないか、データソースが無効です。",
 				"unknownError": "不明なエラー",
-				"mixedFetchError": "Mixed 取得エラー",
-				"updatePathFailed": "パスの更新に失敗しました",
 				"dataSourceUpdate": "データソース更新",
 				"gameInfoEdit": "ゲーム情報編集"
 			},
@@ -187,13 +199,9 @@
 			"DataSourceUpdate": {
 				"bgmIdRequired": "Bangumi IDを空にすることはできません",
 				"unknownError": "不明なエラー",
-				"bangumiFetchError": "Bangumi取得エラー",
 				"vndbIdRequired": "VNDB IDを空にすることはできません",
-				"vndbFetchError": "VNDB取得エラー",
 				"bgmOrVndbIdRequired": "Bangumi IDまたはVNDB IDを空にすることはできません",
-				"mixedFetchError": "Mixed取得エラー",
 				"customModeWarning": "カスタムモードではデータソースから更新できません。",
-				"invalidDataSource": "無効なデータソースが選択されました。",
 				"noDataFetched": "データが取得されていないか、データソースが無効です。",
 				"dataSource": "データソース",
 				"bgmId": "Bangumi ID",
@@ -209,7 +217,6 @@
 				"removeCustomCoverFailed": "カスタムカバーの削除に失敗しました",
 				"saveGameInfoFailed": "ゲーム情報の保存に失敗しました",
 				"customizeGame": "ゲーム情報をカスタマイズ",
-				"customName": "カスタム名",
 				"customCover": "カスタムカバー",
 				"selectImage": "画像を選択",
 				"removeCustomCover": "カスタムカバーを削除",
@@ -232,7 +239,6 @@
 			"clearSearch": "検索をクリア"
 		},
 		"Toolbar": {
-			"gameLibrary": "ゲームライブラリ",
 			"openGameFolder": "ゲームフォルダを開く",
 			"deleteGame": "ゲームを削除",
 			"deleting": "削除中...",
@@ -266,7 +272,6 @@
 			"enterDetails": "詳細ページへ",
 			"deleteGame": "ゲームを削除",
 			"openGameFolder": "ゲームフォルダを開く",
-			"more": "その他",
 			"markAsCompleted": "クリア済みにマーク",
 			"markAsNotCompleted": "未クリアにマーク"
 		},
@@ -296,7 +301,6 @@
 			"selectLauncher": "ランチャーを選択",
 			"selectExecutable": "実行ファイルを選択してください",
 			"enableCustomMode": "カスタムモードを有効化",
-			"enableVNDB": "VNDB APIを使用する（デフォルトではBGM API）",
 			"gameName": "ゲーム名",
 			"gameIDTips": "ゲームID（BGM IDまたはVNDB IDを入力）",
 			"cancel": "キャンセル",
@@ -377,6 +381,13 @@
 		"handleDirectory": {
 			"executable": "実行ファイル",
 			"allFiles": "すべてのファイル"
+		},
+		"batchUpdate": {
+			"noVndbGames": "VNDB IDを持つゲームが見つかりませんでした",
+			"noBgmGames": "BGM IDを持つゲームが見つかりませんでした",
+			"vndbNotFound": "ゲームID {{gameId}} (VNDB: {{vndbId}}) のデータが見つかりませんでした",
+			"bgmNotFound": "ゲームID {{gameId}} (BGM: {{bgmId}}) のデータが見つかりませんでした",
+			"unknownError": "不明なエラー"
 		}
 	}
 }
