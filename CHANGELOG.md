@@ -1,4 +1,20 @@
-# [0.8.0](https://github.com/huoshen80/ReinaManager/compare/v0.7.2...v0.8.0) (2025-10-25)
+## [0.8.1](https://github.com/huoshen80/ReinaManager/compare/v0.8.0...v0.8.1) (2025-10-25)
+
+<details>
+<summary>查看中文版本</summary>
+
+### Bug 修复
+* 更新游戏数据后，编辑页面无法正确显示更新后的游戏数据 ([7cb6c42](https://github.com/huoshen80/ReinaManager/commit/7cb6c42d53f1e5d486c52c0fdb7844fddbaf8997))
+
+</details>
+
+### Bug Fixes
+
+* updated game data could not be displayed correctly after update game data in edit page ([7cb6c42](https://github.com/huoshen80/ReinaManager/commit/7cb6c42d53f1e5d486c52c0fdb7844fddbaf8997))
+
+
+
+## [0.8.0](https://github.com/huoshen80/ReinaManager/compare/v0.7.2...v0.8.0) (2025-10-25)
 
 <details>
 <summary>查看中文版本</summary>
