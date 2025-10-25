@@ -1,3 +1,20 @@
+# [0.8.0](https://github.com/huoshen80/ReinaManager/compare/v0.7.2...v0.8.0) (2025-10-25)
+
+<details>
+<summary>查看中文版本</summary>
+
+### 新功能
+
+* 添加从 API 批量更新游戏数据的功能，为vndb API添加从不同剧透等级获取标签的功能 ，并改进 bgm API 的别名过滤器 ([19dd2c1](https://github.com/huoshen80/ReinaManager/commit/19dd2c1eda712d5e1b9c2a476d4f8c55e4aba35e))
+
+</details>
+
+### Features
+
+* add batch update games data function from api,add get tags from diff spoiler level function for vndb api and improve aliases filter for bgm api ([19dd2c1](https://github.com/huoshen80/ReinaManager/commit/19dd2c1eda712d5e1b9c2a476d4f8c55e4aba35e))
+
+
+
 ## [0.7.2](https://github.com/huoshen80/ReinaManager/compare/v0.7.1...v0.7.2) (2025-10-22)
 
 <details>
