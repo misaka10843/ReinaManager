@@ -143,7 +143,7 @@ export async function fetchVndbByName(name: string, id?: string) {
 				"未找到相关条目，请确认ID或游戏名字后重试",
 			);
 
-		const { game, vndb_data } = transformVndbData(VNDBdata, true);
+		const { game, vndb_data } = transformVndbData(VNDBdata);
 
 		return {
 			game,
@@ -246,7 +246,7 @@ export async function fetchVNDBByIds(ids: string[]) {
 
 				// 转换所有结果数据
 				return results.map((vndbData: RawVNDBData) => {
-					const { game, vndb_data } = transformVndbData(vndbData);
+					const { game, vndb_data } = transformVndbData(vndbData, true);
 					return {
 						game,
 						vndb_data,
