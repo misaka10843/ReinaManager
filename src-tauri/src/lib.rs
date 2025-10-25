@@ -55,6 +55,9 @@ pub fn run() {
             count_games,
             game_exists_by_bgm_id,
             game_exists_by_vndb_id,
+            get_all_bgm_ids,
+            get_all_vndb_ids,
+            update_batch,
             // 存档备份相关 commands
             save_savedata_record,
             get_savedata_count,

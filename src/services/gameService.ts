@@ -121,6 +121,89 @@ class GameService extends BaseService {
 	async gameExistsByVndbId(vndbId: string): Promise<boolean> {
 		return this.invoke<boolean>("game_exists_by_vndb_id", { vndbId });
 	}
+
+	/**
+	 * 获取所有游戏的 BGM ID 列表
+	 * @returns 返回 [{ id, bgm_id }, ...] 的数组，只包含有 BGM ID 的游戏
+	 */
+	async getAllBgmIds(): Promise<Array<[number, string]>> {
+		return this.invoke<Array<[number, string]>>("get_all_bgm_ids", {});
+	}
+
+	/**
+	 * 获取所有游戏的 VNDB ID 列表
+	 * @returns 返回 [{ id, vndb_id }, ...] 的数组，只包含有 VNDB ID 的游戏
+	 */
+	async getAllVndbIds(): Promise<Array<[number, string]>> {
+		return this.invoke<Array<[number, string]>>("get_all_vndb_ids", {});
+	}
+
+	/**
+	 * 批量更新数据（支持游戏基础数据和关联数据的统一接口）
+	 *
+	 * 使用单个事务处理所有更新操作，支持同时更新游戏基础数据和关联数据。
+	 * 性能远优于逐个更新。
+	 *
+	 * @param gamesUpdates 游戏基础数据更新列表（可选）
+	 * @param bgmUpdates BGM 数据更新列表（可选）
+	 * @param vndbUpdates VNDB 数据更新列表（可选）
+	 * @param otherUpdates Other 数据更新列表（可选）
+	 * @returns 返回成功更新的游戏数量（仅计算 games 表的更新数）
+	 *
+	 * @example
+	 * // 仅更新游戏基础数据
+	 * await gameService.updateBatch(
+	 *   [[1, { clear: 1, custom_name: "新名称" }]],
+	 *   undefined,
+	 *   undefined,
+	 *   undefined
+	 * );
+	 *
+	 * // 同时更新游戏和关联数据
+	 * await gameService.updateBatch(
+	 *   [[1, { bgm_id: "12345" }]],
+	 *   [[1, { score: 85 }]],
+	 *   [[2, { score: 90 }]],
+	 *   undefined
+	 * );
+	 */
+	async updateBatch(
+		gamesUpdates?: Array<[number, Partial<RawGameData>]>,
+		bgmUpdates?: Array<[number, BgmData]>,
+		vndbUpdates?: Array<[number, VndbData]>,
+		otherUpdates?: Array<[number, OtherData]>,
+	): Promise<number> {
+		return this.invoke<number>("update_batch", {
+			gamesUpdates: gamesUpdates || null,
+			bgmUpdates: bgmUpdates || null,
+			vndbUpdates: vndbUpdates || null,
+			otherUpdates: otherUpdates || null,
+		});
+	}
+
+	/**
+	 * @deprecated 请改用 `updateBatch()` 方法
+	 * 批量更新游戏基础数据（高性能版本）
+	 * 仅用于更新 games 表中的字段
+	 */
+	async updateGamesBatch(
+		updatesList: Array<[number, Partial<RawGameData>]>,
+	): Promise<number> {
+		return this.updateBatch(updatesList, undefined, undefined, undefined);
+	}
+
+	/**
+	 * @deprecated 请改用 `updateBatch()` 方法
+	 * 批量更新关联数据（高性能版本）
+	 * 用于同时更新 BGM、VNDB、Other 表数据
+	 */
+	async updateRelatedDataBatch(
+		bgmUpdates?: Array<[number, BgmData]>,
+		vndbUpdates?: Array<[number, VndbData]>,
+		otherUpdates?: Array<[number, OtherData]>,
+	): Promise<void> {
+		await this.updateBatch(undefined, bgmUpdates, vndbUpdates, otherUpdates);
+	}
 }
 
 // 导出单例

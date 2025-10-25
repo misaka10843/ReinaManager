@@ -142,4 +142,34 @@ export function transformApiGameData(
 	return src;
 }
 
-export default transformApiGameData;
+/**
+ * 批量处理数组版本的 transformApiGameData
+ * 返回转换结果和遇到的错误（不抛出），便于上层批量流程继续处理
+ */
+export function transformApiGameDataBatch(
+	inputs: FullGameData[],
+	appendFields?: AppendFields | AppendFields[],
+): {
+	results: FullGameData[];
+	errors: Array<{ index: number; message: string }>;
+} {
+	const results: FullGameData[] = [];
+	const errors: Array<{ index: number; message: string }> = [];
+
+	if (!Array.isArray(inputs)) return { results, errors };
+
+	for (let i = 0; i < inputs.length; i++) {
+		try {
+			const append = Array.isArray(appendFields)
+				? appendFields[i]
+				: (appendFields as AppendFields | undefined);
+			const transformed = transformApiGameData(inputs[i], append);
+			results.push(transformed);
+		} catch (e) {
+			const msg = e instanceof Error ? e.message : String(e);
+			errors.push({ index: i, message: msg });
+		}
+	}
+
+	return { results, errors };
+}

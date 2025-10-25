@@ -7,13 +7,20 @@ import i18next, { t } from "i18next";
 import { snackbar } from "@/components/Snackbar";
 import { gameService, savedataService } from "@/services";
 import { useScrollStore } from "@/store/scrollStore";
-import type { GameData, HanleGamesProps } from "@/types";
+import type {
+	ApiBgmData,
+	ApiVndbData,
+	GameData,
+	HanleGamesProps,
+	RawGameData,
+} from "@/types";
 import { getDisplayGameData } from "./dataTransform";
 
 // 导出 API 数据转换工具
 export {
 	type AppendFields,
 	transformApiGameData,
+	transformApiGameDataBatch,
 } from "./apiDataTransform";
 
 // 缓存资源目录路径
@@ -591,6 +598,192 @@ export const saveScrollPosition = (path: string) => {
 		}));
 	}
 };
+
+/**
+ * 批量更新数据的通用函数
+ * @param type 数据类型 ('vndb' | 'bgm')
+ * @param fetchFunction 批量获取数据的函数
+ * @param getAllIdsFunction 获取所有 ID 的函数
+ * @param updateKeyName 更新字段的名称 ('vndb_data' | 'bgm_data')
+ * @param token BGM Token (仅当 type 为 'bgm' 时需要)
+ * @returns 返回更新结果统计
+ */
+async function batchUpdateCommon(
+	type: "vndb" | "bgm",
+	fetchFunction: (
+		ids: string[],
+		token?: string,
+	) => Promise<
+		| string
+		| Array<{
+				game: RawGameData;
+				bgm_data: ApiBgmData | null;
+				vndb_data: ApiVndbData | null;
+				other_data: null;
+		  }>
+	>,
+	getAllIdsFunction: () => Promise<Array<[number, string]>>,
+	updateKeyName: "vndb_data" | "bgm_data",
+	token?: string,
+): Promise<{
+	total: number;
+	success: number;
+	failed: number;
+	errors: string[];
+}> {
+	try {
+		// 1. 获取所有游戏的对应 ID
+		const idPairs = await getAllIdsFunction();
+		console.log(`Found ${type.toUpperCase()} ID pairs:`, idPairs);
+
+		if (idPairs.length === 0) {
+			return {
+				total: 0,
+				success: 0,
+				failed: 0,
+				errors: [
+					i18next.t(
+						`utils.batchUpdate.no${type.charAt(0).toUpperCase() + type.slice(1)}Games`,
+						`没有找到包含 ${type.toUpperCase()} ID 的游戏`,
+					),
+				],
+			};
+		}
+
+		// 2. 提取 ID 列表
+		const ids = idPairs.map(([_, id]) => id);
+
+		// 3. 批量获取数据
+		const resultsTemp = token
+			? await fetchFunction(ids, token)
+			: await fetchFunction(ids);
+
+		// 如果返回的是错误消息字符串
+		if (typeof resultsTemp === "string") {
+			return {
+				total: idPairs.length,
+				success: 0,
+				failed: idPairs.length,
+				errors: [resultsTemp],
+			};
+		}
+
+		// 3.5 序列化处理（使用批量转换，收集错误但不中断）
+		const { transformApiGameDataBatch } = await import("./apiDataTransform");
+		const { results, errors: transformErrors } =
+			transformApiGameDataBatch(resultsTemp);
+
+		const errors: string[] = [];
+		if (transformErrors.length > 0) {
+			transformErrors.forEach((err) => {
+				errors.push(
+					i18next.t(
+						"utils.batchUpdate.unknownError",
+						`转换 ${type.toUpperCase()} 数据时发生错误: ${err.index} - ${err.message}`,
+					),
+				);
+			});
+		}
+
+		// 4. 构建更新数据
+		const updates: Array<[number, ApiBgmData | ApiVndbData]> = [];
+
+		for (const [gameId, apiId] of idPairs) {
+			const data = results.find((result) => {
+				if (type === "bgm") {
+					return result.game.bgm_id === apiId;
+				}
+				return result.game.vndb_id === apiId;
+			});
+
+			if (data?.[updateKeyName]) {
+				updates.push([gameId, data[updateKeyName]]);
+			} else {
+				errors.push(
+					i18next.t(
+						`utils.batchUpdate.${type}NotFound`,
+						`游戏 ID ${gameId} (${type.toUpperCase()}: ${apiId}) 未找到数据`,
+					),
+				);
+			}
+		}
+
+		// 5. 批量更新数据库
+		if (updates.length > 0) {
+			if (updateKeyName === "bgm_data") {
+				await gameService.updateBatch(
+					undefined,
+					updates as Array<[number, ApiBgmData]>,
+					undefined,
+					undefined,
+				);
+			} else {
+				await gameService.updateBatch(
+					undefined,
+					undefined,
+					updates as Array<[number, ApiVndbData]>,
+					undefined,
+				);
+			}
+		}
+
+		return {
+			total: idPairs.length,
+			success: updates.length,
+			failed: idPairs.length - updates.length,
+			errors,
+		};
+	} catch (error) {
+		const errorMessage =
+			error instanceof Error
+				? error.message
+				: i18next.t("utils.batchUpdate.unknownError", "未知错误");
+		console.error(`批量更新 ${type.toUpperCase()} 数据失败:`, error);
+		throw new Error(errorMessage);
+	}
+}
+
+/**
+ * 批量更新 VNDB 数据
+ * @returns 返回更新结果统计
+ */
+export async function batchUpdateVndbData(): Promise<{
+	total: number;
+	success: number;
+	failed: number;
+	errors: string[];
+}> {
+	const { fetchVNDBByIds } = await import("@/api/vndb");
+
+	return batchUpdateCommon(
+		"vndb",
+		fetchVNDBByIds,
+		() => gameService.getAllVndbIds(),
+		"vndb_data",
+	);
+}
+
+/**
+ * 批量更新 BGM 数据
+ * @param bgmToken Bangumi API Token（可选）
+ * @returns 返回更新结果统计
+ */
+export async function batchUpdateBgmData(bgmToken?: string): Promise<{
+	total: number;
+	success: number;
+	failed: number;
+	errors: string[];
+}> {
+	const { fetchBgmByIds } = await import("@/api/bgm");
+
+	return batchUpdateCommon(
+		"bgm",
+		(ids: string[]) => fetchBgmByIds(ids, bgmToken),
+		() => gameService.getAllBgmIds(),
+		"bgm_data",
+		bgmToken,
+	);
+}
 
 // 导出数据转换工具
 export {

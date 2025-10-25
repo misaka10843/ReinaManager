@@ -142,6 +142,10 @@ export interface AppState {
 	tagTranslation: boolean;
 	setTagTranslation: (enabled: boolean) => void;
 
+	// 剧透等级
+	spoilerLevel: number;
+	setSpoilerLevel: (level: number) => void;
+
 	// 更新游戏通关状态
 	updateGameClearStatusInStore: (
 		gameId: number,
@@ -228,6 +232,12 @@ export const useStore = create<AppState>()(
 			tagTranslation: false,
 			setTagTranslation: (enabled: boolean) => {
 				set({ tagTranslation: enabled });
+			},
+
+			// 剧透等级
+			spoilerLevel: 0,
+			setSpoilerLevel: (level: number) => {
+				set({ spoilerLevel: level });
 			},
 
 			// 通用刷新函数，统一处理搜索、筛选、排序、NSFW筛选
@@ -647,6 +657,8 @@ export const useStore = create<AppState>()(
 				longPressLaunch: state.longPressLaunch,
 				// VNDB标签翻译
 				tagTranslation: state.tagTranslation,
+				// 剧透等级
+				spoilerLevel: state.spoilerLevel,
 			}),
 		},
 	),

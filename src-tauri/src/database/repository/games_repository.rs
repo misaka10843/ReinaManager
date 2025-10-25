@@ -92,7 +92,7 @@ impl GamesRepository {
         Ok(game_id)
     }
 
-    /// 批量更新游戏数据（包含关联数据）
+    /// 更新游戏数据（包含关联数据）
     pub async fn update_with_related(
         db: &DatabaseConnection,
         game_id: i32,
@@ -346,6 +346,138 @@ impl GamesRepository {
     /// 获取游戏总数
     pub async fn count(db: &DatabaseConnection) -> Result<u64, DbErr> {
         Games::find().count(db).await
+    }
+
+    /// 获取所有游戏的 BGM ID（返回 {id, bgm_id} 对象数组）
+    /// 只返回 bgm_id 不为 NULL 的记录
+    pub async fn get_all_bgm_ids(db: &DatabaseConnection) -> Result<Vec<(i32, String)>, DbErr> {
+        Games::find()
+            .filter(games::Column::BgmId.is_not_null())
+            .all(db)
+            .await
+            .map(|games| {
+                games
+                    .into_iter()
+                    .filter_map(|g| g.bgm_id.map(|bgm_id| (g.id, bgm_id)))
+                    .collect()
+            })
+    }
+
+    /// 获取所有游戏的 VNDB ID（返回 {id, vndb_id} 对象数组）
+    /// 只返回 vndb_id 不为 NULL 的记录
+    pub async fn get_all_vndb_ids(db: &DatabaseConnection) -> Result<Vec<(i32, String)>, DbErr> {
+        Games::find()
+            .filter(games::Column::VndbId.is_not_null())
+            .all(db)
+            .await
+            .map(|games| {
+                games
+                    .into_iter()
+                    .filter_map(|g| g.vndb_id.map(|vndb_id| (g.id, vndb_id)))
+                    .collect()
+            })
+    }
+
+    /// 批量更新数据（支持游戏基础数据和关联数据的统一接口）
+    ///
+    /// 使用单个事务处理所有更新操作，支持同时更新游戏基础数据和关联数据。
+    /// 性能远优于逐个更新。
+    ///
+    /// # 参数
+    /// * `db` - 数据库连接
+    /// * `games_updates` - 游戏基础数据更新列表（可选）
+    /// * `bgm_updates` - BGM 数据更新列表（可选）
+    /// * `vndb_updates` - VNDB 数据更新列表（可选）
+    /// * `other_updates` - Other 数据更新列表（可选）
+    ///
+    /// # 返回值
+    /// 返回成功更新的游戏数量（仅计算 games 表的更新数）
+    pub async fn update_batch(
+        db: &DatabaseConnection,
+        games_updates: Option<Vec<(i32, crate::database::dto::UpdateGameData)>>,
+        bgm_updates: Option<Vec<(i32, BgmDataInput)>>,
+        vndb_updates: Option<Vec<(i32, VndbDataInput)>>,
+        other_updates: Option<Vec<(i32, OtherDataInput)>>,
+    ) -> Result<u64, DbErr> {
+        // 如果没有任何更新，直接返回
+        if games_updates.is_none()
+            && bgm_updates.is_none()
+            && vndb_updates.is_none()
+            && other_updates.is_none()
+        {
+            return Ok(0);
+        }
+
+        let txn = db.begin().await?;
+        let now = chrono::Utc::now().timestamp() as i32;
+        let mut games_count = 0u64;
+
+        // 批量更新游戏基础数据
+        if let Some(updates) = games_updates {
+            for (game_id, update) in updates {
+                let game_active = games::ActiveModel {
+                    id: Set(game_id),
+                    bgm_id: update.bgm_id.map_or(NotSet, Set),
+                    vndb_id: update.vndb_id.map_or(NotSet, Set),
+                    id_type: update.id_type.map_or(NotSet, Set),
+                    date: update.date.map_or(NotSet, Set),
+                    localpath: update.localpath.map_or(NotSet, Set),
+                    savepath: update.savepath.map_or(NotSet, Set),
+                    autosave: update.autosave.map_or(NotSet, Set),
+                    clear: update.clear.map_or(NotSet, Set),
+                    custom_name: update.custom_name.map_or(NotSet, Set),
+                    custom_cover: update.custom_cover.map_or(NotSet, Set),
+                    updated_at: Set(Some(now)),
+                    ..Default::default()
+                };
+                let result = game_active.update(&txn).await?;
+                if result.id > 0 {
+                    games_count += 1;
+                }
+            }
+        }
+
+        // 批量更新 BGM 数据
+        if let Some(updates) = bgm_updates {
+            for (game_id, data) in updates {
+                let active_model = data.into_active_model(game_id);
+                let existing = BgmData::find_by_id(game_id).one(&txn).await?;
+                if existing.is_some() {
+                    active_model.update(&txn).await?;
+                } else {
+                    active_model.insert(&txn).await?;
+                }
+            }
+        }
+
+        // 批量更新 VNDB 数据
+        if let Some(updates) = vndb_updates {
+            for (game_id, data) in updates {
+                let active_model = data.into_active_model(game_id);
+                let existing = VndbData::find_by_id(game_id).one(&txn).await?;
+                if existing.is_some() {
+                    active_model.update(&txn).await?;
+                } else {
+                    active_model.insert(&txn).await?;
+                }
+            }
+        }
+
+        // 批量更新 Other 数据
+        if let Some(updates) = other_updates {
+            for (game_id, data) in updates {
+                let active_model = data.into_active_model(game_id);
+                let existing = OtherData::find_by_id(game_id).one(&txn).await?;
+                if existing.is_some() {
+                    active_model.update(&txn).await?;
+                } else {
+                    active_model.insert(&txn).await?;
+                }
+            }
+        }
+
+        txn.commit().await?;
+        Ok(games_count)
     }
 
     /// 通用的查询构建器：应用类型筛选和关键词搜索

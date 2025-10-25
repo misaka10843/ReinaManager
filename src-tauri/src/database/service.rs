@@ -2,7 +2,8 @@ use sea_orm::DatabaseConnection;
 use tauri::State;
 
 use crate::database::dto::{
-    BgmDataInput, GameWithRelatedUpdate, InsertGameData, OtherDataInput, VndbDataInput,
+    BgmDataInput, GameWithRelatedUpdate, InsertGameData, OtherDataInput, UpdateGameData,
+    VndbDataInput,
 };
 use crate::database::repository::{
     collections_repository::CollectionsRepository,
@@ -146,6 +147,43 @@ pub async fn game_exists_by_vndb_id(
     GamesRepository::exists_vndb_id(&db, &vndb_id)
         .await
         .map_err(|e| format!("检查 VNDB ID 是否存在失败: {}", e))
+}
+
+/// 获取所有游戏的 BGM ID（返回 {id, bgm_id} 对象数组）
+#[tauri::command]
+pub async fn get_all_bgm_ids(
+    db: State<'_, DatabaseConnection>,
+) -> Result<Vec<(i32, String)>, String> {
+    GamesRepository::get_all_bgm_ids(&db)
+        .await
+        .map_err(|e| format!("获取 BGM ID 列表失败: {}", e))
+}
+
+/// 获取所有游戏的 VNDB ID（返回 {id, vndb_id} 对象数组）
+#[tauri::command]
+pub async fn get_all_vndb_ids(
+    db: State<'_, DatabaseConnection>,
+) -> Result<Vec<(i32, String)>, String> {
+    GamesRepository::get_all_vndb_ids(&db)
+        .await
+        .map_err(|e| format!("获取 VNDB ID 列表失败: {}", e))
+}
+
+/// 批量更新数据（支持游戏基础数据和关联数据的统一接口）
+///
+/// 使用单个事务处理所有更新操作，支持同时更新游戏基础数据和关联数据。
+/// 性能远优于逐个更新。
+#[tauri::command]
+pub async fn update_batch(
+    db: State<'_, DatabaseConnection>,
+    games_updates: Option<Vec<(i32, UpdateGameData)>>,
+    bgm_updates: Option<Vec<(i32, BgmDataInput)>>,
+    vndb_updates: Option<Vec<(i32, VndbDataInput)>>,
+    other_updates: Option<Vec<(i32, OtherDataInput)>>,
+) -> Result<u64, String> {
+    GamesRepository::update_batch(&db, games_updates, bgm_updates, vndb_updates, other_updates)
+        .await
+        .map_err(|e| format!("批量更新数据失败: {}", e))
 }
 
 // ==================== 存档备份相关 ====================
