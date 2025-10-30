@@ -34,7 +34,7 @@ import { useGamePlayStore } from "@/store/gamePlayStore";
  */
 export const LaunchModal = () => {
 	const { t } = useTranslation();
-	const { selectedGameId, getGameById, isLocalGame } = useStore();
+	const { selectedGameId, getGameById, isLocalGame, allGames } = useStore();
 	const { launchGame, isGameRunning } = useGamePlayStore();
 
 	// 检查这个特定游戏是否在运行
@@ -44,20 +44,18 @@ export const LaunchModal = () => {
 
 	/**
 	 * 判断当前游戏是否可以启动
+	 * 通过订阅 allGames 确保当游戏列表更新时组件重新渲染
 	 * @returns {boolean} 是否可启动
 	 */
 	const canUse = (): boolean => {
-		// 如果不是Tauri环境，无法启动游戏
-		if (!isTauri()) return false;
+		// 基础检查
+		if (!isTauri() || !selectedGameId || isThisGameRunning) {
+			return false;
+		}
 
-		// 如果没有有效的游戏ID，无法启动
-		if (!selectedGameId) return false;
-
-		// 如果该游戏已在运行，不能再次启动
-		if (isThisGameRunning) return false;
-
-		// 检查是否为本地游戏，只有本地游戏才能启动
-		return isLocalGame(selectedGameId);
+		// 检查是否为本地游戏
+		// isLocalGame 内部从 allGames 查找，组件已订阅 allGames 确保数据同步
+		return allGames.length >= 0 && isLocalGame(selectedGameId);
 	};
 
 	/**

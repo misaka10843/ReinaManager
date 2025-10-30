@@ -451,6 +451,7 @@ export const useStore = create<AppState>()(
 						// gameUpdates 的键会在下面被遍历，直接使用 gameUpdates 而不是解构未使用的变量
 						// 只有当更新的字段可能影响游戏列表显示时才刷新列表
 						// 游戏设置类字段（如 savepath, autosave）不需要刷新列表
+						// 注意：localpath 字段虽然不影响列表显示，但会影响 isLocalGame 判断，因此需要刷新
 						const listAffectingFields = [
 							"name",
 							"custom_name",
@@ -460,9 +461,8 @@ export const useStore = create<AppState>()(
 							"rank",
 							"tags",
 							"custom_cover",
-						];
-
-						// 将 gameUpdates 展开为一组字段名（支持一层嵌套：game / bgm_data / vndb_data / other_data）
+							"localpath", // 添加 localpath，确保更新后 allGames 也同步更新
+						]; // 将 gameUpdates 展开为一组字段名（支持一层嵌套：game / bgm_data / vndb_data / other_data）
 						const updatedFieldNames = new Set<string>();
 
 						// 如果外层直接包含字段（理论上 FullGameData 只有四个键，但保持通用）
@@ -482,9 +482,12 @@ export const useStore = create<AppState>()(
 						const shouldRefreshList = Array.from(updatedFieldNames).some(
 							(field) => listAffectingFields.includes(field),
 						);
+
+						// 更新当前选中的游戏数据
 						await get().fetchGame(id);
+
+						// 如果更新的字段影响列表显示或游戏可用性，刷新游戏列表
 						if (shouldRefreshList) {
-							await get().fetchGame(id);
 							await get().refreshGameData();
 						}
 					} else {

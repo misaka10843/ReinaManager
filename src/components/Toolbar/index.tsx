@@ -91,18 +91,24 @@ export const useModal = () => {
 
 /**
  * 打开游戏文件夹按钮
+ * 订阅 allGames 确保当游戏 localpath 更新时按钮状态同步
  * @param {HanleGamesProps} props
  * @returns {JSX.Element}
  */
 const OpenFolder = ({ id, getGameById, canUse }: HanleGamesProps) => {
 	const { t } = useTranslation();
+	// 订阅 allGames 以确保 localpath 更新时组件重新渲染
+	const { allGames } = useStore();
+	
+	// 通过使用 allGames.length 确保订阅生效
+	const isDisabled = allGames.length >= 0 && (typeof canUse === "function" ? !canUse() : true);
 
 	return (
 		<Button
 			startIcon={<FolderOpenIcon />}
 			color="primary"
 			variant="text"
-			disabled={typeof canUse === "function" ? !canUse() : true}
+			disabled={isDisabled}
 			onClick={() => handleOpenFolder({ id, getGameById })}
 		>
 			{t("components.Toolbar.openGameFolder")}
@@ -287,15 +293,20 @@ export const Buttongroup = ({
 	// isCategory,
 }: ButtonGroupProps) => {
 	const id = Number(useLocation().pathname.split("/").pop());
-	const { getGameById, isLocalGame } = useStore();
+	const { getGameById, isLocalGame, allGames } = useStore();
 
 	/**
 	 * 判断当前游戏是否可用（本地且 Tauri 环境）
+	 * 订阅 allGames 确保 localpath 更新时按钮状态同步
 	 * @returns {boolean}
 	 */
 	const canUse = () => {
-		if (id !== undefined && id !== null) return isTauri() && isLocalGame(id);
-		return false;
+		// 使用 allGames.length 确保订阅生效
+		return allGames.length >= 0 && 
+			id !== undefined && 
+			id !== null && 
+			isTauri() && 
+			isLocalGame(id);
 	};
 
 	return (
