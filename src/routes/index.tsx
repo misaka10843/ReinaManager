@@ -1,8 +1,9 @@
 import GamesIcon from "@mui/icons-material/Games";
 import HomeIcon from "@mui/icons-material/Home";
 import SettingsIcon from "@mui/icons-material/Settings";
+import { Box, CircularProgress } from "@mui/material";
 import { isTauri } from "@tauri-apps/api/core";
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import {
 	createBrowserRouter,
 	createHashRouter,
@@ -10,10 +11,31 @@ import {
 } from "react-router-dom";
 import App from "@/App";
 import Layout from "@/components/Layout";
-import { Detail } from "@/pages/Detail";
-import { Home } from "@/pages/Home/";
-import { Libraries } from "@/pages/Libraries";
-import { Settings } from "@/pages/Settings";
+
+// 使用 React.lazy 懒加载页面组件
+const Home = lazy(() =>
+	import("@/pages/Home/").then((module) => ({ default: module.Home })),
+);
+const Libraries = lazy(() =>
+	import("@/pages/Libraries").then((module) => ({ default: module.Libraries })),
+);
+const Detail = lazy(() =>
+	import("@/pages/Detail").then((module) => ({ default: module.Detail })),
+);
+const Settings = lazy(() =>
+	import("@/pages/Settings").then((module) => ({ default: module.Settings })),
+);
+// 加载指示器组件
+const PageLoader = () => (
+	<Box
+		display="flex"
+		justifyContent="center"
+		alignItems="center"
+		minHeight="50vh"
+	>
+		<CircularProgress />
+	</Box>
+);
 
 export interface AppRoute {
 	// 路由路径
@@ -69,7 +91,11 @@ const buildRouterObjects = (routes: AppRoute[]): RouteObject[] => {
 		if (route.index) {
 			return {
 				index: true,
-				element: React.createElement(route.component),
+				element: (
+					<Suspense fallback={<PageLoader />}>
+						{React.createElement(route.component)}
+					</Suspense>
+				),
 				// 索引路由不能有 path 或 children
 			};
 		}
@@ -77,7 +103,11 @@ const buildRouterObjects = (routes: AppRoute[]): RouteObject[] => {
 		// 否则，是非索引路由 (Path Route)
 		return {
 			path: route.path,
-			element: React.createElement(route.component),
+			element: (
+				<Suspense fallback={<PageLoader />}>
+					{React.createElement(route.component)}
+				</Suspense>
+			),
 			children: route.children ? buildRouterObjects(route.children) : undefined,
 			// 非索引路由的 index 属性不能为 true
 		};

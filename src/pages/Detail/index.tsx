@@ -28,16 +28,24 @@ import {
 } from "@mui/material";
 import { PageContainer } from "@toolpad/core/PageContainer";
 import { useActivePage } from "@toolpad/core/useActivePage";
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router-dom";
 import { useStore } from "@/store";
 import { getGameCover, getGameDisplayName } from "@/utils";
 import i18n from "@/utils/i18n";
 import { translateTags } from "@/utils/tagTranslation";
-import { Backup } from "./Backup";
-import { Edit } from "./Edit";
-import { InfoBox } from "./InfoBox";
+
+// 使用 React.lazy 懒加载 Tab 内容组件
+const Backup = lazy(() =>
+	import("./Backup").then((module) => ({ default: module.Backup })),
+);
+const Edit = lazy(() =>
+	import("./Edit").then((module) => ({ default: module.Edit })),
+);
+const InfoBox = lazy(() =>
+	import("./InfoBox").then((module) => ({ default: module.InfoBox })),
+);
 
 // Tab面板组件
 interface TabPanelProps {
@@ -359,7 +367,11 @@ export const Detail: React.FC = () => {
 
 					{/* 统计信息Tab */}
 					<TabPanel value={tabIndex} index={0}>
-						{tabIndex === 0 && <InfoBox gameID={id} />}
+						{tabIndex === 0 && (
+							<Suspense fallback={<CircularProgress />}>
+								<InfoBox gameID={id} />
+							</Suspense>
+						)}
 					</TabPanel>
 					<TabPanel value={tabIndex} index={1}>
 						{tabIndex === 1 && (
@@ -375,10 +387,18 @@ export const Detail: React.FC = () => {
 						)}
 					</TabPanel>
 					<TabPanel value={tabIndex} index={2}>
-						{tabIndex === 2 && <Edit />}
+						{tabIndex === 2 && (
+							<Suspense fallback={<CircularProgress />}>
+								<Edit />
+							</Suspense>
+						)}
 					</TabPanel>
 					<TabPanel value={tabIndex} index={3}>
-						{tabIndex === 3 && <Backup />}
+						{tabIndex === 3 && (
+							<Suspense fallback={<CircularProgress />}>
+								<Backup />
+							</Suspense>
+						)}
 					</TabPanel>
 				</Box>
 			</Box>
