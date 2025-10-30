@@ -37,13 +37,105 @@ pub enum GameType {
     Clear,
 }
 
-/// 完整的游戏数据，包含关联的 BGM、VNDB 和其他数据
+/// 用于序列化给前端的 BGM 数据（数组字段已反序列化）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BgmDataSerialized {
+    pub game_id: i32,
+    pub image: Option<String>,
+    pub name: Option<String>,
+    pub name_cn: Option<String>,
+    pub aliases: Option<Vec<String>>,
+    pub summary: Option<String>,
+    pub tags: Option<Vec<String>>,
+    pub rank: Option<i32>,
+    pub score: Option<sea_orm::prelude::Decimal>,
+    pub developer: Option<String>,
+}
+
+/// 用于序列化给前端的 VNDB 数据（数组字段已反序列化）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VndbDataSerialized {
+    pub game_id: i32,
+    pub image: Option<String>,
+    pub name: Option<String>,
+    pub name_cn: Option<String>,
+    pub all_titles: Option<Vec<String>>,
+    pub aliases: Option<Vec<String>>,
+    pub summary: Option<String>,
+    pub tags: Option<Vec<String>>,
+    pub average_hours: Option<sea_orm::prelude::Decimal>,
+    pub developer: Option<String>,
+    pub score: Option<sea_orm::prelude::Decimal>,
+}
+
+/// 用于序列化给前端的 Other 数据（数组字段已反序列化）
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct OtherDataSerialized {
+    pub game_id: i32,
+    pub image: Option<String>,
+    pub name: Option<String>,
+    pub summary: Option<String>,
+    pub tags: Option<Vec<String>>,
+    pub developer: Option<String>,
+}
+
+/// 完整的游戏数据，包含关联的 BGM、VNDB 和其他数据（发送给前端时字段已反序列化）
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FullGameData {
     pub game: games::Model,
-    pub bgm_data: Option<bgm_data::Model>,
-    pub vndb_data: Option<vndb_data::Model>,
-    pub other_data: Option<other_data::Model>,
+    pub bgm_data: Option<BgmDataSerialized>,
+    pub vndb_data: Option<VndbDataSerialized>,
+    pub other_data: Option<OtherDataSerialized>,
+}
+
+/// 辅助函数：将数据库中的 JSON 字符串安全地反序列化为数组
+fn deserialize_json_array(json_str: Option<String>) -> Option<Vec<String>> {
+    json_str.and_then(|s| serde_json::from_str(&s).ok())
+}
+
+/// 转换 bgm_data::Model 为 BgmDataSerialized
+fn convert_bgm_model(model: bgm_data::Model) -> BgmDataSerialized {
+    BgmDataSerialized {
+        game_id: model.game_id,
+        image: model.image,
+        name: model.name,
+        name_cn: model.name_cn,
+        aliases: deserialize_json_array(model.aliases),
+        summary: model.summary,
+        tags: deserialize_json_array(model.tags),
+        rank: model.rank,
+        score: model.score,
+        developer: model.developer,
+    }
+}
+
+/// 转换 vndb_data::Model 为 VndbDataSerialized
+fn convert_vndb_model(model: vndb_data::Model) -> VndbDataSerialized {
+    VndbDataSerialized {
+        game_id: model.game_id,
+        image: model.image,
+        name: model.name,
+        name_cn: model.name_cn,
+        all_titles: deserialize_json_array(model.all_titles),
+        aliases: deserialize_json_array(model.aliases),
+        summary: model.summary,
+        tags: deserialize_json_array(model.tags),
+        average_hours: model.average_hours,
+        developer: model.developer,
+        score: model.score,
+    }
+}
+
+/// 转换 other_data::Model 为 OtherDataSerialized
+fn convert_other_model(model: other_data::Model) -> OtherDataSerialized {
+    OtherDataSerialized {
+        game_id: model.game_id,
+        image: model.image,
+        name: model.name,
+        summary: model.summary,
+        tags: deserialize_json_array(model.tags),
+        developer: model.developer,
+    }
 }
 
 /// 游戏数据仓库
@@ -239,9 +331,9 @@ impl GamesRepository {
 
         Ok(Some(FullGameData {
             game,
-            bgm_data: bgm,
-            vndb_data: vndb,
-            other_data: other,
+            bgm_data: bgm.map(convert_bgm_model),
+            vndb_data: vndb.map(convert_vndb_model),
+            other_data: other.map(convert_other_model),
         }))
     }
 
@@ -295,14 +387,14 @@ impl GamesRepository {
             .map(|d| (d.game_id, d))
             .collect();
 
-        // 5. 组合数据
+        // 5. 组合数据，并转换为序列化格式
         let full_games = games
             .into_iter()
             .map(|game| FullGameData {
                 game: game.clone(),
-                bgm_data: bgm_map.get(&game.id).cloned(),
-                vndb_data: vndb_map.get(&game.id).cloned(),
-                other_data: other_map.get(&game.id).cloned(),
+                bgm_data: bgm_map.get(&game.id).cloned().map(convert_bgm_model),
+                vndb_data: vndb_map.get(&game.id).cloned().map(convert_vndb_model),
+                other_data: other_map.get(&game.id).cloned().map(convert_other_model),
             })
             .collect();
 

@@ -41,7 +41,6 @@ import { useModal } from "@/components/Toolbar";
 import { useStore } from "@/store/";
 import type { FullGameData } from "@/types";
 import { handleDirectory } from "@/utils";
-import { transformApiGameData } from "@/utils/apiDataTransform";
 
 /**
  * 从文件路径中提取文件夹名称（纯函数，置于组件外以保证稳定引用）
@@ -105,13 +104,21 @@ const AddModal: React.FC = () => {
 					return;
 				}
 
-				const customGameData = transformApiGameData(
-					{ game: { id_type: "custom" } },
-					{
-						...defaultdata,
-						other: { name: formText, image: "/images/default.png" },
+				const customGameData: FullGameData = {
+					game: {
+						...defaultdata.game,
+						id_type: "custom",
 					},
-				);
+					bgm_data: null,
+					vndb_data: null,
+					other_data: {
+						name: formText,
+						image: "/images/default.png",
+						summary: null,
+						tags: null,
+						developer: null,
+					},
+				};
 
 				addGame(customGameData);
 				setFormText("");
@@ -179,8 +186,14 @@ const AddModal: React.FC = () => {
 				};
 			}
 
-			// 统一使用 transformApiGameData 处理所有数据
-			const fullGameData = transformApiGameData(apiData, { ...defaultdata });
+			// 合并默认数据（路径信息）
+			const fullGameData: FullGameData = {
+				...apiData,
+				game: {
+					...apiData.game,
+					...defaultdata.game,
+				},
+			};
 
 			// 检查是否已存在相同游戏
 			const existingGame = games.find((game) => {

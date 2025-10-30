@@ -45,8 +45,7 @@ const CardItem = memo(
 		const [isLongPressing, setIsLongPressing] = useState(false);
 		const [hasLongPressed, setHasLongPressed] = useState(false);
 
-		const tags =
-			typeof card.tags === "string" ? JSON.parse(card.tags) : card.tags;
+		const tags = card.tags || [];
 		const isNsfw = isNsfwGame(tags);
 
 		const handleClick = () => {

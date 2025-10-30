@@ -15,7 +15,7 @@
  */
 
 import { useStore } from "@/store";
-import type { ApiVndbData, RawGameData } from "@/types";
+import type { RawGameData, VndbData } from "@/types";
 import i18n from "@/utils/i18n";
 import http from "./http";
 
@@ -53,7 +53,7 @@ function transformVndbData(
 	update_batch?: boolean,
 ): {
 	game: RawGameData;
-	vndb_data: ApiVndbData;
+	vndb_data: VndbData;
 } {
 	// 处理标题信息
 	const titles = VNDBdata.titles.map((title: VNDB_title) => ({
@@ -91,14 +91,14 @@ function transformVndbData(
 		.filter(({ spoiler }) => spoiler <= filterLevel)
 		.map(({ name }) => name);
 
-	const vndb: ApiVndbData = {
+	const vndb: VndbData = {
 		image: VNDBdata.image?.url,
 		summary: VNDBdata.description,
 		name: mainTitle,
 		name_cn: chineseTitle,
-		all_titles_Array: allTitles,
-		aliases_Array: VNDBdata.aliases || [],
-		tags_Array: filtered_tags,
+		all_titles: allTitles,
+		aliases: VNDBdata.aliases || [],
+		tags: filtered_tags,
 		score: Number((VNDBdata.rating / 10).toFixed(2)),
 		developer:
 			VNDBdata.developers?.map((dev: { name: string }) => dev.name).join("/") ||
@@ -204,7 +204,7 @@ export async function fetchVNDBByIds(ids: string[]) {
 		// 并发请求所有批次
 		const allResults: {
 			game: RawGameData;
-			vndb_data: ApiVndbData;
+			vndb_data: VndbData;
 			bgm_data: null;
 			other_data: null;
 		}[] = [];

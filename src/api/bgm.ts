@@ -14,7 +14,7 @@
  */
 
 import { version } from "@pkg";
-import type { ApiBgmData, RawGameData } from "@/types";
+import type { BgmData, RawGameData } from "@/types";
 import i18n from "@/utils/i18n";
 import http, { tauriHttp } from "./http";
 
@@ -56,13 +56,13 @@ const transformBgmData = (BGMdata: any) => {
 		aliasesArray = [aliasesRaw];
 	}
 
-	const bgm_data: ApiBgmData = {
+	const bgm_data: BgmData = {
 		image: BGMdata.images?.large || null,
 		summary: BGMdata.summary || null,
 		name: BGMdata.name || null,
 		name_cn: BGMdata.name_cn || null,
-		aliases_Array: aliasesArray,
-		tags_Array: filterSensitiveTags(
+		aliases: aliasesArray,
+		tags: filterSensitiveTags(
 			(BGMdata.tags || []).map((tag: { name: string }) => tag.name),
 		),
 		rank: BGMdata.rating?.rank ?? null,
@@ -205,7 +205,7 @@ export async function fetchBgmByIds(ids: string[], BGM_TOKEN?: string) {
 
 		const allResults: {
 			game: RawGameData;
-			bgm_data: ApiBgmData;
+			bgm_data: BgmData;
 			vndb_data: null;
 			other_data: null;
 		}[] = [];

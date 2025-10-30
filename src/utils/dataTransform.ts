@@ -9,20 +9,6 @@ import type { FullGameData, GameData, RawGameData } from "@/types";
 import { getResourceDirPath } from "@/utils";
 
 /**
- * 安全解析 JSON 字符串为数组
- */
-function safeParseJSONArray(jsonStr: string | null | undefined): string[] {
-	if (!jsonStr) return [];
-	try {
-		const parsed = JSON.parse(jsonStr);
-		return Array.isArray(parsed) ? parsed : [];
-	} catch (e) {
-		console.warn("JSON 解析失败:", jsonStr, e);
-		return [];
-	}
-}
-
-/**
  * 根据 id_type 智能合并游戏数据
  * 实现类似 api/mixed.ts 的逻辑
  *
@@ -63,11 +49,11 @@ export function getDisplayGameData(
 				baseData.name = bgm_data.name;
 				baseData.name_cn = bgm_data.name_cn || undefined;
 				baseData.summary = bgm_data.summary || undefined;
-				baseData.tags = safeParseJSONArray(bgm_data.tags);
+				baseData.tags = bgm_data.tags || [];
 				baseData.rank = bgm_data.rank || undefined;
 				baseData.score = bgm_data.score || undefined;
 				baseData.developer = bgm_data.developer || undefined;
-				baseData.aliases = safeParseJSONArray(bgm_data.aliases);
+				baseData.aliases = bgm_data.aliases || [];
 			}
 			break;
 
@@ -78,11 +64,11 @@ export function getDisplayGameData(
 				baseData.name = vndb_data.name;
 				baseData.name_cn = vndb_data.name_cn || undefined;
 				baseData.summary = vndb_data.summary || undefined;
-				baseData.tags = safeParseJSONArray(vndb_data.tags);
+				baseData.tags = vndb_data.tags || [];
 				baseData.score = vndb_data.score || undefined;
 				baseData.developer = vndb_data.developer || undefined;
-				baseData.all_titles = safeParseJSONArray(vndb_data.all_titles);
-				baseData.aliases = safeParseJSONArray(vndb_data.aliases);
+				baseData.all_titles = vndb_data.all_titles || [];
+				baseData.aliases = vndb_data.aliases || [];
 				baseData.average_hours = vndb_data.average_hours || undefined;
 			}
 			break;
@@ -102,8 +88,8 @@ export function getDisplayGameData(
 				baseData.summary = bgm_data?.summary || vndb_data?.summary || undefined;
 
 				// 标签: 合并两者,去重
-				const bgmTags = safeParseJSONArray(bgm_data?.tags);
-				const vndbTags = safeParseJSONArray(vndb_data?.tags);
+				const bgmTags = bgm_data?.tags || [];
+				const vndbTags = vndb_data?.tags || [];
 				baseData.tags = Array.from(new Set([...bgmTags, ...vndbTags]));
 
 				// 排名: 只有 BGM 有
@@ -117,12 +103,12 @@ export function getDisplayGameData(
 					bgm_data?.developer || vndb_data?.developer || undefined;
 
 				// VNDB 特有字段
-				baseData.all_titles = safeParseJSONArray(vndb_data?.all_titles);
+				baseData.all_titles = vndb_data?.all_titles || [];
 				baseData.average_hours = vndb_data?.average_hours || undefined;
 
 				// 别名: 合并两者
-				const bgmAliases = safeParseJSONArray(bgm_data?.aliases);
-				const vndbAliases = safeParseJSONArray(vndb_data?.aliases);
+				const bgmAliases = bgm_data?.aliases || [];
+				const vndbAliases = vndb_data?.aliases || [];
 				baseData.aliases = Array.from(new Set([...bgmAliases, ...vndbAliases]));
 			}
 			break;
@@ -134,7 +120,7 @@ export function getDisplayGameData(
 				baseData.image = other_data.image || undefined;
 				baseData.name = other_data.name || undefined;
 				baseData.summary = other_data.summary || undefined;
-				baseData.tags = safeParseJSONArray(other_data.tags);
+				baseData.tags = other_data.tags || [];
 				baseData.developer = other_data.developer || undefined;
 			}
 			break;
@@ -146,7 +132,7 @@ export function getDisplayGameData(
 				baseData.image = anyData.image || undefined;
 				baseData.name = anyData.name || undefined;
 				baseData.summary = anyData.summary || undefined;
-				baseData.tags = safeParseJSONArray(anyData.tags);
+				baseData.tags = anyData.tags || [];
 				baseData.developer = anyData.developer || undefined;
 			}
 			break;
@@ -261,8 +247,3 @@ export function formatTimestamp(
 	}
 	return date.toLocaleString("zh-CN");
 }
-
-// 兼容旧的导出名称
-export const toDisplayGameData = getDisplayGameData;
-export const toDisplayGameDataList = getDisplayGameDataList;
-export const gameDataToDisplay = rawGameDataToDisplay;

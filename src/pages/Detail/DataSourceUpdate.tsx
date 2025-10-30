@@ -17,7 +17,6 @@ import { fetchMixedData } from "@/api/mixed";
 import { fetchVndbById } from "@/api/vndb";
 import { snackbar } from "@/components/Snackbar";
 import type { FullGameData, GameData } from "@/types";
-import { transformApiGameData } from "@/utils";
 
 interface DataSourceUpdateProps {
 	bgmToken: string;
@@ -129,8 +128,8 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 				other_data: null,
 			};
 		}
-		const transformedData = transformApiGameData(apiData);
-		return transformedData;
+		// 后端已经处理了序列化，直接返回
+		return apiData;
 	}, [idType, bgmId, vndbId, bgmToken, selectedGame, t]);
 
 	// 获取并预览游戏数据

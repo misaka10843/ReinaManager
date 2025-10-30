@@ -4,24 +4,19 @@ import { resourceDir } from "@tauri-apps/api/path";
 import { open as openDirectory } from "@tauri-apps/plugin-dialog";
 import { open } from "@tauri-apps/plugin-shell";
 import i18next, { t } from "i18next";
+import { fetchBgmByIds } from "@/api/bgm";
+import { fetchVNDBByIds } from "@/api/vndb";
 import { snackbar } from "@/components/Snackbar";
-import { gameService, savedataService } from "@/services";
+import { gameService, savedataService, settingsService } from "@/services";
 import { useScrollStore } from "@/store/scrollStore";
 import type {
-	ApiBgmData,
-	ApiVndbData,
+	BgmData,
 	GameData,
 	HanleGamesProps,
 	RawGameData,
+	VndbData,
 } from "@/types";
 import { getDisplayGameData } from "./dataTransform";
-
-// 导出 API 数据转换工具
-export {
-	type AppendFields,
-	transformApiGameData,
-	transformApiGameDataBatch,
-} from "./apiDataTransform";
 
 // 缓存资源目录路径
 let cachedResourceDirPath: string | null = null;
@@ -404,7 +399,6 @@ export async function createGameSavedataBackup(
 	if (!skipPathCheck && !saveDataPath) {
 		throw new Error("存档路径不能为空");
 	}
-	const { settingsService } = await import("@/services");
 	const saveRootPath = await settingsService.getSaveRootPath();
 
 	try {
@@ -439,7 +433,6 @@ export async function createGameSavedataBackup(
  * @param gameId 游戏ID
  */
 export async function openGameBackupFolder(gameId: number): Promise<void> {
-	const { settingsService } = await import("@/services");
 	const saveRootPath = await settingsService.getSaveRootPath();
 	try {
 		const appDataDir = await getAppDataDir();
@@ -574,8 +567,7 @@ export function applyNsfwFilter(
 ): GameData[] {
 	if (!nsfwFilter) return data;
 	return data.filter((game) => {
-		const tags =
-			typeof game.tags === "string" ? JSON.parse(game.tags) : game.tags;
+		const tags = game.tags || [];
 		return !isNsfwGame(tags);
 	});
 }
@@ -617,8 +609,8 @@ async function batchUpdateCommon(
 		| string
 		| Array<{
 				game: RawGameData;
-				bgm_data: ApiBgmData | null;
-				vndb_data: ApiVndbData | null;
+				bgm_data: BgmData | null;
+				vndb_data: VndbData | null;
 				other_data: null;
 		  }>
 	>,
@@ -668,28 +660,13 @@ async function batchUpdateCommon(
 			};
 		}
 
-		// 3.5 序列化处理（使用批量转换，收集错误但不中断）
-		const { transformApiGameDataBatch } = await import("./apiDataTransform");
-		const { results, errors: transformErrors } =
-			transformApiGameDataBatch(resultsTemp);
-
 		const errors: string[] = [];
-		if (transformErrors.length > 0) {
-			transformErrors.forEach((err) => {
-				errors.push(
-					i18next.t(
-						"utils.batchUpdate.unknownError",
-						`转换 ${type.toUpperCase()} 数据时发生错误: ${err.index} - ${err.message}`,
-					),
-				);
-			});
-		}
 
 		// 4. 构建更新数据
-		const updates: Array<[number, ApiBgmData | ApiVndbData]> = [];
+		const updates: Array<[number, BgmData | VndbData]> = [];
 
 		for (const [gameId, apiId] of idPairs) {
-			const data = results.find((result) => {
+			const data = resultsTemp.find((result) => {
 				if (type === "bgm") {
 					return result.game.bgm_id === apiId;
 				}
@@ -713,7 +690,7 @@ async function batchUpdateCommon(
 			if (updateKeyName === "bgm_data") {
 				await gameService.updateBatch(
 					undefined,
-					updates as Array<[number, ApiBgmData]>,
+					updates as Array<[number, BgmData]>,
 					undefined,
 					undefined,
 				);
@@ -721,7 +698,7 @@ async function batchUpdateCommon(
 				await gameService.updateBatch(
 					undefined,
 					undefined,
-					updates as Array<[number, ApiVndbData]>,
+					updates as Array<[number, VndbData]>,
 					undefined,
 				);
 			}
@@ -753,8 +730,6 @@ export async function batchUpdateVndbData(): Promise<{
 	failed: number;
 	errors: string[];
 }> {
-	const { fetchVNDBByIds } = await import("@/api/vndb");
-
 	return batchUpdateCommon(
 		"vndb",
 		fetchVNDBByIds,
@@ -774,8 +749,6 @@ export async function batchUpdateBgmData(bgmToken?: string): Promise<{
 	failed: number;
 	errors: string[];
 }> {
-	const { fetchBgmByIds } = await import("@/api/bgm");
-
 	return batchUpdateCommon(
 		"bgm",
 		(ids: string[]) => fetchBgmByIds(ids, bgmToken),
@@ -789,12 +762,8 @@ export async function batchUpdateBgmData(bgmToken?: string): Promise<{
 export {
 	dateToTimestamp,
 	formatTimestamp,
-	gameDataToDisplay,
 	getDisplayGameData,
 	getDisplayGameDataList,
 	rawGameDataToDisplay,
 	timestampToDate,
-	// 兼容旧名称
-	toDisplayGameData,
-	toDisplayGameDataList,
 } from "./dataTransform";

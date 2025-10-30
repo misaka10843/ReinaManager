@@ -33,17 +33,12 @@ export interface BgmData {
 	image?: string;
 	name?: string;
 	name_cn?: string | null;
-	aliases?: string | null; // JSON 字符串
+	aliases?: string[] | null;
 	summary?: string | null;
-	tags?: string | null; // JSON 字符串
+	tags?: string[] | null;
 	rank?: number | null;
 	score?: number | null;
 	developer?: string | null;
-}
-
-export interface ApiBgmData extends BgmData {
-	aliases_Array?: string[] | null; // api获取字段
-	tags_Array?: string[] | null; // api获取字段
 }
 
 /**
@@ -54,19 +49,13 @@ export interface VndbData {
 	image?: string;
 	name?: string;
 	name_cn?: string | null;
-	all_titles?: string | null; // JSON 字符串
-	aliases?: string | null; // JSON 字符串
+	all_titles?: string[] | null;
+	aliases?: string[] | null;
 	summary?: string | null;
-	tags?: string | null; // JSON 字符串
+	tags?: string[] | null;
 	average_hours?: number | null;
 	developer?: string | null;
 	score?: number | null;
-}
-
-export interface ApiVndbData extends VndbData {
-	all_titles_Array?: string[] | null; // api获取字段
-	aliases_Array?: string[] | null; // api获取字段
-	tags_Array?: string[] | null; // api获取字段
 }
 
 /**
@@ -77,7 +66,7 @@ export interface OtherData {
 	image?: string | null;
 	name?: string | null;
 	summary?: string | null;
-	tags?: string | null; // JSON 字符串
+	tags?: string[] | null;
 	developer?: string | null;
 }
 
