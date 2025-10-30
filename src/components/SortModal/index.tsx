@@ -131,6 +131,7 @@ const SortOption: React.FC<SortOptionProps> = ({ value, onChange }) => {
 	return (
 		<Select value={value} onChange={handleChange}>
 			<MenuItem value="addtime">{t("components.SortModal.addTime")}</MenuItem>
+			<MenuItem value="namesort">{t("components.SortModal.nameSort","名称排序")}</MenuItem>
 			<MenuItem value="datetime">
 				{t("components.SortModal.releaseTime")}
 			</MenuItem>
@@ -138,10 +139,10 @@ const SortOption: React.FC<SortOptionProps> = ({ value, onChange }) => {
 				{t("components.SortModal.lastPlayed")}
 			</MenuItem>
 			<MenuItem value="bgmrank">
-				{t("components.SortModal.bgmRank", "Bgm排行")}
+				{t("components.SortModal.bgmRank")}
 			</MenuItem>
 			<MenuItem value="vndbrank">
-				{t("components.SortModal.vndbRank", "VNDB排行")}
+				{t("components.SortModal.vndbRank")}
 			</MenuItem>
 		</Select>
 	);

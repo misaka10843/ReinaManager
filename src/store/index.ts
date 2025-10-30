@@ -146,6 +146,9 @@ export interface AppState {
 	spoilerLevel: number;
 	setSpoilerLevel: (level: number) => void;
 
+	// 前端名称排序
+	sortGamesByName: (games: GameData[], order: "asc" | "desc") => GameData[];
+
 	// 更新游戏通关状态
 	updateGameClearStatusInStore: (
 		gameId: number,
@@ -240,6 +243,35 @@ export const useStore = create<AppState>()(
 				set({ spoilerLevel: level });
 			},
 
+			/**
+			 * 前端名称排序辅助函数
+			 * 使用与 dataTransform 相同的名称优先级
+			 * 优先级: custom_name > name_cn (中文环境) > name
+			 */
+			sortGamesByName: (games: GameData[], order: "asc" | "desc"): GameData[] => {
+				const currentLanguage = i18next.language;
+				
+				return [...games].sort((a, b) => {
+					// 获取显示名称（与 getGameDisplayName 逻辑一致）
+					const getDisplayName = (game: GameData): string => {
+						if (game.custom_name) return game.custom_name;
+						if (currentLanguage === "zh-CN" && game.name_cn) return game.name_cn;
+						return game.name || "";
+					};
+					
+					const nameA = getDisplayName(a).toLowerCase();
+					const nameB = getDisplayName(b).toLowerCase();
+					
+					// 使用 localeCompare 进行本地化排序（支持中文、日文等）
+					const comparison = nameA.localeCompare(nameB, currentLanguage, {
+						numeric: true,
+						sensitivity: "base",
+					});
+					
+					return order === "asc" ? comparison : -comparison;
+				});
+			},
+
 			// 通用刷新函数，统一处理搜索、筛选、排序、NSFW筛选
 			refreshGameData: async (
 				customSortOption?: string,
@@ -257,12 +289,21 @@ export const useStore = create<AppState>()(
 					// 第一步：获取基础数据（根据筛选类型）
 					let baseData: GameData[];
 					if (isTauri()) {
+						// 名称排序在前端处理，后端按添加时间获取
+						const backendSortOption = option === 'namesort' ? 'addtime' : option;
+						const backendSortOrder = option === 'namesort' ? 'asc' : order;
+						
 						const fullGames = await gameService.getFullGames(
 							gameFilterType,
-							option,
-							order,
+							backendSortOption,
+							backendSortOrder,
 						);
 						baseData = getDisplayGameDataList(fullGames, i18next.language);
+						
+						// 如果是名称排序，在前端进行排序
+						if (option === 'namesort') {
+							baseData = get().sortGamesByName(baseData, order);
+						}
 					} else {
 						if (gameFilterType !== "all") {
 							baseData = filterGamesByTypeLocal(gameFilterType, option, order);
@@ -324,13 +365,22 @@ export const useStore = create<AppState>()(
 
 					let data: GameData[];
 					if (isTauri()) {
+						// 名称排序在前端处理，后端按添加时间获取
+						const backendSortOption = option === 'namesort' ? 'addtime' : option;
+						const backendSortOrder = option === 'namesort' ? 'asc' : order;
+						
 						// 获取完整数据并转换
 						const fullGames = await gameService.getFullGames(
 							"all",
-							option,
-							order,
+							backendSortOption,
+							backendSortOrder,
 						);
 						data = getDisplayGameDataList(fullGames, i18next.language);
+						
+						// 如果是名称排序，在前端进行排序
+						if (option === 'namesort') {
+							data = get().sortGamesByName(data, order);
+						}
 					} else {
 						data = getGamesLocal(option, order);
 					}
