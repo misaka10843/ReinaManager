@@ -99,9 +99,10 @@ const OpenFolder = ({ id, getGameById, canUse }: HanleGamesProps) => {
 	const { t } = useTranslation();
 	// 订阅 allGames 以确保 localpath 更新时组件重新渲染
 	const { allGames } = useStore();
-	
+
 	// 通过使用 allGames.length 确保订阅生效
-	const isDisabled = allGames.length >= 0 && (typeof canUse === "function" ? !canUse() : true);
+	const isDisabled =
+		allGames.length >= 0 && (typeof canUse === "function" ? !canUse() : true);
 
 	return (
 		<Button
@@ -302,11 +303,13 @@ export const Buttongroup = ({
 	 */
 	const canUse = () => {
 		// 使用 allGames.length 确保订阅生效
-		return allGames.length >= 0 && 
-			id !== undefined && 
-			id !== null && 
-			isTauri() && 
-			isLocalGame(id);
+		return (
+			allGames.length >= 0 &&
+			id !== undefined &&
+			id !== null &&
+			isTauri() &&
+			isLocalGame(id)
+		);
 	};
 
 	return (

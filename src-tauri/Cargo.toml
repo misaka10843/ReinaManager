@@ -15,7 +15,7 @@ name = "reina_manager_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2.5.0", features = [] }
+tauri-build = { version = "~2.5.1", features = [] }
 
 [dependencies]
 # Serialization & logging
@@ -24,15 +24,15 @@ serde_json = "1.0"
 log = "0.4"
 
 # Tauri core and plugins
-tauri = { version = "2.9.0", features = ["protocol-asset", "tray-icon"] }
-tauri-plugin-autostart = "2.5.0"
-tauri-plugin-dialog = "2.4.0"
-tauri-plugin-fs = "2.4.2"
-tauri-plugin-http = "2.5.2"
-tauri-plugin-log = "2.7.0"
-tauri-plugin-shell = "2.3.1"
-tauri-plugin-single-instance = "2.3.2"
-tauri-plugin-updater = "2.9.0"
+tauri = { version = "~2.9.2", features = ["protocol-asset", "tray-icon"] }
+tauri-plugin-autostart = "~2.5.0"
+tauri-plugin-dialog = "~2.4.0"
+tauri-plugin-fs = "~2.4.2"
+tauri-plugin-http = "~2.5.2"
+tauri-plugin-log = "~2.7.0"
+tauri-plugin-shell = "~2.3.1"
+tauri-plugin-single-instance = "~2.3.2"
+tauri-plugin-updater = "~2.9.0"
 tauri-plugin-window-state = "=2.2.3"
 
 # System / utilities

@@ -131,19 +131,17 @@ const SortOption: React.FC<SortOptionProps> = ({ value, onChange }) => {
 	return (
 		<Select value={value} onChange={handleChange}>
 			<MenuItem value="addtime">{t("components.SortModal.addTime")}</MenuItem>
-			<MenuItem value="namesort">{t("components.SortModal.nameSort","名称排序")}</MenuItem>
+			<MenuItem value="namesort">
+				{t("components.SortModal.nameSort", "名称排序")}
+			</MenuItem>
 			<MenuItem value="datetime">
 				{t("components.SortModal.releaseTime")}
 			</MenuItem>
 			<MenuItem value="lastplayed">
 				{t("components.SortModal.lastPlayed")}
 			</MenuItem>
-			<MenuItem value="bgmrank">
-				{t("components.SortModal.bgmRank")}
-			</MenuItem>
-			<MenuItem value="vndbrank">
-				{t("components.SortModal.vndbRank")}
-			</MenuItem>
+			<MenuItem value="bgmrank">{t("components.SortModal.bgmRank")}</MenuItem>
+			<MenuItem value="vndbrank">{t("components.SortModal.vndbRank")}</MenuItem>
 		</Select>
 	);
 };
