@@ -152,12 +152,7 @@ export const InfoBox: React.FC<InfoBoxProps> = ({ gameID }: InfoBoxProps) => {
 						<Paper
 							key={item.title}
 							elevation={0}
-							className={`
-                                p-4 rounded-lg overflow-hidden
-                                transition-all duration-200
-                                hover:shadow-md hover:scale-[1.02]
-                                ${item.color === "primary" ? "bg-blue-50/40 border border-blue-100/40" : "bg-green-50/40 border border-green-100/40"}
-                            `}
+							className={"p-4 rounded-lg overflow-hidden hover:shadow-md hover:scale-[1.02]"}
 						>
 							<div className="flex items-center space-x-2 mb-2">
 								<span className="text-[#1976d2] flex-shrink-0 flex items-center">

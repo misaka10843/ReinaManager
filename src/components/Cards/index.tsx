@@ -122,7 +122,7 @@ const CardItem = memo(
 		return (
 			<Card
 				key={card.id}
-				className={`min-w-24 max-w-full !transition-all ${isActive ? "scale-y-105" : "scale-y-100"}`}
+				className={`min-w-24 max-w-full transition-all ${isActive ? "scale-y-105" : "scale-y-100"}`}
 				onContextMenu={onContextMenu}
 			>
 				<CardActionArea
