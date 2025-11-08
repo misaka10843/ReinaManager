@@ -258,6 +258,7 @@
 			"sort": "並べ替え",
 			"sortMethod": "並べ替え方法：",
 			"addTime": "追加時間(デフォルト)",
+			"nameSort": "名前ソート",
 			"releaseTime": "ゲーム発売時間",
 			"lastPlayed": "最近プレイ",
 			"bgmRank": "BGMランキング",

@@ -6,6 +6,37 @@ import { TrayIcon } from "@tauri-apps/api/tray";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import i18n from "i18next";
 
+let trayInstance: TrayIcon | null = null;
+
+/**
+ * 更新托盘菜单语言
+ */
+export const updateTrayLanguage = async () => {
+	if (!trayInstance) return;
+
+	try {
+		// 创建新的退出菜单项，使用新的语言
+		const quitItem = await MenuItem.new({
+			id: "exit",
+			text: i18n.t("components.Tray.exit"),
+			action: async () => {
+				console.log("Exiting application...");
+				const window = getCurrentWindow();
+				await window.destroy();
+			},
+		});
+
+		// 更新菜单
+		const menu = await Menu.new({
+			items: [quitItem],
+		});
+
+		await trayInstance.setMenu(menu);
+	} catch (error) {
+		console.error("Failed to update tray menu:", error);
+	}
+};
+
 /**
  * 创建并初始化托盘图标
  */
@@ -56,6 +87,11 @@ export const initTray = async () => {
 				}
 			},
 		});
+
+		trayInstance = tray;
+
+		// 监听语言切换事件
+		i18n.on("languageChanged", updateTrayLanguage);
 
 		return tray;
 	} catch (error) {

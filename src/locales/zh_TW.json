@@ -258,6 +258,7 @@
 			"sort": "排序",
 			"sortMethod": "排序方法：",
 			"addTime": "添加時間(默認)",
+			"nameSort": "名稱排序",
 			"releaseTime": "遊戲發布時間",
 			"lastPlayed": "最近遊玩",
 			"bgmRank": "BGM 排名",

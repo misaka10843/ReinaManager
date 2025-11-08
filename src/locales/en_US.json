@@ -258,6 +258,7 @@
 			"sort": "Sort",
 			"sortMethod": "Sort Method:",
 			"addTime": "Add Time (Default)",
+			"nameSort": "Name Sort",
 			"releaseTime": "Game Release Time",
 			"lastPlayed": "Last Played",
 			"bgmRank": "BGM Rank",
