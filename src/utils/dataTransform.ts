@@ -98,9 +98,9 @@ export function getDisplayGameData(
 				// 评分: BGM 优先
 				baseData.score = bgm_data?.score || vndb_data?.score || undefined;
 
-				// 开发商: BGM 优先
+				// 开发商: VNDB 优先
 				baseData.developer =
-					bgm_data?.developer || vndb_data?.developer || undefined;
+					vndb_data?.developer || bgm_data?.developer || undefined;
 
 				// VNDB 特有字段
 				baseData.all_titles = vndb_data?.all_titles || [];

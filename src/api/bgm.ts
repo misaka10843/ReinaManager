@@ -68,9 +68,17 @@ const transformBgmData = (BGMdata: any) => {
 		rank: BGMdata.rating?.rank ?? null,
 		score: BGMdata.rating?.score ?? null,
 		developer:
-			BGMdata.infobox?.find(
-				(k: { key: string }) => k.key === "开发" || k.key === "游戏开发商",
-			)?.value || null,
+			BGMdata.infobox
+				?.flatMap((item: { key: string; value: string }) => {
+					if (["开发", "游戏开发商", "开发商"].includes(item.key)) {
+						return item.value
+							.split(/、|×/g)
+							.map((name: string) => name.trim())
+							.filter((name: string) => name.length > 0);
+					}
+					return [];
+				})
+				?.join("/") || null,
 	};
 
 	return { game, bgm_data };
