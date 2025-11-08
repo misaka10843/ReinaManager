@@ -343,9 +343,7 @@ export const Home: React.FC = () => {
 
 	return (
 		<Box className="p-6 flex flex-col gap-4">
-			<Typography variant="h4">
-				{t("home.title", "主页")}
-			</Typography>
+			<Typography variant="h4">{t("home.title", "主页")}</Typography>
 
 			{/* 数据统计卡片 */}
 			<Box className="grid grid-cols-12 gap-6">
