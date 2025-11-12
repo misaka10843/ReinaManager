@@ -1,4 +1,10 @@
 {
+	"common": {
+		"cancel": "取消",
+		"confirm": "确认",
+		"adding": "添加中...",
+		"saving": "保存中..."
+	},
 	"app": {
 		"NAVIGATION": {
 			"menu": "菜单",
@@ -246,7 +252,32 @@
 			"vndblink": "查看Vndb页面",
 			"more": "更多",
 			"markAsCompleted": "标记为已通关",
-			"markAsNotCompleted": "标记为未通关"
+			"markAsNotCompleted": "标记为未通关",
+			"Group": {
+				"group": "分组",
+				"selectGroup": "选择分组",
+				"addGroup": "添加分组",
+				"addCategory": "添加分类",
+				"deleteGroup": "删除分组",
+				"enterGroupName": "请输入分组名称",
+				"enterCategoryName": "请输入分类名称",
+				"cannotDeleteDefaultGroup": "默认分组不能删除",
+				"cannotAddToDefaultGroup": "不能向默认分组添加分类",
+				"confirmDeleteGroup": "确定要删除此分组吗？此操作将同时删除分组下的所有分类。",
+				"deleteGroupTitle": "删除分组",
+				"deleteGroupMessage": "确定要删除此分组吗？此操作将同时删除分组下的所有分类，且无法恢复。"
+			},
+			"Category": {
+				"manageGames": "管理游戏",
+				"manageGamesTitle": "管理分类游戏",
+				"searchPlaceholder": "搜索游戏...",
+				"noSearchResults": "未找到匹配的游戏",
+				"noGames": "暂无游戏",
+				"availableGames": "可用游戏",
+				"gamesInCategory": "分类中的游戏",
+				"noGamesInCategory": "该分类暂无游戏",
+				"save": "保存更改"
+			}
 		},
 		"LaunchModal": {
 			"launchGame": "启动游戏",
@@ -269,12 +300,24 @@
 			"confirm": "确认"
 		},
 		"RightMenu": {
+			"label": "右键菜单",
 			"startGame": "启动游戏",
 			"enterDetails": "进入详情页",
 			"deleteGame": "删除游戏",
 			"openGameFolder": "打开游戏目录",
 			"markAsCompleted": "标记为已通关",
-			"markAsNotCompleted": "标记为未通关"
+			"markAsNotCompleted": "标记为未通关",
+			"Collection": {
+				"groupMenu": "分组菜单",
+				"categoryMenu": "分类菜单",
+				"manageGames": "管理游戏",
+				"renameGroup": "重命名分组",
+				"renameCategory": "重命名分类",
+				"renameGroupTitle": "重命名分组",
+				"renameCategoryTitle": "重命名分类",
+				"newGroupName": "新分组名称",
+				"newCategoryName": "新分类名称"
+			}
 		},
 		"AlertBox": {
 			"cancel": "取消",
@@ -390,5 +433,30 @@
 			"bgmNotFound": "游戏 ID {{gameId}} (BGM: {{bgmId}}) 未找到数据",
 			"unknownError": "未知错误"
 		}
+	},
+	"category": {
+		"defaultGroups": {
+			"developer": "开发商",
+			"playStatus": "游戏状态"
+		},
+		"playStatus": {
+			"wish": "想玩",
+			"playing": "在玩",
+			"played": "玩过",
+			"onHold": "搁置",
+			"dropped": "弃坑"
+		},
+		"breadcrumb": {
+			"category": "分类",
+			"unknownCategory": "未知分类"
+		},
+		"selectGroupHint": "请选择一个分组以查看分类",
+		"noCategoriesHint": "当前分组下没有分类",
+		"unknownDeveloper": "未知开发商",
+		"gamesCount": "个游戏",
+		"deleteCategoryTitle": "删除分类",
+		"deleteCategoryMessage": "确定要删除分类 \"{{name}}\" 吗？此操作将移除该分类与所有游戏的关联，但不会删除游戏本身。",
+		"deleteGroupTitle": "删除分组",
+		"deleteGroupMessage": "确定要删除分组 \"{{name}}\" 吗？此操作将同时删除该分组下的所有分类，且无法恢复。"
 	}
 }

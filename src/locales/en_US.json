@@ -246,7 +246,32 @@
 			"vndblink": "View Vndb Page",
 			"more": "More",
 			"markAsCompleted": "Mark as Completed",
-			"markAsNotCompleted": "Mark as Not Completed"
+			"markAsNotCompleted": "Mark as Not Completed",
+			"Group": {
+				"group": "Group",
+				"selectGroup": "Select Group",
+				"addGroup": "Add Group",
+				"addCategory": "Add Category",
+				"deleteGroup": "Delete Group",
+				"enterGroupName": "Please enter group name",
+				"enterCategoryName": "Please enter category name",
+				"cannotDeleteDefaultGroup": "Default group cannot be deleted",
+				"cannotAddToDefaultGroup": "Cannot add category to default group",
+				"confirmDeleteGroup": "Are you sure you want to delete this group? This will also delete all categories in the group.",
+				"deleteGroupTitle": "Delete Group",
+				"deleteGroupMessage": "Are you sure you want to delete this group? This will also delete all categories in the group and cannot be undone."
+			},
+			"Category": {
+				"manageGames": "Manage Games",
+				"manageGamesTitle": "Manage Category Games",
+				"searchPlaceholder": "Search games...",
+				"noSearchResults": "No matching games found",
+				"noGames": "No games available",
+				"availableGames": "Available Games",
+				"gamesInCategory": "Games in Category",
+				"noGamesInCategory": "No games in this category",
+				"save": "Save Changes"
+			}
 		},
 		"LaunchModal": {
 			"launchGame": "Launch Game",
@@ -269,12 +294,24 @@
 			"confirm": "Confirm"
 		},
 		"RightMenu": {
+			"label": "Context Menu",
 			"startGame": "Start Game",
 			"enterDetails": "Game Details",
 			"deleteGame": "Delete Game",
 			"openGameFolder": "Open Game Folder",
 			"markAsCompleted": "Mark as Completed",
-			"markAsNotCompleted": "Mark as Not Completed"
+			"markAsNotCompleted": "Mark as Not Completed",
+			"Collection": {
+				"groupMenu": "Group Menu",
+				"categoryMenu": "Category Menu",
+				"manageGames": "Manage Games",
+				"renameGroup": "Rename Group",
+				"renameCategory": "Rename Category",
+				"renameGroupTitle": "Rename Group",
+				"renameCategoryTitle": "Rename Category",
+				"newGroupName": "New Group Name",
+				"newCategoryName": "New Category Name"
+			}
 		},
 		"AlertBox": {
 			"cancel": "Cancel",

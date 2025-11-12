@@ -7,6 +7,7 @@
  *
  * 主要导出：
  * - RightMenu：游戏卡片右键菜单组件
+ * - CollectionRightMenu：分组/分类右键菜单组件
  *
  * 依赖：
  * - @mui/icons-material
@@ -29,10 +30,9 @@ import {
 	ListItemText,
 	MenuItem,
 	MenuList,
-	Paper,
 } from "@mui/material";
 import { isTauri } from "@tauri-apps/api/core";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertDeleteBox } from "@/components/AlertBox";
 import { useStore } from "@/store";
@@ -40,6 +40,7 @@ import { useGamePlayStore } from "@/store/gamePlayStore";
 import type { GameData } from "@/types";
 import { handleOpenFolder, toggleGameClearStatus } from "@/utils";
 import { LinkWithScrollSave } from "../LinkWithScrollSave";
+import { BaseRightMenu } from "./BaseRightMenu";
 
 /**
  * RightMenu 组件属性类型
@@ -71,7 +72,6 @@ const RightMenu: React.FC<RightMenuProps> = ({
 	const [isDeleting, setIsDeleting] = useState(false);
 	const [gameData, setGameData] = useState<GameData | null>(null);
 	const { t } = useTranslation();
-	const menuRef = useRef<HTMLDivElement | null>(null);
 
 	// 检查该游戏是否正在运行
 	const isThisGameRunning = isGameRunning(id === null ? undefined : id);
@@ -102,52 +102,6 @@ const RightMenu: React.FC<RightMenuProps> = ({
 		if (id !== undefined && id !== null)
 			return isTauri() && isLocalGame(id) && !isThisGameRunning;
 	};
-
-	/**
-	 * 监听菜单外部点击、滚动、窗口变化，自动关闭菜单
-	 */
-	useEffect(() => {
-		const handleInteraction = () => {
-			setAnchorEl(null);
-		};
-
-		if (isopen) {
-			document.addEventListener("click", handleInteraction);
-			document.addEventListener("scroll", handleInteraction, true);
-			window.addEventListener("resize", handleInteraction);
-		}
-		// 计算菜单位置
-		if (menuRef.current && anchorPosition) {
-			const { offsetWidth, offsetHeight } = menuRef.current;
-			const newTop = Math.min(
-				anchorPosition.top,
-				window.innerHeight - offsetHeight,
-			);
-			const newLeft = Math.min(
-				anchorPosition.left,
-				window.innerWidth - offsetWidth,
-			);
-			menuRef.current.style.top = `${newTop}px`;
-			menuRef.current.style.left = `${newLeft}px`;
-		}
-
-		return () => {
-			document.removeEventListener("click", handleInteraction);
-			document.removeEventListener("scroll", handleInteraction, true);
-			window.removeEventListener("resize", handleInteraction);
-		};
-	}, [isopen, setAnchorEl, anchorPosition]);
-
-	// 打开时将焦点移到菜单容器以便支持键盘事件（例如 Esc 关闭）
-	useEffect(() => {
-		if (isopen && menuRef.current) {
-			// focus the container so keyboard events are captured
-			menuRef.current.focus();
-		}
-	}, [isopen]);
-
-	if (!isopen) return null;
-	if (!anchorPosition) return null;
 
 	/**
 	 * 删除游戏操作，带删除确认弹窗
@@ -205,19 +159,11 @@ const RightMenu: React.FC<RightMenuProps> = ({
 	};
 
 	return (
-		// 使用语义 role="menu" 并聚焦容器，保留自定义定位与关闭逻辑
-		<div
-			role="menu"
-			aria-label={t("components.RightMenu.label")}
-			tabIndex={-1}
-			className="fixed z-50 animate-fade-in animate-duration-100 select-none"
-			ref={menuRef}
-			onClick={(e) => e.stopPropagation()}
-			onKeyDown={(e) => {
-				if (e.key === "Escape" || e.key === "Esc") {
-					setAnchorEl(null);
-				}
-			}}
+		<BaseRightMenu
+			isopen={isopen}
+			anchorPosition={anchorPosition}
+			onClose={() => setAnchorEl(null)}
+			ariaLabel={t("components.RightMenu.label")}
 		>
 			{/* 删除确认弹窗 */}
 			<AlertDeleteBox
@@ -227,89 +173,81 @@ const RightMenu: React.FC<RightMenuProps> = ({
 				isLoading={isDeleting}
 			/>
 
-			<Paper
-				elevation={8}
-				sx={{
-					minWidth: "200px",
-					borderRadius: 2,
-					textAlign: "left",
-				}}
-			>
-				<MenuList sx={{ py: 1 }}>
-					{/* 启动游戏 */}
-					<MenuItem
-						disabled={!canUse()}
-						onClick={() => {
-							handleStartGame();
-							setAnchorEl(null);
-						}}
-					>
+			<MenuList sx={{ py: 1 }}>
+				{/* 启动游戏 */}
+				<MenuItem
+					disabled={!canUse()}
+					onClick={() => {
+						handleStartGame();
+						setAnchorEl(null);
+					}}
+				>
+					<ListItemIcon>
+						<PlayCircleOutlineIcon />
+					</ListItemIcon>
+					<ListItemText primary={t("components.RightMenu.startGame")} />
+				</MenuItem>
+
+				{/* 进入详情 */}
+				<LinkWithScrollSave
+					to={`/libraries/${id}`}
+					style={{ textDecoration: "none", color: "inherit" }}
+				>
+					<MenuItem>
 						<ListItemIcon>
-							<PlayCircleOutlineIcon />
+							<ArticleIcon />
 						</ListItemIcon>
-						<ListItemText primary={t("components.RightMenu.startGame")} />
+						<ListItemText primary={t("components.RightMenu.enterDetails")} />
 					</MenuItem>
+				</LinkWithScrollSave>
 
-					{/* 进入详情 */}
-					<LinkWithScrollSave
-						to={`/libraries/${id}`}
-						style={{ textDecoration: "none", color: "inherit" }}
-					>
-						<MenuItem>
-							<ListItemIcon>
-								<ArticleIcon />
-							</ListItemIcon>
-							<ListItemText primary={t("components.RightMenu.enterDetails")} />
-						</MenuItem>
-					</LinkWithScrollSave>
+				{/* 删除游戏 */}
+				<MenuItem onClick={() => setOpenAlert(true)}>
+					<ListItemIcon>
+						<DeleteIcon />
+					</ListItemIcon>
+					<ListItemText primary={t("components.RightMenu.deleteGame")} />
+				</MenuItem>
 
-					{/* 删除游戏 */}
-					<MenuItem onClick={() => setOpenAlert(true)}>
-						<ListItemIcon>
-							<DeleteIcon />
-						</ListItemIcon>
-						<ListItemText primary={t("components.RightMenu.deleteGame")} />
-					</MenuItem>
+				<Divider />
 
-					<Divider />
+				{/* 打开游戏文件夹 */}
+				<MenuItem
+					disabled={
+						!(isTauri() && id !== undefined && id !== null && isLocalGame(id))
+					}
+					onClick={() => {
+						handleOpenFolder({ id, getGameById });
+						setAnchorEl(null);
+					}}
+				>
+					<ListItemIcon>
+						<FolderOpenIcon />
+					</ListItemIcon>
+					<ListItemText primary={t("components.RightMenu.openGameFolder")} />
+				</MenuItem>
 
-					{/* 打开游戏文件夹 */}
-					<MenuItem
-						disabled={
-							!(isTauri() && id !== undefined && id !== null && isLocalGame(id))
+				{/* 通关状态切换 */}
+				<MenuItem onClick={handleSwitchClearStatus}>
+					<ListItemIcon>
+						{gameData?.clear === 1 ? (
+							<EmojiEventsIcon className="text-yellow-500" />
+						) : (
+							<EmojiEventsOutlinedIcon />
+						)}
+					</ListItemIcon>
+					<ListItemText
+						primary={
+							gameData?.clear === 1
+								? t("components.RightMenu.markAsNotCompleted")
+								: t("components.RightMenu.markAsCompleted")
 						}
-						onClick={() => {
-							handleOpenFolder({ id, getGameById });
-							setAnchorEl(null);
-						}}
-					>
-						<ListItemIcon>
-							<FolderOpenIcon />
-						</ListItemIcon>
-						<ListItemText primary={t("components.RightMenu.openGameFolder")} />
-					</MenuItem>
-
-					{/* 通关状态切换 */}
-					<MenuItem onClick={handleSwitchClearStatus}>
-						<ListItemIcon>
-							{gameData?.clear === 1 ? (
-								<EmojiEventsIcon className="text-yellow-500" />
-							) : (
-								<EmojiEventsOutlinedIcon />
-							)}
-						</ListItemIcon>
-						<ListItemText
-							primary={
-								gameData?.clear === 1
-									? t("components.RightMenu.markAsNotCompleted")
-									: t("components.RightMenu.markAsCompleted")
-							}
-						/>
-					</MenuItem>
-				</MenuList>
-			</Paper>
-		</div>
+					/>
+				</MenuItem>
+			</MenuList>
+		</BaseRightMenu>
 	);
 };
 
 export default RightMenu;
+export { CollectionRightMenu } from "./CollectionRightMenu";

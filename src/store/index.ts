@@ -25,8 +25,8 @@ import type { Update } from "@tauri-apps/plugin-updater";
 import i18next from "i18next";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { gameService, settingsService } from "@/services";
-import type { FullGameData, GameData } from "@/types";
+import { collectionService, gameService, settingsService } from "@/services";
+import type { Category, FullGameData, GameData, Group } from "@/types";
 import {
 	applyNsfwFilter,
 	getDisplayGameData,
@@ -162,6 +162,56 @@ export interface AppState {
 	setShowUpdateModal: (show: boolean) => void;
 	setPendingUpdate: (update: Update | null) => void;
 	triggerUpdateModal: (update: Update) => void;
+
+	// 分组分类相关状态与方法
+	groups: Group[]; // 所有分组（包括默认分组和自定义分组）
+	currentGroupId: string | null; // 当前选中的分组ID
+	currentCategories: Category[]; // 当前分组下的分类列表（带游戏数量）
+	categoryGames: GameData[]; // 当前分类下的游戏列表
+	selectedCategoryId: number | null; // 当前选中的分类ID
+	selectedCategoryName: string | null; // 当前选中的分类名称
+
+	// 分组操作方法
+	fetchGroups: () => Promise<void>; // 获取所有分组
+	setCurrentGroup: (groupId: string | null) => void; // 设置当前分组
+	fetchCategoriesByGroup: (groupId: string) => Promise<void>; // 获取指定分组下的分类
+	fetchGamesByCategory: (
+		categoryId: number,
+		categoryName?: string,
+	) => Promise<void>; // 获取指定分类下的游戏
+	setSelectedCategory: (
+		categoryId: number | null,
+		categoryName?: string,
+	) => void; // 设置当前选中的分类
+
+	// 分类 CRUD 操作
+	createGroup: (name: string, icon?: string) => Promise<void>; // 创建分组
+	createCategory: (
+		name: string,
+		groupId: number,
+		icon?: string,
+	) => Promise<void>; // 创建分类
+	deleteGroup: (groupId: number) => Promise<void>; // 删除分组
+	deleteCategory: (categoryId: number) => Promise<void>; // 删除分类
+	updateGroup: (
+		groupId: number,
+		updates: { name?: string; icon?: string },
+	) => Promise<void>; // 更新分组
+	updateCategory: (
+		categoryId: number,
+		updates: { name?: string; icon?: string },
+	) => Promise<void>; // 更新分类
+	renameGroup: (groupId: number, newName: string) => Promise<void>; // 重命名分组
+	renameCategory: (categoryId: number, newName: string) => Promise<void>; // 重命名分类
+
+	// 游戏-分类关联操作
+	addGameToCategory: (gameId: number, categoryId: number) => Promise<void>; // 添加游戏到分类
+	removeGameFromCategory: (gameId: number, categoryId: number) => Promise<void>; // 从分类移除游戏
+	addGamesToCategory: (gameIds: number[], categoryId: number) => Promise<void>; // 批量添加游戏到分类
+	removeGamesFromCategory: (
+		gameIds: number[],
+		categoryId: number,
+	) => Promise<void>; // 批量从分类移除游戏
 }
 
 // 创建持久化的全局状态
@@ -682,10 +732,469 @@ export const useStore = create<AppState>()(
 				});
 			},
 
+			// 分组分类相关状态初始值
+			groups: [],
+			currentGroupId: null,
+			currentCategories: [],
+			categoryGames: [],
+			selectedCategoryId: null,
+			selectedCategoryName: null, // 仅用于虚拟分类（开发商分类）的名称存储
+
+			// 获取所有分组（包括默认分组和自定义分组）
+			fetchGroups: async () => {
+				try {
+					if (!isTauri()) {
+						console.warn("fetchGroups: Web environment not supported");
+						return;
+					}
+
+					const groups = await collectionService.getGroups();
+					set({ groups });
+				} catch (error) {
+					console.error("Failed to fetch groups:", error);
+				}
+			},
+
+			// 设置当前分组
+			setCurrentGroup: (groupId: string | null) => {
+				set({
+					currentGroupId: groupId,
+					currentCategories: [],
+					categoryGames: [],
+				});
+				if (groupId) {
+					get().fetchCategoriesByGroup(groupId);
+				}
+			},
+
+			// 获取指定分组下的分类
+			fetchCategoriesByGroup: async (groupId: string) => {
+				try {
+					if (!isTauri()) {
+						console.warn(
+							"fetchCategoriesByGroup: Web environment not supported",
+						);
+						return;
+					}
+
+					// 如果是默认分组，不需要从数据库查询
+					// 默认分组（DEVELOPER、PLAY_STATUS）由前端动态生成
+					if (groupId.startsWith("default_")) {
+						set({ currentCategories: [] });
+						return;
+					}
+
+					// 自定义分组直接从数据库查询
+					const groupIdNum = Number.parseInt(groupId, 10);
+					if (Number.isNaN(groupIdNum)) {
+						console.error("Invalid group ID:", groupId);
+						return;
+					}
+
+					const categories =
+						await collectionService.getCategoriesWithCount(groupIdNum);
+					set({ currentCategories: categories });
+				} catch (error) {
+					console.error("Failed to fetch categories:", error);
+				}
+			},
+
+			// 获取指定分类下的游戏
+			fetchGamesByCategory: async (
+				categoryId: number,
+				categoryName?: string,
+			) => {
+				try {
+					if (!isTauri()) {
+						console.warn("fetchGamesByCategory: Web environment not supported");
+						return;
+					}
+
+					let gameDataList: GameData[];
+					const allGames = get().allGames;
+
+					// 处理虚拟分类（负数ID）
+					if (categoryId < 0) {
+						if (categoryId >= -5) {
+							// 游戏状态分类（-1 到 -5）
+							// -1=WISH, -2=PLAYING, -3=PLAYED, -4=ON_HOLD, -5=DROPPED
+							const playStatus = Math.abs(categoryId); // 转换为 PlayStatus 值 (1-5)
+							gameDataList = allGames.filter((game) => {
+								const clearValue = game.clear || 0;
+								// 兼容当前的 0/1 状态
+								if (clearValue === 0) {
+									return playStatus === 1; // WISH
+								}
+								if (clearValue === 1) {
+									return playStatus === 3; // PLAYED
+								}
+								// 未来直接匹配 1-5 状态
+								return clearValue === playStatus;
+							});
+						} else {
+							// 开发商分类（负数ID <= -101）
+							// 使用传入的 categoryName 进行筛选
+							// 注意：同一游戏可能包含多个开发商（如 "Makura/Frontwing"），
+							// 因此需要按 "/" 拆分并逐一匹配分类名
+							if (categoryName) {
+								gameDataList = allGames.filter((game) => {
+									// 统一处理开发商名称：空值映射为"未知开发商"翻译
+									const devStr =
+										game.developer || i18next.t("category.unknownDeveloper");
+									// 拆分多个开发商并去除空白
+									const developers = devStr
+										.split("/")
+										.map((d) => d.trim())
+										.filter((d) => d.length > 0);
+
+									// 如果没有开发商，使用未知开发商占位
+									if (developers.length === 0) {
+										developers.push(i18next.t("category.unknownDeveloper"));
+									}
+
+									return developers.includes(categoryName);
+								});
+							} else {
+								console.warn(
+									"Developer category filtering requires category name",
+								);
+								gameDataList = [];
+							}
+						}
+					} else {
+						// 真实分类（正数ID），从数据库查询
+						const gameIds =
+							await collectionService.getGamesInCollection(categoryId);
+						// 直接从 allGames 中筛选出对应的游戏
+						gameDataList = allGames.filter((game) =>
+							gameIds.includes(game.id ?? 0),
+						);
+					}
+
+					// 应用NSFW筛选
+					const filteredGames = applyNsfwFilter(gameDataList, get().nsfwFilter);
+					// 只在首次设置时更新 selectedCategoryId 和 selectedCategoryName
+					// 后续调用 fetchGamesByCategory 只更新 categoryGames，避免覆盖名称
+					// setSelectedCategory 会先行设置这两个字段，fetchGamesByCategory 只需要加载游戏
+
+					set({
+						categoryGames: filteredGames,
+					});
+				} catch (error) {
+					console.error("Failed to fetch games by category:", error);
+				}
+			},
+
+			// 设置当前选中的分类
+			setSelectedCategory: (
+				categoryId: number | null,
+				categoryName?: string,
+			) => {
+				set({
+					selectedCategoryId: categoryId,
+					selectedCategoryName: categoryName || null,
+				});
+				if (categoryId) {
+					get().fetchGamesByCategory(categoryId, categoryName);
+				} else {
+					set({ categoryGames: [] });
+				}
+			},
+
+			// 创建分组
+			createGroup: async (name: string, icon?: string) => {
+				try {
+					if (!isTauri()) {
+						console.warn("createGroup: Web environment not supported");
+						return;
+					}
+
+					await collectionService.createCollection(name, null, 0, icon || null);
+					// 刷新分组列表
+					await get().fetchGroups();
+				} catch (error) {
+					console.error("Failed to create group:", error);
+				}
+			},
+
+			// 创建分类
+			createCategory: async (name: string, groupId: number, icon?: string) => {
+				try {
+					if (!isTauri()) {
+						console.warn("createCategory: Web environment not supported");
+						return;
+					}
+
+					await collectionService.createCollection(
+						name,
+						groupId,
+						0,
+						icon || null,
+					);
+					// 刷新当前分组的分类列表
+					await get().fetchCategoriesByGroup(groupId.toString());
+				} catch (error) {
+					console.error("Failed to create category:", error);
+				}
+			},
+
+			// 删除分组
+			deleteGroup: async (groupId: number) => {
+				try {
+					if (!isTauri()) {
+						console.warn("deleteGroup: Web environment not supported");
+						return;
+					}
+
+					await collectionService.deleteCollection(groupId);
+					// 刷新分组列表
+					await get().fetchGroups();
+					// 如果删除的是当前分组，清空当前分组
+					if (get().currentGroupId === groupId.toString()) {
+						set({ currentGroupId: null, currentCategories: [] });
+					}
+				} catch (error) {
+					console.error("Failed to delete group:", error);
+				}
+			},
+
+			// 删除分类
+			deleteCategory: async (categoryId: number) => {
+				try {
+					if (!isTauri()) {
+						console.warn("deleteCategory: Web environment not supported");
+						return;
+					}
+
+					await collectionService.deleteCollection(categoryId);
+					// 刷新当前分组的分类列表
+					const currentGroupId = get().currentGroupId;
+					if (currentGroupId) {
+						await get().fetchCategoriesByGroup(currentGroupId);
+					}
+					// 如果删除的是当前分类，清空当前分类
+					if (get().selectedCategoryId === categoryId) {
+						set({
+							selectedCategoryId: null,
+							categoryGames: [],
+							selectedCategoryName: null,
+						});
+					}
+				} catch (error) {
+					console.error("Failed to delete category:", error);
+				}
+			},
+
+			// 更新分组
+			updateGroup: async (
+				groupId: number,
+				updates: { name?: string; icon?: string },
+			) => {
+				try {
+					if (!isTauri()) {
+						console.warn("updateGroup: Web environment not supported");
+						return;
+					}
+
+					await collectionService.updateCollection(
+						groupId,
+						updates.name,
+						undefined,
+						undefined,
+						updates.icon,
+					);
+					// 刷新分组列表
+					await get().fetchGroups();
+				} catch (error) {
+					console.error("Failed to update group:", error);
+				}
+			},
+
+			// 更新分类
+			updateCategory: async (
+				categoryId: number,
+				updates: { name?: string; icon?: string },
+			) => {
+				try {
+					if (!isTauri()) {
+						console.warn("updateCategory: Web environment not supported");
+						return;
+					}
+
+					await collectionService.updateCollection(
+						categoryId,
+						updates.name,
+						undefined,
+						undefined,
+						updates.icon,
+					);
+					// 刷新当前分组的分类列表
+					const currentGroupId = get().currentGroupId;
+					if (currentGroupId) {
+						await get().fetchCategoriesByGroup(currentGroupId);
+					}
+				} catch (error) {
+					console.error("Failed to update category:", error);
+				}
+			},
+
+			// 重命名分组（基于 updateGroup 的简化版本）
+			renameGroup: async (groupId: number, newName: string) => {
+				try {
+					if (!isTauri()) {
+						console.warn("renameGroup: Web environment not supported");
+						return;
+					}
+
+					await collectionService.updateCollection(
+						groupId,
+						newName,
+						undefined,
+						undefined,
+						undefined,
+					);
+					// 刷新分组列表
+					await get().fetchGroups();
+				} catch (error) {
+					console.error("Failed to rename group:", error);
+				}
+			},
+
+			// 重命名分类（基于 updateCategory 的简化版本）
+			renameCategory: async (categoryId: number, newName: string) => {
+				try {
+					if (!isTauri()) {
+						console.warn("renameCategory: Web environment not supported");
+						return;
+					}
+
+					await collectionService.updateCollection(
+						categoryId,
+						newName,
+						undefined,
+						undefined,
+						undefined,
+					);
+					// 刷新当前分组的分类列表
+					const currentGroupId = get().currentGroupId;
+					if (currentGroupId) {
+						await get().fetchCategoriesByGroup(currentGroupId);
+					}
+				} catch (error) {
+					console.error("Failed to rename category:", error);
+				}
+			},
+
+			// 添加游戏到分类（保留单个添加，供向后兼容）
+			addGameToCategory: async (gameId: number, categoryId: number) => {
+				try {
+					if (!isTauri()) {
+						console.warn("addGameToCategory: Web environment not supported");
+						return;
+					}
+
+					await collectionService.addGameToCollection(gameId, categoryId);
+					// 如果当前选中的是这个分类，刷新游戏列表
+					if (get().selectedCategoryId === categoryId) {
+						await get().fetchGamesByCategory(categoryId);
+					}
+					// 刷新当前分组的分类列表（更新游戏数量）
+					const currentGroupId = get().currentGroupId;
+					if (currentGroupId) {
+						await get().fetchCategoriesByGroup(currentGroupId);
+					}
+				} catch (error) {
+					console.error("Failed to add game to category:", error);
+				}
+			},
+
+			// 从分类移除游戏（保留单个删除，供向后兼容）
+			removeGameFromCategory: async (gameId: number, categoryId: number) => {
+				try {
+					if (!isTauri()) {
+						console.warn(
+							"removeGameFromCategory: Web environment not supported",
+						);
+						return;
+					}
+
+					await collectionService.removeGameFromCollection(gameId, categoryId);
+					// 如果当前选中的是这个分类，刷新游戏列表
+					if (get().selectedCategoryId === categoryId) {
+						await get().fetchGamesByCategory(categoryId);
+					}
+					// 刷新当前分组的分类列表（更新游戏数量）
+					const currentGroupId = get().currentGroupId;
+					if (currentGroupId) {
+						await get().fetchCategoriesByGroup(currentGroupId);
+					}
+				} catch (error) {
+					console.error("Failed to remove game from category:", error);
+				}
+			},
+
+			// 批量添加游戏到分类
+			addGamesToCategory: async (gameIds: number[], categoryId: number) => {
+				try {
+					if (!isTauri()) {
+						console.warn("addGamesToCategory: Web environment not supported");
+						return;
+					}
+
+					await collectionService.addGamesToCollection(gameIds, categoryId);
+					// 如果当前选中的是这个分类，刷新游戏列表
+					if (get().selectedCategoryId === categoryId) {
+						await get().fetchGamesByCategory(categoryId);
+					}
+					// 刷新当前分组的分类列表（更新游戏数量）
+					const currentGroupId = get().currentGroupId;
+					if (currentGroupId) {
+						await get().fetchCategoriesByGroup(currentGroupId);
+					}
+				} catch (error) {
+					console.error("Failed to add games to category:", error);
+				}
+			},
+
+			// 批量从分类移除游戏
+			removeGamesFromCategory: async (
+				gameIds: number[],
+				categoryId: number,
+			) => {
+				try {
+					if (!isTauri()) {
+						console.warn(
+							"removeGamesFromCategory: Web environment not supported",
+						);
+						return;
+					}
+
+					await collectionService.removeGamesFromCollection(
+						gameIds,
+						categoryId,
+					);
+					// 如果当前选中的是这个分类，刷新游戏列表
+					if (get().selectedCategoryId === categoryId) {
+						await get().fetchGamesByCategory(categoryId);
+					}
+					// 刷新当前分组的分类列表（更新游戏数量）
+					const currentGroupId = get().currentGroupId;
+					if (currentGroupId) {
+						await get().fetchCategoriesByGroup(currentGroupId);
+					}
+				} catch (error) {
+					console.error("Failed to remove games from category:", error);
+				}
+			},
+
 			// 初始化方法，先初始化数据库，然后加载所有需要的数据
 			initialize: async () => {
 				// 然后并行加载其他数据
-				await Promise.all([get().fetchGames(), get().fetchBgmToken()]);
+				await Promise.all([
+					get().fetchGames(),
+					get().fetchBgmToken(),
+					get().fetchGroups(),
+				]);
 
 				// 初始化游戏时间跟踪
 				if (isTauri()) {
@@ -718,6 +1227,11 @@ export const useStore = create<AppState>()(
 				tagTranslation: state.tagTranslation,
 				// 剧透等级
 				spoilerLevel: state.spoilerLevel,
+				// 分组分类相关（优化存储）
+				currentGroupId: state.currentGroupId,
+				selectedCategoryId: state.selectedCategoryId,
+				// selectedCategoryName 只用于开发商分类，页面刷新时会重新获取
+				selectedCategoryName: state.selectedCategoryName,
 			}),
 		},
 	),

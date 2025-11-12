@@ -183,3 +183,5 @@ export interface SavedataRecord {
 	backup_time: number;
 	file_size: number;
 }
+
+export * from "./collection";

@@ -161,13 +161,13 @@ const CardItem = memo(
 	},
 );
 
-const Cards = () => {
+const Cards = ({ gamesData }: { gamesData?: GameData[] }) => {
 	const selectedGameId = useStore((s) => s.selectedGameId);
 	const setSelectedGameId = useStore((s) => s.setSelectedGameId);
 	const cardClickMode = useStore((s) => s.cardClickMode);
 	const doubleClickLaunch = useStore((s) => s.doubleClickLaunch);
 	const longPressLaunch = useStore((s) => s.longPressLaunch);
-	const games = useStore((s) => s.games);
+	const gamesFromStore = useStore((s) => s.games);
 	const { launchGame } = useGamePlayStore();
 	const navigate = useNavigate();
 	const { i18n } = useTranslation();
@@ -176,6 +176,9 @@ const Cards = () => {
 		mouseY: number;
 		cardId: number | null;
 	} | null>(null);
+
+	// 使用传入的 gamesData 或 store 中的 games
+	const games = gamesData ?? gamesFromStore;
 
 	// 使用 useMemo 缓存渲染项，减少不必要的重渲染
 	const handleCardClick = useCallback(

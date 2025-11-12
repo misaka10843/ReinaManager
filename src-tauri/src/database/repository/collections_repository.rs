@@ -1,9 +1,30 @@
 use crate::entity::prelude::*;
 use crate::entity::{collections, game_collection_link};
 use sea_orm::*;
+use serde::{Deserialize, Serialize};
 
 /// 合集数据仓库
 pub struct CollectionsRepository;
+
+/// 分组与分类的树形结构
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GroupWithCategories {
+    pub id: i32,
+    pub name: String,
+    pub icon: Option<String>,
+    pub sort_order: i32,
+    pub categories: Vec<CategoryWithCount>,
+}
+
+/// 带游戏数量的分类
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CategoryWithCount {
+    pub id: i32,
+    pub name: String,
+    pub icon: Option<String>,
+    pub sort_order: i32,
+    pub game_count: u64,
+}
 
 impl CollectionsRepository {
     // ==================== 合集 CRUD 操作 ====================
@@ -152,14 +173,6 @@ impl CollectionsRepository {
             .await
     }
 
-    /// 根据关联 ID 删除
-    pub async fn remove_link_by_id(
-        db: &DatabaseConnection,
-        link_id: i32,
-    ) -> Result<DeleteResult, DbErr> {
-        GameCollectionLink::delete_by_id(link_id).exec(db).await
-    }
-
     /// 获取合集中的所有游戏 ID
     pub async fn get_games_in_collection(
         db: &DatabaseConnection,
@@ -174,19 +187,6 @@ impl CollectionsRepository {
         Ok(links.into_iter().map(|link| link.game_id).collect())
     }
 
-    /// 获取游戏所属的所有合集 ID
-    pub async fn get_collections_for_game(
-        db: &DatabaseConnection,
-        game_id: i32,
-    ) -> Result<Vec<i32>, DbErr> {
-        let links = GameCollectionLink::find()
-            .filter(game_collection_link::Column::GameId.eq(game_id))
-            .all(db)
-            .await?;
-
-        Ok(links.into_iter().map(|link| link.collection_id).collect())
-    }
-
     /// 获取合集中的游戏数量
     pub async fn count_games_in_collection(
         db: &DatabaseConnection,
@@ -198,44 +198,62 @@ impl CollectionsRepository {
             .await
     }
 
-    /// 批量添加游戏到合集
+    /// 批量添加游戏到合集（优化版，使用批量插入）
     pub async fn add_games_to_collection(
         db: &DatabaseConnection,
         game_ids: Vec<i32>,
         collection_id: i32,
     ) -> Result<(), DbErr> {
+        if game_ids.is_empty() {
+            return Ok(());
+        }
+
         let now = chrono::Utc::now().timestamp() as i32;
 
-        for (index, game_id) in game_ids.iter().enumerate() {
-            let link = game_collection_link::ActiveModel {
+        // 获取当前合集中的最大排序值
+        let max_sort_order = GameCollectionLink::find()
+            .filter(game_collection_link::Column::CollectionId.eq(collection_id))
+            .order_by_desc(game_collection_link::Column::SortOrder)
+            .one(db)
+            .await?
+            .map(|link| link.sort_order)
+            .unwrap_or(-1);
+
+        let links: Vec<game_collection_link::ActiveModel> = game_ids
+            .iter()
+            .enumerate()
+            .map(|(index, game_id)| game_collection_link::ActiveModel {
                 id: NotSet,
                 game_id: Set(*game_id),
                 collection_id: Set(collection_id),
-                sort_order: Set(index as i32),
+                sort_order: Set(max_sort_order + 1 + index as i32),
                 created_at: Set(Some(now)),
-            };
+            })
+            .collect();
 
-            link.insert(db).await?;
-        }
+        GameCollectionLink::insert_many(links).exec(db).await?;
 
         Ok(())
     }
 
-    /// 更新游戏在合集中的排序
-    pub async fn update_game_sort_order(
+    /// 批量从合集中移除游戏
+    pub async fn remove_games_from_collection(
         db: &DatabaseConnection,
-        link_id: i32,
-        new_sort_order: i32,
-    ) -> Result<game_collection_link::Model, DbErr> {
-        let existing = GameCollectionLink::find_by_id(link_id)
-            .one(db)
-            .await?
-            .ok_or(DbErr::RecordNotFound("Link not found".to_string()))?;
+        game_ids: Vec<i32>,
+        collection_id: i32,
+    ) -> Result<DeleteResult, DbErr> {
+        if game_ids.is_empty() {
+            return Ok(DeleteResult { rows_affected: 0 });
+        }
 
-        let mut active: game_collection_link::ActiveModel = existing.into();
-        active.sort_order = Set(new_sort_order);
-
-        active.update(db).await
+        GameCollectionLink::delete_many()
+            .filter(
+                game_collection_link::Column::CollectionId
+                    .eq(collection_id)
+                    .and(game_collection_link::Column::GameId.is_in(game_ids)),
+            )
+            .exec(db)
+            .await
     }
 
     /// 检查游戏是否在合集中
@@ -256,21 +274,86 @@ impl CollectionsRepository {
         Ok(count > 0)
     }
 
-    /// 获取所有游戏-合集关联
-    pub async fn get_all_links(
+    // ==================== 前端友好的组合 API ====================
+
+    /// 获取分组中的游戏总数（统计该分组下所有分类的游戏数）
+    pub async fn count_games_in_group(
         db: &DatabaseConnection,
-    ) -> Result<Vec<game_collection_link::Model>, DbErr> {
-        GameCollectionLink::find().all(db).await
+        group_id: i32,
+    ) -> Result<u64, DbErr> {
+        // 获取该分组下的所有分类
+        let categories = Self::find_children(db, group_id).await?;
+        let category_ids: Vec<i32> = categories.iter().map(|c| c.id).collect();
+
+        if category_ids.is_empty() {
+            return Ok(0);
+        }
+
+        // 统计这些分类中的游戏总数（去重）
+        let count = GameCollectionLink::find()
+            .filter(game_collection_link::Column::CollectionId.is_in(category_ids))
+            .select_only()
+            .column_as(game_collection_link::Column::GameId, "game_id")
+            .distinct()
+            .count(db)
+            .await?;
+
+        Ok(count)
     }
 
-    /// 清空合集中的所有游戏
-    pub async fn clear_collection(
+    /// 获取完整的分组-分类树（一次性返回所有数据）
+    pub async fn get_collection_tree(
         db: &DatabaseConnection,
-        collection_id: i32,
-    ) -> Result<DeleteResult, DbErr> {
-        GameCollectionLink::delete_many()
-            .filter(game_collection_link::Column::CollectionId.eq(collection_id))
-            .exec(db)
-            .await
+    ) -> Result<Vec<GroupWithCategories>, DbErr> {
+        let groups = Self::find_root_collections(db).await?;
+        let mut result = Vec::new();
+
+        for group in groups {
+            let categories = Self::find_children(db, group.id).await?;
+            let mut categories_with_count = Vec::new();
+
+            for category in categories {
+                let count = Self::count_games_in_collection(db, category.id).await?;
+                categories_with_count.push(CategoryWithCount {
+                    id: category.id,
+                    name: category.name,
+                    icon: category.icon,
+                    sort_order: category.sort_order,
+                    game_count: count,
+                });
+            }
+
+            result.push(GroupWithCategories {
+                id: group.id,
+                name: group.name,
+                icon: group.icon,
+                sort_order: group.sort_order,
+                categories: categories_with_count,
+            });
+        }
+
+        Ok(result)
+    }
+
+    /// 获取指定分组的分类列表（带游戏数量）
+    pub async fn get_categories_with_count(
+        db: &DatabaseConnection,
+        group_id: i32,
+    ) -> Result<Vec<CategoryWithCount>, DbErr> {
+        let categories = Self::find_children(db, group_id).await?;
+        let mut result = Vec::new();
+
+        for category in categories {
+            let count = Self::count_games_in_collection(db, category.id).await?;
+            result.push(CategoryWithCount {
+                id: category.id,
+                name: category.name,
+                icon: category.icon,
+                sort_order: category.sort_order,
+                game_count: count,
+            });
+        }
+
+        Ok(result)
     }
 }

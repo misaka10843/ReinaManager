@@ -3,6 +3,7 @@
  * @description 封装所有合集相关的后端调用
  */
 
+import type { Category, Group, GroupWithCategories } from "@/types/collection";
 import { BaseService } from "./base";
 
 export interface Collection {
@@ -131,24 +132,10 @@ class CollectionService extends BaseService {
 	}
 
 	/**
-	 * 根据关联 ID 删除
-	 */
-	async removeCollectionLinkById(linkId: number): Promise<number> {
-		return this.invoke<number>("remove_collection_link_by_id", { linkId });
-	}
-
-	/**
 	 * 获取合集中的所有游戏 ID
 	 */
 	async getGamesInCollection(collectionId: number): Promise<number[]> {
 		return this.invoke<number[]>("get_games_in_collection", { collectionId });
-	}
-
-	/**
-	 * 获取游戏所属的所有合集 ID
-	 */
-	async getCollectionsForGame(gameId: number): Promise<number[]> {
-		return this.invoke<number[]>("get_collections_for_game", { gameId });
 	}
 
 	/**
@@ -172,19 +159,16 @@ class CollectionService extends BaseService {
 	}
 
 	/**
-	 * 更新游戏在合集中的排序
+	 * 批量从合集中移除游戏
 	 */
-	async updateGameSortOrderInCollection(
-		linkId: number,
-		newSortOrder: number,
-	): Promise<GameCollectionLink> {
-		return this.invoke<GameCollectionLink>(
-			"update_game_sort_order_in_collection",
-			{
-				linkId,
-				newSortOrder,
-			},
-		);
+	async removeGamesFromCollection(
+		gameIds: number[],
+		collectionId: number,
+	): Promise<number> {
+		return this.invoke<number>("remove_games_from_collection", {
+			gameIds,
+			collectionId,
+		});
 	}
 
 	/**
@@ -200,18 +184,34 @@ class CollectionService extends BaseService {
 		});
 	}
 
+	// ==================== 前端友好的组合 API ====================
+
 	/**
-	 * 获取所有游戏-合集关联
+	 * 获取分组中的游戏总数
 	 */
-	async getAllCollectionLinks(): Promise<GameCollectionLink[]> {
-		return this.invoke<GameCollectionLink[]>("get_all_collection_links");
+	async countGamesInGroup(groupId: number): Promise<number> {
+		return this.invoke<number>("count_games_in_group", { groupId });
 	}
 
 	/**
-	 * 清空合集中的所有游戏
+	 * 获取完整的分组-分类树（一次性返回所有数据）
 	 */
-	async clearCollectionGames(collectionId: number): Promise<number> {
-		return this.invoke<number>("clear_collection_games", { collectionId });
+	async getCollectionTree(): Promise<GroupWithCategories[]> {
+		return this.invoke<GroupWithCategories[]>("get_collection_tree");
+	}
+
+	/**
+	 * 获取所有分组（不含分类）
+	 */
+	async getGroups(): Promise<Group[]> {
+		return this.invoke<Group[]>("find_root_collections");
+	}
+
+	/**
+	 * 获取指定分组的分类列表（带游戏数量）
+	 */
+	async getCategoriesWithCount(groupId: number): Promise<Category[]> {
+		return this.invoke<Category[]>("get_categories_with_count", { groupId });
 	}
 }
 

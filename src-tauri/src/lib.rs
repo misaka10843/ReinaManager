@@ -97,15 +97,14 @@ pub fn run() {
             collection_exists,
             add_game_to_collection,
             remove_game_from_collection,
-            remove_collection_link_by_id,
             get_games_in_collection,
-            get_collections_for_game,
             count_games_in_collection,
             add_games_to_collection,
-            update_game_sort_order_in_collection,
+            remove_games_from_collection,
             is_game_in_collection,
-            get_all_collection_links,
-            clear_collection_games
+            count_games_in_group,
+            get_collection_tree,
+            get_categories_with_count,
         ])
         .setup(|app| {
             // 执行 SeaORM 数据库迁移并注册到状态管理
