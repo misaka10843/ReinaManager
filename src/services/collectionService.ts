@@ -42,6 +42,7 @@ class CollectionService extends BaseService {
 		});
 	}
 
+	// 暂时无用开始
 	/**
 	 * 根据 ID 查询合集
 	 */
@@ -69,6 +70,7 @@ class CollectionService extends BaseService {
 	async getChildCollections(parentId: number): Promise<Collection[]> {
 		return this.invoke<Collection[]>("find_child_collections", { parentId });
 	}
+	// 暂时无用结束
 
 	/**
 	 * 更新合集
@@ -97,14 +99,14 @@ class CollectionService extends BaseService {
 	}
 
 	/**
-	 * 检查合集是否存在
+	 * 检查合集是否存在 暂时无用
 	 */
 	async collectionExists(id: number): Promise<boolean> {
 		return this.invoke<boolean>("collection_exists", { id });
 	}
 
 	/**
-	 * 将游戏添加到合集
+	 * 将游戏添加到合集 暂时无用
 	 */
 	async addGameToCollection(
 		gameId: number,
@@ -139,40 +141,28 @@ class CollectionService extends BaseService {
 	}
 
 	/**
-	 * 获取合集中的游戏数量
+	 * 获取合集中的游戏数量 暂时无用
 	 */
 	async countGamesInCollection(collectionId: number): Promise<number> {
 		return this.invoke<number>("count_games_in_collection", { collectionId });
 	}
 
 	/**
-	 * 批量添加游戏到合集
+	 * 批量更新分类中的游戏列表
+	 * 完全替换分类中的游戏
 	 */
-	async addGamesToCollection(
+	async updateCategoryGames(
 		gameIds: number[],
 		collectionId: number,
 	): Promise<void> {
-		return this.invoke<void>("add_games_to_collection", {
+		return this.invoke<void>("update_category_games", {
 			gameIds,
 			collectionId,
 		});
 	}
 
 	/**
-	 * 批量从合集中移除游戏
-	 */
-	async removeGamesFromCollection(
-		gameIds: number[],
-		collectionId: number,
-	): Promise<number> {
-		return this.invoke<number>("remove_games_from_collection", {
-			gameIds,
-			collectionId,
-		});
-	}
-
-	/**
-	 * 检查游戏是否在合集中
+	 * 检查游戏是否在合集中 暂时无用
 	 */
 	async isGameInCollection(
 		gameId: number,
@@ -185,6 +175,18 @@ class CollectionService extends BaseService {
 	}
 
 	// ==================== 前端友好的组合 API ====================
+
+	/**
+	 * 批量获取多个分组的游戏数量（优化版）
+	 * 解决 N+1 查询问题
+	 */
+	async batchCountGamesInGroups(
+		groupIds: number[],
+	): Promise<Record<number, number>> {
+		return this.invoke<Record<number, number>>("batch_count_games_in_groups", {
+			groupIds,
+		});
+	}
 
 	/**
 	 * 获取分组中的游戏总数

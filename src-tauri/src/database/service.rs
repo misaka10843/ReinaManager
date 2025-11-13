@@ -617,29 +617,16 @@ pub async fn count_games_in_collection(
         .map_err(|e| format!("获取合集游戏数量失败: {}", e))
 }
 
-/// 批量添加游戏到合集
+/// 批量更新分类中的游戏列表
 #[tauri::command]
-pub async fn add_games_to_collection(
+pub async fn update_category_games(
     db: State<'_, DatabaseConnection>,
     game_ids: Vec<i32>,
     collection_id: i32,
 ) -> Result<(), String> {
-    CollectionsRepository::add_games_to_collection(&db, game_ids, collection_id)
+    CollectionsRepository::update_category_games(&db, game_ids, collection_id)
         .await
-        .map_err(|e| format!("批量添加游戏到合集失败: {}", e))
-}
-
-/// 批量从合集中移除游戏
-#[tauri::command]
-pub async fn remove_games_from_collection(
-    db: State<'_, DatabaseConnection>,
-    game_ids: Vec<i32>,
-    collection_id: i32,
-) -> Result<u64, String> {
-    CollectionsRepository::remove_games_from_collection(&db, game_ids, collection_id)
-        .await
-        .map(|result| result.rows_affected)
-        .map_err(|e| format!("批量从合集中移除游戏失败: {}", e))
+        .map_err(|e| format!("批量更新分类游戏失败: {}", e))
 }
 
 /// 检查游戏是否在合集中
@@ -652,6 +639,17 @@ pub async fn is_game_in_collection(
     CollectionsRepository::is_game_in_collection(&db, game_id, collection_id)
         .await
         .map_err(|e| format!("检查游戏是否在合集中失败: {}", e))
+}
+
+/// 批量获取多个分组的游戏数量（优化版）
+#[tauri::command]
+pub async fn batch_count_games_in_groups(
+    db: State<'_, DatabaseConnection>,
+    group_ids: Vec<i32>,
+) -> Result<std::collections::HashMap<i32, u64>, String> {
+    CollectionsRepository::batch_count_games_in_groups(&db, group_ids)
+        .await
+        .map_err(|e| format!("批量获取分组游戏数量失败: {}", e))
 }
 
 /// 获取分组中的游戏总数

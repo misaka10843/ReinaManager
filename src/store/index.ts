@@ -207,11 +207,7 @@ export interface AppState {
 	// 游戏-分类关联操作
 	addGameToCategory: (gameId: number, categoryId: number) => Promise<void>; // 添加游戏到分类
 	removeGameFromCategory: (gameId: number, categoryId: number) => Promise<void>; // 从分类移除游戏
-	addGamesToCategory: (gameIds: number[], categoryId: number) => Promise<void>; // 批量添加游戏到分类
-	removeGamesFromCategory: (
-		gameIds: number[],
-		categoryId: number,
-	) => Promise<void>; // 批量从分类移除游戏
+	updateCategoryGames: (gameIds: number[], categoryId: number) => Promise<void>; // 批量更新分类中的游戏列表
 }
 
 // 创建持久化的全局状态
@@ -1133,15 +1129,16 @@ export const useStore = create<AppState>()(
 				}
 			},
 
-			// 批量添加游戏到分类
-			addGamesToCategory: async (gameIds: number[], categoryId: number) => {
+			// 批量更新分类中的游戏列表
+			updateCategoryGames: async (gameIds: number[], categoryId: number) => {
 				try {
 					if (!isTauri()) {
-						console.warn("addGamesToCategory: Web environment not supported");
+						console.warn("updateCategoryGames: Web environment not supported");
 						return;
 					}
 
-					await collectionService.addGamesToCollection(gameIds, categoryId);
+					await collectionService.updateCategoryGames(gameIds, categoryId);
+
 					// 如果当前选中的是这个分类，刷新游戏列表
 					if (get().selectedCategoryId === categoryId) {
 						await get().fetchGamesByCategory(categoryId);
@@ -1152,38 +1149,8 @@ export const useStore = create<AppState>()(
 						await get().fetchCategoriesByGroup(currentGroupId);
 					}
 				} catch (error) {
-					console.error("Failed to add games to category:", error);
-				}
-			},
-
-			// 批量从分类移除游戏
-			removeGamesFromCategory: async (
-				gameIds: number[],
-				categoryId: number,
-			) => {
-				try {
-					if (!isTauri()) {
-						console.warn(
-							"removeGamesFromCategory: Web environment not supported",
-						);
-						return;
-					}
-
-					await collectionService.removeGamesFromCollection(
-						gameIds,
-						categoryId,
-					);
-					// 如果当前选中的是这个分类，刷新游戏列表
-					if (get().selectedCategoryId === categoryId) {
-						await get().fetchGamesByCategory(categoryId);
-					}
-					// 刷新当前分组的分类列表（更新游戏数量）
-					const currentGroupId = get().currentGroupId;
-					if (currentGroupId) {
-						await get().fetchCategoriesByGroup(currentGroupId);
-					}
-				} catch (error) {
-					console.error("Failed to remove games from category:", error);
+					console.error("Failed to update category games:", error);
+					throw error; // 重新抛出错误供上层处理
 				}
 			},
 

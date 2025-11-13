@@ -52,9 +52,7 @@ export const ManageGamesDialog: React.FC<ManageGamesDialogProps> = ({
 	const {
 		allGames,
 		categoryGames,
-		addGamesToCategory,
-		removeGamesFromCategory,
-		fetchGamesByCategory,
+		updateCategoryGames,
 	} = useStore();
 
 	// 对话框状态
@@ -216,39 +214,36 @@ export const ManageGamesDialog: React.FC<ManageGamesDialogProps> = ({
 		}
 
 		setIsProcessing(true);
+		// 保存原始状态以便回滚
+		const originalGamesInCategory = new Set(gamesInCategory);
+
 		try {
-			// 获取初始的分类游戏ID集合
-			const originalGameIds = new Set(
-				categoryGames
-					.map((g) => g.id)
-					.filter((id): id is number => id !== undefined),
-			);
+			// 将当前分类中的游戏列表完全替换为 gamesInCategory
+			const gameIdsArray = Array.from(gamesInCategory);
+			await updateCategoryGames(gameIdsArray, categoryId);
 
-			// 计算需要添加的游戏
-			const gamesToAdd = Array.from(gamesInCategory).filter(
-				(id) => !originalGameIds.has(id),
-			);
-
-			// 计算需要删除的游戏
-			const gamesToRemove = Array.from(originalGameIds).filter(
-				(id) => !gamesInCategory.has(id),
+			// 成功提示
+			snackbar.success(
+				t("success.categoryGamesUpdated", {
+					count: gameIdsArray.length,
+					defaultValue: `已更新分类游戏：${gameIdsArray.length} 个`,
+				}),
 			);
 
 			// 关闭对话框
 			onClose();
-			
-			// 使用批量接口添加游戏（内部会自动刷新）
-			if (gamesToAdd.length > 0) {
-				await addGamesToCategory(gamesToAdd, categoryId);
-			}
-
-			// 使用批量接口删除游戏（内部会自动刷新）
-			if (gamesToRemove.length > 0) {
-				await removeGamesFromCategory(gamesToRemove, categoryId);
-			}
-
 		} catch (error) {
 			console.error("修改分类游戏失败:", error);
+
+			// 回滚到原始状态
+			setGamesInCategory(originalGamesInCategory);
+
+			// 错误提示
+			snackbar.error(
+				t("errors.updateCategoryGamesFailed", {
+					defaultValue: "更新分类游戏失败，请重试",
+				}),
+			);
 		} finally {
 			setIsProcessing(false);
 		}

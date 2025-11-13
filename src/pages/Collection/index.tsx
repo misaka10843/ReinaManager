@@ -92,17 +92,34 @@ export const Collection: React.FC = () => {
 				// PlayStatus 分组：所有游戏都算
 				counts.set(DefaultGroup.PLAY_STATUS, allGames.length);
 
-				// 对于自定义分组，调用后端接口获取游戏数量
-				for (const group of groups) {
+				// 对于自定义分组，使用批量接口一次获取所有游戏数量（优化）
+				if (groups.length > 0) {
 					try {
-						const count = await collectionService.countGamesInGroup(group.id);
-						counts.set(group.id.toString(), count);
+						const groupIds = groups.map((g) => g.id);
+						const batchCounts =
+							await collectionService.batchCountGamesInGroups(groupIds);
+
+						// 将结果转换为 Map
+						for (const [groupId, count] of Object.entries(batchCounts)) {
+							counts.set(groupId, count);
+						}
 					} catch (error) {
-						console.error(
-							`Failed to get game count for group ${group.id}:`,
-							error,
-						);
-						counts.set(group.id.toString(), 0);
+						console.error("Failed to batch get game counts for groups:", error);
+						// 如果批量查询失败，回退到逐个查询
+						for (const group of groups) {
+							try {
+								const count = await collectionService.countGamesInGroup(
+									group.id,
+								);
+								counts.set(group.id.toString(), count);
+							} catch (error) {
+								console.error(
+									`Failed to get game count for group ${group.id}:`,
+									error,
+								);
+								counts.set(group.id.toString(), 0);
+							}
+						}
 					}
 				}
 
