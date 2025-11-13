@@ -23,13 +23,13 @@ const Libraries = lazy(() =>
 const Detail = lazy(() =>
 	import("@/pages/Detail").then((module) => ({ default: module.Detail })),
 );
-const Settings = lazy(() =>
-	import("@/pages/Settings").then((module) => ({ default: module.Settings })),
-);
 const Collection = lazy(() =>
 	import("@/pages/Collection").then((module) => ({
 		default: module.Collection,
 	})),
+);
+const Settings = lazy(() =>
+	import("@/pages/Settings").then((module) => ({ default: module.Settings })),
 );
 
 // 加载指示器组件

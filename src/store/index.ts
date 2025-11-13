@@ -171,6 +171,8 @@ export interface AppState {
 	categoryGames: GameData[]; // 当前分类下的游戏列表
 	selectedCategoryId: number | null; // 当前选中的分类ID
 	selectedCategoryName: string | null; // 当前选中的分类名称
+	// 分类游戏ID缓存（仅真实分类，虚拟分类从 allGames 派生）
+	categoryGamesCache: Record<number, number[]>; // key: categoryId, value: gameIds
 
 	// 分组操作方法
 	fetchGroups: () => Promise<void>; // 获取所有分组
@@ -528,6 +530,15 @@ export const useStore = create<AppState>()(
 					// 使用通用刷新函数
 					await get().refreshGameData();
 					get().setSelectedGameId(null);
+
+					// 如果当前在分类页面，也需要刷新 categoryGames
+					const { selectedCategoryId, selectedCategoryName } = get();
+					if (selectedCategoryId !== null) {
+						await get().fetchGamesByCategory(
+							selectedCategoryId,
+							selectedCategoryName || undefined,
+						);
+					}
 				} catch (error) {
 					console.error("删除游戏数据失败:", error);
 				}
@@ -711,6 +722,15 @@ export const useStore = create<AppState>()(
 				if (!skipRefresh) {
 					await get().refreshGameData();
 				}
+
+				// 如果当前在分类页面，也需要刷新 categoryGames
+				const { selectedCategoryId, selectedCategoryName } = get();
+				if (selectedCategoryId !== null) {
+					await get().fetchGamesByCategory(
+						selectedCategoryId,
+						selectedCategoryName || undefined,
+					);
+				}
 			},
 
 			// 更新窗口状态管理
@@ -736,6 +756,7 @@ export const useStore = create<AppState>()(
 			categoryGames: [],
 			selectedCategoryId: null,
 			selectedCategoryName: null, // 仅用于虚拟分类（开发商分类）的名称存储
+			categoryGamesCache: {}, // 分类游戏ID缓存
 
 			// 获取所有分组（包括默认分组和自定义分组）
 			fetchGroups: async () => {
@@ -833,6 +854,14 @@ export const useStore = create<AppState>()(
 							const gameIds =
 								await collectionService.getGamesInCollection(categoryId);
 
+							// 更新 store 缓存
+							set((state) => ({
+								categoryGamesCache: {
+									...state.categoryGamesCache,
+									[categoryId]: gameIds,
+								},
+							}));
+
 							// 从 allGames 中筛选游戏
 							gameDataList = allGames.filter((game) =>
 								gameIds.includes(game.id ?? 0),
@@ -914,6 +943,8 @@ export const useStore = create<AppState>()(
 					}
 
 					await collectionService.deleteCollection(groupId);
+					// 分组删除，清空所有缓存
+					set({ categoryGamesCache: {} });
 					// 刷新分组列表
 					await get().fetchGroups();
 					// 如果删除的是当前分组，清空当前分组
@@ -934,6 +965,12 @@ export const useStore = create<AppState>()(
 					}
 
 					await collectionService.deleteCollection(categoryId);
+					// 分类删除，清理该分类缓存
+					set((state) => {
+						const newCache = { ...state.categoryGamesCache };
+						delete newCache[categoryId];
+						return { categoryGamesCache: newCache };
+					});
 					// 刷新当前分组的分类列表
 					const currentGroupId = get().currentGroupId;
 					if (currentGroupId) {
@@ -1061,6 +1098,12 @@ export const useStore = create<AppState>()(
 					}
 
 					await collectionService.addGameToCollection(gameId, categoryId);
+					// 更新关联后清理该分类缓存
+					set((state) => {
+						const newCache = { ...state.categoryGamesCache };
+						delete newCache[categoryId];
+						return { categoryGamesCache: newCache };
+					});
 					// 如果当前选中的是这个分类，刷新游戏列表
 					if (get().selectedCategoryId === categoryId) {
 						await get().fetchGamesByCategory(categoryId);
@@ -1086,6 +1129,12 @@ export const useStore = create<AppState>()(
 					}
 
 					await collectionService.removeGameFromCollection(gameId, categoryId);
+					// 更新关联后清理该分类缓存
+					set((state) => {
+						const newCache = { ...state.categoryGamesCache };
+						delete newCache[categoryId];
+						return { categoryGamesCache: newCache };
+					});
 					// 如果当前选中的是这个分类，刷新游戏列表
 					if (get().selectedCategoryId === categoryId) {
 						await get().fetchGamesByCategory(categoryId);
@@ -1109,6 +1158,13 @@ export const useStore = create<AppState>()(
 					}
 
 					await collectionService.updateCategoryGames(gameIds, categoryId);
+
+					// 清除缓存
+					set((state) => {
+						const newCache = { ...state.categoryGamesCache };
+						delete newCache[categoryId];
+						return { categoryGamesCache: newCache };
+					});
 
 					// 如果当前选中的是这个分类，刷新游戏列表
 					if (get().selectedCategoryId === categoryId) {
