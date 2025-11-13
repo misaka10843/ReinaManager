@@ -25,6 +25,7 @@ import type { Update } from "@tauri-apps/plugin-updater";
 import i18next from "i18next";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { getVirtualCategoryGames } from "@/hooks/useVirtualCollections";
 import { collectionService, gameService, settingsService } from "@/services";
 import type { Category, FullGameData, GameData, Group } from "@/types";
 import {
@@ -809,65 +810,35 @@ export const useStore = create<AppState>()(
 					let gameDataList: GameData[];
 					const allGames = get().allGames;
 
-					// 处理虚拟分类（负数ID）
+					// 处理虚拟分类（负数ID）- 使用提取的工具函数
 					if (categoryId < 0) {
-						if (categoryId >= -5) {
-							// 游戏状态分类（-1 到 -5）
-							// -1=WISH, -2=PLAYING, -3=PLAYED, -4=ON_HOLD, -5=DROPPED
-							const playStatus = Math.abs(categoryId); // 转换为 PlayStatus 值 (1-5)
-							gameDataList = allGames.filter((game) => {
-								const clearValue = game.clear || 0;
-								// 兼容当前的 0/1 状态
-								if (clearValue === 0) {
-									return playStatus === 1; // WISH
-								}
-								if (clearValue === 1) {
-									return playStatus === 3; // PLAYED
-								}
-								// 未来直接匹配 1-5 状态
-								return clearValue === playStatus;
-							});
-						} else {
-							// 开发商分类（负数ID <= -101）
-							// 使用传入的 categoryName 进行筛选
-							// 注意：同一游戏可能包含多个开发商（如 "Makura/Frontwing"），
-							// 因此需要按 "/" 拆分并逐一匹配分类名
-							if (categoryName) {
-								gameDataList = allGames.filter((game) => {
-									// 统一处理开发商名称：空值映射为"未知开发商"翻译
-									const devStr =
-										game.developer || i18next.t("category.unknownDeveloper");
-									// 拆分多个开发商并去除空白
-									const developers = devStr
-										.split("/")
-										.map((d) => d.trim())
-										.filter((d) => d.length > 0);
-
-									// 如果没有开发商，使用未知开发商占位
-									if (developers.length === 0) {
-										developers.push(i18next.t("category.unknownDeveloper"));
-									}
-
-									return developers.includes(categoryName);
-								});
-							} else {
-								console.warn(
-									"Developer category filtering requires category name",
-								);
-								gameDataList = [];
-							}
-						}
-					} else {
-						// 真实分类（正数ID），从数据库查询
-						const gameIds =
-							await collectionService.getGamesInCollection(categoryId);
-						// 直接从 allGames 中筛选出对应的游戏
-						gameDataList = allGames.filter((game) =>
-							gameIds.includes(game.id ?? 0),
+						gameDataList = getVirtualCategoryGames(
+							categoryId,
+							categoryName || null,
+							allGames,
+							(key: string) => i18next.t(key),
 						);
-					}
+					} else {
+						// 真实分类（正数ID），使用 store 缓存优化
+						const cache = get().categoryGamesCache;
+						const cachedGameIds = cache[categoryId];
 
-					// 应用NSFW筛选
+						if (cachedGameIds) {
+							// 从 allGames 中筛选
+							gameDataList = allGames.filter((game) =>
+								cachedGameIds.includes(game.id ?? -1),
+							);
+						} else {
+							// 缓存缺失，重新获取
+							const gameIds =
+								await collectionService.getGamesInCollection(categoryId);
+
+							// 从 allGames 中筛选游戏
+							gameDataList = allGames.filter((game) =>
+								gameIds.includes(game.id ?? 0),
+							);
+						}
+					} // 应用NSFW筛选
 					const filteredGames = applyNsfwFilter(gameDataList, get().nsfwFilter);
 					// 只在首次设置时更新 selectedCategoryId 和 selectedCategoryName
 					// 后续调用 fetchGamesByCategory 只更新 categoryGames，避免覆盖名称
