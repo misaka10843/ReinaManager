@@ -26,6 +26,8 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { snackbar } from "@/components/Snackbar";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useStore } from "@/store";
 import type { GameData } from "@/types";
 import { enhancedSearch } from "@/utils/enhancedSearch";
@@ -37,7 +39,7 @@ interface ManageGamesDialogProps {
 	categoryName?: string;
 }
 
-const GAMES_PER_PAGE = 10; // 每页显示50个游戏 (优化后)
+const GAMES_PER_PAGE = 10;
 
 /**
  * 管理游戏弹窗组件
@@ -56,8 +58,12 @@ export const ManageGamesDialog: React.FC<ManageGamesDialogProps> = ({
 	} = useStore();
 
 	// 对话框状态
-	const [leftSearchText, setLeftSearchText] = useState(""); // 左栏搜索
-	const [rightSearchText, setRightSearchText] = useState(""); // 右栏搜索
+	const [leftSearchInput, setLeftSearchInput] = useState(""); // 左栏搜索输入
+	const [rightSearchInput, setRightSearchInput] = useState(""); // 右栏搜索输入
+	
+	// 防抖后的搜索值（300ms 延迟）
+	const leftSearchText = useDebouncedValue(leftSearchInput, 300);
+	const rightSearchText = useDebouncedValue(rightSearchInput, 300);
 	const [leftPage, setLeftPage] = useState(1); // 左栏页码
 	const [rightPage, setRightPage] = useState(1); // 右栏页码
 	const [gamesInCategory, setGamesInCategory] = useState<Set<number>>(
@@ -68,13 +74,12 @@ export const ManageGamesDialog: React.FC<ManageGamesDialogProps> = ({
 	// 初始化：加载分类游戏
 	useEffect(() => {
 		if (open && categoryId > 0) {
-			fetchGamesByCategory(categoryId);
-			setLeftSearchText("");
-			setRightSearchText("");
+			setLeftSearchInput("");
+			setRightSearchInput("");
 			setLeftPage(1);
 			setRightPage(1);
 		}
-	}, [open, categoryId, fetchGamesByCategory]);
+	}, [open, categoryId]);
 
 	// 同步分类游戏到本地状态
 	useEffect(() => {
@@ -210,6 +215,7 @@ export const ManageGamesDialog: React.FC<ManageGamesDialogProps> = ({
 	const handleSaveGamesChanges = async () => {
 		if (categoryId < 0) {
 			console.warn("无法修改虚拟分类");
+			snackbar.warning(t("errors.cannotModifyVirtualCategory"));
 			return;
 		}
 
@@ -282,9 +288,9 @@ export const ManageGamesDialog: React.FC<ManageGamesDialogProps> = ({
 							fullWidth
 							size="small"
 							placeholder={t("components.Toolbar.Category.searchPlaceholder")}
-							value={leftSearchText}
+							value={leftSearchInput}
 							onChange={(e) => {
-								setLeftSearchText(e.target.value);
+								setLeftSearchInput(e.target.value);
 								setLeftPage(1); // 搜索时重置到第一页
 							}}
 							InputProps={{
@@ -365,9 +371,9 @@ export const ManageGamesDialog: React.FC<ManageGamesDialogProps> = ({
 							fullWidth
 							size="small"
 							placeholder={t("components.Toolbar.Category.searchPlaceholder")}
-							value={rightSearchText}
+							value={rightSearchInput}
 							onChange={(e) => {
-								setRightSearchText(e.target.value);
+								setRightSearchInput(e.target.value);
 								setRightPage(1); // 搜索时重置到第一页
 							}}
 							InputProps={{

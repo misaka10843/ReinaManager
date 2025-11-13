@@ -23,31 +23,9 @@ import {
 } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useStore } from "@/store";
 import { getSearchSuggestions } from "@/utils/enhancedSearch";
-
-/**
- * 防抖 Hook，用于延迟返回输入值，减少频繁触发搜索。
- * @template T
- * @param {T} value 输入值
- * @param {number} delay 延迟时间（毫秒）
- * @returns {T} 防抖后的值
- */
-function useDebounce<T>(value: T, delay: number): T {
-	const [debouncedValue, setDebouncedValue] = useState<T>(value);
-
-	useEffect(() => {
-		const timer = setTimeout(() => {
-			setDebouncedValue(value);
-		}, delay);
-
-		return () => {
-			clearTimeout(timer);
-		};
-	}, [value, delay]);
-
-	return debouncedValue;
-}
 
 /**
  * SearchBox 组件
@@ -66,8 +44,8 @@ export const SearchBox = () => {
 	const [hasInput, setHasInput] = useState(false);
 
 	// 对输入值应用防抖
-	const debouncedKeyword = useDebounce(keyword, 300);
-	const debouncedSuggestions = useDebounce(keyword, 150); // 建议的防抖时间更短
+	const debouncedKeyword = useDebouncedValue(keyword, 300);
+	const debouncedSuggestions = useDebouncedValue(keyword, 150); // 建议的防抖时间更短
 
 	/**
 	 * 执行搜索
