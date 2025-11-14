@@ -141,6 +141,8 @@ jobs:
           DOWNLOAD_SECTION=$(cat <<EOF
           ---
           ### 📥 下载地址 (Download)
+          ![Downloads](https://img.shields.io/github/downloads/${{ github.repository }}/$TAG_NAME/total)
+          
           **Windows** (不支持 Win7)
             - [**64位 (x64)**]($X64_MSI_URL)
             - [**ARM64**]($ARM64_MSI_URL)

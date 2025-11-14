@@ -1,3 +1,44 @@
+## [0.9.0](https://github.com/huoshen80/ReinaManager/compare/v0.8.2...v0.9.0) (2025-11-14)
+
+<details>
+<summary>查看中文版本</summary>
+
+### Bug 修复
+
+* 游戏列表中的标题偶尔不会随语言切换而改变 ([b570f0a](https://github.com/huoshen80/ReinaManager/commit/b570f0ac1725fff99d77619bb271189c797dae57))
+
+### 新功能
+
+* 添加具有组和分类的收藏管理功能 ([f28d093](https://github.com/huoshen80/ReinaManager/commit/f28d09302f2795f8b067e6b8056684f87035df14))
+* 为收藏模块添加 i18n 支持 ([2041c19](https://github.com/huoshen80/ReinaManager/commit/2041c19c6ef3631dfeea249a022315bfdcaf75c7))
+
+### 性能改进
+
+* 添加防抖 Hook 并在 ManageGamesDialog 和 SearchBox 组件中应用 ([0002755](https://github.com/huoshen80/ReinaManager/commit/0002755b7f75a44532eb21be053cc0d75bb1b557))
+* 添加 categoryGamesCache 以优化分类游戏数据检索 ([841fb41](https://github.com/huoshen80/ReinaManager/commit/841fb41691698e5ea76b24cd02e94f95edf507a8))
+* 优化分类中批量更新游戏列表和检索组中游戏数量的接口 ([2fdf83f](https://github.com/huoshen80/ReinaManager/commit/2fdf83ff8997c8a852a3ada17715a8ef88567cbf))
+
+</details>
+
+### Bug Fixes
+
+* titles in the game list occasionally do not change with the language switching ([b570f0a](https://github.com/huoshen80/ReinaManager/commit/b570f0ac1725fff99d77619bb271189c797dae57))
+
+
+### Features
+
+* add collection management features with groups and categories ([f28d093](https://github.com/huoshen80/ReinaManager/commit/f28d09302f2795f8b067e6b8056684f87035df14))
+* add i18n support for collection mod ([2041c19](https://github.com/huoshen80/ReinaManager/commit/2041c19c6ef3631dfeea249a022315bfdcaf75c7))
+
+
+### Performance Improvements
+
+* add a debounce Hook and apply it in the ManageGamesDialog and SearchBox components ([0002755](https://github.com/huoshen80/ReinaManager/commit/0002755b7f75a44532eb21be053cc0d75bb1b557))
+* add categoryGamesCache to optimize category game data retrieval ([841fb41](https://github.com/huoshen80/ReinaManager/commit/841fb41691698e5ea76b24cd02e94f95edf507a8))
+* optimize the interface for batch updating the game list in categories and retrieving the number of games in groups ([2fdf83f](https://github.com/huoshen80/ReinaManager/commit/2fdf83ff8997c8a852a3ada17715a8ef88567cbf))
+
+
+
 ## [0.8.2](https://github.com/huoshen80/ReinaManager/compare/v0.8.1...v0.8.2) (2025-11-08)
 
 <details>
