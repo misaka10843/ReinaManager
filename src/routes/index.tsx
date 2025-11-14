@@ -86,7 +86,7 @@ export const appRoutes: AppRoute[] = [
 	},
 	{
 		path: "collection",
-		title: "收藏夹",
+		title: "app.NAVIGATION.collection",
 		icon: <CategoryIcon />,
 		component: Collection,
 	},

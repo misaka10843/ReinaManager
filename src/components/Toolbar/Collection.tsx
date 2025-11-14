@@ -88,16 +88,16 @@ export const CollectionToolbar: React.FC = () => {
 					startIcon={<AddIcon />}
 					onClick={() => setAddGroupDialogOpen(true)}
 				>
-					{t("components.Toolbar.Group.addGroup")}
+					{t("components.Toolbar.Collection.Group.addGroup")}
 				</Button>
 
 				<InputDialog
 					open={addGroupDialogOpen}
 					onClose={() => setAddGroupDialogOpen(false)}
 					onConfirm={handleCreateGroup}
-					title={t("components.Toolbar.Group.addGroup")}
-					label={t("components.Toolbar.Group.enterGroupName")}
-					placeholder={t("components.Toolbar.Group.enterGroupName")}
+					title={t("components.Toolbar.Collection.Group.addGroup")}
+					label={t("components.Toolbar.Collection.Group.enterGroupName")}
+					placeholder={t("components.Toolbar.Collection.Group.enterGroupName")}
 				/>
 			</>
 		);
@@ -112,7 +112,7 @@ export const CollectionToolbar: React.FC = () => {
 					onClick={() => setAddCategoryDialogOpen(true)}
 					disabled={isDefaultGroup}
 				>
-					{t("components.Toolbar.Group.addCategory")}
+					{t("components.Toolbar.Collection.Group.addCategory")}
 				</Button>
 
 				<Button
@@ -121,16 +121,18 @@ export const CollectionToolbar: React.FC = () => {
 					onClick={() => setDeleteGroupDialogOpen(true)}
 					disabled={isDefaultGroup}
 				>
-					{t("components.Toolbar.Group.deleteGroup")}
+					{t("components.Toolbar.Collection.Group.deleteGroup")}
 				</Button>
 
 				<InputDialog
 					open={addCategoryDialogOpen}
 					onClose={() => setAddCategoryDialogOpen(false)}
 					onConfirm={handleCreateCategory}
-					title={t("components.Toolbar.Group.addCategory")}
-					label={t("components.Toolbar.Group.enterCategoryName")}
-					placeholder={t("components.Toolbar.Group.enterCategoryName")}
+					title={t("components.Toolbar.Collection.Group.addCategory")}
+					label={t("components.Toolbar.Collection.Group.enterCategoryName")}
+					placeholder={t(
+						"components.Toolbar.Collection.Group.enterCategoryName",
+					)}
 				/>
 
 				<AlertDeleteBox
@@ -138,8 +140,8 @@ export const CollectionToolbar: React.FC = () => {
 					setOpen={setDeleteGroupDialogOpen}
 					onConfirm={handleDeleteGroup}
 					isLoading={isDeleting}
-					title={t("components.Toolbar.Group.deleteGroupTitle")}
-					message={t("components.Toolbar.Group.deleteGroupMessage")}
+					title={t("components.Toolbar.Collection.Group.deleteGroupTitle")}
+					message={t("components.Toolbar.Collection.Group.deleteGroupMessage")}
 				/>
 			</>
 		);
@@ -153,7 +155,7 @@ export const CollectionToolbar: React.FC = () => {
 					startIcon={<EditIcon />}
 					onClick={() => setManageGamesDialogOpen(true)}
 				>
-					{t("components.Toolbar.Category.manageGames")}
+					{t("components.Toolbar.Collection.Category.manageGames")}
 				</Button>
 
 				<ManageGamesDialog

@@ -30,6 +30,7 @@ import { snackbar } from "@/components/Snackbar";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useStore } from "@/store";
 import type { GameData } from "@/types";
+import { getGameDisplayName } from "@/utils";
 import { enhancedSearch } from "@/utils/enhancedSearch";
 
 interface ManageGamesDialogProps {
@@ -50,17 +51,13 @@ export const ManageGamesDialog: React.FC<ManageGamesDialogProps> = ({
 	categoryId,
 	categoryName,
 }) => {
-	const { t } = useTranslation();
-	const {
-		allGames,
-		categoryGames,
-		updateCategoryGames,
-	} = useStore();
+	const { t, i18n } = useTranslation();
+	const { allGames, categoryGames, updateCategoryGames } = useStore();
 
 	// 对话框状态
 	const [leftSearchInput, setLeftSearchInput] = useState(""); // 左栏搜索输入
 	const [rightSearchInput, setRightSearchInput] = useState(""); // 右栏搜索输入
-	
+
 	// 防抖后的搜索值（300ms 延迟）
 	const leftSearchText = useDebouncedValue(leftSearchInput, 300);
 	const rightSearchText = useDebouncedValue(rightSearchInput, 300);
@@ -151,11 +148,6 @@ export const ManageGamesDialog: React.FC<ManageGamesDialogProps> = ({
 		filteredCategoryGames.length / GAMES_PER_PAGE,
 	);
 
-	// 获取游戏显示名称
-	const getGameTitle = (game: GameData) => {
-		return game.custom_name || game.name_cn || game.name || "";
-	};
-
 	/**
 	 * 游戏列表项组件 - 使用 React.memo 优化
 	 */
@@ -177,7 +169,7 @@ export const ManageGamesDialog: React.FC<ManageGamesDialogProps> = ({
 						size="small"
 					/>
 					<ListItemText
-						primary={getGameTitle(game)}
+						primary={getGameDisplayName(game, i18n.language)}
 						primaryTypographyProps={{ variant: "body2" }}
 					/>
 				</ListItemButton>
@@ -215,7 +207,9 @@ export const ManageGamesDialog: React.FC<ManageGamesDialogProps> = ({
 	const handleSaveGamesChanges = async () => {
 		if (categoryId < 0) {
 			console.warn("无法修改虚拟分类");
-			snackbar.warning(t("errors.cannotModifyVirtualCategory"));
+			snackbar.warning(
+				t("components.Collection.errors.cannotModifyVirtualCategory"),
+			);
 			return;
 		}
 
@@ -230,7 +224,7 @@ export const ManageGamesDialog: React.FC<ManageGamesDialogProps> = ({
 
 			// 成功提示
 			snackbar.success(
-				t("success.categoryGamesUpdated", {
+				t("components.Collection.success.categoryGamesUpdated", {
 					count: gameIdsArray.length,
 					defaultValue: `已更新分类游戏：${gameIdsArray.length} 个`,
 				}),
@@ -246,7 +240,7 @@ export const ManageGamesDialog: React.FC<ManageGamesDialogProps> = ({
 
 			// 错误提示
 			snackbar.error(
-				t("errors.updateCategoryGamesFailed", {
+				t("components.Collection.errors.updateCategoryGamesFailed", {
 					defaultValue: "更新分类游戏失败，请重试",
 				}),
 			);

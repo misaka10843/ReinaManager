@@ -6,7 +6,7 @@
 import { convertFileSrc } from "@tauri-apps/api/core";
 import i18next from "i18next";
 import type { FullGameData, GameData, RawGameData } from "@/types";
-import { getResourceDirPath } from "@/utils";
+import { getGameDisplayName, getResourceDirPath } from "@/utils";
 
 /**
  * 根据 id_type 智能合并游戏数据
@@ -185,23 +185,6 @@ function getCustomCoverUrl(
 	} catch (error) {
 		console.error("转换自定义封面路径失败:", error);
 	}
-}
-
-/**
- * 获取游戏显示名称
- * 优先级: custom_name > name_cn (中文环境) > name
- */
-function getGameDisplayName(game: GameData, language: string): string {
-	if (game.custom_name) {
-		return game.custom_name;
-	}
-
-	// 只有当语言为zh-CN时才使用name_cn
-	if (language === "zh-CN" && game.name_cn) {
-		return game.name_cn;
-	}
-
-	return game.name || "";
 }
 
 /**

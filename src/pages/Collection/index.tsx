@@ -176,12 +176,14 @@ export const Collection: React.FC = () => {
 				await fetchCategoriesByGroup(currentGroupId);
 			}
 			snackbar.success(
-				t("success.categoryDeleted", { defaultValue: "已删除分类" }),
+				t("pages.Collection.success.categoryDeleted", {
+					defaultValue: "已删除分类",
+				}),
 			);
 		} catch (error) {
 			console.error("删除分类失败:", error);
 			snackbar.error(
-				t("errors.deleteCategoryFailed", {
+				t("pages.Collection.errors.deleteCategoryFailed", {
 					defaultValue: "删除分类失败，请重试",
 				}),
 			);
@@ -196,7 +198,7 @@ export const Collection: React.FC = () => {
 			// 默认分组不能删除
 			if (groupId.startsWith("default_")) {
 				snackbar.warning(
-					t("errors.cannotDeleteDefaultGroup", {
+					t("pages.Collection.errors.cannotDeleteDefaultGroup", {
 						defaultValue: "默认分组不能删除",
 					}),
 				);
@@ -204,12 +206,14 @@ export const Collection: React.FC = () => {
 			}
 			await deleteGroup(Number.parseInt(groupId, 10));
 			snackbar.success(
-				t("success.groupDeleted", { defaultValue: "已删除分组" }),
+				t("pages.Collection.success.groupDeleted", {
+					defaultValue: "已删除分组",
+				}),
 			);
 		} catch (error) {
 			console.error("删除分组失败:", error);
 			snackbar.error(
-				t("errors.deleteGroupFailed", {
+				t("pages.Collection.errors.deleteGroupFailed", {
 					defaultValue: "删除分组失败，请重试",
 				}),
 			);
@@ -325,9 +329,9 @@ export const Collection: React.FC = () => {
 
 		switch (currentGroupId) {
 			case DefaultGroup.DEVELOPER:
-				return t("category.defaultGroups.developer");
+				return t("pages.Collection.defaultGroups.developer");
 			case DefaultGroup.PLAY_STATUS:
-				return t("category.defaultGroups.playStatus");
+				return t("pages.Collection.defaultGroups.playStatus");
 			default: {
 				// 自定义分组，从 groups 中查找
 				const group = groups.find((g) => g.id.toString() === currentGroupId);
@@ -352,7 +356,7 @@ export const Collection: React.FC = () => {
 
 		// 真实分类，从 currentCategories 中查找
 		const category = currentCategories.find((c) => c.id === selectedCategoryId);
-		return category?.name || t("category.breadcrumb.unknownCategory");
+		return category?.name || t("pages.Collection.breadcrumb.unknownCategory");
 	};
 
 	/**
@@ -383,11 +387,11 @@ export const Collection: React.FC = () => {
 	const defaultGroups = [
 		{
 			id: DefaultGroup.DEVELOPER,
-			name: t("category.defaultGroups.developer"),
+			name: t("pages.Collection.defaultGroups.developer"),
 		},
 		{
 			id: DefaultGroup.PLAY_STATUS,
-			name: t("category.defaultGroups.playStatus"),
+			name: t("pages.Collection.defaultGroups.playStatus"),
 		},
 	];
 
@@ -403,7 +407,7 @@ export const Collection: React.FC = () => {
 			{/* 面包屑导航或标题 */}
 			{showLevel === "groups" ? (
 				<Typography variant="h4" sx={{ mb: 3 }}>
-					{t("category.breadcrumb.category")}
+					{t("pages.Collection.breadcrumb.group")}
 				</Typography>
 			) : showLevel === "categories" ? (
 				<Breadcrumbs
@@ -418,7 +422,7 @@ export const Collection: React.FC = () => {
 						onClick={() => handleBreadcrumbClick("root")}
 					>
 						<HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
-						{t("category.breadcrumb.category")}
+						{t("pages.Collection.breadcrumb.group")}
 					</Link>
 					<Typography
 						sx={{ display: "flex", alignItems: "center" }}
@@ -441,7 +445,7 @@ export const Collection: React.FC = () => {
 						onClick={() => handleBreadcrumbClick("root")}
 					>
 						<HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
-						{t("category.breadcrumb.category")}
+						{t("pages.Collection.breadcrumb.group")}
 					</Link>
 					<Link
 						underline="hover"
@@ -499,11 +503,11 @@ export const Collection: React.FC = () => {
 									if (!isDefault) handleGroupContextMenu(e, id as string, name);
 								}}
 								showDelete={!isDefault}
-								deleteTitle={t("category.deleteGroupTitle")}
-								deleteMessage={t("category.deleteGroupMessage", {
+								deleteTitle={t("pages.Collection.deleteGroupTitle")}
+								deleteMessage={t("pages.Collection.deleteGroupMessage", {
 									name: group.name,
 								})}
-								countLabel={t("category.gamesCount")}
+								countLabel={t("pages.Collection.gamesCount")}
 							/>
 						);
 					})}
@@ -521,7 +525,7 @@ export const Collection: React.FC = () => {
 						}}
 					>
 						<Typography variant="h6" color="text.secondary">
-							{t("category.noCategoriesHint")}
+							{t("pages.Collection.noCategoriesHint")}
 						</Typography>
 					</Box>
 				) : (
@@ -558,11 +562,11 @@ export const Collection: React.FC = () => {
 											handleCategoryContextMenu(e, id as number, name);
 									}}
 									showDelete={!isVirtual}
-									deleteTitle={t("category.deleteCategoryTitle")}
-									deleteMessage={t("category.deleteCategoryMessage", {
+									deleteTitle={t("pages.Collection.deleteCategoryTitle")}
+									deleteMessage={t("pages.Collection.deleteCategoryMessage", {
 										name: category.name,
 									})}
-									countLabel={t("category.gamesCount")}
+									countLabel={t("pages.Collection.gamesCount")}
 								/>
 							);
 						})}

@@ -25,7 +25,8 @@
 			"menu": "選單",
 			"home": "首頁",
 			"gameLibrary": "遊戲倉庫 ",
-			"settings": "設定"
+			"settings": "設定",
+			"collection": "收藏夾"
 		}
 	},
 	"pages": {
@@ -229,9 +230,43 @@
 				"saving": "保存中...",
 				"saveAllChanges": "保存所有更改"
 			}
+		},
+		"Collection": {
+			"defaultGroups": {
+				"developer": "開發商",
+				"playStatus": "遊戲狀態"
+			},
+			"breadcrumb": {
+				"group": "分組",
+				"unknownCategory": "未知分類"
+			},
+			"noCategoriesHint": "當前分組下沒有分類",
+			"gamesCount": "個遊戲",
+			"deleteCategoryTitle": "刪除分類",
+			"deleteCategoryMessage": "確定要刪除分類 \"{{name}}\" 嗎？此操作將移除該分類與所有遊戲的關聯，但不會刪除遊戲本身。",
+			"deleteGroupTitle": "刪除分組",
+			"deleteGroupMessage": "確定要刪除分組 \"{{name}}\" 嗎？此操作將同時刪除該分組下的所有分類，且無法恢復。",
+			"success": {
+				"categoryDeleted": "已刪除分類",
+				"groupDeleted": "已刪除分組"
+			},
+			"errors": {
+				"cannotDeleteDefaultGroup": "默認分組不能刪除",
+				"deleteCategoryFailed": "刪除分類失敗，請重試",
+				"deleteGroupFailed": "刪除分組失敗，請重試"
+			}
 		}
 	},
 	"components": {
+		"Collection": {
+			"success": {
+				"categoryGamesUpdated": "已更新分類遊戲：{{count}} 個"
+			},
+			"errors": {
+				"cannotModifyVirtualCategory": "無法修改虛擬分類",
+				"updateCategoryGamesFailed": "更新分類遊戲失敗，請重試"
+			}
+		},
 		"SearchBox": {
 			"search": "搜尋",
 			"searchGame": "搜尋遊戲",
@@ -246,7 +281,46 @@
 			"vndblink": "查看Vndb頁面",
 			"more": "更多",
 			"markAsCompleted": "標記為已通關",
-			"markAsNotCompleted": "標記為未通關"
+			"markAsNotCompleted": "標記為未通關",
+			"Group": {
+				"group": "分組",
+				"selectGroup": "選擇分組",
+				"addGroup": "添加分組",
+				"addCategory": "添加分類",
+				"deleteGroup": "刪除分組",
+				"enterGroupName": "請輸入分組名稱",
+				"enterCategoryName": "請輸入分類名稱",
+				"cannotDeleteDefaultGroup": "默認分組不能刪除",
+				"cannotAddToDefaultGroup": "不能向默認分組添加分類",
+				"confirmDeleteGroup": "確定要刪除此分組嗎？此操作將同時刪除分組下的所有分類。",
+				"deleteGroupTitle": "刪除分組",
+				"deleteGroupMessage": "確定要刪除此分組嗎？此操作將同時刪除該分組下的所有分類，且無法恢復。"
+			},
+			"Collection": {
+				"Group": {
+					"addGroup": "添加分組",
+					"addCategory": "添加分類",
+					"deleteGroup": "刪除分組",
+					"enterGroupName": "請輸入分組名稱",
+					"enterCategoryName": "請輸入分類名稱",
+					"deleteGroupTitle": "刪除分組",
+					"deleteGroupMessage": "確定要刪除此分組嗎？此操作將同時刪除該分組下的所有分類，且無法恢復。"
+				},
+				"Category": {
+					"manageGames": "管理遊戲"
+				}
+			},
+			"Category": {
+				"manageGames": "管理遊戲",
+				"manageGamesTitle": "管理分類遊戲",
+				"searchPlaceholder": "搜索遊戲...",
+				"noSearchResults": "未找到匹配的遊戲",
+				"noGames": "暫無遊戲",
+				"availableGames": "可用遊戲",
+				"gamesInCategory": "分類中的遊戲",
+				"noGamesInCategory": "該分類暫無遊戲",
+				"save": "保存更改"
+			}
 		},
 		"LaunchModal": {
 			"launchGame": "啟動遊戲",
@@ -274,7 +348,18 @@
 			"deleteGame": "刪除遊戲",
 			"openGameFolder": "開啟遊戲目錄",
 			"markAsCompleted": "標記為已通關",
-			"markAsNotCompleted": "標記為未通關"
+			"markAsNotCompleted": "標記為未通關",
+			"Collection": {
+				"groupMenu": "分組菜單",
+				"categoryMenu": "分類菜單",
+				"manageGames": "管理遊戲",
+				"renameGroup": "重命名分組",
+				"renameCategory": "重命名分類",
+				"renameGroupTitle": "重命名分組",
+				"renameCategoryTitle": "重命名分類",
+				"newGroupName": "新分組名稱",
+				"newCategoryName": "新分類名稱"
+			}
 		},
 		"AlertBox": {
 			"cancel": "取消",
@@ -389,6 +474,16 @@
 			"vndbNotFound": "遊戲 ID {{gameId}} (VNDB: {{vndbId}}) 未找到資料",
 			"bgmNotFound": "遊戲 ID {{gameId}} (BGM: {{bgmId}}) 未找到資料",
 			"unknownError": "未知錯誤"
+		}
+	},
+	"category": {
+		"unknownDeveloper": "未知開發商",
+		"playStatus": {
+			"wish": "想玩",
+			"playing": "在玩",
+			"played": "玩過",
+			"onHold": "擱置",
+			"dropped": "棄坑"
 		}
 	}
 }

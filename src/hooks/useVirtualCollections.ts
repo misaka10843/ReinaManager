@@ -10,7 +10,7 @@ import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { GameData } from "@/types";
 import type { Category } from "@/types/collection";
-import { PLAY_STATUS_LABELS, PlayStatus } from "@/types/collection";
+import { getPlayStatusLabel, PlayStatus } from "@/types/collection";
 
 /**
  * 虚拟分类生成配置接口
@@ -130,7 +130,7 @@ export function usePlayStatusCategories(allGames: GameData[]): Category[] {
 						return clearValue as PlayStatus;
 					},
 					generateId: (status) => -status,
-					generateName: (status) => PLAY_STATUS_LABELS[status],
+					generateName: (status) => getPlayStatusLabel(t, status),
 					generateSortOrder: (status) => status,
 					initializeKeys: () => [
 						PlayStatus.WISH,
@@ -244,6 +244,7 @@ export function isPlayStatusGroup(categoryId: number): boolean {
  * 返回所有虚拟分类相关的数据和方法
  */
 export function useVirtualCategories(allGames: GameData[]) {
+	const { t } = useTranslation();
 	const developerCategories = useDeveloperCategories(allGames);
 	const playStatusCategories = usePlayStatusCategories(allGames);
 
@@ -274,7 +275,7 @@ export function useVirtualCategories(allGames: GameData[]) {
 		// 游戏状态分类
 		if (isPlayStatusGroup(categoryId)) {
 			const playStatus = Math.abs(categoryId) as PlayStatus;
-			return PLAY_STATUS_LABELS[playStatus] || null;
+			return getPlayStatusLabel(t, playStatus) || null;
 		}
 		// 开发商分类
 		if (isDeveloperGroup(categoryId)) {

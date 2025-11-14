@@ -10,7 +10,8 @@
 			"menu": "菜单",
 			"home": "主页",
 			"gameLibrary": "游戏仓库 ",
-			"settings": "设置"
+			"settings": "设置",
+			"collection": "收藏夹"
 		}
 	},
 	"api": {
@@ -235,9 +236,43 @@
 				"saving": "保存中...",
 				"saveAllChanges": "保存所有更改"
 			}
+		},
+		"Collection": {
+			"defaultGroups": {
+				"developer": "开发商",
+				"playStatus": "游戏状态"
+			},
+			"breadcrumb": {
+				"group": "分组",
+				"unknownCategory": "未知分类"
+			},
+			"noCategoriesHint": "当前分组下没有分类",
+			"gamesCount": "个游戏",
+			"deleteCategoryTitle": "删除分类",
+			"deleteCategoryMessage": "确定要删除分类 \"{{name}}\" 吗？此操作将移除该分类与所有游戏的关联，但不会删除游戏本身。",
+			"deleteGroupTitle": "删除分组",
+			"deleteGroupMessage": "确定要删除分组 \"{{name}}\" 吗？此操作将同时删除该分组下的所有分类，且无法恢复。",
+			"success": {
+				"categoryDeleted": "已删除分类",
+				"groupDeleted": "已删除分组"
+			},
+			"errors": {
+				"cannotDeleteDefaultGroup": "默认分组不能删除",
+				"deleteCategoryFailed": "删除分类失败，请重试",
+				"deleteGroupFailed": "删除分组失败，请重试"
+			}
 		}
 	},
 	"components": {
+		"Collection": {
+			"success": {
+				"categoryGamesUpdated": "已更新分类游戏：{{count}} 个"
+			},
+			"errors": {
+				"cannotModifyVirtualCategory": "无法修改虚拟分类",
+				"updateCategoryGamesFailed": "更新分类游戏失败，请重试"
+			}
+		},
 		"SearchBox": {
 			"search": "搜索",
 			"searchGame": "搜索游戏",
@@ -266,6 +301,20 @@
 				"confirmDeleteGroup": "确定要删除此分组吗？此操作将同时删除分组下的所有分类。",
 				"deleteGroupTitle": "删除分组",
 				"deleteGroupMessage": "确定要删除此分组吗？此操作将同时删除分组下的所有分类，且无法恢复。"
+			},
+			"Collection": {
+				"Group": {
+					"addGroup": "添加分组",
+					"addCategory": "添加分类",
+					"deleteGroup": "删除分组",
+					"enterGroupName": "请输入分组名称",
+					"enterCategoryName": "请输入分类名称",
+					"deleteGroupTitle": "删除分组",
+					"deleteGroupMessage": "确定要删除此分组吗？此操作将同时删除分组下的所有分类，且无法恢复。"
+				},
+				"Category": {
+					"manageGames": "管理游戏"
+				}
 			},
 			"Category": {
 				"manageGames": "管理游戏",
@@ -435,28 +484,13 @@
 		}
 	},
 	"category": {
-		"defaultGroups": {
-			"developer": "开发商",
-			"playStatus": "游戏状态"
-		},
+		"unknownDeveloper": "未知开发商",
 		"playStatus": {
 			"wish": "想玩",
 			"playing": "在玩",
 			"played": "玩过",
 			"onHold": "搁置",
 			"dropped": "弃坑"
-		},
-		"breadcrumb": {
-			"category": "分类",
-			"unknownCategory": "未知分类"
-		},
-		"selectGroupHint": "请选择一个分组以查看分类",
-		"noCategoriesHint": "当前分组下没有分类",
-		"unknownDeveloper": "未知开发商",
-		"gamesCount": "个游戏",
-		"deleteCategoryTitle": "删除分类",
-		"deleteCategoryMessage": "确定要删除分类 \"{{name}}\" 吗？此操作将移除该分类与所有游戏的关联，但不会删除游戏本身。",
-		"deleteGroupTitle": "删除分组",
-		"deleteGroupMessage": "确定要删除分组 \"{{name}}\" 吗？此操作将同时删除该分组下的所有分类，且无法恢复。"
+		}
 	}
 }

@@ -57,12 +57,22 @@ export enum PlayStatus {
 }
 
 /**
- * 游戏状态标签映射
+ * 游戏状态 i18n key 映射
  */
-export const PLAY_STATUS_LABELS: Record<PlayStatus, string> = {
-	[PlayStatus.WISH]: "想玩",
-	[PlayStatus.PLAYING]: "在玩",
-	[PlayStatus.PLAYED]: "玩过",
-	[PlayStatus.ON_HOLD]: "搁置",
-	[PlayStatus.DROPPED]: "弃坑",
+export const PLAY_STATUS_I18N_KEYS: Record<PlayStatus, string> = {
+	[PlayStatus.WISH]: "category.playStatus.wish",
+	[PlayStatus.PLAYING]: "category.playStatus.playing",
+	[PlayStatus.PLAYED]: "category.playStatus.played",
+	[PlayStatus.ON_HOLD]: "category.playStatus.onHold",
+	[PlayStatus.DROPPED]: "category.playStatus.dropped",
 };
+
+/**
+ * 获取游戏状态多语言文案
+ */
+export function getPlayStatusLabel(
+	t: (key: string) => string,
+	status: PlayStatus,
+): string {
+	return t(PLAY_STATUS_I18N_KEYS[status]);
+}

@@ -25,7 +25,8 @@
 			"menu": "メニュー",
 			"home": "ホーム",
 			"gameLibrary": "ゲームライブラリ ",
-			"settings": "設定"
+			"settings": "設定",
+			"collection": "コレクション"
 		}
 	},
 	"pages": {
@@ -229,9 +230,43 @@
 				"saving": "保存中...",
 				"saveAllChanges": "すべての変更を保存"
 			}
+		},
+		"Collection": {
+			"defaultGroups": {
+				"developer": "開発者",
+				"playStatus": "プレイ状態"
+			},
+			"breadcrumb": {
+				"group": "グループ",
+				"unknownCategory": "不明なカテゴリ"
+			},
+			"noCategoriesHint": "現在のグループにカテゴリがありません",
+			"gamesCount": "ゲーム",
+			"deleteCategoryTitle": "カテゴリを削除",
+			"deleteCategoryMessage": "カテゴリ \"{{name}}\" を削除してもよろしいですか？この操作により、このカテゴリとすべてのゲームの関連付けが削除されますが、ゲーム自体は削除されません。",
+			"deleteGroupTitle": "グループを削除",
+			"deleteGroupMessage": "グループ \"{{name}}\" を削除してもよろしいですか？この操作により、このグループ内のすべてのカテゴリも削除され、元に戻すことはできません。",
+			"success": {
+				"categoryDeleted": "カテゴリを削除しました",
+				"groupDeleted": "グループを削除しました"
+			},
+			"errors": {
+				"cannotDeleteDefaultGroup": "デフォルトグループは削除できません",
+				"deleteCategoryFailed": "カテゴリの削除に失敗しました。もう一度お試しください",
+				"deleteGroupFailed": "グループの削除に失敗しました。もう一度お試しください"
+			}
 		}
 	},
 	"components": {
+		"Collection": {
+			"success": {
+				"categoryGamesUpdated": "カテゴリゲームを更新しました：{{count}} 個"
+			},
+			"errors": {
+				"cannotModifyVirtualCategory": "仮想カテゴリは変更できません",
+				"updateCategoryGamesFailed": "カテゴリゲームの更新に失敗しました。もう一度お試しください"
+			}
+		},
 		"SearchBox": {
 			"search": "検索",
 			"searchGame": "ゲームを検索",
@@ -246,7 +281,46 @@
 			"vndblink": "Vndbページを見る",
 			"more": "その他",
 			"markAsCompleted": "クリア済みにマーク",
-			"markAsNotCompleted": "未クリアにマーク"
+			"markAsNotCompleted": "未クリアにマーク",
+			"Group": {
+				"group": "グループ",
+				"selectGroup": "グループを選択",
+				"addGroup": "グループを追加",
+				"addCategory": "カテゴリを追加",
+				"deleteGroup": "グループを削除",
+				"enterGroupName": "グループ名を入力してください",
+				"enterCategoryName": "カテゴリ名を入力してください",
+				"cannotDeleteDefaultGroup": "デフォルトグループは削除できません",
+				"cannotAddToDefaultGroup": "デフォルトグループにカテゴリを追加できません",
+				"confirmDeleteGroup": "このグループを削除してもよろしいですか？この操作により、グループ内のすべてのカテゴリも削除されます。",
+				"deleteGroupTitle": "グループを削除",
+				"deleteGroupMessage": "このグループを削除してもよろしいですか？この操作により、グループ内のすべてのカテゴリも削除され、元に戻すことはできません。"
+			},
+			"Collection": {
+				"Group": {
+					"addGroup": "グループを追加",
+					"addCategory": "カテゴリを追加",
+					"deleteGroup": "グループを削除",
+					"enterGroupName": "グループ名を入力してください",
+					"enterCategoryName": "カテゴリ名を入力してください",
+					"deleteGroupTitle": "グループを削除",
+					"deleteGroupMessage": "このグループを削除してもよろしいですか？この操作により、グループ内のすべてのカテゴリも削除され、元に戻すことはできません。"
+				},
+				"Category": {
+					"manageGames": "ゲームを管理"
+				}
+			},
+			"Category": {
+				"manageGames": "ゲームを管理",
+				"manageGamesTitle": "カテゴリゲームを管理",
+				"searchPlaceholder": "ゲームを検索...",
+				"noSearchResults": "一致するゲームが見つかりません",
+				"noGames": "ゲームがありません",
+				"availableGames": "利用可能なゲーム",
+				"gamesInCategory": "カテゴリ内のゲーム",
+				"noGamesInCategory": "このカテゴリにはゲームがありません",
+				"save": "変更を保存"
+			}
 		},
 		"LaunchModal": {
 			"launchGame": "ゲームを起動",
@@ -274,7 +348,18 @@
 			"deleteGame": "ゲームを削除",
 			"openGameFolder": "ゲームフォルダを開く",
 			"markAsCompleted": "クリア済みにマーク",
-			"markAsNotCompleted": "未クリアにマーク"
+			"markAsNotCompleted": "未クリアにマーク",
+			"Collection": {
+				"groupMenu": "グループメニュー",
+				"categoryMenu": "カテゴリメニュー",
+				"manageGames": "ゲームを管理",
+				"renameGroup": "グループの名前を変更",
+				"renameCategory": "カテゴリの名前を変更",
+				"renameGroupTitle": "グループの名前を変更",
+				"renameCategoryTitle": "カテゴリの名前を変更",
+				"newGroupName": "新しいグループ名",
+				"newCategoryName": "新しいカテゴリ名"
+			}
 		},
 		"AlertBox": {
 			"cancel": "キャンセル",
@@ -389,6 +474,16 @@
 			"vndbNotFound": "ゲームID {{gameId}} (VNDB: {{vndbId}}) のデータが見つかりませんでした",
 			"bgmNotFound": "ゲームID {{gameId}} (BGM: {{bgmId}}) のデータが見つかりませんでした",
 			"unknownError": "不明なエラー"
+		}
+	},
+	"category": {
+		"unknownDeveloper": "不明な開発者",
+		"playStatus": {
+			"wish": "プレイしたい",
+			"playing": "プレイ中",
+			"played": "プレイ済み",
+			"onHold": "保留中",
+			"dropped": "中断"
 		}
 	}
 }

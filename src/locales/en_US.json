@@ -4,7 +4,8 @@
 			"menu": "Menu",
 			"home": "Home",
 			"gameLibrary": "Game Library ",
-			"settings": "Settings"
+			"settings": "Settings",
+			"collection": "Collection"
 		}
 	},
 	"api": {
@@ -229,9 +230,43 @@
 				"saving": "Saving...",
 				"saveAllChanges": "Save All Changes"
 			}
+		},
+		"Collection": {
+			"defaultGroups": {
+				"developer": "Developer",
+				"playStatus": "Play Status"
+			},
+			"breadcrumb": {
+				"group": "Group",
+				"unknownCategory": "Unknown Category"
+			},
+			"noCategoriesHint": "No categories in current group",
+			"gamesCount": "games",
+			"deleteCategoryTitle": "Delete Category",
+			"deleteCategoryMessage": "Are you sure you want to delete category \"{{name}}\"? This will remove the association between this category and all games, but will not delete the games themselves.",
+			"deleteGroupTitle": "Delete Group",
+			"deleteGroupMessage": "Are you sure you want to delete group \"{{name}}\"? This will also delete all categories in the group and cannot be undone.",
+			"success": {
+				"categoryDeleted": "Category deleted",
+				"groupDeleted": "Group deleted"
+			},
+			"errors": {
+				"cannotDeleteDefaultGroup": "Default group cannot be deleted",
+				"deleteCategoryFailed": "Failed to delete category, please try again",
+				"deleteGroupFailed": "Failed to delete group, please try again"
+			}
 		}
 	},
 	"components": {
+		"Collection": {
+			"success": {
+				"categoryGamesUpdated": "Category games updated: {{count}} games"
+			},
+			"errors": {
+				"cannotModifyVirtualCategory": "Cannot modify virtual category",
+				"updateCategoryGamesFailed": "Failed to update category games, please try again"
+			}
+		},
 		"SearchBox": {
 			"search": "Search",
 			"searchGame": "Search games",
@@ -260,6 +295,20 @@
 				"confirmDeleteGroup": "Are you sure you want to delete this group? This will also delete all categories in the group.",
 				"deleteGroupTitle": "Delete Group",
 				"deleteGroupMessage": "Are you sure you want to delete this group? This will also delete all categories in the group and cannot be undone."
+			},
+			"Collection": {
+				"Group": {
+					"addGroup": "Add Group",
+					"addCategory": "Add Category",
+					"deleteGroup": "Delete Group",
+					"enterGroupName": "Please enter group name",
+					"enterCategoryName": "Please enter category name",
+					"deleteGroupTitle": "Delete Group",
+					"deleteGroupMessage": "Are you sure you want to delete this group? This will also delete all categories in the group and cannot be undone."
+				},
+				"Category": {
+					"manageGames": "Manage Games"
+				}
 			},
 			"Category": {
 				"manageGames": "Manage Games",
@@ -426,6 +475,16 @@
 			"vndbNotFound": "Game ID {{gameId}} (VNDB: {{vndbId}}) data not found",
 			"bgmNotFound": "Game ID {{gameId}} (BGM: {{bgmId}}) data not found",
 			"unknownError": "Unknown error"
+		}
+	},
+	"category": {
+		"unknownDeveloper": "Unknown Developer",
+		"playStatus": {
+			"wish": "Want to Play",
+			"playing": "Playing",
+			"played": "Played",
+			"onHold": "On Hold",
+			"dropped": "Dropped"
 		}
 	}
 }
