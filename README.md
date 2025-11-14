@@ -7,7 +7,7 @@
 
 <h1>ReinaManager</h1>
 
-![Status](https://img.shields.io/badge/status-active-brightgreen) ![Stage](https://img.shields.io/badge/stage-beta-blue) ![Build Status](https://github.com/huoshen80/ReinaManager/actions/workflows/build.yml/badge.svg)
+![Status](https://img.shields.io/badge/status-active-brightgreen) ![Stage](https://img.shields.io/badge/stage-beta-blue) ![Build Status](https://github.com/huoshen80/ReinaManager/actions/workflows/build.yml/badge.svg) ![Release](https://img.shields.io/github/v/release/huoshen80/ReinaManager) ![Downloads](https://img.shields.io/github/downloads/huoshen80/ReinaManager/total)
 
 <p align="center">English|<a href="./README.zh_CN.md">中文</a>|<a href="./README.zh_TW.md">繁體中文</a>|<a href="./README.ja_JP.md">日本語</a></p>
 
@@ -35,28 +35,34 @@ The `Reina` in the name is the character <a href="https://vndb.org/c64303"><b>�
 
 - SeaORM
 
+## Features
+
+- 🌐 **Multi-source Data Integration** - Seamlessly fetch and merge game metadata from VNDB and Bangumi APIs
+- 🔍 **Powerful Search** - Smart search game from titles, aliases, custom names, and some other metadata
+- 📚 **Collection Management** - Organize games with hierarchical groups and categories for better library management
+- 🎮 **Play Time Tracking** - Automatic gameplay session recording with detailed play time statistics and history
+- 🎨 **Customization** - Set custom covers and names for personalized game library
+- 🔄 **Batch Operations** - Bulk update game metadata from APIs 
+- 🌍 **Multi-language Support** - i18n support with multiple language interfaces
+- 🔒 **NSFW Filter** - Hide or cover NFSW content with a simple toggle
+- 💾 **Auto Savedata Backup** - Configurable automatic backup to protect your savedata
+- 🚀 **System Integration** - Auto-start on boot and minimize to system tray
+
 ## Todo
 
-- [x] Add exe to Launch games
-- [x] Open the local game folder
-- [x] Home page functions
-- [x] Add VNDB api to search games
-- [x] I18n support
-- [ ] Custom data of games
-- [x] Count the time spent playing
+- [ ] More custom data fields for games
 - [ ] Beautify individual pages
-- [x] Design the detail page
-- [x] Refactor database queries
-- [x] Add mixed api to search games
-- [x] Edit page functions
-- [x] Auto backup function
-- [ ] Sync games status with Bangumi
-- [ ] Bulk import games
-- [x] Tool: migrate whitecloud data into ReinaManager(view [reina_migrator](https://github.com/huoshen80/reina_migrator))
-- [x] Add hide NSFW filter
-- [x] Add custom cover and custom name for games
-- [x] enhance search function to include alias, all titles and custom name
-- [ ] Add category page for manage games
+- [ ] Sync game status with Bangumi and VNDB
+- [ ] Bulk import games from folders
+
+## Migration
+
+Need to migrate your data from other galgame/visual-novel managers? Check out [reina_migrator](https://github.com/huoshen80/reina_migrator) - a tool for migrating others manager data into ReinaManager.
+
+Currently supports:
+- **WhiteCloud** data migration
+
+The migrator helps you seamlessly transfer your game library, play time records, and other data from supported managers to ReinaManager.
 
 ## Demo
 ##### Frontend Demo
@@ -69,6 +75,7 @@ The `Reina` in the name is the character <a href="https://vndb.org/c64303"><b>�
 ![Library](screenshots/library.png)
 ![Detail](screenshots/detail.png)
 ![Stats](screenshots/stats.png)
+![Collection](screenshots/collection.png)
 ![Setting](screenshots/setting.png)
 
 For more, you can download the latest Release Version: [Download](https://github.com/huoshen80/ReinaManager/releases)

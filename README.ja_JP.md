@@ -7,7 +7,7 @@
 
 <h1>ReinaManager</h1>
 
-![Status](https://img.shields.io/badge/status-active-brightgreen) ![Stage](https://img.shields.io/badge/stage-beta-blue) ![Build Status](https://github.com/huoshen80/ReinaManager/actions/workflows/build.yml/badge.svg)
+![Status](https://img.shields.io/badge/status-active-brightgreen) ![Stage](https://img.shields.io/badge/stage-beta-blue) ![Build Status](https://github.com/huoshen80/ReinaManager/actions/workflows/build.yml/badge.svg) ![Release](https://img.shields.io/github/v/release/huoshen80/ReinaManager) ![Downloads](https://img.shields.io/github/downloads/huoshen80/ReinaManager/total)
 
 <p align="center"><a href="./README.md">English</a>|<a href="./README.zh_CN.md">中文</a>|<a href="./README.zh_TW.md">繁體中文</a>|日本語</p>
 
@@ -35,29 +35,34 @@
 
 - SeaORM
 
+## 機能
+
+- 🌐 **マルチソースデータ統合** - VNDB と Bangumi API からゲームメタデータをシームレスに取得・統合
+- 🔍 **強力な検索** - ゲームタイトル、エイリアス、カスタム名、その他のメタデータを通じてゲームをスマート検索
+- 📚 **コレクション管理** - 階層的な分類とカテゴリを使用してゲームを整理し、ゲームライブラリをより効果的に管理
+- 🎮 **プレイ時間追跡** - ゲームセッションを自動記録し、詳細なプレイ時間統計と履歴を提供
+- 🎨 **パーソナライズ** - ゲームにカスタムカバーと名前を設定し、パーソナライズされたゲームライブラリを構築
+- 🔄 **バッチ操作** - API からゲームメタデータを一括更新
+- 🌍 **多言語サポート** - 完全な国際化サポートで、複数の言語インターフェースを提供
+- 🔒 **NSFW フィルター** - 簡単なスイッチでNSFWコンテンツを非表示またはカバー
+- 💾 **自動セーブバックアップ** - 設定可能な自動バックアップ機能で、ゲームセーブデータを保護
+- 🚀 **システム統合** - 起動時の自動起動とシステムトレイへの最小化
 
 ## やることリスト（Todo）
 
-- [x] exeを追加してゲームを起動
-- [x] ローカルゲームフォルダを開く
-- [x] ホームページ機能
-- [x] VNDB APIでゲーム検索
-- [x] 多言語対応（I18n）
-- [ ] ゲームのカスタムデータ
-- [x] プレイ時間の計測
+- [ ] ゲームのカスタムデータフィールドを追加
 - [ ] 各ページの美化
-- [x] 詳細ページのデザイン
-- [x] データベースクエリのリファクタリング
-- [x] Mixed APIでゲーム検索
-- [x] 編集ページ機能
-- [x] 自動バックアップ機能
-- [ ] Bangumiとゲームステータスの同期
-- [ ] ゲームの一括インポート
-- [x] ツール：whitecloudデータをReinaManagerに移行（[reina_migrator](https://github.com/huoshen80/reina_migrator)を参照）
-- [x] NSFWフィルタの非表示機能を追加
-- [x] カスタムカバーとカスタム名の追加機能
-- [x] 検索機能を強化して、別名、すべてのタイトル、およびカスタム名を含める
-- [ ] ゲーム管理のためのカテゴリページを追加
+- [ ] Bangumi と VNDB でゲームステータスを同期
+- [ ] フォルダからゲームを一括インポート
+
+## 移住する
+
+他のギャルゲー・ビジュアルノベル管理ツールからデータを移行する必要がありますか？[reina_migrator](https://github.com/huoshen80/reina_migrator) をご覧ください - 他の管理ツールのデータを ReinaManager に移行するためのツールです。
+
+現在サポート：
+- **WhiteCloud** データ移行
+
+この移行ツールは、ゲームライブラリ、プレイ時間記録、その他のデータをサポートされている管理ツールから ReinaManager にシームレスに転送するのに役立ちます。
 
 ## デモバージョン
 
@@ -71,6 +76,7 @@
 ![ライブラリ](screenshots/library.png)
 ![詳細](screenshots/detail.png)
 ![統計](screenshots/stats.png)
+![コレクション](screenshots/collection.png)
 ![設定](screenshots/setting.png)
 
 詳細については、最新のリリース版をダウンロードしてください：[ダウンロード](https://github.com/huoshen80/ReinaManager/releases)

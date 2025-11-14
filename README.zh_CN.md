@@ -7,7 +7,7 @@
 
 <h1>ReinaManager</h1>
 
-![Status](https://img.shields.io/badge/status-active-brightgreen) ![Stage](https://img.shields.io/badge/stage-beta-blue) ![Build Status](https://github.com/huoshen80/ReinaManager/actions/workflows/build.yml/badge.svg)
+![Status](https://img.shields.io/badge/status-active-brightgreen) ![Stage](https://img.shields.io/badge/stage-beta-blue) ![Build Status](https://github.com/huoshen80/ReinaManager/actions/workflows/build.yml/badge.svg) ![Release](https://img.shields.io/github/v/release/huoshen80/ReinaManager) ![Downloads](https://img.shields.io/github/downloads/huoshen80/ReinaManager/total)
 
 <p align="center"><a href="./README.md">English</a>|中文|<a href="./README.zh_TW.md">繁體中文</a>|<a href="./README.ja_JP.md">日本語</a></p>
 
@@ -35,28 +35,34 @@
 
 - SeaORM
 
+## 功能特性
+
+- 🌐 **多源数据整合** - 无缝获取并合并来自 VNDB 和 Bangumi API 的游戏元数据
+- 🔍 **强大的搜索** - 通过游戏标题、别名、自定义名称及其他元数据智能搜索游戏
+- 📚 **收藏管理** - 使用分层的分组和分类来组织游戏，更好地管理游戏库
+- 🎮 **游戏时长追踪** - 自动记录游戏会话，提供详细的游玩时间统计和历史记录
+- 🎨 **个性化定制** - 为游戏设置自定义封面和名称，打造个性化游戏库
+- 🔄 **批量操作** - 从 API 批量更新游戏元数据
+- 🌍 **多语言支持** - 完整的国际化支持，提供多种语言界面
+- 🔒 **NSFW 过滤** - 通过简单的开关隐藏或遮盖NSFW内容
+- 💾 **自动存档备份** - 可配置的自动备份功能，保护您的游戏存档数据
+- 🚀 **系统集成** - 开机自启动和最小化到系统托盘
+
 ## 待办事项
 
-- [x] 添加可执行文件以启动游戏
-- [x] 打开本地游戏文件夹
-- [x] 主页功能
-- [x] 添加VNDB API用于搜索游戏
-- [x] 国际化语言支持
-- [ ] 游戏的自定义数据
-- [x] 统计游戏时间
+- [ ] 更多游戏自定义数据字段
 - [ ] 美化各个页面
-- [x] 设计详情页页面
-- [x] 重构数据库查询
-- [x] 添加混合API搜索游戏
-- [x] 编辑页面功能
-- [x] 自动备份功能
-- [ ] 与Bangumi同步游戏状态
-- [ ] 批量导入游戏
-- [x] 工具：将whitecloud数据迁移到ReinaManager(请看 [reina_migrator](https://github.com/huoshen80/reina_migrator))
-- [x] 添加NSFW内容过滤
-- [x] 添加自定义封面和自定义名称功能
-- [x] 增强搜索功能以包括别名、所有标题和自定义名称
-- [ ] 添加分类页面以管理游戏
+- [ ] 与 Bangumi 和 VNDB 同步游戏状态
+- [ ] 从文件夹批量导入游戏
+
+## 迁移
+
+需要从其他 galgame/视觉小说管理器迁移数据？请查看 [reina_migrator](https://github.com/huoshen80/reina_migrator) - 一个用于将其他管理器数据迁移到 ReinaManager 的工具。
+
+当前支持：
+- **WhiteCloud** 数据迁移
+
+该迁移工具可帮助您无缝转移游戏库、游玩时间记录和其他数据到 ReinaManager。
 
 ## 展示
 
@@ -70,6 +76,7 @@
 ![游戏库](screenshots/library.png)
 ![详情页](screenshots/detail.png)
 ![统计](screenshots/stats.png)
+![收藏](screenshots/collection.png)
 ![设置页](screenshots/setting.png)
 
 更多内容，你可以下载最新的发布版本：[下载](https://github.com/huoshen80/ReinaManager/releases)
