@@ -4,9 +4,8 @@
  */
 
 import { convertFileSrc } from "@tauri-apps/api/core";
-import i18next from "i18next";
 import type { FullGameData, GameData, RawGameData } from "@/types";
-import { getGameDisplayName, getResourceDirPath } from "@/utils";
+import { getResourceDirPath } from "@/utils";
 
 /**
  * 根据 id_type 智能合并游戏数据
@@ -18,10 +17,9 @@ import { getGameDisplayName, getResourceDirPath } from "@/utils";
  */
 export function getDisplayGameData(
 	fullData: FullGameData,
-	language?: string,
+	_language?: string,
 ): GameData {
 	const { game, bgm_data, vndb_data, other_data } = fullData;
-	const currentLanguage = language || i18next.language;
 
 	// 基础数据
 	const baseData: GameData = {
@@ -139,18 +137,10 @@ export function getDisplayGameData(
 		}
 	}
 
-	// 处理自定义名称和封面
-	if (game.custom_name) {
-		baseData.name = game.custom_name;
-	}
-
 	// 处理自定义封面
 	if (game.custom_cover && game.id) {
 		baseData.image = getCustomCoverUrl(game.id, game.custom_cover);
 	}
-
-	// 处理显示名称 (根据语言)
-	baseData.name = getGameDisplayName(baseData, currentLanguage);
 
 	return baseData;
 }

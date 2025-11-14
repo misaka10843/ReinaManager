@@ -32,6 +32,7 @@ import {
 	applyNsfwFilter,
 	getDisplayGameData,
 	getDisplayGameDataList,
+	getGameDisplayName,
 } from "@/utils";
 import { enhancedSearch } from "@/utils/enhancedSearch";
 import {
@@ -304,16 +305,9 @@ export const useStore = create<AppState>()(
 				const currentLanguage = i18next.language;
 
 				return [...games].sort((a, b) => {
-					// 获取显示名称（与 getGameDisplayName 逻辑一致）
-					const getDisplayName = (game: GameData): string => {
-						if (game.custom_name) return game.custom_name;
-						if (currentLanguage === "zh-CN" && game.name_cn)
-							return game.name_cn;
-						return game.name || "";
-					};
-
-					const nameA = getDisplayName(a).toLowerCase();
-					const nameB = getDisplayName(b).toLowerCase();
+					// 直接使用 getGameDisplayName 获取显示名称，确保逻辑一致
+					const nameA = getGameDisplayName(a, currentLanguage).toLowerCase();
+					const nameB = getGameDisplayName(b, currentLanguage).toLowerCase();
 
 					// 使用 localeCompare 进行本地化排序（支持中文、日文等）
 					const comparison = nameA.localeCompare(nameB, currentLanguage, {
@@ -323,9 +317,7 @@ export const useStore = create<AppState>()(
 
 					return order === "asc" ? comparison : -comparison;
 				});
-			},
-
-			// 通用刷新函数，统一处理搜索、筛选、排序、NSFW筛选
+			}, // 通用刷新函数，统一处理搜索、筛选、排序、NSFW筛选
 			refreshGameData: async (
 				customSortOption?: string,
 				customSortOrder?: "asc" | "desc",

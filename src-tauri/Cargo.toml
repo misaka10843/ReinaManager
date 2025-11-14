@@ -1,6 +1,6 @@
 [package]
 name = "ReinaManager"
-version = "0.8.2"
+version = "0.9.0"
 description = "A lightweight visual novel manager"
 authors = ["huoshen80"]
 license = "GNU AFFERO GENERAL PUBLIC LICENSE"
@@ -15,7 +15,7 @@ name = "reina_manager_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "~2.5.1", features = [] }
+tauri-build = { version = "~2.5.2", features = [] }
 
 [dependencies]
 # Serialization & logging
@@ -24,7 +24,7 @@ serde_json = "1.0"
 log = "0.4"
 
 # Tauri core and plugins
-tauri = { version = "~2.9.2", features = ["protocol-asset", "tray-icon"] }
+tauri = { version = "~2.9.3", features = ["protocol-asset", "tray-icon"] }
 tauri-plugin-autostart = "~2.5.0"
 tauri-plugin-dialog = "~2.4.0"
 tauri-plugin-fs = "~2.4.2"
@@ -42,7 +42,7 @@ chrono = { version = "0.4.42", features = ["serde"] }
 
 # Async runtime / DB
 tokio = { version = "1.48.0", features = ["full"] }
-sea-orm = { version = "1.1.17", features = [
+sea-orm = { version = "1.1.19", features = [
     "sqlx-sqlite",
     "runtime-tokio-native-tls",
     "macros",
