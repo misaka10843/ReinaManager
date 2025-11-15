@@ -184,4 +184,9 @@ export interface SavedataRecord {
 	file_size: number;
 }
 
+/**
+ * 日志级别类型
+ */
+export type LogLevel = "error" | "warn" | "info" | "debug";
+
 export * from "./collection";

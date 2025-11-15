@@ -48,7 +48,8 @@ import Select, { type SelectChangeEvent } from "@mui/material/Select";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import pkg from "@pkg";
-import { isTauri } from "@tauri-apps/api/core";
+import { path } from "@tauri-apps/api";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 import { isEnabled } from "@tauri-apps/plugin-autostart";
 import { PageContainer } from "@toolpad/core/PageContainer";
 import { useEffect, useState } from "react";
@@ -59,6 +60,7 @@ import { checkForUpdates } from "@/components/Update";
 import { useScrollRestore } from "@/hooks/useScrollRestore";
 import { settingsService } from "@/services";
 import { useStore } from "@/store";
+import type { LogLevel } from "@/types";
 import {
 	handleGetFolder,
 	moveBackupFolder,
@@ -285,6 +287,112 @@ const NsfwSettings = () => {
 					}
 					label={t("pages.Settings.nsfw.coverReplace")}
 				/>
+			</Box>
+		</Box>
+	);
+};
+
+const LogLevelSettings = () => {
+	const { t } = useTranslation();
+	const { logLevel, setLogLevel: setLogLevelStore } = useStore();
+
+	// 组件挂载时从后端获取当前日志级别
+	useEffect(() => {
+		const fetchLogLevel = async () => {
+			try {
+				const level = await settingsService.getLogLevel();
+				setLogLevelStore(level);
+			} catch (error) {
+				console.error("获取日志级别失败:", error);
+			}
+		};
+		if (isTauri()) {
+			fetchLogLevel();
+		}
+	}, [setLogLevelStore]);
+
+	const handleChange = async (event: SelectChangeEvent) => {
+		const level = event.target.value as LogLevel;
+		setLogLevelStore(level); // 更新 store
+		try {
+			await settingsService.setLogLevel(level);
+			snackbar.success(
+				t(
+					"pages.Settings.logLevel.changed",
+					`日志级别已切换为 ${level}`,
+					{level}
+				),
+			);
+		} catch {
+			snackbar.error(
+				t("pages.Settings.logLevel.changeFailed", "切换日志级别失败"),
+			);
+		}
+	};
+
+	const handleOpenLogFolder = async () => {
+		try {
+			const AppLocalData = await path.appLocalDataDir();
+			const logDir = `${AppLocalData}/logs`;
+			await invoke("open_directory", { dirPath: logDir });
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error
+					? error.message
+					: t("pages.Settings.logLevel.openFolderFailed", "打开文件夹失败");
+			snackbar.error(
+				t(
+					"pages.Settings.logLevel.openFolderError",
+					`打开日志文件夹失败: ${errorMessage}`,
+				),
+			);
+		}
+	};
+
+	return (
+		<Box className="mb-6">
+			<InputLabel className="font-semibold mb-4">
+				{t("pages.Settings.logLevel.title", "日志设置")}
+			</InputLabel>
+			<Box className="pl-2 space-y-4">
+				<Box>
+					<InputLabel className="mb-2 text-sm">
+						{t("pages.Settings.logLevel.levelLabel", "日志输出级别")}
+					</InputLabel>
+					<Typography
+						variant="caption"
+						color="text.secondary"
+						className="block mb-2"
+					>
+						{t(
+							"pages.Settings.logLevel.description",
+							"仅当前会话有效，不会保存。用于临时调整后端日志输出详尽程度。",
+						)}
+					</Typography>
+					<Select
+						value={logLevel}
+						onChange={handleChange}
+						className="min-w-40"
+						size="small"
+					>
+						<MenuItem value="error">Error</MenuItem>
+						<MenuItem value="warn">Warn</MenuItem>
+						<MenuItem value="info">Info</MenuItem>
+						<MenuItem value="debug">Debug</MenuItem>
+					</Select>
+				</Box>
+				<Box>
+					<Button
+						variant="outlined"
+						color="primary"
+						onClick={handleOpenLogFolder}
+						startIcon={<FolderOpenIcon />}
+						className="px-6 py-2"
+						disabled={!isTauri()}
+					>
+						{t("pages.Settings.logLevel.openFolder", "打开日志文件夹")}
+					</Button>
+				</Box>
 			</Box>
 		</Box>
 	);
@@ -1242,6 +1350,10 @@ export const Settings: React.FC = () => {
 
 				{/* 自启动设置 */}
 				<AutoStartSettings />
+				<Divider sx={{ my: 3 }} />
+
+				{/* 日志级别设置（不持久化） */}
+				<LogLevelSettings />
 				<Divider sx={{ my: 3 }} />
 
 				{/* 关闭按钮设置 */}

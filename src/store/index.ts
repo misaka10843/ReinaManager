@@ -27,7 +27,13 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { getVirtualCategoryGames } from "@/hooks/useVirtualCollections";
 import { collectionService, gameService, settingsService } from "@/services";
-import type { Category, FullGameData, GameData, Group } from "@/types";
+import type {
+	Category,
+	FullGameData,
+	GameData,
+	Group,
+	LogLevel,
+} from "@/types";
 import {
 	applyNsfwFilter,
 	getDisplayGameData,
@@ -63,6 +69,10 @@ export interface AppState {
 	// UI 状态
 	selectedGameId: number | null;
 	selectedGame: GameData | null;
+
+	// 日志级别（运行时，不持久化）
+	logLevel: LogLevel;
+	setLogLevel: (level: LogLevel) => void;
 
 	// 排序选项
 	sortOption: string;
@@ -234,6 +244,10 @@ export const useStore = create<AppState>()(
 			searchKeyword: "",
 
 			gameFilterType: "all",
+
+			// 日志级别（运行时，不持久化）
+			logLevel: "error",
+			setLogLevel: (level: LogLevel) => set({ logLevel: level }),
 
 			// 排序选项默认值
 			sortOption: "addtime",

@@ -106,6 +106,16 @@
 				"openFolderFailed": "フォルダを開くのに失敗しました",
 				"openFolderError": "バックアップフォルダを開くのに失敗しました"
 			},
+			"logLevel": {
+				"title": "ログ設定",
+				"levelLabel": "ログ出力レベル",
+				"description": "現在のセッションのみ有効で、保存されません。バックエンドのログ出力の詳細度を一時的に調整するために使用します。",
+				"changed": "ログレベルが{{level}}に変更されました",
+				"changeFailed": "ログレベルの変更に失敗しました",
+				"openFolder": "ログフォルダを開く",
+				"openFolderFailed": "フォルダを開くのに失敗しました",
+				"openFolderError": "ログフォルダを開くのに失敗しました"
+			},
 			"batchUpdate": {
 				"title": "バッチ更新データ",
 				"updateVndb": "VNDBデータを一括更新",

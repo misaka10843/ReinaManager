@@ -11,6 +11,7 @@ use tauri_plugin_log::{Target, TargetKind, TimezoneStrategy};
 use utils::{
     fs::{copy_file, delete_file, delete_game_covers, move_backup_folder, open_directory},
     launch::launch_game,
+    logs::{get_reina_log_level, set_reina_log_level},
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -86,6 +87,9 @@ pub fn run() {
             set_db_backup_path,
             get_all_settings,
             update_settings,
+            // 日志相关 commands（运行时动态调整）
+            set_reina_log_level,
+            get_reina_log_level,
             // 合集相关 commands
             create_collection,
             find_collection_by_id,
@@ -135,7 +139,7 @@ pub fn run() {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()
                         .timezone_strategy(TimezoneStrategy::UseLocal)
-                        .level(log::LevelFilter::Debug)
+                        .level(log::LevelFilter::Debug) // 允许运行时动态调整到任意级别
                         .targets([
                             Target::new(TargetKind::LogDir {
                                 // set custom log file name for debug
@@ -146,13 +150,15 @@ pub fn run() {
                         .build(),
                 )?;
             } else {
+                // 设置初始日志级别为 Error（运行时可通过命令调整）
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()
                         .timezone_strategy(TimezoneStrategy::UseLocal)
-                        .level(log::LevelFilter::Error)
+                        .level(log::LevelFilter::Debug) // 允许运行时动态调整到任意级别
                         .build(),
                 )?;
             }
+            log::set_max_level(log::LevelFilter::Error);
             Ok(())
         })
         .build(tauri::generate_context!())

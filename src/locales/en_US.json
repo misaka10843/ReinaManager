@@ -106,6 +106,16 @@
 				"openFolderFailed": "Failed to open folder",
 				"openFolderError": "Failed to open backup folder"
 			},
+			"logLevel": {
+				"title": "Log Settings",
+				"levelLabel": "Log Output Level",
+				"description": "Only effective for the current session, not saved. Used to temporarily adjust the backend log output verbosity.",
+				"changed": "Log level changed to {{level}}",
+				"changeFailed": "Failed to change log level",
+				"openFolder": "Open Log Folder",
+				"openFolderFailed": "Failed to open folder",
+				"openFolderError": "Failed to open log folder"
+			},
 			"batchUpdate": {
 				"title": "Batch Update Data",
 				"updateVndb": "Batch Update VNDB Data",

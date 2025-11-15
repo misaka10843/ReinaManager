@@ -106,6 +106,16 @@
 				"openFolderFailed": "開啟資料夾失敗",
 				"openFolderError": "開啟備份資料夾失敗"
 			},
+			"logLevel": {
+				"title": "日誌設置",
+				"levelLabel": "日誌輸出級別",
+				"description": "僅當前會話有效，不會儲存。用於臨時調整後端日誌輸出詳盡程度。",
+				"changed": "日誌級別已切換為 {{level}}",
+				"changeFailed": "切換日誌級別失敗",
+				"openFolder": "開啟日誌資料夾",
+				"openFolderFailed": "開啟資料夾失敗",
+				"openFolderError": "開啟日誌資料夾失敗"
+			},
 			"batchUpdate": {
 				"title": "批量更新數據",
 				"updateVndb": "批量更新 VNDB 數據",

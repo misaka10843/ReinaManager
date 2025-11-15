@@ -3,6 +3,7 @@
  * @description 封装所有用户设置相关的后端调用
  */
 
+import type { LogLevel } from "@/types";
 import { BaseService } from "./base";
 
 export interface UserSettings {
@@ -40,6 +41,19 @@ class SettingsService extends BaseService {
 		return this.invoke<void>("set_save_root_path", { path });
 	}
 
+	/**
+	 * 动态设置日志输出级别（不持久化）
+	 */
+	async setLogLevel(level: LogLevel): Promise<void> {
+		return this.invoke<void>("set_reina_log_level", { level });
+	}
+
+	/**
+	 * 获取当前日志输出级别
+	 */
+	async getLogLevel(): Promise<LogLevel> {
+		return this.invoke<LogLevel>("get_reina_log_level");
+	}
 	/**
 	 * 获取数据库备份保存路径
 	 */

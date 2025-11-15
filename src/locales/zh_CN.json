@@ -112,6 +112,16 @@
 				"openFolderFailed": "打开文件夹失败",
 				"openFolderError": "打开备份文件夹失败"
 			},
+			"logLevel": {
+				"title": "日志设置",
+				"levelLabel": "日志输出级别",
+				"description": "仅当前会话有效，不会保存。用于临时调整后端日志输出详尽程度。",
+				"changed": "日志级别已切换为 {{level}}",
+				"changeFailed": "切换日志级别失败",
+				"openFolder": "打开日志文件夹",
+				"openFolderFailed": "打开文件夹失败",
+				"openFolderError": "打开日志文件夹失败"
+			},
 			"batchUpdate": {
 				"title": "批量更新数据",
 				"updateVndb": "批量更新 VNDB 数据",
