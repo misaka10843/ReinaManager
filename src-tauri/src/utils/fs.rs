@@ -51,6 +51,15 @@ pub async fn open_directory(dir_path: String) -> Result<(), String> {
             }
         }
     }
+    #[cfg(target_os = "linux")]
+    {
+        let result = Command::new("xdg-open").arg(&dir_path).spawn();
+
+        match result {
+            Ok(_) => Ok(()),
+            Err(e) => Err(format!("无法打开目录 '{}': {}", dir_path, e)),
+        }
+    }
 }
 
 /// 移动备份文件夹到新位置
