@@ -279,8 +279,9 @@ export async function getRecentSessionsForAllGames(
 export async function getFormattedGameStats(
 	gameId: number,
 ): Promise<GameTimeStats> {
+	// 只调用一次 getGameStatistics
 	const stats = await getGameStatistics(gameId);
-	const todayMinutes = await getTodayGameTime(gameId);
+	const today = getLocalDateString();
 
 	// 确保 daily_stats 始终是有效数组
 	let dailyStats = stats?.daily_stats || [];
@@ -297,10 +298,13 @@ export async function getFormattedGameStats(
 		}
 	}
 
+	// 从统计数据中查找今天的记录，避免重复调用
+	const todayRecord = dailyStats.find((record) => record.date === today);
+	const todayMinutes = todayRecord?.playtime || 0;
+
 	// 确保今天有记录
-	const today = getLocalDateString();
-	if (!dailyStats.some((item) => item.date === today)) {
-		dailyStats.unshift({ date: today, playtime: todayMinutes || 0 });
+	if (!todayRecord) {
+		dailyStats.unshift({ date: today, playtime: 0 });
 	}
 
 	return {

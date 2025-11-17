@@ -344,45 +344,80 @@ export const useStore = create<AppState>()(
 					const order = customSortOrder || get().sortOrder;
 
 					let data: GameData[];
+					let allData: GameData[];
 
-					// 第一步：获取基础数据（根据筛选类型）
-					let baseData: GameData[];
 					if (isTauri()) {
 						// 名称排序在前端处理，后端按添加时间获取
 						const backendSortOption =
 							option === "namesort" ? "addtime" : option;
 						const backendSortOrder = option === "namesort" ? "asc" : order;
 
-						const fullGames = await gameService.getFullGames(
-							gameFilterType,
-							backendSortOption,
-							backendSortOrder,
-						);
-						baseData = getDisplayGameDataList(fullGames, i18next.language);
+						// 优化：如果 gameFilterType 是 "all"，只请求一次
+						if (gameFilterType === "all") {
+							const fullGames = await gameService.getFullGames(
+								"all",
+								backendSortOption,
+								backendSortOrder,
+							);
+							let baseData = getDisplayGameDataList(
+								fullGames,
+								i18next.language,
+							);
 
-						// 如果是名称排序，在前端进行排序
-						if (option === "namesort") {
-							baseData = get().sortGamesByName(baseData, order);
+							if (option === "namesort") {
+								baseData = get().sortGamesByName(baseData, order);
+							}
+
+							baseData = applyNsfwFilter(baseData, nsfwFilter);
+
+							// 搜索处理
+							if (searchKeyword && searchKeyword.trim() !== "") {
+								const searchResults = enhancedSearch(baseData, searchKeyword);
+								data = searchResults.map((result) => result.item);
+							} else {
+								data = baseData;
+							}
+
+							allData = baseData; // 复用数据，不需要第二次请求
+						} else {
+							// 需要两次请求：一次获取筛选数据，一次获取全部
+							const fullGames = await gameService.getFullGames(
+								gameFilterType,
+								backendSortOption,
+								backendSortOrder,
+							);
+							let baseData = getDisplayGameDataList(
+								fullGames,
+								i18next.language,
+							);
+
+							if (option === "namesort") {
+								baseData = get().sortGamesByName(baseData, order);
+							}
+
+							baseData = applyNsfwFilter(baseData, nsfwFilter);
+
+							if (searchKeyword && searchKeyword.trim() !== "") {
+								const searchResults = enhancedSearch(baseData, searchKeyword);
+								data = searchResults.map((result) => result.item);
+							} else {
+								data = baseData;
+							}
+
+							// 第二次请求获取全部游戏
+							const allFullGames = await gameService.getFullGames();
+							allData = getDisplayGameDataList(allFullGames, i18next.language);
 						}
 					} else {
-						if (gameFilterType !== "all") {
-							baseData = filterGamesByTypeLocal(gameFilterType, option, order);
-						} else {
-							baseData = getGamesLocal(option, order);
-						}
-					}
+						// Web 环境逻辑保持不变
+						let baseData =
+							gameFilterType !== "all"
+								? filterGamesByTypeLocal(gameFilterType, option, order)
+								: getGamesLocal(option, order);
 
-					// 第二步：应用NSFW筛选
-					baseData = applyNsfwFilter(baseData, nsfwFilter);
+						baseData = applyNsfwFilter(baseData, nsfwFilter);
 
-					// 第三步：应用搜索（如果有搜索关键词）
-					if (searchKeyword && searchKeyword.trim() !== "") {
-						if (isTauri()) {
-							// 使用前端增强搜索
-							const searchResults = enhancedSearch(baseData, searchKeyword);
-							data = searchResults.map((result) => result.item);
-						} else {
-							// 浏览器环境使用本地搜索（本地搜索已经包含筛选）
+						if (searchKeyword && searchKeyword.trim() !== "") {
 							data = searchGamesLocal(
 								searchKeyword,
 								gameFilterType,
@@ -390,17 +425,10 @@ export const useStore = create<AppState>()(
 								order,
 							);
 							data = applyNsfwFilter(data, nsfwFilter);
+						} else {
+							data = baseData;
 						}
-					} else {
-						data = baseData;
-					}
 
-					// 更新完整的游戏列表（用于统计）
-					let allData: GameData[];
-					if (isTauri()) {
-						const allFullGames = await gameService.getFullGames();
-						allData = getDisplayGameDataList(allFullGames, i18next.language);
-					} else {
 						allData = getGamesLocal("addtime", "asc");
 					}
 
@@ -424,34 +452,37 @@ export const useStore = create<AppState>()(
 					const order = sortOrder || get().sortOrder;
 
 					let data: GameData[];
+					let allData: GameData[];
+
 					if (isTauri()) {
 						// 名称排序在前端处理，后端按添加时间获取
 						const backendSortOption =
 							option === "namesort" ? "addtime" : option;
 						const backendSortOrder = option === "namesort" ? "asc" : order;
 
-						// 获取完整数据并转换
+						// 只调用一次，获取所有游戏
 						const fullGames = await gameService.getFullGames(
 							"all",
 							backendSortOption,
 							backendSortOrder,
 						);
-						data = getDisplayGameDataList(fullGames, i18next.language);
 
-						// 如果是名称排序，在前端进行排序
-						if (option === "namesort") {
-							data = get().sortGamesByName(data, order);
-						}
+						// 转换为显示数据
+						const displayData = getDisplayGameDataList(
+							fullGames,
+							i18next.language,
+						);
+
+						// data 使用排序后的数据
+						data =
+							option === "namesort"
+								? get().sortGamesByName(displayData, order)
+								: displayData;
+
+						// allData 直接复用，不需要第二次请求
+						allData = displayData;
 					} else {
 						data = getGamesLocal(option, order);
-					}
-
-					// 获取完整的游戏列表（不排序）用于统计
-					let allData: GameData[];
-					if (isTauri()) {
-						const allFullGames = await gameService.getFullGames();
-						allData = getDisplayGameDataList(allFullGames, i18next.language);
-					} else {
 						allData = getGamesLocal("addtime", "asc");
 					}
 

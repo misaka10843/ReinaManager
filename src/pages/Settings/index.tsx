@@ -317,11 +317,9 @@ const LogLevelSettings = () => {
 		try {
 			await settingsService.setLogLevel(level);
 			snackbar.success(
-				t(
-					"pages.Settings.logLevel.changed",
-					`日志级别已切换为 ${level}`,
-					{level}
-				),
+				t("pages.Settings.logLevel.changed", `日志级别已切换为 ${level}`, {
+					level,
+				}),
 			);
 		} catch {
 			snackbar.error(
