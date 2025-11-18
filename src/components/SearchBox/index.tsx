@@ -35,13 +35,30 @@ import { getSearchSuggestions } from "@/utils/enhancedSearch";
  * @returns {JSX.Element} 搜索输入框
  */
 export const SearchBox = () => {
-	const { t } = useTranslation();
+	const { t, i18n } = useTranslation();
 	const { searchKeyword, setSearchKeyword, games, allGames } = useStore();
 	const [keyword, setKeyword] = useState(searchKeyword);
 	const [suggestions, setSuggestions] = useState<string[]>([]);
 	const [isOpen, setIsOpen] = useState(false);
 	const [isFocused, setIsFocused] = useState(false);
 	const [hasInput, setHasInput] = useState(false);
+
+	// 根据语言动态调整搜索框宽度和样式
+	const getSearchBoxStyle = () => {
+		const language = i18n.language;
+		// 中文（简体和繁体）
+		if (language.startsWith("zh")) {
+			return { width: "clamp(220px, 28vw, 400px)" };
+		}
+		// 日语
+		if (language === "ja-JP") {
+			return { width: "clamp(175px, 17vw, 400px)"  };
+		}
+		// 英语
+		return { width: "clamp(200px, 20vw, 400px)" };
+	};
+
+	const searchBoxStyle = getSearchBoxStyle();
 
 	// 对输入值应用防抖
 	const debouncedKeyword = useDebouncedValue(keyword, 300);
@@ -173,7 +190,10 @@ export const SearchBox = () => {
 	};
 
 	return (
-		<div className="w-75 max-w-[min(40vw,400px)] overflow-visible">
+		<div
+			className="overflow-visible" 
+			style={searchBoxStyle}
+		>
 			<Autocomplete
 				freeSolo
 				open={isOpen && suggestions.length > 0}
