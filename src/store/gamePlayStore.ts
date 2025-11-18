@@ -302,12 +302,11 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
 			// 设置事件监听
 			const cleanup = initGameTimeTracking(
 				// 时间更新回调
-				(gameId: number, minutes: number) => {
+				(gameId: number, _minutes: number, totalSeconds: number) => {
 					// 更新实时游戏状态
 					set((state) => {
 						if (!state.gameRealTimeStates[gameId]) return state;
 
-						const totalSeconds = minutes * 60;
 						const newMinutes = Math.floor(totalSeconds / 60);
 						const newSeconds = totalSeconds % 60;
 

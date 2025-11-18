@@ -12,7 +12,7 @@ use tauri::{AppHandle, Emitter, Runtime};
 /// 连续失败次数阈值，超过此值认为进程已结束
 const MAX_CONSECUTIVE_FAILURES: u32 = 3;
 /// 时间更新事件发送间隔（秒）
-const TIME_UPDATE_INTERVAL_SECS: u64 = 30;
+const TIME_UPDATE_INTERVAL_SECS: u64 = 1;
 /// 监控循环检查间隔（秒）
 const MONITOR_CHECK_INTERVAL_SECS: u64 = 1;
 

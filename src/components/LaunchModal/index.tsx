@@ -26,21 +26,45 @@ import { useStore } from "@/store";
 import { useGamePlayStore } from "@/store/gamePlayStore";
 
 /**
+ * 格式化游戏时长显示
+ * @param minutes 分钟数
+ * @param seconds 秒数
+ * @returns 格式化的时长字符串，如 "1:23:45" 或 "23:45" 或 "0:05"
+ */
+const formatPlayTime = (minutes: number, seconds: number): string => {
+	const hours = Math.floor(minutes / 60);
+	const mins = minutes % 60;
+	const secs = seconds;
+
+	if (hours > 0) {
+		return `${hours}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+	}
+	return `${mins}:${secs.toString().padStart(2, "0")}`;
+};
+
+/**
  * LaunchModal 组件
  * 判断游戏是否可启动、是否正在运行，并渲染启动按钮。
  * 仅本地游戏且未运行时可启动，适配 Tauri 桌面环境。
+ * 运行时显示实时游戏时长。
  *
  * @returns {JSX.Element} 启动按钮或运行中提示
  */
 export const LaunchModal = () => {
 	const { t } = useTranslation();
 	const { selectedGameId, getGameById, isLocalGame, allGames } = useStore();
-	const { launchGame, isGameRunning } = useGamePlayStore();
+	const { launchGame, isGameRunning, getGameRealTimeState } =
+		useGamePlayStore();
 
 	// 检查这个特定游戏是否在运行
 	const isThisGameRunning = isGameRunning(
 		selectedGameId === null ? undefined : selectedGameId,
 	);
+
+	// 获取实时游戏状态
+	const realTimeState = selectedGameId
+		? getGameRealTimeState(selectedGameId)
+		: null;
 
 	/**
 	 * 判断当前游戏是否可以启动
@@ -79,10 +103,19 @@ export const LaunchModal = () => {
 	};
 
 	// 渲染不同状态的按钮
-	if (isThisGameRunning) {
+	if (isThisGameRunning && realTimeState) {
+		const { currentSessionMinutes, currentSessionSeconds } = realTimeState;
+		const timeDisplay = formatPlayTime(
+			currentSessionMinutes,
+			currentSessionSeconds,
+		);
+
 		return (
-			<Button startIcon={<TimerIcon />} disabled>
-				{t("components.LaunchModal.playing")}
+			<Button
+				startIcon={<TimerIcon />}
+				disabled
+			>
+				{timeDisplay}
 			</Button>
 		);
 	}
