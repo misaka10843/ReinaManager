@@ -7,6 +7,7 @@ use std::{
 // 导入 sysinfo 相关类型和 trait
 use sysinfo::{ProcessesToUpdate, System};
 use tauri::{AppHandle, Emitter, Runtime};
+use tokio::time::{interval, MissedTickBehavior};
 
 // 监控配置常量
 /// 连续失败次数阈值，超过此值认为进程已结束
@@ -217,7 +218,6 @@ async fn run_game_monitor<R: Runtime>(
 ) -> Result<(), String> {
     let mut accumulated_seconds = 0u64; // 使用 u64 避免溢出
     let start_time = get_timestamp();
-    tokio::time::sleep(Duration::from_secs(MONITOR_CHECK_INTERVAL_SECS)).await;
 
     // 使用智能选择函数获取最佳的 PID
     let mut process_id = select_best_pid(process_id, &executable_path, sys);
@@ -239,7 +239,14 @@ async fn run_game_monitor<R: Runtime>(
     let original_process_id = process_id; // 保存最初启动时传入的 PID
     let mut switched_process = false; // 标记是否已经从 original_process_id 切换到了按路径找到的新进程
 
+    // 创建精确的 1 秒间隔定时器
+    let mut tick_interval = interval(Duration::from_secs(MONITOR_CHECK_INTERVAL_SECS));
+    // 如果某次 tick 被延迟了，跳过错过的 tick，不尝试追赶
+    tick_interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
+
     loop {
+        // 在循环开始时等待，确保精确的 1 秒间隔
+        tick_interval.tick().await;
         let process_running = is_process_running(process_id);
 
         if !process_running {
@@ -311,9 +318,6 @@ async fn run_game_monitor<R: Runtime>(
                 }
             }
         }
-
-        // 每次循环等待指定时间，以降低 CPU 占用
-        tokio::time::sleep(Duration::from_secs(MONITOR_CHECK_INTERVAL_SECS)).await;
     }
 
     // 监控循环结束后的处理逻辑
