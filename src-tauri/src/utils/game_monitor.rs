@@ -44,76 +44,127 @@ fn get_timestamp() -> u64 {
         .as_secs()
 }
 
-/// 尝试切换到新的游戏进程。
+/// 获取当前所有候选的游戏进程 PID 列表。
 ///
-/// 当检测到当前监控的进程已结束时，尝试根据游戏路径查找新的进程实例。
-/// 会自动过滤掉管理器自身的进程。
+/// 从游戏目录下扫描所有进程，自动过滤掉管理器自身。
 ///
 /// # Arguments
-/// * `current_pid` - 当前正在监控的进程 PID
 /// * `executable_path` - 游戏可执行文件路径
 /// * `sys` - System 实例的可变引用
-/// * `switched_process` - 是否已经发生过进程切换
 ///
 /// # Returns
-/// 返回 `Some(new_pid)` 如果找到新的可用进程，否则返回 `None`
-fn try_switch_to_new_process(
-    current_pid: u32,
-    executable_path: &str,
-    sys: &mut System,
-    switched_process: bool,
-) -> Option<u32> {
+/// 返回所有候选 PID 的列表，如果没有找到则返回空列表
+fn get_all_candidate_pids(executable_path: &str, sys: &mut System) -> Vec<u32> {
     let manager_pid = std::process::id();
 
-    // 尝试根据可执行文件路径查找是否有新的进程实例在运行
-    let available_pids: Vec<u32> = get_process_id_by_path(executable_path, sys)
+    // 扫描游戏目录下的所有进程，并过滤掉管理器自身
+    let candidate_pids: Vec<u32> = get_process_id_by_path(executable_path, sys)
         .into_iter()
-        .filter(|&pid| pid != manager_pid) // 过滤掉管理器自身
+        .filter(|&pid| pid != manager_pid)
         .collect();
 
-    if available_pids.is_empty() {
+    if candidate_pids.is_empty() {
         debug!(
             "未通过路径 '{}' 找到匹配的进程（已排除管理器）",
             executable_path
         );
-        return None;
-    }
-
-    // 从可用进程中选择最佳的 PID
-    let matched_pid = select_best_pid(current_pid, executable_path, sys);
-
-    // 再次确认不是管理器自身（双重保险）
-    if matched_pid == manager_pid {
-        warn!(
-            "路径匹配找到的 PID {} 与管理器程序相同，已被过滤",
-            matched_pid
-        );
-        return None;
-    }
-
-    // 检查找到的 PID 是否与当前认为已结束的 PID 不同，
-    // 或者虽然 PID 相同但我们之前从未切换过进程 (说明可能是原始进程重启)
-    if current_pid != matched_pid || !switched_process {
-        info!(
-            "通过路径 '{}' 找到潜在的新进程实例 PID: {}",
-            executable_path, matched_pid
-        );
-
-        // 再次确认这个找到的 PID 当前是否真的在运行
-        if is_process_running(matched_pid) {
-            info!("确认 PID {} 正在运行，准备切换监控目标", matched_pid);
-            return Some(matched_pid);
-        } else {
-            warn!("路径匹配找到的 PID {} 当前并未运行，无法切换", matched_pid);
-        }
     } else {
         debug!(
-            "路径匹配找到的 PID {} 与当前已结束的 PID 相同，且已切换过，不再切换",
-            matched_pid
+            "找到 {} 个候选进程: {:?}",
+            candidate_pids.len(),
+            candidate_pids
         );
     }
 
-    None
+    candidate_pids
+}
+
+/// 从候选 PID 列表中选择最佳的进程。
+///
+/// 优先级：前台聚焦进程 > 有可见窗口的进程 > 列表第一个进程
+///
+/// # Arguments
+/// * `candidate_pids` - 候选 PID 列表
+///
+/// # Returns
+/// 返回最佳 PID，如果列表为空则返回 None
+#[cfg(target_os = "windows")]
+fn select_best_from_candidates(candidate_pids: &[u32]) -> Option<u32> {
+    if candidate_pids.is_empty() {
+        return None;
+    }
+
+    use std::collections::HashSet;
+    use windows::core::BOOL;
+    use windows::Win32::Foundation::{HWND, LPARAM};
+    use windows::Win32::UI::WindowsAndMessaging::{
+        EnumWindows, GetForegroundWindow, GetWindowThreadProcessId, IsIconic, IsWindowVisible,
+    };
+
+    // 将候选 PID 转为 HashSet 以便快速查找
+    let candidate_set: HashSet<u32> = candidate_pids.iter().copied().collect();
+
+    // 获取前台窗口的 PID
+    unsafe {
+        let foreground_window: HWND = GetForegroundWindow();
+        if !foreground_window.0.is_null() {
+            let mut pid: u32 = 0;
+            GetWindowThreadProcessId(foreground_window, Some(&mut pid));
+            if candidate_set.contains(&pid)
+                && IsWindowVisible(foreground_window).as_bool()
+                && !IsIconic(foreground_window).as_bool()
+            {
+                info!("从候选列表中找到聚焦进程 PID: {}", pid);
+                return Some(pid);
+            }
+        }
+    }
+
+    // 如果前台窗口不属于候选进程，则遍历所有窗口寻找有窗口的候选进程
+    // 这里只调用一次 EnumWindows，在回调中检查所有候选 PID
+    // 注意：虽然编译器会警告 mut 不必要，但我们确实通过 unsafe 指针在回调中修改它
+    #[allow(unused_mut)]
+    let mut pids_with_windows: Vec<u32> = Vec::new();
+
+    unsafe extern "system" fn enum_windows_callback(hwnd: HWND, lparam: LPARAM) -> BOOL {
+        unsafe {
+            // lparam 包含两个指针：候选集合和结果向量
+            let data = lparam.0 as *mut (HashSet<u32>, Vec<u32>);
+            let (candidate_set, pids_with_windows) = &mut *data;
+
+            let mut window_pid: u32 = 0;
+            GetWindowThreadProcessId(hwnd, Some(&mut window_pid));
+
+            // 检查窗口是否属于候选 PID 且可见
+            if candidate_set.contains(&window_pid) && IsWindowVisible(hwnd).as_bool() {
+                // 避免重复添加
+                if !pids_with_windows.contains(&window_pid) {
+                    pids_with_windows.push(window_pid);
+                }
+            }
+        }
+        BOOL::from(true) // 继续枚举
+    }
+
+    let mut enum_data = (candidate_set, pids_with_windows);
+    let lparam = LPARAM(&mut enum_data as *mut _ as isize);
+    unsafe { EnumWindows(Some(enum_windows_callback), lparam) }.ok();
+
+    // 返回第一个有窗口的进程
+    if let Some(&pid) = enum_data.1.first() {
+        info!("从候选列表中找到有窗口的进程 PID: {}", pid);
+        return Some(pid);
+    }
+
+    // 如果都没有窗口，返回第一个候选 PID
+    let first_pid = candidate_pids[0];
+    info!("使用候选列表中的第一个进程 PID: {}", first_pid);
+    Some(first_pid)
+}
+
+#[cfg(not(target_os = "windows"))]
+fn select_best_from_candidates(candidate_pids: &[u32]) -> Option<u32> {
+    candidate_pids.first().copied()
 }
 
 /// 完成游戏监控会话并发送结束事件。
@@ -203,105 +254,141 @@ pub async fn monitor_game<R: Runtime>(
 
 /// 实际执行游戏监控的核心循环。
 ///
+/// 策略：平时追踪「最佳 PID」，失活时触发目录扫描获取所有候选 PID，
+/// 前台判定时检查所有候选 PID（容错性强）。
+///
 /// # Arguments
 /// * `app_handle` - Tauri 应用句柄。
 /// * `game_id` - 游戏 ID。
-/// * `process_id` - 初始监控的进程 PID。
+/// * `initial_pid` - 初始监控的进程 PID。
 /// * `executable_path` - 游戏主可执行文件路径。
 /// * `sys` - 对 `sysinfo::System` 的可变引用，用于进程信息查询。
 async fn run_game_monitor<R: Runtime>(
     app_handle: AppHandle<R>,
     game_id: u32,
-    process_id: u32, // 初始监控的进程 PID，可能会在检测后改变。
+    initial_pid: u32,
     executable_path: String,
     sys: &mut System,
 ) -> Result<(), String> {
-    let mut accumulated_seconds = 0u64; // 使用 u64 避免溢出
+    let mut accumulated_seconds = 0u64;
     let start_time = get_timestamp();
 
-    // 使用智能选择函数获取最佳的 PID
-    let mut process_id = select_best_pid(process_id, &executable_path, sys);
+    // 初始扫描：获取所有候选 PID
+    let mut candidate_pids = get_all_candidate_pids(&executable_path, sys);
+
+    // 如果初始 PID 不在候选列表中，手动添加（容错）
+    if !candidate_pids.contains(&initial_pid) && is_process_running(initial_pid) {
+        candidate_pids.push(initial_pid);
+    }
+
+    // 从候选中选择最佳 PID 作为主监控对象
+    let mut best_pid = select_best_from_candidates(&candidate_pids).unwrap_or(initial_pid);
 
     info!(
-        "开始监控游戏: ID={}, 最终 PID={}, Path={}",
-        game_id, process_id, executable_path
+        "开始监控游戏: ID={}, 最佳 PID={}, 候选进程组={:?}, Path={}",
+        game_id, best_pid, candidate_pids, executable_path
     );
 
     // 通知前端会话开始
     app_handle
         .emit(
             "game-session-started",
-            json!({ "gameId": game_id, "processId": process_id, "startTime": start_time }),
+            json!({ "gameId": game_id, "processId": best_pid, "startTime": start_time }),
         )
         .map_err(|e| format!("无法发送 game-session-started 事件: {}", e))?;
 
     let mut consecutive_failures = 0u32;
-    let original_process_id = process_id; // 保存最初启动时传入的 PID
-    let mut switched_process = false; // 标记是否已经从 original_process_id 切换到了按路径找到的新进程
+
+    // 等待 3 秒让游戏进程充分启动（例如 Launcher -> Game 的切换）
+    info!("等待 3 秒以便游戏进程充分启动...");
+    tokio::time::sleep(Duration::from_secs(3)).await;
+
+    // 等待后重新扫描，获取最新的进程状态
+    candidate_pids = get_all_candidate_pids(&executable_path, sys);
+    if let Some(new_best) = select_best_from_candidates(&candidate_pids) {
+        if new_best != best_pid {
+            info!(
+                "等待期间发现更优进程，切换 PID: {} -> {}",
+                best_pid, new_best
+            );
+            best_pid = new_best;
+        }
+    }
 
     // 创建精确的 1 秒间隔定时器
     let mut tick_interval = interval(Duration::from_secs(MONITOR_CHECK_INTERVAL_SECS));
-    // 如果某次 tick 被延迟了，跳过错过的 tick，不尝试追赶
     tick_interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
 
     loop {
-        // 在循环开始时等待，确保精确的 1 秒间隔
         tick_interval.tick().await;
-        let process_running = is_process_running(process_id);
 
-        if !process_running {
+        // 1. 检查最佳 PID 是否还活着
+        let best_pid_running = is_process_running(best_pid);
+
+        if !best_pid_running {
             consecutive_failures += 1;
             debug!(
-                "进程 {} 运行检查失败次数: {}",
-                process_id, consecutive_failures
+                "最佳进程 {} 检查失败次数: {}/{}",
+                best_pid, consecutive_failures, MAX_CONSECUTIVE_FAILURES
             );
 
             if consecutive_failures >= MAX_CONSECUTIVE_FAILURES {
-                warn!(
-                    "进程 {} (原始 PID: {}) 被认为已结束或连续 {} 次检查失败",
-                    process_id, original_process_id, MAX_CONSECUTIVE_FAILURES
-                );
+                warn!("最佳进程 {} 已失活，触发重新扫描", best_pid);
 
-                // 尝试切换到新的进程实例
-                if let Some(new_pid) =
-                    try_switch_to_new_process(process_id, &executable_path, sys, switched_process)
-                {
-                    info!("成功切换到新的进程 PID: {}", new_pid);
-                    process_id = new_pid;
-                    switched_process = true;
+                // 触发目录扫描，获取最新的候选 PID 列表
+                candidate_pids = get_all_candidate_pids(&executable_path, sys);
+
+                // 从新的候选列表中选择最佳 PID
+                if let Some(new_best_pid) = select_best_from_candidates(&candidate_pids) {
+                    info!("成功切换到新的最佳进程 PID: {}", new_best_pid);
+                    best_pid = new_best_pid;
                     consecutive_failures = 0;
 
                     // 通知前端 PID 发生变化
                     app_handle
                         .emit(
                             "game-process-switched",
-                            json!({ "gameId": game_id, "newProcessId": new_pid }),
+                            json!({ "gameId": game_id, "newProcessId": new_best_pid }),
                         )
-                        .ok(); // 忽略发送错误
-                    continue; // 继续下一轮循环，监控新的 PID
+                        .ok();
+                    continue;
                 }
 
-                // 如果执行到这里，说明没有找到可以切换到的新进程实例
+                // 没有找到可用的进程，结束监控
                 info!("未找到可切换的活动进程，结束监控会话");
-                break; // 退出监控循环
+                break;
             }
         } else {
-            // 进程正在运行，重置连续失败计数器
+            // 最佳 PID 仍在运行，重置失败计数
             consecutive_failures = 0;
 
-            // 检查游戏窗口是否在前台且未最小化，是则累加活动时间
-            if is_window_foreground_for_pid(process_id) {
+            // 2. 清理候选列表中已失活的 PID（轻量级维护）
+            candidate_pids.retain(|&pid| is_process_running(pid));
+
+            // 3. 前台判定：检查候选列表中是否有任何进程在前台
+            //    这是关键优化点 - 即使最佳 PID 不在前台，其他候选 PID 在前台也算数
+            if let Some(foreground_pid) = check_any_foreground(&candidate_pids) {
                 accumulated_seconds += 1;
 
-                // 每隔指定时间向前端发送一次累计时间更新
+                // 如果前台进程不是当前的最佳 PID，考虑切换
+                // （可选优化：前台进程更可能是用户真正在用的）
+                if foreground_pid != best_pid {
+                    debug!(
+                        "前台进程 {} 不是最佳 PID {}，考虑调整",
+                        foreground_pid, best_pid
+                    );
+                    best_pid = foreground_pid;
+                }
+
+                // 发送时间更新
                 if accumulated_seconds > 0
                     && accumulated_seconds.is_multiple_of(TIME_UPDATE_INTERVAL_SECS)
                 {
                     let minutes = accumulated_seconds / 60;
-                    debug!(
-                        "发送时间更新事件: {} 分钟 ({} 秒)",
-                        minutes, accumulated_seconds
-                    );
+                    // debug!(
+                    //     "发送时间更新事件: {} 分钟 ({} 秒)",
+                    //     minutes, accumulated_seconds
+                    // );
                     app_handle
                         .emit(
                             "game-time-update",
@@ -311,7 +398,7 @@ async fn run_game_monitor<R: Runtime>(
                                 "totalSeconds": accumulated_seconds,
                                 "startTime": start_time,
                                 "currentTime": get_timestamp(),
-                                "processId": process_id
+                                "processId": best_pid
                             }),
                         )
                         .map_err(|e| format!("无法发送 game-time-update 事件: {}", e))?;
@@ -320,11 +407,10 @@ async fn run_game_monitor<R: Runtime>(
         }
     }
 
-    // 监控循环结束后的处理逻辑
     finalize_session(
         &app_handle,
         game_id,
-        process_id,
+        best_pid,
         start_time,
         accumulated_seconds,
     )
@@ -374,99 +460,53 @@ fn is_process_running(_pid: u32) -> bool {
     false
 }
 
-/// 检查指定进程是否拥有前台窗口且窗口未最小化 (仅 Windows)。
+// is_window_foreground_for_pid 函数已移除
+// 其功能已整合到 select_best_from_candidates 和 check_any_foreground 中
+
+/// 检查候选 PID 列表中是否有任何进程拥有前台窗口。
+///
+/// 这是前台判定的核心函数，提供了比单 PID 检查更强的容错性。
 ///
 /// # Arguments
-/// * `pid` - 要检查的进程 PID。
+/// * `candidate_pids` - 候选 PID 列表
 ///
 /// # Returns
-/// 如果进程拥有前台窗口且窗口可见且未最小化，返回 `true`，否则返回 `false`。
+/// 如果有进程在前台，返回 `Some(pid)`，否则返回 `None`
 #[cfg(target_os = "windows")]
-fn is_window_foreground_for_pid(pid: u32) -> bool {
+fn check_any_foreground(candidate_pids: &[u32]) -> Option<u32> {
     use windows::Win32::Foundation::HWND;
-    use windows::Win32::UI::WindowsAndMessaging::{
-        GetForegroundWindow, GetWindowThreadProcessId, IsIconic, IsWindowVisible,
-    };
+    use windows::Win32::UI::WindowsAndMessaging::{GetForegroundWindow, GetWindowThreadProcessId};
+
+    if candidate_pids.is_empty() {
+        return None;
+    }
 
     unsafe {
         let foreground_window: HWND = GetForegroundWindow();
         if foreground_window.0.is_null() {
-            return false;
+            return None;
         }
+
         let mut foreground_pid: u32 = 0;
         GetWindowThreadProcessId(foreground_window, Some(&mut foreground_pid));
 
-        // 检查 PID 是否匹配
-        if foreground_pid != pid {
-            return false;
+        // 检查前台 PID 是否在候选列表中
+        if candidate_pids.contains(&foreground_pid) {
+            // 找到了！候选列表中有进程在前台
+            return Some(foreground_pid);
         }
-
-        // 检查窗口是否可见且未最小化（防御性检查，防止特殊情况）
-        IsWindowVisible(foreground_window).as_bool() && !IsIconic(foreground_window).as_bool()
-    }
-}
-#[cfg(not(target_os = "windows"))]
-fn is_window_foreground_for_pid(_pid: u32) -> bool {
-    // 非 Windows 平台的占位实现
-    // 注意：本项目主要面向 Windows 用户，此函数不会被使用
-    warn!("is_window_foreground_for_pid 在非 Windows 平台被调用");
-    false
-}
-
-/// 检查指定 PID 的进程是否拥有可见窗口 (Windows 平台)。
-///
-/// 使用 Windows API 的 `EnumWindows` 枚举所有顶层窗口，
-/// 检查是否有属于该进程且可见的窗口。
-///
-/// # Arguments
-/// * `pid` - 要检查的进程 PID。
-///
-/// # Returns
-/// 如果找到至少一个属于该进程的可见窗口，返回 `true`，否则返回 `false`。
-#[cfg(target_os = "windows")]
-fn has_window_for_pid(pid: u32) -> bool {
-    use std::sync::atomic::{AtomicBool, Ordering};
-    use windows::core::BOOL;
-    use windows::Win32::Foundation::{HWND, LPARAM};
-    use windows::Win32::UI::WindowsAndMessaging::{
-        EnumWindows, GetWindowThreadProcessId, IsWindowVisible,
-    };
-
-    static FOUND_WINDOW: AtomicBool = AtomicBool::new(false);
-
-    unsafe extern "system" fn enum_windows_proc(hwnd: HWND, lparam: LPARAM) -> BOOL {
-        unsafe {
-            let mut window_pid: u32 = 0;
-            GetWindowThreadProcessId(hwnd, Some(&mut window_pid));
-            // lparam 是目标 PID 的指针
-            let target_pid = *(lparam.0 as *const u32);
-            // 检查窗口属于目标 PID 且窗口可见
-            if window_pid == target_pid && IsWindowVisible(hwnd).as_bool() {
-                // 找到窗口，设置标志并停止枚举
-                FOUND_WINDOW.store(true, Ordering::Relaxed);
-                return BOOL::from(false);
-            }
-        }
-        BOOL::from(true) // 继续枚举
     }
 
-    // 重置标志
-    FOUND_WINDOW.store(false, Ordering::Relaxed);
-
-    let lparam = LPARAM(&pid as *const u32 as isize);
-    unsafe { EnumWindows(Some(enum_windows_proc), lparam) }.ok();
-
-    // 返回是否找到窗口
-    FOUND_WINDOW.load(Ordering::Relaxed)
+    None
 }
 
 #[cfg(not(target_os = "windows"))]
-fn has_window_for_pid(_pid: u32) -> bool {
-    // 非 Windows 平台的占位实现
-    // 注意：本项目主要面向 Windows 用户，此函数不会被使用
-    warn!("has_window_for_pid 在非 Windows 平台被调用");
-    false
+fn check_any_foreground(_candidate_pids: &[u32]) -> Option<u32> {
+    None
 }
+
+// has_window_for_pid 函数已移除，其功能已整合到 select_best_from_candidates 中
+// 这样可以避免多次调用 EnumWindows（O(N*M) -> O(M)），提升性能
 
 /// 根据可执行文件所在目录获取该目录及子目录下所有正在运行的进程 PID 列表。
 ///
@@ -490,36 +530,40 @@ fn get_processes_in_directory(executable_path: &str, sys: &mut System) -> Vec<u3
         }
     };
 
-    // 尝试规范化目标路径，用于更准确的路径比较
-    // 规范化可以处理符号链接、大小写不一致、冗余斜杠等情况
+    // 只对目标目录进行一次规范化，避免在循环中重复 I/O
     let canonical_target = std::fs::canonicalize(target_dir).ok();
+
+    // 预先准备字符串形式的路径用于回退比较
+    let target_str = canonical_target
+        .as_ref()
+        .map(|p| p.to_string_lossy().to_string())
+        .unwrap_or_else(|| target_dir.to_string_lossy().to_string());
 
     let mut pids = Vec::new();
     for (pid, process) in sys.processes() {
         if let Some(process_exe_path) = process.exe() {
             if let Some(process_dir) = process_exe_path.parent() {
-                let matches = match &canonical_target {
-                    Some(canonical) => {
-                        // 优先使用规范化路径比较（更准确）
-                        match std::fs::canonicalize(process_dir) {
-                            Ok(canonical_process_dir) => {
+                // 优先使用字符串比较，避免对每个进程都执行 canonicalize
+                let process_str = process_dir.to_string_lossy();
+
+                let matches = if let Some(canonical) = &canonical_target {
+                    // 先尝试字符串前缀匹配（快速路径）
+                    if process_str.starts_with(&target_str) {
+                        true
+                    } else {
+                        // 字符串匹配失败，尝试规范化路径比较（慢速路径，但很少触发）
+                        // 这里仍然可能执行 I/O，但只对疑似目标的进程执行
+                        std::fs::canonicalize(process_dir)
+                            .ok()
+                            .map(|canonical_process_dir| {
                                 canonical_process_dir == *canonical
                                     || canonical_process_dir.starts_with(canonical)
-                            }
-                            Err(_) => {
-                                // process_dir 规范化失败，回退到字符串比较
-                                // 但仍使用规范化的 target 进行比较
-                                let target_str = canonical.to_string_lossy();
-                                let process_str = process_dir.to_string_lossy();
-                                process_str == target_str
-                                    || process_str.starts_with(target_str.as_ref())
-                            }
-                        }
+                            })
+                            .unwrap_or(false)
                     }
-                    None => {
-                        // target_dir 规范化失败，完全使用字符串比较
-                        process_dir == target_dir || process_dir.starts_with(target_dir)
-                    }
+                } else {
+                    // target_dir 规范化失败，完全使用字符串比较
+                    process_str == target_str || process_str.starts_with(target_str.as_str())
                 };
 
                 if matches {
@@ -529,67 +573,6 @@ fn get_processes_in_directory(executable_path: &str, sys: &mut System) -> Vec<u3
         }
     }
     pids
-}
-
-/// 选择最佳的进程 PID，优先级：聚焦进程 > 有窗口进程 > 第一个找到的进程 > 原始PID
-///
-/// 自动过滤掉管理器自身的进程，避免监控自己。
-///
-/// # Arguments
-/// * `original_pid` - 原始传入的 PID
-/// * `executable_path` - 可执行文件路径
-/// * `sys` - System 实例的可变引用
-///
-/// # Returns
-/// 返回最佳的 PID，如果没有找到合适的进程则返回原始 PID
-fn select_best_pid(original_pid: u32, executable_path: &str, sys: &mut System) -> u32 {
-    let manager_pid = std::process::id();
-
-    // 先检查原始 PID 是否是管理器自身
-    if original_pid == manager_pid {
-        debug!("原始 PID {} 是管理器自身，需要查找其他进程", original_pid);
-    } else if is_window_foreground_for_pid(original_pid) {
-        debug!("原始 PID {} 拥有聚焦，直接使用", original_pid);
-        return original_pid;
-    }
-
-    // 获取目录下所有进程，并过滤掉管理器自身
-    let pids: Vec<u32> = get_process_id_by_path(executable_path, sys)
-        .into_iter()
-        .filter(|&pid| pid != manager_pid)
-        .collect();
-
-    if pids.is_empty() {
-        debug!("未找到目录下的其他进程，使用原始 PID: {}", original_pid);
-        return original_pid;
-    }
-
-    debug!("找到 {} 个候选进程（已排除管理器）: {:?}", pids.len(), pids);
-
-    // 优先查找聚焦的进程
-    for &pid in &pids {
-        if is_window_foreground_for_pid(pid) {
-            info!("找到聚焦的进程 PID: {}", pid);
-            return pid;
-        }
-    }
-
-    // 查找有窗口的进程
-    for &pid in &pids {
-        if has_window_for_pid(pid) {
-            info!("找到有窗口的进程 PID: {}", pid);
-            return pid;
-        }
-    }
-
-    // 如果没有找到更好的，返回第一个找到的进程
-    if let Some(&first_pid) = pids.first() {
-        info!("使用第一个找到的进程 PID: {}", first_pid);
-        return first_pid;
-    }
-
-    debug!("回退到原始 PID: {}", original_pid);
-    original_pid
 }
 
 /// 根据可执行文件的完整路径查找所有正在运行的进程 PID 列表。
