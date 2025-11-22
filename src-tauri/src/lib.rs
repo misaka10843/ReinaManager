@@ -158,7 +158,7 @@ pub fn run() {
                         .build(),
                 )?;
             }
-            // log::set_max_level(log::LevelFilter::Error);
+            log::set_max_level(log::LevelFilter::Error);
             Ok(())
         })
         .build(tauri::generate_context!())
