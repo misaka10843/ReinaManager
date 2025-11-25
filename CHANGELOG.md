@@ -1,3 +1,49 @@
+## [0.10.0](https://github.com/huoshen80/ReinaManager/compare/v0.9.0...v0.10.0) (2025-11-25)
+
+<details>
+<summary>查看中文版本</summary>
+
+### Bug 修复
+
+* 根据语言动态调整样式以改进导航栏 UI ([d0277b1](https://github.com/huoshen80/ReinaManager/commit/d0277b1e3d7db6802ae23fc1c45dac5eb1469212))
+* **game_monitor:** 修复某些游戏的时长监控问题 ([7ac1906](https://github.com/huoshen80/ReinaManager/commit/7ac1906b1177e29a8c1d3a734bbdccc6355509f8))
+
+### 新功能
+
+* 添加日志等级设置 ([a278b77](https://github.com/huoshen80/ReinaManager/commit/a278b77905437a701ca92965292633d251d633e5))
+* 添加停止游戏功能，统一异步运行时并使用 parking_lot::RwLock 替代 std::sync::Mutex ([5413400](https://github.com/huoshen80/ReinaManager/commit/5413400869a8f23856985cbdc9c084c37d6d54c8))
+* **LaunchModal:** 在启动按钮中显示实时游戏时长 ([2b05d5c](https://github.com/huoshen80/ReinaManager/commit/2b05d5cc2a33a4d4163d5653009c6a44c8a6b37d))
+* **linux:** Linux 系统中可使用打开目录功能 ([b21e885](https://github.com/huoshen80/ReinaManager/commit/b21e885b2a307b3f9e23da362ebeeb637e949785))
+
+### 性能改进
+
+* **game_monitor:** 使用 interval 定时器改进监控循环精度 ([531ac53](https://github.com/huoshen80/ReinaManager/commit/531ac53644d516b24c7d31ff58298c94e56d1f77))
+* **store,gameStats:** 优化游戏统计和游戏列表检索逻辑以减少重复请求 ([f7d87e7](https://github.com/huoshen80/ReinaManager/commit/f7d87e72585682c593310b9d1b124096638ae36b))
+
+</details>
+
+
+### Bug Fixes
+
+* add dynamic styling based on language for improved navbar UI ([d0277b1](https://github.com/huoshen80/ReinaManager/commit/d0277b1e3d7db6802ae23fc1c45dac5eb1469212))
+* **game_monitor:** resolve time tracking issues for some games ([7ac1906](https://github.com/huoshen80/ReinaManager/commit/7ac1906b1177e29a8c1d3a734bbdccc6355509f8))
+
+
+### Features
+
+* add loglevel setting ([a278b77](https://github.com/huoshen80/ReinaManager/commit/a278b77905437a701ca92965292633d251d633e5))
+* add stop game functionality, unified async runtime and use parking_lot::RwLock instead of std::sync::Mutex ([5413400](https://github.com/huoshen80/ReinaManager/commit/5413400869a8f23856985cbdc9c084c37d6d54c8))
+* **LaunchModal:** display real-time game duration in the launch button ([2b05d5c](https://github.com/huoshen80/ReinaManager/commit/2b05d5cc2a33a4d4163d5653009c6a44c8a6b37d))
+* **linux:** open directory in linux ([b21e885](https://github.com/huoshen80/ReinaManager/commit/b21e885b2a307b3f9e23da362ebeeb637e949785))
+
+
+### Performance Improvements
+
+* **game_monitor:** improve monitor loop precision with interval timer ([531ac53](https://github.com/huoshen80/ReinaManager/commit/531ac53644d516b24c7d31ff58298c94e56d1f77))
+* **store,gameStats:** optimize game statistics and games list retrieval logic to reduce duplicate requests ([f7d87e7](https://github.com/huoshen80/ReinaManager/commit/f7d87e72585682c593310b9d1b124096638ae36b))
+
+
+
 ## [0.9.0](https://github.com/huoshen80/ReinaManager/compare/v0.8.2...v0.9.0) (2025-11-14)
 
 <details>
