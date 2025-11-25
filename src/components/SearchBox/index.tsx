@@ -52,7 +52,7 @@ export const SearchBox = () => {
 		}
 		// 日语
 		if (language === "ja-JP") {
-			return { width: "clamp(175px, 17vw, 400px)"  };
+			return { width: "clamp(175px, 17vw, 400px)" };
 		}
 		// 英语
 		return { width: "clamp(200px, 20vw, 400px)" };
@@ -190,10 +190,7 @@ export const SearchBox = () => {
 	};
 
 	return (
-		<div
-			className="overflow-visible" 
-			style={searchBoxStyle}
-		>
+		<div className="overflow-visible" style={searchBoxStyle}>
 			<Autocomplete
 				freeSolo
 				open={isOpen && suggestions.length > 0}

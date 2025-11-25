@@ -8,13 +8,14 @@
 // ============================================================================
 
 use log::{debug, error, info, warn};
+use parking_lot::RwLock;
 use serde_json::json;
 use std::{
     collections::HashSet,
     path::Path,
     sync::{
         atomic::{AtomicBool, Ordering},
-        Arc, Mutex,
+        Arc, OnceLock,
     },
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
@@ -27,8 +28,8 @@ use tokio::time::{interval, MissedTickBehavior};
 use windows::Win32::{
     Foundation::CloseHandle,
     System::Threading::{
-        GetExitCodeProcess, OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_WIN32,
-        PROCESS_QUERY_LIMITED_INFORMATION,
+        GetExitCodeProcess, OpenProcess, QueryFullProcessImageNameW, TerminateProcess,
+        PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION, PROCESS_TERMINATE,
     },
     UI::WindowsAndMessaging::GetWindowThreadProcessId,
 };
@@ -50,26 +51,32 @@ const MONITOR_CHECK_INTERVAL_SECS: u64 = 1;
 // 数据结构定义
 // ============================================================================
 
+/// 活跃的监控会话信息
+pub struct ActiveSession {
+    /// 停止信号，用于通知监控线程停止
+    pub stop_signal: Arc<AtomicBool>,
+    /// 候选进程 PID 列表
+    pub candidate_pids: Arc<RwLock<HashSet<u32>>>,
+}
+
 /// 监控状态（线程安全的共享状态）
 ///
 /// 用于在 Hook 线程和主监控循环之间共享信息
+/// 使用 parking_lot::RwLock 替代 std::sync::Mutex 以避免死锁
 #[derive(Debug)]
 struct MonitorState {
     /// 当前是否有游戏窗口在前台
     is_foreground: bool,
     /// 当前活跃的游戏进程 PID
     best_pid: u32,
-    /// 已知的所有候选游戏进程 PID 集合
-    candidate_pids: HashSet<u32>,
 }
 
 impl MonitorState {
     /// 创建新的监控状态实例
-    fn new(initial_pid: u32, candidate_pids: HashSet<u32>) -> Self {
+    fn new(initial_pid: u32) -> Self {
         Self {
             is_foreground: false,
             best_pid: initial_pid,
-            candidate_pids,
         }
     }
 }
@@ -96,8 +103,86 @@ impl Drop for HookGuard {
 }
 
 // ============================================================================
-// 公共 API - 主入口函数
+// 全局会话管理
 // ============================================================================
+
+/// 全局会话存储（使用 parking_lot::RwLock 保护 HashMap）
+static ACTIVE_SESSIONS: OnceLock<RwLock<std::collections::HashMap<u32, ActiveSession>>> =
+    OnceLock::new();
+
+/// 获取全局会话存储的引用
+fn get_sessions() -> &'static RwLock<std::collections::HashMap<u32, ActiveSession>> {
+    ACTIVE_SESSIONS.get_or_init(|| RwLock::new(std::collections::HashMap::new()))
+}
+
+/// 注册新的监控会话
+fn register_session(game_id: u32, session: ActiveSession) {
+    get_sessions().write().insert(game_id, session);
+}
+
+/// 移除监控会话
+fn unregister_session(game_id: u32) {
+    get_sessions().write().remove(&game_id);
+}
+
+// ============================================================================
+// 公共 API
+// ============================================================================
+
+/// 获取指定游戏的候选 PID 列表
+#[allow(dead_code)]
+pub fn get_game_candidate_pids(game_id: u32) -> Option<HashSet<u32>> {
+    let sessions = get_sessions().read();
+    sessions
+        .get(&game_id)
+        .map(|s| s.candidate_pids.read().clone())
+}
+
+/// 停止指定游戏的监控并终止所有相关进程
+///
+/// # Arguments
+/// * `game_id` - 游戏 ID
+///
+/// # Returns
+/// 成功返回终止的进程数量，失败返回错误信息
+pub fn stop_game_session(game_id: u32) -> Result<u32, String> {
+    // 获取会话信息
+    let sessions = get_sessions().read();
+    let session = sessions
+        .get(&game_id)
+        .ok_or_else(|| format!("未找到游戏 {} 的监控会话", game_id))?;
+
+    // 发送停止信号
+    session.stop_signal.store(true, Ordering::Release);
+
+    // 复制候选 PID 列表
+    let pids: Vec<u32> = session.candidate_pids.read().iter().copied().collect();
+
+    // 释放读锁
+    drop(sessions);
+
+    // 终止所有候选进程
+    let mut terminated_count = 0u32;
+    for pid in pids {
+        if is_process_running(pid) {
+            match terminate_process(pid) {
+                Ok(_) => {
+                    info!("成功终止进程 PID: {}", pid);
+                    terminated_count += 1;
+                }
+                Err(e) => {
+                    warn!("终止进程 {} 失败: {}", pid, e);
+                }
+            }
+        }
+    }
+
+    info!(
+        "游戏 {} 停止完成，共终止 {} 个进程",
+        game_id, terminated_count
+    );
+    Ok(terminated_count)
+}
 
 /// 启动指定游戏进程的监控
 ///
@@ -188,11 +273,11 @@ async fn run_game_monitor<R: Runtime>(
         candidate_pids_set.insert(initial_pid);
     }
 
-    // 创建共享状态
-    let monitor_state = Arc::new(Mutex::new(MonitorState::new(
-        initial_pid,
-        candidate_pids_set.clone(),
-    )));
+    // 创建共享的候选 PID 列表（用于 Hook 线程和停止功能）
+    let shared_candidate_pids = Arc::new(RwLock::new(candidate_pids_set.clone()));
+
+    // 创建共享状态（仅包含 is_foreground 和 best_pid）
+    let monitor_state = Arc::new(RwLock::new(MonitorState::new(initial_pid)));
 
     // 获取游戏目录路径（用于逃逸检测）
     let game_directory = Path::new(&executable_path)
@@ -205,13 +290,25 @@ async fn run_game_monitor<R: Runtime>(
         game_id, initial_pid, candidate_pids_set, game_directory
     );
 
-    // 创建停止信号和守卫
+    // 创建停止信号
     let stop_signal = Arc::new(AtomicBool::new(false));
+
+    // 注册会话到全局管理器
+    register_session(
+        game_id,
+        ActiveSession {
+            stop_signal: stop_signal.clone(),
+            candidate_pids: shared_candidate_pids.clone(),
+        },
+    );
+
+    // 创建守卫，确保退出时清理
     let _hook_guard = HookGuard::new(stop_signal.clone());
 
-    // 启动 Hook 线程（事件驱动）
+    // 启动 Hook 线程（使用 tokio::task::spawn_blocking 统一运行时）
     start_foreground_hook(
         monitor_state.clone(),
+        shared_candidate_pids.clone(),
         game_directory,
         app_handle.clone(),
         game_id,
@@ -219,12 +316,7 @@ async fn run_game_monitor<R: Runtime>(
     );
 
     // 获取当前最佳 PID
-    let best_pid = {
-        let state = monitor_state
-            .lock()
-            .map_err(|e| format!("无法锁定监控状态: {}", e))?;
-        state.best_pid
-    };
+    let best_pid = monitor_state.read().best_pid;
 
     // 通知前端会话开始
     app_handle
@@ -245,11 +337,15 @@ async fn run_game_monitor<R: Runtime>(
     loop {
         tick_interval.tick().await;
 
-        // 读取共享状态（轻量级操作，仅内存读取）
+        // 检查停止信号（支持外部停止）
+        if stop_signal.load(Ordering::Acquire) {
+            info!("收到停止信号，结束监控游戏 {}", game_id);
+            break;
+        }
+
+        // 读取共享状态（使用 RwLock 读锁，不会阻塞 Hook 线程的写操作太久）
         let (is_foreground, current_best_pid) = {
-            let state = monitor_state
-                .lock()
-                .map_err(|e| format!("无法锁定监控状态: {}", e))?;
+            let state = monitor_state.read();
             (state.is_foreground, state.best_pid)
         };
 
@@ -274,16 +370,20 @@ async fn run_game_monitor<R: Runtime>(
                     break;
                 }
 
-                // 更新共享状态中的候选列表
+                // 更新共享的候选列表
                 let new_candidate_pids_set: HashSet<u32> =
                     new_candidate_pids_vec.into_iter().collect();
                 let new_best_pid = *new_candidate_pids_set.iter().next().unwrap();
 
+                // 更新候选 PID 列表
                 {
-                    let mut state = monitor_state
-                        .lock()
-                        .map_err(|e| format!("无法锁定监控状态: {}", e))?;
-                    state.candidate_pids = new_candidate_pids_set;
+                    let mut pids = shared_candidate_pids.write();
+                    *pids = new_candidate_pids_set;
+                }
+
+                // 更新监控状态
+                {
+                    let mut state = monitor_state.write();
                     state.best_pid = new_best_pid;
                     state.is_foreground = false;
                 }
@@ -336,6 +436,9 @@ async fn run_game_monitor<R: Runtime>(
             }
         }
     }
+
+    // 清理会话注册
+    unregister_session(game_id);
 
     finalize_session(
         &app_handle,
@@ -402,10 +505,11 @@ fn finalize_session<R: Runtime>(
 
 /// 启动前台窗口变化的 Hook 线程（Windows 平台）
 ///
-/// 在独立线程中运行，实时监听前台窗口变化，更新共享状态。
+/// 使用 tokio::task::spawn_blocking 在阻塞线程池中运行，与 Tokio 运行时统一管理。
 ///
 /// # Arguments
 /// * `state` - 线程安全的共享监控状态
+/// * `candidate_pids` - 共享的候选 PID 列表
 /// * `game_directory` - 游戏目录路径，用于检测逃逸进程（Steam 启动等场景）
 /// * `app_handle` - Tauri 应用句柄，用于发送进程切换事件
 /// * `game_id` - 游戏 ID
@@ -416,16 +520,18 @@ fn finalize_session<R: Runtime>(
 /// 2. 获取前台窗口的 PID
 /// 3. 检查 PID 是否在已知的候选列表中
 /// 4. 如果不在，检查其可执行文件路径是否在游戏目录下（逃逸检测）
-/// 5. 更新共享状态：is_foreground、best_pid、candidate_pids
+/// 5. 更新共享状态：is_foreground、best_pid，并将新进程加入候选列表
 #[cfg(target_os = "windows")]
 fn start_foreground_hook<R: Runtime + 'static>(
-    state: Arc<Mutex<MonitorState>>,
+    state: Arc<RwLock<MonitorState>>,
+    candidate_pids: Arc<RwLock<HashSet<u32>>>,
     game_directory: String,
     app_handle: AppHandle<R>,
     game_id: u32,
     stop_signal: Arc<AtomicBool>,
 ) {
-    std::thread::spawn(move || {
+    // 使用 tokio::task::spawn_blocking 统一运行时管理
+    tokio::task::spawn_blocking(move || {
         info!("前台窗口 Hook 线程已启动");
 
         use windows::Win32::UI::WindowsAndMessaging::GetForegroundWindow;
@@ -443,10 +549,8 @@ fn start_foreground_hook<R: Runtime + 'static>(
             unsafe {
                 let hwnd = GetForegroundWindow();
                 if hwnd.0.is_null() {
-                    // 没有前台窗口
-                    if let Ok(mut state) = state.lock() {
-                        state.is_foreground = false;
-                    }
+                    // 没有前台窗口，更新状态后继续
+                    state.write().is_foreground = false;
                     continue;
                 }
 
@@ -464,57 +568,71 @@ fn start_foreground_hook<R: Runtime + 'static>(
 
                 last_pid = new_pid;
 
-                // 更新状态
-                if let Ok(mut state) = state.lock() {
-                    // 检查 1：新 PID 是否在候选列表中
-                    if state.candidate_pids.contains(&new_pid) {
-                        state.is_foreground = true;
-                        if state.best_pid != new_pid {
-                            info!("前台窗口切换到已知游戏进程: PID {}", new_pid);
-                            state.best_pid = new_pid;
+                // 检查 1：新 PID 是否在候选列表中
+                let is_in_candidates = candidate_pids.read().contains(&new_pid);
 
-                            // 发送进程切换事件
-                            if let Err(e) = app_handle.emit(
-                                "game-process-switched",
-                                json!({ "gameId": game_id, "newProcessId": new_pid }),
-                            ) {
-                                warn!("无法发送进程切换事件: {}", e);
-                            }
+                if is_in_candidates {
+                    // 更新状态（缩小锁的持有范围）
+                    let should_emit = {
+                        let mut s = state.write();
+                        s.is_foreground = true;
+                        let changed = s.best_pid != new_pid;
+                        if changed {
+                            s.best_pid = new_pid;
+                        }
+                        changed
+                    };
+
+                    // 锁已释放，安全发送事件
+                    if should_emit {
+                        info!("前台窗口切换到已知游戏进程: PID {}", new_pid);
+                        if let Err(e) = app_handle.emit(
+                            "game-process-switched", //暂时无用
+                            json!({ "gameId": game_id, "newProcessId": new_pid }),
+                        ) {
+                            warn!("无法发送进程切换事件: {}", e);
+                        }
+                    }
+                    continue;
+                }
+
+                // 检查 2：新 PID 的可执行文件是否在游戏目录下（逃逸检测）
+                if let Some(exe_path) = get_process_executable_path(new_pid) {
+                    let exe_path_str = exe_path.to_string_lossy();
+                    // Windows 文件系统不区分大小写，统一转小写比较
+                    if exe_path_str
+                        .to_lowercase()
+                        .starts_with(&game_directory_lower)
+                    {
+                        // 发现新的游戏进程！
+                        info!(
+                            "检测到新的游戏进程（逃逸）: PID {}, 路径: {}",
+                            new_pid, exe_path_str
+                        );
+
+                        // 添加到候选列表
+                        candidate_pids.write().insert(new_pid);
+
+                        // 更新状态
+                        {
+                            let mut s = state.write();
+                            s.is_foreground = true;
+                            s.best_pid = new_pid;
+                        }
+
+                        // 发送进程切换事件
+                        if let Err(e) = app_handle.emit(
+                            "game-process-switched", //暂时无用
+                            json!({ "gameId": game_id, "newProcessId": new_pid }),
+                        ) {
+                            warn!("无法发送进程切换事件: {}", e);
                         }
                         continue;
                     }
-
-                    // 检查 2：新 PID 的可执行文件是否在游戏目录下（逃逸检测）
-                    if let Some(exe_path) = get_process_executable_path(new_pid) {
-                        let exe_path_str = exe_path.to_string_lossy();
-                        // Windows 文件系统不区分大小写，统一转小写比较
-                        if exe_path_str
-                            .to_lowercase()
-                            .starts_with(&game_directory_lower)
-                        {
-                            // 发现新的游戏进程！
-                            info!(
-                                "检测到新的游戏进程（逃逸）: PID {}, 路径: {}",
-                                new_pid, exe_path_str
-                            );
-                            state.candidate_pids.insert(new_pid);
-                            state.is_foreground = true;
-                            state.best_pid = new_pid;
-
-                            // 发送进程切换事件
-                            if let Err(e) = app_handle.emit(
-                                "game-process-switched",
-                                json!({ "gameId": game_id, "newProcessId": new_pid }),
-                            ) {
-                                warn!("无法发送进程切换事件: {}", e);
-                            }
-                            continue;
-                        }
-                    }
-
-                    // 否则，前台窗口不属于游戏
-                    state.is_foreground = false;
                 }
+
+                // 否则，前台窗口不属于游戏
+                state.write().is_foreground = false;
             }
         }
 
@@ -524,7 +642,8 @@ fn start_foreground_hook<R: Runtime + 'static>(
 
 #[cfg(not(target_os = "windows"))]
 fn start_foreground_hook<R: Runtime + 'static>(
-    _state: Arc<Mutex<MonitorState>>,
+    _state: Arc<RwLock<MonitorState>>,
+    _candidate_pids: Arc<RwLock<HashSet<u32>>>,
     _game_directory: String,
     _app_handle: AppHandle<R>,
     _game_id: u32,
@@ -660,7 +779,7 @@ fn get_processes_in_directory(executable_path: &str, sys: &mut System) -> Vec<u3
 /// # Returns
 /// 如果进程仍在运行（退出码为 STILL_ACTIVE = 259），返回 `true`，否则返回 `false`
 #[cfg(target_os = "windows")]
-fn is_process_running(pid: u32) -> bool {
+pub fn is_process_running(pid: u32) -> bool {
     unsafe {
         let handle_result = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid);
 
@@ -680,9 +799,38 @@ fn is_process_running(pid: u32) -> bool {
 }
 
 #[cfg(not(target_os = "windows"))]
-fn is_process_running(_pid: u32) -> bool {
+pub fn is_process_running(_pid: u32) -> bool {
     warn!("is_process_running 在非 Windows 平台被调用");
     false
+}
+
+/// 强制终止指定 PID 的进程（Windows 平台）
+///
+/// # Arguments
+/// * `pid` - 要终止的进程 PID
+///
+/// # Returns
+/// 成功返回 `Ok(())`，失败返回错误信息
+#[cfg(target_os = "windows")]
+pub fn terminate_process(pid: u32) -> Result<(), String> {
+    unsafe {
+        let handle = OpenProcess(PROCESS_TERMINATE, false, pid)
+            .map_err(|e| format!("无法打开进程 {}: {}", pid, e))?;
+
+        if handle.is_invalid() {
+            return Err(format!("进程 {} 句柄无效", pid));
+        }
+
+        let result = TerminateProcess(handle, 1);
+        CloseHandle(handle).ok();
+
+        result.map_err(|e| format!("终止进程 {} 失败: {}", pid, e))
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+pub fn terminate_process(_pid: u32) -> Result<(), String> {
+    Err("terminate_process 仅支持 Windows 平台".to_string())
 }
 
 /// 获取进程的可执行文件路径（Windows 平台）

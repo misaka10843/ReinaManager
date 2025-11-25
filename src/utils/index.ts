@@ -18,6 +18,15 @@ import type {
 } from "@/types";
 import { getDisplayGameData } from "./dataTransform";
 
+/**
+ * 停止游戏结果类型
+ */
+export interface StopGameResult {
+	success: boolean;
+	message: string;
+	terminated_count: number;
+}
+
 // 缓存资源目录路径
 let cachedResourceDirPath: string | null = null;
 
@@ -116,6 +125,22 @@ export async function launchGameWithTracking(
 			args: args || [],
 		});
 
+		return result;
+	} catch (error) {
+		const errorMessage =
+			typeof error === "string" ? error : "Unknown error occurred";
+		throw new Error(errorMessage);
+	}
+}
+
+// 停止游戏
+export async function stopGameWithTracking(
+	gameId: number,
+): Promise<StopGameResult> {
+	try {
+		const result = await invoke<StopGameResult>("stop_game", {
+			gameId,
+		});
 		return result;
 	} catch (error) {
 		const errorMessage =

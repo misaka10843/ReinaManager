@@ -22,7 +22,12 @@ import { isTauri } from "@tauri-apps/api/core";
 import { create } from "zustand";
 import { useStore } from "@/store";
 import type { GameSession, GameTimeStats } from "@/types";
-import { getLocalDateString, launchGameWithTracking } from "@/utils";
+import {
+	getLocalDateString,
+	launchGameWithTracking,
+	type StopGameResult,
+	stopGameWithTracking,
+} from "@/utils";
 import {
 	getFormattedGameStats,
 	getGameSessions,
@@ -68,6 +73,7 @@ interface GamePlayState {
 		gameId: number,
 		args?: string[],
 	) => Promise<LaunchGameResult>;
+	stopGame: (gameId: number) => Promise<StopGameResult>;
 	loadGameStats: (
 		gameId: number,
 		forceRefresh?: boolean,
@@ -222,6 +228,60 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
 			const errorMessage =
 				error instanceof Error ? error.message : String(error);
 			return { success: false, message: errorMessage };
+		}
+	},
+
+	/**
+	 * 停止游戏
+	 * @param gameId 游戏ID
+	 */
+	stopGame: async (gameId: number): Promise<StopGameResult> => {
+		if (!isTauri()) {
+			return {
+				success: false,
+				message: "游戏停止功能仅在桌面应用中可用",
+				terminated_count: 0,
+			};
+		}
+
+		try {
+			if (!get().isGameRunning(gameId)) {
+				return {
+					success: false,
+					message: "该游戏未在运行中",
+					terminated_count: 0,
+				};
+			}
+
+			// 调用工具函数停止游戏
+			const result = await stopGameWithTracking(gameId);
+
+			// 停止成功后，清除运行状态（后端会触发 game-session-ended 事件，前端自动处理）
+			// 这里做一个保险的清理
+			if (result.success) {
+				set((state) => {
+					const newRunningGames = new Set(state.runningGameIds);
+					newRunningGames.delete(gameId);
+
+					const newRealTimeStates = { ...state.gameRealTimeStates };
+					delete newRealTimeStates[gameId];
+
+					return {
+						runningGameIds: newRunningGames,
+						gameRealTimeStates: newRealTimeStates,
+					};
+				});
+			}
+
+			return result;
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error ? error.message : String(error);
+			return {
+				success: false,
+				message: errorMessage,
+				terminated_count: 0,
+			};
 		}
 	},
 

@@ -336,6 +336,7 @@
 			"launchGame": "ゲームを起動",
 			"gamePathNotFound": "ゲームパスが見つかりません",
 			"launchFailed": "ゲーム起動に失敗しました:",
+			"stopFailed": "ゲーム停止に失敗しました:",
 			"playing": "プレイ中..."
 		},
 		"SortModal": {

@@ -10,7 +10,7 @@ use tauri::Manager;
 use tauri_plugin_log::{Target, TargetKind, TimezoneStrategy};
 use utils::{
     fs::{copy_file, delete_file, delete_game_covers, move_backup_folder, open_directory},
-    launch::launch_game,
+    launch::{launch_game, stop_game},
     logs::{get_reina_log_level, set_reina_log_level},
 };
 
@@ -36,6 +36,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             // 工具类 commands
             launch_game,
+            stop_game,
             open_directory,
             move_backup_folder,
             copy_file,

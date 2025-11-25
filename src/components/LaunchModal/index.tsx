@@ -18,7 +18,9 @@
  */
 
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import StopIcon from "@mui/icons-material/Stop";
 import TimerIcon from "@mui/icons-material/Timer";
+import { Typography } from "@mui/material";
 import Button from "@mui/material/Button";
 import { isTauri } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
@@ -53,7 +55,7 @@ const formatPlayTime = (minutes: number, seconds: number): string => {
 export const LaunchModal = () => {
 	const { t } = useTranslation();
 	const { selectedGameId, getGameById, isLocalGame, allGames } = useStore();
-	const { launchGame, isGameRunning, getGameRealTimeState } =
+	const { launchGame, stopGame, isGameRunning, getGameRealTimeState } =
 		useGamePlayStore();
 
 	// 检查这个特定游戏是否在运行
@@ -102,6 +104,19 @@ export const LaunchModal = () => {
 		}
 	};
 
+	/**
+	 * 停止游戏按钮点击事件
+	 */
+	const handleStopGame = async () => {
+		if (!selectedGameId) return;
+
+		try {
+			await stopGame(selectedGameId);
+		} catch (error) {
+			console.error(t("components.LaunchModal.stopFailed"), error);
+		}
+	};
+
 	// 渲染不同状态的按钮
 	if (isThisGameRunning && realTimeState) {
 		const { currentSessionMinutes, currentSessionSeconds } = realTimeState;
@@ -112,10 +127,21 @@ export const LaunchModal = () => {
 
 		return (
 			<Button
-				startIcon={<TimerIcon />}
-				disabled
+				startIcon={<StopIcon />}
+				onClick={handleStopGame}
+				className="rounded"
+				color="error"
+				variant="outlined"
 			>
-				{timeDisplay}
+				<TimerIcon fontSize="small" color="disabled" />
+				<Typography
+					className="ml-1"
+					variant="button"
+					component="span"
+					color="textDisabled"
+				>
+					{timeDisplay}
+				</Typography>
 			</Button>
 		);
 	}

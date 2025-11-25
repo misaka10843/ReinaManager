@@ -9,6 +9,7 @@ dependencies = [
  "chrono",
  "log",
  "migration",
+ "parking_lot",
  "sea-orm",
  "serde",
  "serde_json",

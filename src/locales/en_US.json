@@ -336,6 +336,7 @@
 			"launchGame": "Launch Game",
 			"gamePathNotFound": "Game path not found",
 			"launchFailed": "Failed to launch game:",
+			"stopFailed": "Failed to stop game:",
 			"playing": "Playing..."
 		},
 		"SortModal": {

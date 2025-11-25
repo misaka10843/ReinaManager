@@ -342,6 +342,7 @@
 			"launchGame": "启动游戏",
 			"gamePathNotFound": "游戏路径未找到",
 			"launchFailed": "游戏启动失败:",
+			"stopFailed": "游戏停止失败:",
 			"playing": "正在游戏..."
 		},
 		"SortModal": {

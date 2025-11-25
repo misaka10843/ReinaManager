@@ -1,4 +1,4 @@
-use crate::utils::game_monitor::monitor_game;
+use crate::utils::game_monitor::{monitor_game, stop_game_session};
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::process::Command;
@@ -191,5 +191,37 @@ pub async fn launch_game<R: Runtime>(
                 Err(format!("启动游戏失败: {}，目录: {:?}", e, game_dir))
             }
         }
+    }
+}
+
+/// 停止游戏结果
+#[derive(Debug, Serialize, Deserialize)]
+pub struct StopResult {
+    success: bool,
+    message: String,
+    terminated_count: u32,
+}
+
+/// 停止游戏
+///
+/// # Arguments
+///
+/// * `game_id` - 游戏ID (bgm_id 或 vndb_id)
+///
+/// # Returns
+///
+/// 停止结果，包含成功标志、消息和终止的进程数量
+#[command]
+pub fn stop_game(game_id: u32) -> Result<StopResult, String> {
+    match stop_game_session(game_id) {
+        Ok(terminated_count) => Ok(StopResult {
+            success: true,
+            message: format!(
+                "已成功停止游戏 {}, 终止了 {} 个进程",
+                game_id, terminated_count
+            ),
+            terminated_count,
+        }),
+        Err(e) => Err(format!("停止游戏失败: {}", e)),
     }
 }
