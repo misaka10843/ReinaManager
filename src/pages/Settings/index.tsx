@@ -21,6 +21,7 @@ import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import BackupIcon from "@mui/icons-material/Backup";
 import ClearIcon from "@mui/icons-material/Clear";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
+import RestoreIcon from "@mui/icons-material/Restore";
 import SaveIcon from "@mui/icons-material/Save";
 import UpdateIcon from "@mui/icons-material/Update";
 import {
@@ -51,6 +52,7 @@ import pkg from "@pkg";
 import { path } from "@tauri-apps/api";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { isEnabled } from "@tauri-apps/plugin-autostart";
+import { relaunch } from "@tauri-apps/plugin-process";
 import { PageContainer } from "@toolpad/core/PageContainer";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -67,7 +69,7 @@ import {
 	openDatabaseBackupFolder,
 	openurl,
 } from "@/utils";
-import { backupDatabase } from "@/utils/database";
+import { backupDatabase, importDatabase } from "@/utils/database";
 
 /**
  * LanguageSelect 组件
@@ -627,6 +629,7 @@ const CloseBtnSettings = () => {
 const DatabaseBackupSettings = () => {
 	const { t } = useTranslation();
 	const [isBackingUp, setIsBackingUp] = useState(false);
+	const [isImporting, setIsImporting] = useState(false);
 
 	// db backup path state
 	const [dbBackupPath, setDbBackupPath] = useState("");
@@ -725,10 +728,42 @@ const DatabaseBackupSettings = () => {
 		}
 	};
 
+	const handleImportDatabase = async () => {
+		setIsImporting(true);
+		try {
+			const filePath = await importDatabase();
+			if (filePath) {
+				snackbar.success(
+					t(
+						"pages.Settings.databaseBackup.importSuccess",
+						"数据库导入成功，应用将自动重启",
+					),
+				);
+				// 延迟重启应用，让用户看到成功提示
+				setTimeout(async () => {
+					await relaunch();
+				}, 1500);
+			}
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error
+					? error.message
+					: t("pages.Settings.databaseBackup.importFailed", "导入失败");
+			snackbar.error(
+				t(
+					"pages.Settings.databaseBackup.importError",
+					`数据库导入失败: ${errorMessage}`,
+				),
+			);
+		} finally {
+			setIsImporting(false);
+		}
+	};
+
 	return (
 		<Box className="mb-6">
 			<InputLabel className="font-semibold mb-4">
-				{t("pages.Settings.databaseBackup.title", "数据库备份")}
+				{t("pages.Settings.databaseBackup.title", "数据库备份与恢复")}
 			</InputLabel>
 
 			<Stack direction="row" spacing={2} alignItems="center" className="mb-3">
@@ -797,7 +832,36 @@ const DatabaseBackupSettings = () => {
 				>
 					{t("pages.Settings.databaseBackup.openFolder", "打开备份文件夹")}
 				</Button>
+
+				<Button
+					variant="outlined"
+					color="warning"
+					onClick={handleImportDatabase}
+					disabled={isImporting || !isTauri()}
+					startIcon={
+						isImporting ? (
+							<CircularProgress size={16} color="inherit" />
+						) : (
+							<RestoreIcon />
+						)
+					}
+					className="px-6 py-2"
+				>
+					{isImporting
+						? t("pages.Settings.databaseBackup.importing", "导入中...")
+						: t("pages.Settings.databaseBackup.restore", "恢复数据库")}
+				</Button>
 			</Stack>
+			<Typography
+				variant="caption"
+				color="text.secondary"
+				className="block mt-2"
+			>
+				{t(
+					"pages.Settings.databaseBackup.restoreWarning",
+					"恢复数据库将覆盖现有数据，请谨慎操作。导入后应用将自动重启。",
+				)}
+			</Typography>
 		</Box>
 	);
 };
@@ -1056,7 +1120,7 @@ const AboutSection: React.FC = () => {
 	};
 
 	const openBlog = () => {
-		openurl("https://huoshen80.xin");
+		openurl("https://huoshen80.top");
 	};
 
 	return (
@@ -1133,7 +1197,7 @@ const AboutSection: React.FC = () => {
 						onClick={openBlog}
 						sx={{ textDecoration: "none" }}
 					>
-						https://huoshen80.xin
+						https://huoshen80.top
 					</Link>
 				</Typography>
 			</Box>
@@ -1434,7 +1498,7 @@ export const Settings: React.FC = () => {
 				<SavePathSettings />
 				<Divider sx={{ my: 3 }} />
 
-				{/* 数据库备份设置 */}
+				{/* 数据库备份与恢复 */}
 				<DatabaseBackupSettings />
 				<Divider sx={{ my: 3 }} />
 

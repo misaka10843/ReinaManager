@@ -89,7 +89,7 @@
 				"moveWarning": "Backup path saved, but there was an issue moving the backup folder"
 			},
 			"databaseBackup": {
-				"title": "Database Backup",
+				"title": "Database Backup & Restore",
 				"pathLabel": "Database Backup Save Path",
 				"pathPlaceholder": "Select or enter save path",
 				"selectFolder": "Select Directory",
@@ -104,7 +104,13 @@
 				"backupFailed": "Backup failed",
 				"backupError": "Database backup failed",
 				"openFolderFailed": "Failed to open folder",
-				"openFolderError": "Failed to open backup folder"
+				"openFolderError": "Failed to open backup folder",
+				"restore": "Restore Database",
+				"importing": "Importing...",
+				"importSuccess": "Database imported successfully, application will restart automatically",
+				"importFailed": "Import failed",
+				"importError": "Failed to import database",
+				"restoreWarning": "Restoring database will overwrite existing data, please use with caution. The application will restart automatically after import."
 			},
 			"timeTrackingMode": {
 				"title": "Game Time Tracking Mode",

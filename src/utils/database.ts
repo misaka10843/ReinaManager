@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { appDataDir } from "@tauri-apps/api/path";
+import { open } from "@tauri-apps/plugin-dialog";
 import { BaseDirectory, copyFile, mkdir } from "@tauri-apps/plugin-fs";
 
 export async function backupDatabase(backup_path?: string): Promise<string> {
@@ -44,4 +45,29 @@ export async function backupDatabase(backup_path?: string): Promise<string> {
 		console.error("备份数据库失败:", error);
 		throw error;
 	}
+}
+
+/**
+ * 导入数据库文件（覆盖现有数据库）
+ * 导入成功后会自动重启应用
+ * @returns Promise<string | null> 导入成功返回文件路径，取消返回 null
+ */
+export async function importDatabase(): Promise<string | null> {
+	// 打开文件选择对话框
+	const filePath = await open({
+		filters: [{ name: "SQLite Database", extensions: ["db"] }],
+		multiple: false,
+		directory: false,
+	});
+
+	if (!filePath) {
+		return null; // 用户取消
+	}
+
+	// 调用后端命令导入数据库
+	await invoke("import_database", {
+		sourcePath: filePath as string,
+	});
+
+	return filePath as string;
 }

@@ -89,7 +89,7 @@
 				"moveWarning": "バックアップパスは保存されましたが、バックアップフォルダの移動に問題がありました"
 			},
 			"databaseBackup": {
-				"title": "データベースバックアップ",
+				"title": "データベースバックアップと復元",
 				"pathLabel": "データベースバックアップ保存パス",
 				"pathPlaceholder": "保存パスを選択または入力",
 				"selectFolder": "ディレクトリを選択",
@@ -104,7 +104,13 @@
 				"backupFailed": "バックアップに失敗しました",
 				"backupError": "データベースバックアップに失敗しました",
 				"openFolderFailed": "フォルダを開くのに失敗しました",
-				"openFolderError": "バックアップフォルダを開くのに失敗しました"
+				"openFolderError": "バックアップフォルダを開くのに失敗しました",
+				"restore": "データベースを復元",
+				"importing": "インポート中...",
+				"importSuccess": "データベースのインポートが成功しました。アプリが自動的に再起動します",
+				"importFailed": "インポートに失敗しました",
+				"importError": "データベースのインポートに失敗しました",
+				"restoreWarning": "データベースの復元は既存のデータを上書きします。ご注意ください。インポート後、アプリは自動的に再起動します。"
 			},
 			"timeTrackingMode": {
 				"title": "ゲーム計時モード",

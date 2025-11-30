@@ -89,7 +89,7 @@
 				"moveWarning": "備份路徑已儲存，但移動備份資料夾時出現問題"
 			},
 			"databaseBackup": {
-				"title": "資料庫備份",
+				"title": "資料庫備份與還原",
 				"pathLabel": "資料庫備份儲存路徑",
 				"pathPlaceholder": "選擇或輸入儲存路徑",
 				"selectFolder": "選擇目錄",
@@ -104,7 +104,13 @@
 				"backupFailed": "備份失敗",
 				"backupError": "資料庫備份失敗",
 				"openFolderFailed": "開啟資料夾失敗",
-				"openFolderError": "開啟備份資料夾失敗"
+				"openFolderError": "開啟備份資料夾失敗",
+				"restore": "還原資料庫",
+				"importing": "匯入中...",
+				"importSuccess": "資料庫匯入成功，應用程式將自動重新啟動",
+				"importFailed": "匯入失敗",
+				"importError": "資料庫匯入失敗",
+				"restoreWarning": "還原資料庫將覆蓋現有資料，請謹慎操作。匯入後應用程式將自動重新啟動。"
 			},
 			"timeTrackingMode": {
 				"title": "遊戲計時模式",

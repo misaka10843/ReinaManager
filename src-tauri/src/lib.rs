@@ -9,7 +9,10 @@ use migration::MigratorTrait;
 use tauri::Manager;
 use tauri_plugin_log::{Target, TargetKind, TimezoneStrategy};
 use utils::{
-    fs::{copy_file, delete_file, delete_game_covers, move_backup_folder, open_directory},
+    fs::{
+        copy_file, delete_file, delete_game_covers, import_database, move_backup_folder,
+        open_directory,
+    },
     launch::{launch_game, stop_game},
     logs::{get_reina_log_level, set_reina_log_level},
 };
@@ -17,6 +20,7 @@ use utils::{
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_window_state::Builder::new().build())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
@@ -44,6 +48,7 @@ pub fn run() {
             delete_savedata_backup,
             delete_file,
             delete_game_covers,
+            import_database,
             // 游戏数据相关 commands
             insert_game_with_related,
             find_full_game_by_id,
