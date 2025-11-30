@@ -4,7 +4,7 @@
  */
 
 import { convertFileSrc } from "@tauri-apps/api/core";
-import type { FullGameData, GameData, RawGameData } from "@/types";
+import type { FullGameData, GameData } from "@/types";
 import { getResourceDirPath } from "@/utils";
 
 /**
@@ -175,48 +175,4 @@ function getCustomCoverUrl(
 	} catch (error) {
 		console.error("转换自定义封面路径失败:", error);
 	}
-}
-
-/**
- * 将简单的 RawGameData 转换为 GameData
- * 用于只有基础数据没有关联数据的场景
- */
-export function rawGameDataToDisplay(game: RawGameData): GameData {
-	return {
-		...game,
-		name: game.custom_name || "",
-		tags: [],
-	};
-}
-
-/**
- * 时间戳转 Date 对象
- */
-export function timestampToDate(timestamp?: number | null): Date | null {
-	if (!timestamp) return null;
-	return new Date(timestamp * 1000);
-}
-
-/**
- * Date 对象转时间戳
- */
-export function dateToTimestamp(date?: Date | null): number | null {
-	if (!date) return null;
-	return Math.floor(date.getTime() / 1000);
-}
-
-/**
- * 格式化时间戳为本地日期字符串
- */
-export function formatTimestamp(
-	timestamp?: number | null,
-	format: "date" | "datetime" = "date",
-): string {
-	if (!timestamp) return "";
-	const date = new Date(timestamp * 1000);
-
-	if (format === "date") {
-		return date.toLocaleDateString("zh-CN");
-	}
-	return date.toLocaleString("zh-CN");
 }

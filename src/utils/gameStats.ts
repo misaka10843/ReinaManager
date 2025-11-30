@@ -230,19 +230,6 @@ export async function getGameStatistics(
 	return stats;
 }
 
-// 获取今天的游戏时间 - 使用后端服务
-export async function getTodayGameTime(gameId: number): Promise<number> {
-	const stats = await getGameStatistics(gameId);
-	const today = getLocalDateString();
-
-	if (!stats || !stats.daily_stats) {
-		return 0;
-	}
-	// 在数组中查找今天的记录
-	const todayRecord = stats.daily_stats.find((record) => record.date === today);
-	return todayRecord?.playtime || 0;
-}
-
 // 获取游戏会话历史 - 使用后端服务
 export async function getGameSessions(
 	gameId: number,

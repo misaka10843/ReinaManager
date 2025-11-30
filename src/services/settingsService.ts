@@ -68,6 +68,7 @@ class SettingsService extends BaseService {
 		return this.invoke<void>("set_db_backup_path", { path });
 	}
 
+	// 暂时无用开始
 	/**
 	 * 获取所有设置
 	 */
@@ -90,6 +91,7 @@ class SettingsService extends BaseService {
 		});
 	}
 }
+// 暂时无用结束
 
 // 导出单例
 export const settingsService = new SettingsService();

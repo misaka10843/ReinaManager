@@ -55,6 +55,7 @@ class StatsService extends BaseService {
 		});
 	}
 
+	// 暂时无用
 	/**
 	 * 删除游戏会话
 	 */
@@ -90,6 +91,7 @@ class StatsService extends BaseService {
 		});
 	}
 
+	// 暂时无用开始
 	/**
 	 * 批量获取游戏统计信息
 	 */
@@ -114,6 +116,7 @@ class StatsService extends BaseService {
 	async deleteGameStatistics(gameId: number): Promise<number> {
 		return this.invoke<number>("delete_game_statistics", { gameId });
 	}
+	// 暂时无用结束
 
 	/**
 	 * 获取今天的游戏时间

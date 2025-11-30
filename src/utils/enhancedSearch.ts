@@ -337,6 +337,7 @@ export function getSearchSuggestions(
 	return sortedSuggestions;
 }
 
+// 暂时无用
 /**
  * 高亮搜索关键词
  * @param text 原文本
@@ -359,6 +360,7 @@ export function highlightSearchTerm(text: string, keyword: string): string {
 	return text.replace(regex, "<mark>$1</mark>");
 }
 
+// 暂时无用
 /**
  * 检查是否包含中文字符
  * @param text 文本

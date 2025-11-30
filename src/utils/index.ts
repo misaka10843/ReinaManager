@@ -49,31 +49,10 @@ export const getResourceDirPath = (): string => {
 	return cachedResourceDirPath || "";
 };
 
-// import { createTheme } from '@mui/material/styles';
-
-export const time_now = () => {
-	// 获取当前时间
-	const currentDate = new Date();
-
-	return currentDate;
-};
-
 export const getLocalDateString = (timestamp?: number): string => {
 	const date = timestamp ? new Date(timestamp * 1000) : new Date();
 	return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 };
-
-// export const Buttontheme = createTheme({
-//   components: {
-//     MuiButton: {
-//       styleOverrides: {
-//         root: {
-//           textTransform: 'none', // 禁用所有按钮的文本大写转换
-//         },
-//       },
-//     },
-//   },
-// });
 
 export async function openurl(url: string) {
 	if (isTauri()) {
@@ -785,10 +764,6 @@ export async function batchUpdateBgmData(bgmToken?: string): Promise<{
 
 // 导出数据转换工具
 export {
-	dateToTimestamp,
-	formatTimestamp,
 	getDisplayGameData,
 	getDisplayGameDataList,
-	rawGameDataToDisplay,
-	timestampToDate,
 } from "./dataTransform";

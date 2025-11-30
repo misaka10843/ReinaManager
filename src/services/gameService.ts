@@ -180,30 +180,6 @@ class GameService extends BaseService {
 			otherUpdates: otherUpdates || null,
 		});
 	}
-
-	/**
-	 * @deprecated 请改用 `updateBatch()` 方法
-	 * 批量更新游戏基础数据（高性能版本）
-	 * 仅用于更新 games 表中的字段
-	 */
-	async updateGamesBatch(
-		updatesList: Array<[number, Partial<RawGameData>]>,
-	): Promise<number> {
-		return this.updateBatch(updatesList, undefined, undefined, undefined);
-	}
-
-	/**
-	 * @deprecated 请改用 `updateBatch()` 方法
-	 * 批量更新关联数据（高性能版本）
-	 * 用于同时更新 BGM、VNDB、Other 表数据
-	 */
-	async updateRelatedDataBatch(
-		bgmUpdates?: Array<[number, BgmData]>,
-		vndbUpdates?: Array<[number, VndbData]>,
-		otherUpdates?: Array<[number, OtherData]>,
-	): Promise<void> {
-		await this.updateBatch(undefined, bgmUpdates, vndbUpdates, otherUpdates);
-	}
 }
 
 // 导出单例

@@ -38,6 +38,7 @@ class SavedataService extends BaseService {
 		return this.invoke<SavedataRecord[]>("get_savedata_records", { gameId });
 	}
 
+	// 暂时无用
 	/**
 	 * 根据 ID 获取备份记录
 	 */
@@ -56,6 +57,7 @@ class SavedataService extends BaseService {
 		return this.invoke<number>("delete_savedata_record", { backupId });
 	}
 
+	// 暂时无用
 	/**
 	 * 批量删除指定游戏的所有备份记录
 	 */

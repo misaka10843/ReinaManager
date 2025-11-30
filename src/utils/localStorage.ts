@@ -285,29 +285,3 @@ export function filterGamesByTypeLocal(
 	// 浏览器环境中没有本地游戏
 	return [];
 }
-
-// 用于初始化或重置ID计数器的函数
-export function resetIdCounter(): void {
-	localStorage.setItem(NEXT_ID_KEY, "1");
-}
-
-// 用于同步ID计数器的函数，确保新ID大于所有现有ID
-export function syncIdCounter(): void {
-	const games = getGames();
-
-	if (games.length === 0) {
-		resetIdCounter();
-		return;
-	}
-
-	// 找出当前最大ID
-	const maxId = Math.max(
-		...games.map((game) => (typeof game.id === "number" ? game.id : 0)),
-	);
-
-	// 确保下一个ID比最大ID大
-	const currentNextId = Number(localStorage.getItem(NEXT_ID_KEY)) || 1;
-	if (maxId >= currentNextId) {
-		localStorage.setItem(NEXT_ID_KEY, String(maxId + 1));
-	}
-}
