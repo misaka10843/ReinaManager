@@ -112,6 +112,14 @@
 				"openFolderFailed": "打开文件夹失败",
 				"openFolderError": "打开备份文件夹失败"
 			},
+			"timeTrackingMode": {
+				"title": "游戏计时模式",
+				"description": "选择游戏时间的计算方式，影响游戏运行时的时间显示和统计记录。",
+				"playtime": "真实游戏时间（默认）",
+				"playtimeDesc": "仅计算游戏窗口在前台时的时间，切换到其他窗口时暂停计时",
+				"elapsed": "游戏启动时间",
+				"elapsedDesc": "计算从游戏启动到结束的总时间，不区分前台后台"
+			},
 			"logLevel": {
 				"title": "日志设置",
 				"levelLabel": "日志输出级别",

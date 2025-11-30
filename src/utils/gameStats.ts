@@ -2,6 +2,7 @@ import { isTauri } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { gameService, statsService } from "@/services";
 import type { DailyStats } from "@/services/types";
+import { useStore } from "@/store";
 import {
 	createGameSavedataBackup,
 	formatPlayTime,
@@ -381,11 +382,34 @@ export function initGameTimeTracking(
 		try {
 			console.log("收到游戏会话结束事件:", event.payload);
 
+			// 获取当前计时模式
+			const timeTrackingMode = useStore.getState().timeTrackingMode;
+
+			// 根据计时模式计算实际使用的时间
+			let effectiveSeconds: number;
+			let effectiveMinutes: number;
+
+			if (timeTrackingMode === "elapsed") {
+				// 游戏启动时间模式：使用 endTime - startTime
+				effectiveSeconds = endTime - startTime;
+				effectiveMinutes = Math.round(effectiveSeconds / 60);
+				console.log(
+					`使用游戏启动时间模式: ${effectiveSeconds}秒 (${effectiveMinutes}分钟)`,
+				);
+			} else {
+				// 真实游戏时间模式（默认）：使用后端统计的前台时间
+				effectiveSeconds = totalSeconds;
+				effectiveMinutes = totalMinutes;
+				console.log(
+					`使用真实游戏时间模式: ${effectiveSeconds}秒 (${effectiveMinutes}分钟)`,
+				);
+			}
+
 			// 设置最低阈值为60秒，避免意外点击记录游戏时间
 			const minThresholdSeconds = 60;
 
-			if (totalSeconds < minThresholdSeconds) {
-				console.log(`游戏会话时间过短(${totalSeconds}秒)，不记录统计数据`);
+			if (effectiveSeconds < minThresholdSeconds) {
+				console.log(`游戏会话时间过短(${effectiveSeconds}秒)，不记录统计数据`);
 
 				// 虽然不记录统计数据，但仍然需要通知前端游戏已结束
 				if (onSessionEnd) {
@@ -395,8 +419,8 @@ export function initGameTimeTracking(
 				return; // 不记录时间太短的会话
 			}
 
-			// 使用实际游戏时间，不强制最小值
-			const minutesToRecord = totalMinutes;
+			// 使用计算后的时间
+			const minutesToRecord = effectiveMinutes;
 
 			// 记录游戏会话
 			await recordGameSession(gameId, minutesToRecord, startTime, endTime);

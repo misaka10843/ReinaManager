@@ -23,6 +23,7 @@ import TimerIcon from "@mui/icons-material/Timer";
 import { Typography } from "@mui/material";
 import Button from "@mui/material/Button";
 import { isTauri } from "@tauri-apps/api/core";
+import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useStore } from "@/store";
 import { useGamePlayStore } from "@/store/gamePlayStore";
@@ -49,14 +50,26 @@ const formatPlayTime = (minutes: number, seconds: number): string => {
  * 判断游戏是否可启动、是否正在运行，并渲染启动按钮。
  * 仅本地游戏且未运行时可启动，适配 Tauri 桌面环境。
  * 运行时显示实时游戏时长。
+ * 支持两种计时模式：
+ * - playtime: 真实游戏时间（仅活跃时间，通过后端事件更新）
+ * - elapsed: 游戏启动时间（从启动到现在的总时间，前端计时器计算）
  *
  * @returns {JSX.Element} 启动按钮或运行中提示
  */
 export const LaunchModal = () => {
 	const { t } = useTranslation();
-	const { selectedGameId, getGameById, isLocalGame, allGames } = useStore();
+	const {
+		selectedGameId,
+		getGameById,
+		isLocalGame,
+		allGames,
+		timeTrackingMode,
+	} = useStore();
 	const { launchGame, stopGame, isGameRunning, getGameRealTimeState } =
 		useGamePlayStore();
+
+	// 用于 elapsed 模式下的前端计时器显示
+	const timerRef = useRef<HTMLSpanElement>(null);
 
 	// 检查这个特定游戏是否在运行
 	const isThisGameRunning = isGameRunning(
@@ -67,6 +80,39 @@ export const LaunchModal = () => {
 	const realTimeState = selectedGameId
 		? getGameRealTimeState(selectedGameId)
 		: null;
+
+	// elapsed 模式下使用 setInterval 每秒更新一次显示（不触发 React re-render）
+	useEffect(() => {
+		// 仅在 elapsed 模式且游戏运行中时启动前端计时器
+		if (
+			timeTrackingMode !== "elapsed" ||
+			!isThisGameRunning ||
+			!realTimeState?.startTime
+		) {
+			return;
+		}
+
+		const startTime = realTimeState.startTime;
+
+		const updateDisplay = () => {
+			if (!timerRef.current) return;
+
+			const now = Math.floor(Date.now() / 1000);
+			const elapsed = now - startTime;
+			const minutes = Math.floor(elapsed / 60);
+			const seconds = elapsed % 60;
+			timerRef.current.textContent = formatPlayTime(minutes, seconds);
+		};
+
+		// 立即更新一次
+		updateDisplay();
+
+		const intervalId = setInterval(updateDisplay, 1000);
+
+		return () => {
+			clearInterval(intervalId);
+		};
+	}, [timeTrackingMode, isThisGameRunning, realTimeState?.startTime]);
 
 	/**
 	 * 判断当前游戏是否可以启动
@@ -119,10 +165,23 @@ export const LaunchModal = () => {
 
 	// 渲染不同状态的按钮
 	if (isThisGameRunning && realTimeState) {
+		// playtime 模式：使用后端事件更新的时间
+		// elapsed 模式：使用 ref 显示前端计时器计算的时间
 		const { currentSessionMinutes, currentSessionSeconds } = realTimeState;
-		const timeDisplay = formatPlayTime(
+
+		// playtime 模式的初始显示值
+		const initialTimeDisplay = formatPlayTime(
 			currentSessionMinutes,
 			currentSessionSeconds,
+		);
+
+		// elapsed 模式的初始显示值（从 startTime 计算）
+		const elapsedInitial = realTimeState.startTime
+			? Math.floor(Date.now() / 1000) - realTimeState.startTime
+			: 0;
+		const elapsedInitialDisplay = formatPlayTime(
+			Math.floor(elapsedInitial / 60),
+			elapsedInitial % 60,
 		);
 
 		return (
@@ -135,12 +194,15 @@ export const LaunchModal = () => {
 			>
 				<TimerIcon fontSize="small" color="disabled" />
 				<Typography
+					ref={timerRef}
 					className="ml-1"
 					variant="button"
 					component="span"
 					color="textDisabled"
 				>
-					{timeDisplay}
+					{timeTrackingMode === "elapsed"
+						? elapsedInitialDisplay
+						: initialTimeDisplay}
 				</Typography>
 			</Button>
 		);

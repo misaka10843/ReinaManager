@@ -158,6 +158,10 @@ export interface AppState {
 	spoilerLevel: number;
 	setSpoilerLevel: (level: number) => void;
 
+	// 计时模式：playtime = 真实游戏时间（仅活跃时），elapsed = 游戏启动时间（从启动到结束）
+	timeTrackingMode: "playtime" | "elapsed";
+	setTimeTrackingMode: (mode: "playtime" | "elapsed") => void;
+
 	// 前端名称排序
 	sortGamesByName: (games: GameData[], order: "asc" | "desc") => GameData[];
 
@@ -305,6 +309,12 @@ export const useStore = create<AppState>()(
 			spoilerLevel: 0,
 			setSpoilerLevel: (level: number) => {
 				set({ spoilerLevel: level });
+			},
+
+			// 计时模式：默认使用活跃时间（真实游戏时间）
+			timeTrackingMode: "playtime",
+			setTimeTrackingMode: (mode: "playtime" | "elapsed") => {
+				set({ timeTrackingMode: mode });
 			},
 
 			/**
@@ -1258,6 +1268,8 @@ export const useStore = create<AppState>()(
 				tagTranslation: state.tagTranslation,
 				// 剧透等级
 				spoilerLevel: state.spoilerLevel,
+				// 计时模式：playtime 或 elapsed
+				timeTrackingMode: state.timeTrackingMode,
 				// 分组分类相关（优化存储）
 				currentGroupId: state.currentGroupId,
 				selectedCategoryId: state.selectedCategoryId,

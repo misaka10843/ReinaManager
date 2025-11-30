@@ -106,6 +106,14 @@
 				"openFolderFailed": "Failed to open folder",
 				"openFolderError": "Failed to open backup folder"
 			},
+			"timeTrackingMode": {
+				"title": "Game Time Tracking Mode",
+				"description": "Select how game time is calculated, affecting time display and statistics recording.",
+				"playtime": "Real Game Time (Default)",
+				"playtimeDesc": "Only counts time when the game window is in focus, pauses when switching to other windows",
+				"elapsed": "Total Elapsed Time",
+				"elapsedDesc": "Counts total time from game launch to exit, regardless of focus"
+			},
 			"logLevel": {
 				"title": "Log Settings",
 				"levelLabel": "Log Output Level",

@@ -106,6 +106,14 @@
 				"openFolderFailed": "開啟資料夾失敗",
 				"openFolderError": "開啟備份資料夾失敗"
 			},
+			"timeTrackingMode": {
+				"title": "遊戲計時模式",
+				"description": "選擇遊戲時間的計算方式，影響遊戲運行時的時間顯示和統計記錄。",
+				"playtime": "真實遊戲時間（預設）",
+				"playtimeDesc": "僅計算遊戲視窗在前台時的時間，切換到其他視窗時暫停計時",
+				"elapsed": "遊戲啟動時間",
+				"elapsedDesc": "計算從遊戲啟動到結束的總時間，不區分前台後台"
+			},
 			"logLevel": {
 				"title": "日誌設置",
 				"levelLabel": "日誌輸出級別",

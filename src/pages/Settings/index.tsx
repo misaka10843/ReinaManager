@@ -802,6 +802,78 @@ const DatabaseBackupSettings = () => {
 	);
 };
 
+const TimeTrackingModeSettings = () => {
+	const { t } = useTranslation();
+	const { timeTrackingMode, setTimeTrackingMode } = useStore();
+
+	return (
+		<Box className="mb-6">
+			<InputLabel className="font-semibold mb-4">
+				{t("pages.Settings.timeTrackingMode.title", "游戏计时模式")}
+			</InputLabel>
+			<Box className="pl-2">
+				<Typography
+					variant="caption"
+					color="text.secondary"
+					className="block mb-3"
+				>
+					{t(
+						"pages.Settings.timeTrackingMode.description",
+						"选择游戏时间的计算方式，影响游戏运行时的时间显示和统计记录。",
+					)}
+				</Typography>
+				<RadioGroup
+					value={timeTrackingMode}
+					onChange={(e) =>
+						setTimeTrackingMode(e.target.value as "playtime" | "elapsed")
+					}
+					className="pl-2"
+				>
+					<FormControlLabel
+						value="playtime"
+						control={<Radio color="primary" />}
+						label={
+							<Box>
+								<Typography variant="body2">
+									{t(
+										"pages.Settings.timeTrackingMode.playtime",
+										"真实游戏时间（默认）",
+									)}
+								</Typography>
+								<Typography variant="caption" color="text.secondary">
+									{t(
+										"pages.Settings.timeTrackingMode.playtimeDesc",
+										"仅计算游戏窗口在前台时的时间，切换到其他窗口时暂停计时",
+									)}
+								</Typography>
+							</Box>
+						}
+						className="mb-2"
+					/>
+					<FormControlLabel
+						value="elapsed"
+						control={<Radio color="primary" />}
+						label={
+							<Box>
+								<Typography variant="body2">
+									{t("pages.Settings.timeTrackingMode.elapsed", "游戏启动时间")}
+								</Typography>
+								<Typography variant="caption" color="text.secondary">
+									{t(
+										"pages.Settings.timeTrackingMode.elapsedDesc",
+										"计算从游戏启动到结束的总时间，不区分前台后台",
+									)}
+								</Typography>
+							</Box>
+						}
+						className="mb-1"
+					/>
+				</RadioGroup>
+			</Box>
+		</Box>
+	);
+};
+
 const SavePathSettings = () => {
 	const { t } = useTranslation();
 	const [savePath, setSavePath] = useState("");
@@ -1364,6 +1436,10 @@ export const Settings: React.FC = () => {
 
 				{/* 数据库备份设置 */}
 				<DatabaseBackupSettings />
+				<Divider sx={{ my: 3 }} />
+
+				{/* 计时模式设置 */}
+				<TimeTrackingModeSettings />
 				<Divider sx={{ my: 3 }} />
 
 				{/* 实验性功能 */}
