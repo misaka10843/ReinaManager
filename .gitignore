@@ -27,9 +27,9 @@ target
 #test
 test
 
-#claude
-.claude
-CLAUDE.md
+# ai_cli
+.ai_cli
+1cli.bat
 
 ## docs
 docs
