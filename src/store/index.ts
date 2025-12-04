@@ -593,13 +593,45 @@ export const useStore = create<AppState>()(
 					await get().refreshGameData();
 					get().setSelectedGameId(null);
 
-					// 如果当前在分类页面，也需要刷新 categoryGames
-					const { selectedCategoryId, selectedCategoryName } = get();
+					// 如果当前在分类页面，也需要刷新 categoryGames 和 currentCategories
+					const {
+						selectedCategoryId,
+						selectedCategoryName,
+						currentGroupId,
+						categoryGamesCache,
+					} = get();
 					if (selectedCategoryId !== null) {
+						// 更新缓存：从缓存中移除被删除的游戏
+						if (
+							selectedCategoryId > 0 &&
+							categoryGamesCache[selectedCategoryId]
+						) {
+							const updatedCache = categoryGamesCache[
+								selectedCategoryId
+							].filter((id) => id !== gameId);
+							set((state) => ({
+								categoryGamesCache: {
+									...state.categoryGamesCache,
+									[selectedCategoryId]: updatedCache,
+								},
+								// 同时更新 currentCategories 中对应分类的 game_count
+								currentCategories: state.currentCategories.map((cat) =>
+									cat.id === selectedCategoryId
+										? { ...cat, game_count: updatedCache.length }
+										: cat,
+								),
+							}));
+						}
+
 						await get().fetchGamesByCategory(
 							selectedCategoryId,
 							selectedCategoryName || undefined,
 						);
+					}
+
+					// 如果当前在分组页面（查看分类列表），刷新分类列表以更新游戏数量
+					if (currentGroupId && selectedCategoryId === null) {
+						await get().fetchCategoriesByGroup(currentGroupId);
 					}
 				} catch (error) {
 					console.error("删除游戏数据失败:", error);
@@ -1218,7 +1250,7 @@ export const useStore = create<AppState>()(
 					}
 
 					// 1. 乐观更新：先更新前端状态，防止列表闪烁
-					const { allGames, nsfwFilter } = get();
+					const { allGames, nsfwFilter, currentCategories } = get();
 					// 根据 ID 列表重新排序当前分类的游戏
 					const newOrderGames = gameIds
 						.map((id) => allGames.find((g) => g.id === id))
@@ -1227,6 +1259,13 @@ export const useStore = create<AppState>()(
 					// 应用 NSFW 筛选
 					const filteredGames = applyNsfwFilter(newOrderGames, nsfwFilter);
 
+					// 同时更新 currentCategories 中对应分类的 game_count
+					const updatedCategories = currentCategories.map((cat) =>
+						cat.id === categoryId
+							? { ...cat, game_count: gameIds.length }
+							: cat,
+					);
+
 					// 立即更新状态
 					set((state) => ({
 						categoryGames: filteredGames,
@@ -1234,6 +1273,7 @@ export const useStore = create<AppState>()(
 							...state.categoryGamesCache,
 							[categoryId]: gameIds,
 						},
+						currentCategories: updatedCategories,
 					}));
 
 					// 2. 后台异步更新数据库
@@ -1242,6 +1282,11 @@ export const useStore = create<AppState>()(
 					console.error("Failed to update category games:", error);
 					// 更新失败，回滚状态（重新获取）
 					await get().fetchGamesByCategory(categoryId);
+					// 同时刷新分类列表以恢复正确的 game_count
+					const currentGroupId = get().currentGroupId;
+					if (currentGroupId) {
+						await get().fetchCategoriesByGroup(currentGroupId);
+					}
 					throw error;
 				}
 			},
