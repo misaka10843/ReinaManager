@@ -91,6 +91,13 @@ class StatsService extends BaseService {
 		});
 	}
 
+	/**
+	 * 获取所有游戏统计信息
+	 */
+	async getAllGameStatistics(): Promise<GameStatistics[]> {
+		return this.invoke<GameStatistics[]>("get_all_game_statistics");
+	}
+
 	// 暂时无用开始
 	/**
 	 * 批量获取游戏统计信息
@@ -101,13 +108,6 @@ class StatsService extends BaseService {
 		return this.invoke<GameStatistics[]>("get_multiple_game_statistics", {
 			gameIds,
 		});
-	}
-
-	/**
-	 * 获取所有游戏统计信息
-	 */
-	async getAllGameStatistics(): Promise<GameStatistics[]> {
-		return this.invoke<GameStatistics[]>("get_all_game_statistics");
 	}
 
 	/**

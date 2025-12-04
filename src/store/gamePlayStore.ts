@@ -21,7 +21,7 @@
 import { isTauri } from "@tauri-apps/api/core";
 import { create } from "zustand";
 import { useStore } from "@/store";
-import type { GameSession, GameTimeStats } from "@/types";
+import type { GameSession, GameStatistics, GameTimeStats } from "@/types";
 import {
 	getLocalDateString,
 	launchGameWithTracking,
@@ -29,9 +29,9 @@ import {
 	stopGameWithTracking,
 } from "@/utils";
 import {
+	getAllGameStatistics,
 	getFormattedGameStats,
 	getGameSessions,
-	getGameStatistics,
 	initGameTimeTracking,
 } from "@/utils/gameStats";
 
@@ -95,9 +95,57 @@ let lastGamesSnapshot: number[] = [];
 let lastTotalPlayTime = 0;
 let lastWeekPlayTime = 0;
 let lastTodayPlayTime = 0;
+// 缓存所有游戏统计数据，一次获取多处使用
+let allStatsCache: Map<number, GameStatistics> | null = null;
+// Promise 锁，确保并行调用时只请求一次
+let statsFetchPromise: Promise<Map<number, GameStatistics>> | null = null;
+
 function getGamesIdSnapshot() {
 	const { games } = useStore.getState();
 	return games.map((g) => g.id ?? 0).sort();
+}
+
+/**
+ * 获取所有游戏统计缓存（若缓存失效则重新获取）
+ * 使用 Promise 锁确保并行调用时只请求一次
+ */
+async function getAllStatsCached(): Promise<Map<number, GameStatistics>> {
+	const gamesSnapshot = getGamesIdSnapshot();
+	// 检查缓存是否有效
+	if (
+		allStatsCache !== null &&
+		JSON.stringify(gamesSnapshot) === JSON.stringify(lastGamesSnapshot)
+	) {
+		return allStatsCache;
+	}
+	// 如果已经有请求在进行中，等待它完成
+	if (statsFetchPromise !== null) {
+		return statsFetchPromise;
+	}
+	// 创建新的请求并保存 Promise
+	statsFetchPromise = getAllGameStatistics()
+		.then((result) => {
+			allStatsCache = result;
+			lastGamesSnapshot = gamesSnapshot;
+			statsFetchPromise = null; // 请求完成，清除锁
+			return result;
+		})
+		.catch((error) => {
+			statsFetchPromise = null; // 请求失败，清除锁
+			throw error;
+		});
+	return statsFetchPromise;
+}
+
+/**
+ * 清除统计缓存（在游戏会话结束后调用）
+ */
+function invalidateStatsCache() {
+	allStatsCache = null;
+	statsFetchPromise = null;
+	lastTotalPlayTime = 0;
+	lastWeekPlayTime = 0;
+	lastTodayPlayTime = 0;
 }
 // ====== 统计缓存优化 END ======
 
@@ -321,6 +369,7 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
 		}
 	},
 
+	// 暂时无用，未来用于实现游戏游玩时间线
 	/**
 	 * 加载指定游戏的最近会话
 	 * @param gameId 游戏ID
@@ -442,38 +491,29 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
 	 * 获取所有游戏的总游玩时长（分钟）
 	 */
 	getTotalPlayTime: async () => {
-		const gamesSnapshot = getGamesIdSnapshot();
-		if (
-			JSON.stringify(gamesSnapshot) === JSON.stringify(lastGamesSnapshot) &&
-			lastTotalPlayTime !== 0
-		) {
+		if (lastTotalPlayTime !== 0) {
 			return lastTotalPlayTime;
 		}
-		const { allGames } = useStore.getState();
+		const statsMap = await getAllStatsCached();
 		let total = 0;
-		for (const game of allGames) {
-			if (!game.id) continue;
-			const stats = await getGameStatistics(game.id);
-			if (stats && typeof stats.total_time === "number") {
+		for (const stats of statsMap.values()) {
+			if (typeof stats.total_time === "number") {
 				total += stats.total_time;
 			}
 		}
-		lastGamesSnapshot = gamesSnapshot;
 		lastTotalPlayTime = total;
 		return total;
-	} /**
+	},
+
+	/**
 	 * 获取本周所有游戏的总游玩时长（分钟）
 	 * 本周定义：周一凌晨0点0分 到 周日23点59分59秒
-	 */,
+	 */
 	getWeekPlayTime: async () => {
-		const gamesSnapshot = getGamesIdSnapshot();
-		if (
-			JSON.stringify(gamesSnapshot) === JSON.stringify(lastGamesSnapshot) &&
-			lastWeekPlayTime !== 0
-		) {
+		if (lastWeekPlayTime !== 0) {
 			return lastWeekPlayTime;
 		}
-		const { games } = useStore.getState();
+		const statsMap = await getAllStatsCached();
 		let total = 0;
 		const now = new Date();
 
@@ -491,10 +531,8 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
 			Math.floor(weekStart.getTime() / 1000),
 		);
 
-		for (const game of games) {
-			if (!game.id) continue;
-			const stats = await getGameStatistics(game.id);
-			if (stats && Array.isArray(stats.daily_stats)) {
+		for (const stats of statsMap.values()) {
+			if (Array.isArray(stats.daily_stats)) {
 				for (const record of stats.daily_stats) {
 					// 使用字符串比较，确保准确性
 					if (record.date && record.date >= weekStartDateStr) {
@@ -503,7 +541,6 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
 				}
 			}
 		}
-		lastGamesSnapshot = gamesSnapshot;
 		lastWeekPlayTime = total;
 		return total;
 	},
@@ -512,27 +549,20 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
 	 * 获取今天所有游戏的总游玩时长（分钟）
 	 */
 	getTodayPlayTime: async () => {
-		const gamesSnapshot = getGamesIdSnapshot();
-		if (
-			JSON.stringify(gamesSnapshot) === JSON.stringify(lastGamesSnapshot) &&
-			lastTodayPlayTime !== 0
-		) {
+		if (lastTodayPlayTime !== 0) {
 			return lastTodayPlayTime;
 		}
-		const { games } = useStore.getState();
+		const statsMap = await getAllStatsCached();
 		let total = 0;
 		const today = getLocalDateString();
-		for (const game of games) {
-			if (!game.id) continue;
-			const stats = await getGameStatistics(game.id);
-			if (stats && Array.isArray(stats.daily_stats)) {
+		for (const stats of statsMap.values()) {
+			if (Array.isArray(stats.daily_stats)) {
 				const todayRecord = stats.daily_stats.find((r) => r.date === today);
 				if (todayRecord) {
 					total += todayRecord.playtime || 0;
 				}
 			}
 		}
-		lastGamesSnapshot = gamesSnapshot;
 		lastTodayPlayTime = total;
 		return total;
 	},

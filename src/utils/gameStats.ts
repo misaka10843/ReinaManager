@@ -230,6 +230,39 @@ export async function getGameStatistics(
 	return stats;
 }
 
+// 批量获取游戏统计信息 - 使用后端批量服务
+export async function getAllGameStatistics(): Promise<
+	Map<number, GameStatistics>
+> {
+	if (!isTauri()) {
+		return new Map();
+	}
+
+	try {
+		const statsList = await statsService.getAllGameStatistics();
+		const statsMap = new Map<number, GameStatistics>();
+
+		for (const stats of statsList) {
+			// 解析JSON存储的每日统计数据
+			if (stats.daily_stats && typeof stats.daily_stats === "string") {
+				try {
+					const parsedStats = JSON.parse(stats.daily_stats);
+					stats.daily_stats = parsedStats;
+				} catch (e) {
+					console.error("解析游戏统计数据失败:", e);
+					stats.daily_stats = [];
+				}
+			}
+			statsMap.set(stats.game_id, stats);
+		}
+
+		return statsMap;
+	} catch (error) {
+		console.error("获取所有游戏统计失败:", error);
+		return new Map();
+	}
+}
+
 // 获取游戏会话历史 - 使用后端服务
 export async function getGameSessions(
 	gameId: number,
