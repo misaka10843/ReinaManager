@@ -88,11 +88,11 @@
 				"saving": "保存中...",
 				"saveSuccess": "备份路径保存成功",
 				"saveFailed": "保存失败",
-				"saveError": "保存备份路径失败",
+				"saveError": "保存备份路径失败: {{error}}",
 				"selectFolderError": "选择文件夹失败",
 				"movingBackups": "正在移动备份文件夹到新位置...",
 				"moveSuccess": "备份路径保存成功，备份文件夹已移动到新位置",
-				"moveWarning": "备份路径已保存，但移动备份文件夹时出现问题"
+				"moveWarning": "备份路径已保存，但移动备份文件夹时出现问题: {{message}}"
 			},
 			"databaseBackup": {
 				"title": "数据库备份与恢复",
@@ -106,16 +106,16 @@
 				"backup": "备份数据库",
 				"backing": "备份中...",
 				"openFolder": "打开备份文件夹",
-				"backupSuccess": "数据库备份成功",
+				"backupSuccess": "数据库备份成功: {{path}}",
 				"backupFailed": "备份失败",
-				"backupError": "数据库备份失败",
+				"backupError": "数据库备份失败: {{error}}",
 				"openFolderFailed": "打开文件夹失败",
-				"openFolderError": "打开备份文件夹失败",
+				"openFolderError": "打开备份文件夹失败: {{error}}",
 				"restore": "恢复数据库",
 				"importing": "导入中...",
 				"importSuccess": "数据库导入成功，应用将自动重启",
 				"importFailed": "导入失败",
-				"importError": "数据库导入失败",
+				"importError": "数据库导入失败: {{error}}",
 				"restoreWarning": "恢复数据库将覆盖现有数据，请谨慎操作。导入后应用将自动重启。"
 			},
 			"timeTrackingMode": {
@@ -134,7 +134,7 @@
 				"changeFailed": "切换日志级别失败",
 				"openFolder": "打开日志文件夹",
 				"openFolderFailed": "打开文件夹失败",
-				"openFolderError": "打开日志文件夹失败"
+				"openFolderError": "打开日志文件夹失败: {{error}}"
 			},
 			"batchUpdate": {
 				"title": "批量更新数据",

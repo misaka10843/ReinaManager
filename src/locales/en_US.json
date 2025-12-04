@@ -82,11 +82,11 @@
 				"saving": "Saving...",
 				"saveSuccess": "Backup path saved successfully",
 				"saveFailed": "Save failed",
-				"saveError": "Failed to save backup path",
+				"saveError": "Failed to save backup path: {{error}}",
 				"selectFolderError": "Failed to select folder",
 				"movingBackups": "Moving backup folder to new location...",
 				"moveSuccess": "Backup path saved successfully, backup folder has been moved to new location",
-				"moveWarning": "Backup path saved, but there was an issue moving the backup folder"
+				"moveWarning": "Backup path saved, but there was an issue moving the backup folder: {{message}}"
 			},
 			"databaseBackup": {
 				"title": "Database Backup & Restore",
@@ -100,16 +100,16 @@
 				"backup": "Backup Database",
 				"backing": "Backing up...",
 				"openFolder": "Open Backup Folder",
-				"backupSuccess": "Database backup successful",
+				"backupSuccess": "Database backup successful: {{path}}",
 				"backupFailed": "Backup failed",
-				"backupError": "Database backup failed",
+				"backupError": "Database backup failed: {{error}}",
 				"openFolderFailed": "Failed to open folder",
-				"openFolderError": "Failed to open backup folder",
+				"openFolderError": "Failed to open backup folder: {{error}}",
 				"restore": "Restore Database",
 				"importing": "Importing...",
 				"importSuccess": "Database imported successfully, application will restart automatically",
 				"importFailed": "Import failed",
-				"importError": "Failed to import database",
+				"importError": "Failed to import database: {{error}}",
 				"restoreWarning": "Restoring database will overwrite existing data, please use with caution. The application will restart automatically after import."
 			},
 			"timeTrackingMode": {
@@ -128,7 +128,7 @@
 				"changeFailed": "Failed to change log level",
 				"openFolder": "Open Log Folder",
 				"openFolderFailed": "Failed to open folder",
-				"openFolderError": "Failed to open log folder"
+				"openFolderError": "Failed to open log folder: {{error}}"
 			},
 			"batchUpdate": {
 				"title": "Batch Update Data",

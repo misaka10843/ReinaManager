@@ -3,7 +3,6 @@ use std::fs;
 use std::path::Path;
 use std::process::Command;
 use tauri::command;
-use tauri::Manager;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MoveResult {
@@ -222,55 +221,6 @@ pub async fn delete_game_covers(game_id: u32, covers_dir: String) -> Result<(), 
             }
         }
     }
-
-    Ok(())
-}
-
-/// 导入数据库文件（覆盖现有数据库）
-///
-/// # Arguments
-///
-/// * `source_path` - 要导入的数据库文件路径
-/// * `app_handle` - Tauri 应用句柄
-///
-/// # Returns
-///
-/// 操作结果
-#[command]
-pub async fn import_database(
-    source_path: String,
-    app_handle: tauri::AppHandle,
-) -> Result<(), String> {
-    let src_path = Path::new(&source_path);
-
-    // 检查源文件是否存在
-    if !src_path.exists() {
-        return Err(format!("源数据库文件不存在: {}", source_path));
-    }
-
-    // 检查文件扩展名
-    if src_path.extension().and_then(|e| e.to_str()) != Some("db") {
-        return Err("无效的数据库文件，请选择 .db 文件".to_string());
-    }
-
-    // 获取目标数据库路径
-    let target_db_path = app_handle
-        .path()
-        .app_data_dir()
-        .map_err(|e| format!("无法获取应用数据目录: {}", e))?
-        .join("data/reina_manager.db");
-
-    // 确保目标目录存在
-    if let Some(parent) = target_db_path.parent() {
-        if !parent.exists() {
-            fs::create_dir_all(parent).map_err(|e| format!("无法创建数据库目录: {}", e))?;
-        }
-    }
-
-    // 复制文件覆盖现有数据库
-    fs::copy(src_path, &target_db_path).map_err(|e| format!("复制数据库文件失败: {}", e))?;
-
-    log::info!("数据库导入成功: {} -> {:?}", source_path, target_db_path);
 
     Ok(())
 }

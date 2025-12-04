@@ -341,10 +341,7 @@ const LogLevelSettings = () => {
 					? error.message
 					: t("pages.Settings.logLevel.openFolderFailed", "打开文件夹失败");
 			snackbar.error(
-				t(
-					"pages.Settings.logLevel.openFolderError",
-					`打开日志文件夹失败: ${errorMessage}`,
-				),
+				t("pages.Settings.logLevel.openFolderError", { error: errorMessage }),
 			);
 		}
 	};
@@ -654,23 +651,25 @@ const DatabaseBackupSettings = () => {
 		setIsBackingUp(true);
 
 		try {
-			const backupPath = await backupDatabase(dbBackupPath);
-			snackbar.success(
-				t(
-					"pages.Settings.databaseBackup.backupSuccess",
-					`数据库备份成功: ${backupPath}`,
-				),
-			);
+			const result = await backupDatabase(dbBackupPath);
+			if (result.success) {
+				snackbar.success(
+					t("pages.Settings.databaseBackup.backupSuccess", { path: result.path }),
+				);
+			} else {
+				snackbar.error(
+					t("pages.Settings.databaseBackup.backupError", {
+						error: result.message,
+					}),
+				);
+			}
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error
 					? error.message
 					: t("pages.Settings.databaseBackup.backupFailed", "备份失败");
 			snackbar.error(
-				t(
-					"pages.Settings.databaseBackup.backupError",
-					`数据库备份失败: ${errorMessage}`,
-				),
+				t("pages.Settings.databaseBackup.backupError", { error: errorMessage }),
 			);
 		} finally {
 			setIsBackingUp(false);
@@ -689,10 +688,9 @@ const DatabaseBackupSettings = () => {
 							"打开文件夹失败",
 						);
 			snackbar.error(
-				t(
-					"pages.Settings.databaseBackup.openFolderError",
-					`打开备份文件夹失败: ${errorMessage}`,
-				),
+				t("pages.Settings.databaseBackup.openFolderError", {
+					error: errorMessage,
+				}),
 			);
 		}
 	};
@@ -731,18 +729,26 @@ const DatabaseBackupSettings = () => {
 	const handleImportDatabase = async () => {
 		setIsImporting(true);
 		try {
-			const filePath = await importDatabase();
-			if (filePath) {
-				snackbar.success(
-					t(
-						"pages.Settings.databaseBackup.importSuccess",
-						"数据库导入成功，应用将自动重启",
-					),
-				);
-				// 延迟重启应用，让用户看到成功提示
-				setTimeout(async () => {
-					await relaunch();
-				}, 1500);
+			const result = await importDatabase(dbBackupPath);
+			if (result) {
+				if (result.success) {
+					snackbar.success(
+						t(
+							"pages.Settings.databaseBackup.importSuccess",
+							"数据库导入成功，应用将自动重启",
+						),
+					);
+					// 延迟重启应用，让用户看到成功提示
+					setTimeout(async () => {
+						await relaunch();
+					}, 2000);
+				} else {
+					snackbar.error(
+						t("pages.Settings.databaseBackup.importError", {
+							error: result.message,
+						}),
+					);
+				}
 			}
 		} catch (error) {
 			const errorMessage =
@@ -750,10 +756,7 @@ const DatabaseBackupSettings = () => {
 					? error.message
 					: t("pages.Settings.databaseBackup.importFailed", "导入失败");
 			snackbar.error(
-				t(
-					"pages.Settings.databaseBackup.importError",
-					`数据库导入失败: ${errorMessage}`,
-				),
+				t("pages.Settings.databaseBackup.importError", { error: errorMessage }),
 			);
 		} finally {
 			setIsImporting(false);
@@ -1000,10 +1003,9 @@ const SavePathSettings = () => {
 					setOriginalPath(savePath); // 更新原始路径
 				} else {
 					snackbar.warning(
-						t(
-							"pages.Settings.savePath.moveWarning",
-							`备份路径已保存，但移动备份文件夹时出现问题: ${moveResult.message}`,
-						),
+						t("pages.Settings.savePath.moveWarning", {
+							message: moveResult.message,
+						}),
 					);
 				}
 			} else {
@@ -1017,10 +1019,7 @@ const SavePathSettings = () => {
 					? error.message
 					: t("pages.Settings.savePath.saveFailed", "保存失败");
 			snackbar.error(
-				t(
-					"pages.Settings.savePath.saveError",
-					`保存备份路径失败: ${errorMessage}`,
-				),
+				t("pages.Settings.savePath.saveError", { error: errorMessage }),
 			);
 		} finally {
 			setIsLoading(false);
@@ -1291,10 +1290,7 @@ const BatchUpdateSettings: React.FC = () => {
 					: t("pages.Settings.batchUpdate.failed", "批量更新失败");
 			setUpdateStatus(errorMessage);
 			snackbar.error(
-				t(
-					"pages.Settings.batchUpdate.error",
-					`批量更新 VNDB 数据失败: ${errorMessage}`,
-				),
+				t("pages.Settings.batchUpdate.error", { message: errorMessage }),
 			);
 		} finally {
 			setIsUpdatingVndb(false);
@@ -1360,11 +1356,7 @@ const BatchUpdateSettings: React.FC = () => {
 					: t("pages.Settings.batchUpdate.failed", "批量更新失败");
 			setUpdateStatus(errorMessage);
 			snackbar.error(
-				t(
-					"pages.Settings.batchUpdate.errorBgm",
-					`批量更新 BGM 数据失败: ${errorMessage}`,
-					{ message: errorMessage },
-				),
+				t("pages.Settings.batchUpdate.errorBgm", { message: errorMessage }),
 			);
 		} finally {
 			setIsUpdatingBgm(false);

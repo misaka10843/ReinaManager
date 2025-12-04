@@ -1,46 +1,38 @@
 import { invoke } from "@tauri-apps/api/core";
-import { appDataDir } from "@tauri-apps/api/path";
 import { open } from "@tauri-apps/plugin-dialog";
-import { BaseDirectory, copyFile, mkdir } from "@tauri-apps/plugin-fs";
 
-export async function backupDatabase(backup_path?: string): Promise<string> {
-	// 生成带时间戳的备份文件名
-	const AppData = await appDataDir();
-	function formatTimestampLocal() {
-		const d = new Date();
-		const pad = (n: number) => String(n).padStart(2, "0");
-		return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
-	}
+/** 数据库备份结果 */
+interface BackupResult {
+	success: boolean;
+	path: string | null;
+	message: string;
+}
 
-	const timestamp = formatTimestampLocal();
-	const backupName = `reina_manager_${timestamp}.db`;
-	const backupPath = `data/backups/${backupName}`;
+/** 数据库导入结果 */
+interface ImportResult {
+	success: boolean;
+	message: string;
+	backup_path: string | null;
+}
 
+/**
+ * 使用 VACUUM INTO 进行数据库热备份
+ *
+ * 此方法使用 SQLite 的 VACUUM INTO 语句，可以在数据库正在使用时安全地创建备份。
+ * VACUUM INTO 会创建一个优化后的数据库副本，同时保持原数据库的完整性。
+ *
+ * @param backup_path - 可选的备份目标路径。如果为空，则使用默认的 AppData/data/backups 目录
+ * @returns 备份结果，包含备份文件的路径
+ */
+export async function backupDatabase(
+	backup_path?: string,
+): Promise<BackupResult> {
 	try {
-		if (backup_path === "" || backup_path === undefined) {
-			// 确保备份目录存在
-			await mkdir("data/backups", {
-				baseDir: BaseDirectory.AppData,
-				recursive: true,
-			});
-
-			// 复制数据库文件
-			await copyFile("data/reina_manager.db", backupPath, {
-				fromPathBaseDir: BaseDirectory.AppData,
-				toPathBaseDir: BaseDirectory.AppData,
-			});
-
-			console.log(`数据库已备份到: ${backupPath}`);
-			return backupPath;
-		} else {
-			// 将 AppData 下的数据库文件复制到用户指定的目标位置（后端或插件实现 copy_file）
-			await invoke("copy_file", {
-				src: `${AppData}/data/reina_manager.db`,
-				dst: `${backup_path}/${backupName}`,
-			});
-
-			return `${backup_path}/${backupName}`;
-		}
+		const result = await invoke<BackupResult>("backup_database", {
+			backupPath: backup_path ?? null,
+		});
+		console.log(`数据库已备份到: ${result.path}`);
+		return result;
 	} catch (error) {
 		console.error("备份数据库失败:", error);
 		throw error;
@@ -49,10 +41,21 @@ export async function backupDatabase(backup_path?: string): Promise<string> {
 
 /**
  * 导入数据库文件（覆盖现有数据库）
- * 导入成功后会自动重启应用
- * @returns Promise<string | null> 导入成功返回文件路径，取消返回 null
+ *
+ * 流程：
+ * 1. 关闭当前数据库连接
+ * 2. 使用 fs::copy 备份当前数据库（冷备份，性能更好）
+ * 3. 用导入的数据库文件覆盖现有数据库
+ * 4. 重新建立数据库连接
+ *
+ * 注意：由于需要关闭并重新打开数据库连接，导入后需要重启应用以确保数据正确加载
+ *
+ * @param backup_path - 可选的备份目标路径。如果为空，则使用默认的 AppData/data/backups 目录
+ * @returns Promise<ImportResult | null> 导入成功返回结果对象，取消返回 null
  */
-export async function importDatabase(): Promise<string | null> {
+export async function importDatabase(
+	backup_path?: string,
+): Promise<ImportResult | null> {
 	// 打开文件选择对话框
 	const filePath = await open({
 		filters: [{ name: "SQLite Database", extensions: ["db"] }],
@@ -65,9 +68,10 @@ export async function importDatabase(): Promise<string | null> {
 	}
 
 	// 调用后端命令导入数据库
-	await invoke("import_database", {
-		sourcePath: filePath as string,
+	const result = await invoke<ImportResult>("import_database", {
+		sourcePath: filePath,
+		backupPath: backup_path ?? null,
 	});
 
-	return filePath as string;
+	return result;
 }

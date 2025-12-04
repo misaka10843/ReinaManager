@@ -1,29 +1,59 @@
 use sea_orm::{ConnectOptions, Database, DatabaseConnection, DbErr, RuntimeErr};
+use std::fs;
+use std::path::PathBuf;
 use std::time::Duration;
 use tauri::{AppHandle, Manager};
-use url::Url; // 导入 Url
+use url::Url;
+
+/// 数据库相关路径常量
+const DB_DATA_DIR: &str = "data";
+const DB_FILE_NAME: &str = "reina_manager.db";
+// 使用单独常量表示 data 子目录和备份子目录，以便 join 时使用操作系统的路径分隔符
+const DB_BACKUP_SUBDIR: &str = "backups";
+
+/// 获取应用数据目录
+pub fn get_app_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    app.path()
+        .app_data_dir()
+        .map_err(|e| format!("无法获取应用数据目录: {}", e))
+}
+
+/// 获取数据库文件路径
+pub fn get_db_path(app: &AppHandle) -> Result<PathBuf, String> {
+    Ok(get_app_data_dir(app)?.join(DB_DATA_DIR).join(DB_FILE_NAME))
+}
+
+/// 获取数据库备份目录路径
+pub fn get_backup_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    // 通过 join 多段路径来避免在常量中硬编码路径分隔符
+    Ok(get_app_data_dir(app)?
+        .join(DB_DATA_DIR)
+        .join(DB_BACKUP_SUBDIR))
+}
+
+/// 确保数据库目录存在
+pub fn ensure_db_dir_exists(app: &AppHandle) -> Result<(), String> {
+    let db_path = get_db_path(app)?;
+    if let Some(parent) = db_path.parent() {
+        fs::create_dir_all(parent).map_err(|e| format!("无法创建数据库目录: {}", e))?;
+    }
+    Ok(())
+}
+
+/// 确保备份目录存在
+pub fn ensure_backup_dir_exists(app: &AppHandle) -> Result<PathBuf, String> {
+    let backup_dir = get_backup_dir(app)?;
+    fs::create_dir_all(&backup_dir).map_err(|e| format!("无法创建备份目录: {}", e))?;
+    Ok(backup_dir)
+}
 
 /// Establish a SeaORM database connection.
 pub async fn establish_connection(app: &AppHandle) -> Result<DatabaseConnection, DbErr> {
     // 1. 解析数据库文件路径
-    let db_path = app
-        .path()
-        .app_data_dir()
-        .map_err(|e| {
-            DbErr::Conn(RuntimeErr::Internal(format!(
-                "Failed to resolve app data directory: {e}"
-            )))
-        })?
-        .join("data/reina_manager.db");
+    let db_path = get_db_path(app).map_err(|e| DbErr::Conn(RuntimeErr::Internal(e)))?;
 
     // 2. 确保数据库所在的目录存在
-    if let Some(parent_dir) = db_path.parent() {
-        std::fs::create_dir_all(parent_dir).map_err(|e| {
-            DbErr::Conn(RuntimeErr::Internal(format!(
-                "Failed to create database directory: {e}"
-            )))
-        })?;
-    }
+    ensure_db_dir_exists(app).map_err(|e| DbErr::Conn(RuntimeErr::Internal(e)))?;
 
     // 3. 使用 `url` crate 安全地构建连接字符串
     let db_url = Url::from_file_path(&db_path).map_err(|_| {
