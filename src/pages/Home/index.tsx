@@ -203,7 +203,7 @@ async function getGameActivities(
 
 export const Home: React.FC = () => {
 	const { allGames } = useStore();
-	const { getTotalPlayTime, getWeekPlayTime, getTodayPlayTime } =
+	const { getTotalPlayTime, getWeekPlayTime, getTodayPlayTime, statsVersion } =
 		useGamePlayStore();
 
 	// 分离时长数据的状态管理
@@ -296,7 +296,11 @@ export const Home: React.FC = () => {
 	);
 
 	// 异步获取游戏时长数据
+	// statsVersion 变化时（游戏结束后）重新获取数据
 	useEffect(() => {
+		// statsVersion 用于触发重新获取（游戏结束时会更新）
+		void statsVersion;
+		
 		const fetchPlayTimeStats = async () => {
 			try {
 				const [totalTimeResult, weekTimeResult, todayTimeResult] =
@@ -319,7 +323,7 @@ export const Home: React.FC = () => {
 		};
 
 		fetchPlayTimeStats();
-	}, [getTotalPlayTime, getWeekPlayTime, getTodayPlayTime]);
+	}, [getTotalPlayTime, getWeekPlayTime, getTodayPlayTime, statsVersion]);
 
 	// 异步获取活动数据
 	useEffect(() => {

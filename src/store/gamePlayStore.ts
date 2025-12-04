@@ -65,6 +65,7 @@ interface GamePlayState {
 	recentSessions: Record<string, GameSession[]>; // 最近会话缓存
 	// trendData: Record<string, GameTimeChartData[]>; // 预留趋势数据
 	gameRealTimeStates: Record<string, GameRealTimeState>; // 实时状态
+	statsVersion: number; // 统计数据版本号，用于触发重新获取
 
 	// 方法
 	isGameRunning: (gameId?: number) => boolean;
@@ -160,6 +161,7 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
 	recentSessions: {},
 	trendData: {},
 	gameRealTimeStates: {},
+	statsVersion: 0,
 
 	/**
 	 * 判断指定游戏是否正在运行
@@ -445,13 +447,12 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
 							gameRealTimeStates: newRealTimeStates,
 						};
 					});
-					// ====== 新增：重置统计缓存 ======
-					lastTotalPlayTime = 0;
-					lastWeekPlayTime = 0;
-					lastTodayPlayTime = 0;
+					// ====== 清除统计缓存并触发更新 ======
+					invalidateStatsCache();
+					// 递增版本号，触发依赖 statsVersion 的组件重新获取数据
+					set((state) => ({ statsVersion: state.statsVersion + 1 }));
 					// ====== END ======
-
-					// ====== 新增：游戏结束后刷新Cards组件 ======
+					// ====== 游戏结束后刷新Cards组件 ======
 					// 获取主store的状态，检查当前排序选项
 					const store = useStore.getState();
 					if (_minutes && store.sortOption === "lastplayed") {
