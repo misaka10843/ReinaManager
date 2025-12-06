@@ -1,3 +1,46 @@
+## [0.12.0](https://github.com/huoshen80/ReinaManager/compare/v0.10.0...v0.12.0) (2025-12-06)
+
+<details>
+<summary>查看中文版本</summary>
+
+### Bug 修复
+
+* 添加 statsVersion 用于在游戏结束时触发部分主页数据刷新 ([725107b](https://github.com/huoshen80/ReinaManager/commit/725107b396c3bfc71bab85616569ad8322fe1f21))
+* **收藏夹:** 在列表更改或删除游戏后未更新分类游戏数量 ([dbaf442](https://github.com/huoshen80/ReinaManager/commit/dbaf44214f4a11d19b9974dff15bd58ca2eb00ca))
+* **暗色模式:** 删除错误或无用 className 修复暗色模式下的显示问题 ([66356c1](https://github.com/huoshen80/ReinaManager/commit/66356c1d5edaf8523d7b23f275c64900ce65af57))
+* **数据库:** 使用 VACUUM INTO 实现数据库热备份以避免直接复制导致的数据丢失；添加导入前自动备份 ([ee37ea8](https://github.com/huoshen80/ReinaManager/commit/ee37ea86376035de72f3650e2f605622d319d3e7))
+
+### 新功能
+
+* **AddModal:** 添加游戏选择与确认对话框，并增强 bgm api 的开发商字段获取逻辑 ([44413d2](https://github.com/huoshen80/ReinaManager/commit/44413d29ae2711b70fc03eb21b8d55ea503d8bdf))
+* **LaunchModal:** 为在线游戏添加本地路径同步功能按钮 ([a464ea6](https://github.com/huoshen80/ReinaManager/commit/a464ea66aa16d5ac1e41ebce54cd2d5f9178650b))
+
+### 性能改进
+
+* **gameStats:** 将单个统计接口替换为获取全部游戏统计的接口，以减少软件启动时对数据库的请求 ([7ff7357](https://github.com/huoshen80/ReinaManager/commit/7ff7357a120a2cbda8fd243366d3ef825385d4a1))
+
+</details>
+
+### Bug Fixes
+
+* add statsVersion to trigger some home page data refresh on game end ([725107b](https://github.com/huoshen80/ReinaManager/commit/725107b396c3bfc71bab85616569ad8322fe1f21))
+* **collection:** no update category game count after list changes or game deletion ([dbaf442](https://github.com/huoshen80/ReinaManager/commit/dbaf44214f4a11d19b9974dff15bd58ca2eb00ca))
+* **dark mode:** remove error or useless className to fix display bug in dark mode ([66356c1](https://github.com/huoshen80/ReinaManager/commit/66356c1d5edaf8523d7b23f275c64900ce65af57))
+* **db:** use VACUUM INTO to implement database hot backups to avoid data loss caused by direct copy; add auto backups before import ([ee37ea8](https://github.com/huoshen80/ReinaManager/commit/ee37ea86376035de72f3650e2f605622d319d3e7))
+
+
+### Features
+
+* **AddModal:** add game selection and confirm dialog,enhance bgm api developer field fetching logic ([44413d2](https://github.com/huoshen80/ReinaManager/commit/44413d29ae2711b70fc03eb21b8d55ea503d8bdf))
+* **LaunchModal:** add local path sync feat button for online games ([a464ea6](https://github.com/huoshen80/ReinaManager/commit/a464ea66aa16d5ac1e41ebce54cd2d5f9178650b))
+
+
+### Performance Improvements
+
+* **gameStats:** replace the single statistic interface with the interface that fetches all game statistic to reduce db requests when startup software ([7ff7357](https://github.com/huoshen80/ReinaManager/commit/7ff7357a120a2cbda8fd243366d3ef825385d4a1))
+
+
+
 ## [0.11.0](https://github.com/huoshen80/ReinaManager/compare/v0.10.0...v0.11.0) (2025-12-02)
 
 <details>

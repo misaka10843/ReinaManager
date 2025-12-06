@@ -345,10 +345,7 @@ export const LaunchModal = () => {
 	}
 
 	return (
-		<Button
-			startIcon={<PlayArrowIcon />}
-			onClick={handleStartGame}
-		>
+		<Button startIcon={<PlayArrowIcon />} onClick={handleStartGame}>
 			{t("components.LaunchModal.launchGame")}
 		</Button>
 	);

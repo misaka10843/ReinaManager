@@ -654,7 +654,9 @@ const DatabaseBackupSettings = () => {
 			const result = await backupDatabase(dbBackupPath);
 			if (result.success) {
 				snackbar.success(
-					t("pages.Settings.databaseBackup.backupSuccess", { path: result.path }),
+					t("pages.Settings.databaseBackup.backupSuccess", {
+						path: result.path,
+					}),
 				);
 			} else {
 				snackbar.error(

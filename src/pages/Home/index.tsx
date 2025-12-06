@@ -300,7 +300,7 @@ export const Home: React.FC = () => {
 	useEffect(() => {
 		// statsVersion 用于触发重新获取（游戏结束时会更新）
 		void statsVersion;
-		
+
 		const fetchPlayTimeStats = async () => {
 			try {
 				const [totalTimeResult, weekTimeResult, todayTimeResult] =
