@@ -14,18 +14,26 @@
  * - react-i18next
  */
 
-import { Clear as ClearIcon, Search as SearchIcon } from "@mui/icons-material";
-import {
-	Autocomplete,
-	IconButton,
-	InputAdornment,
-	TextField,
-} from "@mui/material";
-import { useCallback, useEffect, useState } from "react";
+import { Search as SearchIcon } from "@mui/icons-material";
+import { Autocomplete, Box, TextField } from "@mui/material";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useStore } from "@/store";
 import { getSearchSuggestions } from "@/utils/enhancedSearch";
+
+// 配置常量
+const DEBOUNCE_SEARCH = 300;
+const DEBOUNCE_SUGGESTIONS = 150;
+const MAX_SUGGESTIONS = 8;
+const MIN_SEARCH_LENGTH = 2;
+
+// 语言对应的搜索框宽度配置
+const SEARCH_BOX_WIDTH_CONFIG: Record<string, string> = {
+	zh: "clamp(220px, 28vw, 400px)",
+	ja: "clamp(175px, 17vw, 400px)",
+	default: "clamp(200px, 20vw, 400px)",
+};
 
 /**
  * SearchBox 组件
@@ -37,196 +45,121 @@ import { getSearchSuggestions } from "@/utils/enhancedSearch";
 export const SearchBox = () => {
 	const { t, i18n } = useTranslation();
 	const { searchKeyword, setSearchKeyword, games, allGames } = useStore();
-	const [keyword, setKeyword] = useState(searchKeyword);
 	const [suggestions, setSuggestions] = useState<string[]>([]);
 	const [isOpen, setIsOpen] = useState(false);
-	const [isFocused, setIsFocused] = useState(false);
-	const [hasInput, setHasInput] = useState(false);
 
-	// 根据语言动态调整搜索框宽度和样式
-	const getSearchBoxStyle = () => {
+	// 根据语言动态调整搜索框宽度（使用 useMemo 缓存）
+	const searchBoxWidth = useMemo(() => {
 		const language = i18n.language;
-		// 中文（简体和繁体）
-		if (language.startsWith("zh")) {
-			return { width: "clamp(220px, 28vw, 400px)" };
-		}
-		// 日语
-		if (language === "ja-JP") {
-			return { width: "clamp(175px, 17vw, 400px)" };
-		}
-		// 英语
-		return { width: "clamp(200px, 20vw, 400px)" };
-	};
-
-	const searchBoxStyle = getSearchBoxStyle();
+		if (language.startsWith("zh")) return SEARCH_BOX_WIDTH_CONFIG.zh;
+		if (language === "ja-JP") return SEARCH_BOX_WIDTH_CONFIG.ja;
+		return SEARCH_BOX_WIDTH_CONFIG.default;
+	}, [i18n.language]);
 
 	// 对输入值应用防抖
-	const debouncedKeyword = useDebouncedValue(keyword, 300);
-	const debouncedSuggestions = useDebouncedValue(keyword, 150); // 建议的防抖时间更短
+	const debouncedKeyword = useDebouncedValue(searchKeyword, DEBOUNCE_SEARCH);
+	const debouncedSuggestions = useDebouncedValue(
+		searchKeyword,
+		DEBOUNCE_SUGGESTIONS,
+	);
 
-	/**
-	 * 执行搜索
-	 * @param {string} term 搜索关键字
-	 */
-	const performSearch = useCallback(
-		(term: string) => {
-			setSearchKeyword(term);
+	// 防抖搜索
+	useEffect(() => {
+		setSearchKeyword(debouncedKeyword);
+	}, [debouncedKeyword, setSearchKeyword]);
+
+	// 生成搜索建议（使用 useMemo 缓存）
+	const currentSuggestions = useMemo(() => {
+		if (
+			!debouncedSuggestions?.trim() ||
+			debouncedSuggestions.length < MIN_SEARCH_LENGTH
+		) {
+			return [];
+		}
+
+		try {
+			return getSearchSuggestions(
+				allGames.length > 0 ? allGames : games,
+				debouncedSuggestions,
+				MAX_SUGGESTIONS,
+			);
+		} catch (error) {
+			console.error("生成搜索建议失败:", error);
+			return [];
+		}
+	}, [debouncedSuggestions, allGames, games]);
+
+	// 同步建议到状态
+	useEffect(() => {
+		setSuggestions(currentSuggestions);
+	}, [currentSuggestions]);
+
+	// 处理选择
+	const handleSelect = useCallback(
+		(_: React.SyntheticEvent, value: string | null) => {
+			if (value) {
+				setSearchKeyword(value);
+				setIsOpen(false);
+			}
 		},
 		[setSearchKeyword],
 	);
 
-	// 同步全局状态
-	useEffect(() => {
-		setKeyword(searchKeyword);
-		setHasInput(Boolean(searchKeyword?.trim()));
-	}, [searchKeyword]);
-
-	// 当防抖后的关键字变化时，执行搜索
-	useEffect(() => {
-		performSearch(debouncedKeyword);
-	}, [debouncedKeyword, performSearch]);
-
-	// 生成搜索建议
-	useEffect(() => {
-		if (
-			debouncedSuggestions &&
-			debouncedSuggestions.trim() !== "" &&
-			debouncedSuggestions.length > 1
-		) {
-			try {
-				// 使用所有游戏数据来生成建议，而不仅仅是当前显示的游戏
-				const searchSuggestions = getSearchSuggestions(
-					allGames.length > 0 ? allGames : games,
-					debouncedSuggestions,
-					8,
-				);
-				setSuggestions(searchSuggestions);
-			} catch (error) {
-				console.error("生成搜索建议失败:", error);
+	// 处理输入变化
+	const handleInputChange = useCallback(
+		(_event: React.SyntheticEvent, newInputValue: string, reason: string) => {
+			if (reason === "input") {
+				setSearchKeyword(newInputValue);
+				setIsOpen(true);
+			} else if (reason === "clear") {
+				setSearchKeyword("");
 				setSuggestions([]);
-			}
-		} else {
-			setSuggestions([]);
-		}
-	}, [debouncedSuggestions, allGames, games]);
-
-	/**
-	 * 处理焦点事件
-	 */
-	const handleFocus = useCallback(() => {
-		setIsFocused(true);
-	}, []);
-
-	const handleBlur = useCallback(() => {
-		setIsFocused(false);
-		// 如果没有输入内容，延迟收缩
-		if (!keyword.trim()) {
-			setTimeout(() => {
-				setHasInput(false);
-			}, 200);
-		}
-	}, [keyword]);
-
-	/**
-	 * 处理自动完成选择
-	 * @param {React.SyntheticEvent} _event 事件对象
-	 * @param {string | null} value 选择的值
-	 */
-	const handleAutocompleteChange = useCallback(
-		(_event: React.SyntheticEvent, value: string | null) => {
-			if (value) {
-				setKeyword(value);
-				setHasInput(true);
-				performSearch(value);
 				setIsOpen(false);
 			}
 		},
-		[performSearch],
+		[setSearchKeyword],
 	);
 
-	/**
-	 * 处理键盘事件 - 确保不干扰正常的快捷键
-	 */
+	// 处理键盘事件
 	const handleKeyDown = useCallback(
 		(event: React.KeyboardEvent) => {
-			// 对于所有 Ctrl 组合键，都不阻止默认行为
-			if (event.ctrlKey) {
-				return; // 允许 Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X 等
-			}
+			if (event.ctrlKey) return; // 允许 Ctrl 组合键
 
-			// ESC 键关闭建议
 			if (event.key === "Escape") {
 				setIsOpen(false);
 				event.stopPropagation();
-				return;
-			}
-
-			// Enter 键执行搜索并关闭建议
-			if (event.key === "Enter") {
-				if (isOpen) {
-					// 如果下拉框打开，让 Autocomplete 处理选择
-					return;
-				} else {
-					// 如果下拉框关闭，执行搜索
-					performSearch(keyword);
-					setIsOpen(false);
-					event.stopPropagation();
-				}
+			} else if (event.key === "Enter" && !isOpen) {
+				setIsOpen(false);
+				event.stopPropagation();
 			}
 		},
-		[isOpen, keyword, performSearch],
+		[isOpen],
 	);
 
-	/**
-	 * 清除搜索内容
-	 */
-	const handleClear = () => {
-		setKeyword("");
-		setSuggestions([]);
-		setIsOpen(false);
-		setHasInput(false);
-		// 清除后立即搜索，不用等待防抖
-		performSearch("");
-	};
-
 	return (
-		<div className="overflow-visible" style={searchBoxStyle}>
+		<Box sx={{ width: searchBoxWidth }}>
 			<Autocomplete
 				freeSolo
 				open={isOpen && suggestions.length > 0}
 				onOpen={() => setIsOpen(true)}
 				onClose={() => setIsOpen(false)}
 				options={suggestions}
-				inputValue={keyword}
+				inputValue={searchKeyword}
 				selectOnFocus={false}
 				clearOnBlur={false}
-				handleHomeEndKeys={false}
 				blurOnSelect={false}
-				onInputChange={(_event, newInputValue, reason) => {
-					if (reason === "input") {
-						setKeyword(newInputValue);
-						setHasInput(Boolean(newInputValue.trim()));
-						setIsOpen(true);
-					} else if (reason === "clear") {
-						handleClear();
-					}
-				}}
-				onChange={handleAutocompleteChange}
-				className="w-full"
+				onInputChange={handleInputChange}
+				onChange={handleSelect}
 				sx={{
 					"& .MuiOutlinedInput-root": {
-						transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-						"&:hover": {
-							boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-							"& .MuiOutlinedInput-notchedOutline": {
-								borderColor: "rgb(59, 130, 246)",
-							},
+						transition: "all 0.3s",
+						"&:hover .MuiOutlinedInput-notchedOutline": {
+							borderColor: "primary.main",
 						},
 						"&.Mui-focused": {
-							boxShadow: "0 4px 16px rgba(59, 130, 246, 0.2)",
 							"& .MuiOutlinedInput-notchedOutline": {
-								borderColor: "rgb(59, 130, 246)",
-								borderWidth: "2px",
+								borderColor: "primary.main",
+								borderWidth: 2,
 							},
 						},
 					},
@@ -236,83 +169,40 @@ export const SearchBox = () => {
 						{...params}
 						variant="outlined"
 						size="small"
-						aria-label={t("components.SearchBox.searchGame")}
-						placeholder={
-							isFocused || hasInput
-								? t("components.SearchBox.inputGameName")
-								: t("components.SearchBox.search")
-						}
-						onFocus={handleFocus}
-						onBlur={handleBlur}
+						placeholder={t("components.SearchBox.search")}
 						onKeyDown={handleKeyDown}
 						slotProps={{
 							input: {
 								...params.InputProps,
-								className: "transition-all duration-300",
 								startAdornment: (
-									<InputAdornment position="start">
-										<SearchIcon
-											fontSize="small"
-											className={`transition-colors duration-300 ${
-												isFocused || keyword ? "text-blue-600" : "text-gray-500"
-											}`}
-										/>
-									</InputAdornment>
+									<SearchIcon fontSize="small" className="mr-1" />
 								),
-								onKeyDown: (event: React.KeyboardEvent<HTMLInputElement>) => {
-									if (event.ctrlKey || event.metaKey) {
-										event.stopPropagation();
-									}
-									handleKeyDown(event);
-								},
 							},
-						}}
-						InputProps={{
-							...params.InputProps,
-							endAdornment: (
-								<>
-									{keyword && (
-										<InputAdornment position="end">
-											<IconButton
-												onClick={handleClear}
-												size="small"
-												aria-label={t("components.SearchBox.clearSearch")}
-												className="p-1 hover:bg-gray-100 rounded"
-											>
-												<ClearIcon fontSize="small" />
-											</IconButton>
-										</InputAdornment>
-									)}
-									{params.InputProps.endAdornment}
-								</>
-							),
 						}}
 					/>
 				)}
-				renderOption={(props, option) => {
-					const { ...otherProps } = props;
-					return (
-						<li
-							{...otherProps}
-							className="flex items-center px-4 py-3 mx-2 my-1 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-blue-100 group"
-						>
-							<SearchIcon className="w-4 h-4 mr-3 flex-shrink-0 text-blue-600" />
-							<span className="flex-1 truncate text-sm group-hover:text-blue-700 transition-colors duration-200">
-								{option}
-							</span>
-						</li>
-					);
-				}}
+				renderOption={(props, option) => (
+					<Box
+						component="li"
+						{...props}
+						className="flex items-center gap-2 px-3 py-2 cursor-pointer"
+						sx={{ "&:hover": { bgcolor: "action.hover" } }}
+					>
+						<SearchIcon fontSize="small" />
+						<span className="flex-1 truncate text-sm">{option}</span>
+					</Box>
+				)}
 				slotProps={{
 					paper: {
-						className:
-							"mt-2 rounded-xl shadow-lg border border-gray-200 bg-white overflow-hidden",
+						className: "mt-1 rounded-lg shadow-lg",
+						sx: { bgcolor: "background.paper" },
 					},
 					listbox: {
-						className: "max-h-[60vh] py-2",
+						className: "py-1",
+						sx: { maxHeight: "60vh" },
 					},
 				}}
 			/>
-		</div>
+		</Box>
 	);
 };
