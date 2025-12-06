@@ -96,7 +96,7 @@ const GameSelectDialog: React.FC<GameSelectDialogProps> = ({
 								<ListItemButton
 									key={displayInfo.id}
 									onClick={() => onSelect(index)}
-									className="rounded mb-1 hover:bg-gray-100"
+									className="rounded mb-1"
 								>
 									<ListItemAvatar>
 										{displayInfo.image ? (

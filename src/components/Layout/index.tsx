@@ -53,7 +53,7 @@ function SidebarFooter({ mini }: SidebarFooterProps) {
 	return (
 		<Typography
 			variant="caption"
-			className="absolute bottom-0 left-0 right-0 w-full text-center border-t border-gray-200 dark:border-gray-700  dark:bg-gray-800 whitespace-nowrap overflow-hidden select-none"
+			className="absolute bottom-0 left-0 right-0 w-full text-center border-t whitespace-nowrap overflow-hidden select-none"
 		>
 			{mini
 				? `© ${new Date().getFullYear()}`
