@@ -2,7 +2,7 @@ import { Box, Card, CardContent, Stack, Typography } from "@mui/material";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router";
-import { ViewUpdateGameBox } from "@/components/AlertBox";
+import { ViewGameBox } from "@/components/AlertBox";
 import { snackbar } from "@/components/Snackbar";
 import { gameService } from "@/services/gameService";
 import { useStore } from "@/store";
@@ -74,7 +74,7 @@ export const Edit: React.FC = () => {
 	return (
 		<Box sx={{ p: 3 }}>
 			{/* 游戏更新确认弹窗 */}
-			<ViewUpdateGameBox
+			<ViewGameBox
 				open={openViewBox}
 				setOpen={setOpenViewBox}
 				onConfirm={handleConfirmGameUpdate}

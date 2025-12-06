@@ -14,7 +14,7 @@
  */
 
 import { version } from "@pkg";
-import type { BgmData, RawGameData } from "@/types";
+import type { BgmData, FullGameData, RawGameData } from "@/types";
 import i18n from "@/utils/i18n";
 import http, { tauriHttp } from "./http";
 
@@ -67,18 +67,23 @@ const transformBgmData = (BGMdata: any) => {
 		),
 		rank: BGMdata.rating?.rank ?? null,
 		score: BGMdata.rating?.score ?? null,
-		developer:
-			BGMdata.infobox
-				?.flatMap((item: { key: string; value: string }) => {
-					if (["开发", "游戏开发商", "开发商"].includes(item.key)) {
-						return item.value
-							.split(/、|×/g)
-							.map((name: string) => name.trim())
-							.filter((name: string) => name.length > 0);
-					}
-					return [];
-				})
-				?.join("/") || null,
+		developer: (() => {
+			const developers =
+				BGMdata.infobox?.flatMap(
+					(item: { key: string; value: string | unknown }) => {
+						if (["开发", "游戏开发商", "开发商"].includes(item.key)) {
+							if (typeof item.value !== "string") return [];
+							return item.value
+								.split(/、|×/g)
+								.map((name: string) => name.trim())
+								.filter((name: string) => name.length > 0);
+						}
+						return [];
+					},
+				) ?? [];
+			const uniqueDevelopers = [...new Set(developers)];
+			return uniqueDevelopers.length > 0 ? uniqueDevelopers.join("/") : null;
+		})(),
 	};
 
 	return { game, bgm_data };
@@ -126,13 +131,18 @@ export async function fetchBgmById(id: string, BGM_TOKEN: string) {
 }
 
 /**
- * 根据游戏名称搜索获取游戏详细信息
+ * 根据游戏名称搜索获取游戏详细信息（返回全部结果）
  *
  * @param name 游戏名称
  * @param BGM_TOKEN Bangumi API 访问令牌
- * @returns 返回游戏详细信息对象，若失败则返回错误提示字符串
+ * @param limit 最多返回结果数量，默认 25
+ * @returns 返回游戏详细信息数组，若失败则返回错误提示字符串
  */
-export async function fetchBgmByName(name: string, BGM_TOKEN: string) {
+export async function fetchBgmByName(
+	name: string,
+	BGM_TOKEN: string,
+	limit = 25,
+): Promise<FullGameData[] | string> {
 	// 使用 Tauri HTTP 客户端，支持自定义 User-Agent
 	const BGM_HEADER = {
 		headers: {
@@ -152,25 +162,31 @@ export async function fetchBgmByName(name: string, BGM_TOKEN: string) {
 					filter: {
 						type: [4], // 4 = 游戏类型
 					},
+					limit: limit,
 				},
 				BGM_HEADER,
 			)
 		).data;
-		const BGMdata = Array.isArray(resp.data) ? resp.data[0] : undefined;
 
-		if (!BGMdata?.id) {
+		const rawResults = Array.isArray(resp.data) ? resp.data : [];
+
+		if (rawResults.length === 0) {
 			return i18n.t(
 				"api.bgm.notFound",
 				"未找到相关条目，请确认游戏名字后重试，或未设置BGM_TOKEN",
 			);
 		}
 
-		const transformed = transformBgmData(BGMdata);
-		return {
-			...transformed,
-			vndb_data: null,
-			other_data: null,
-		};
+		// 转换全部结果为 FullGameData 数组
+		// biome-ignore lint/suspicious/noExplicitAny: external API has dynamic shape
+		return rawResults.map((item: any) => {
+			const transformed = transformBgmData(item);
+			return {
+				...transformed,
+				vndb_data: null,
+				other_data: null,
+			};
+		});
 	} catch (error) {
 		console.error("BGM API调用失败:", error);
 		return i18n.t(

@@ -386,19 +386,6 @@
 				"newCategoryName": "新しいカテゴリ名"
 			}
 		},
-		"AlertBox": {
-			"cancel": "キャンセル",
-			"confirm": "確認",
-			"confirmDelete": "削除を確認",
-			"deleteGameTitle": "ゲームを削除",
-			"deleteGameMessage": "このゲームを削除してもよろしいですか？この操作は取り消せません。",
-			"processing": "処理中...",
-			"confirmUpdateTitle": "ゲーム情報の更新を確認",
-			"bgmData": "Bangumiデータ",
-			"vndbData": "VNDBデータ",
-			"gameName": "ゲーム名",
-			"noData": "データがありません"
-		},
 		"Snackbar": {
 			"failedOpenGameFolder": "ゲームフォルダの開けに失敗しました",
 			"failedOpenBackupFolder": "バックアップフォルダの開けに失敗しました",
@@ -417,7 +404,29 @@
 			"cancel": "キャンセル",
 			"processing": "処理中...",
 			"confirm": "確認",
-			"idSearch": "ID検索モードを有効化"
+			"idSearch": "ID検索モードを有効化",
+			"viewMore": "もっと見る",
+			"selectGame": "ゲームを選択",
+			"noResults": "結果が見つかりませんでした",
+			"developer": "開発者",
+			"invalidIDFormat": "IDフォーマットが無効です",
+			"noDataSource": "ゲームデータを取得できません",
+			"unknownError": "不明なエラーが発生しました",
+			"timeout": "タイムアウトしました。しばらくしてから再試行してください"
+		},
+		"AlertBox": {
+			"confirmAddTitle": "ゲームの追加を確認",
+			"confirmUpdateTitle": "ゲーム情報の更新を確認",
+			"confirm": "確認",
+			"cancel": "キャンセル",
+			"processing": "処理中...",
+			"bgmData": "BGM データ",
+			"vndbData": "VNDB データ",
+			"gameName": "ゲーム名",
+			"noData": "データがありません",
+			"confirmDelete": "削除を確認",
+			"deleteGameTitle": "ゲームを削除",
+			"deleteGameMessage": "このゲームを削除してもよろしいですか？"
 		},
 		"FilterModal": {
 			"filter": "フィルター",

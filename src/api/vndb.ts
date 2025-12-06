@@ -15,7 +15,7 @@
  */
 
 import { useStore } from "@/store";
-import type { RawGameData, VndbData } from "@/types";
+import type { FullGameData, RawGameData, VndbData } from "@/types";
 import i18n from "@/utils/i18n";
 import http from "./http";
 
@@ -117,40 +117,46 @@ function transformVndbData(
  *
  * @param {string} name 游戏名称，用于搜索 VNDB 条目。
  * @param {string} [id] 可选，VNDB 游戏 ID，若提供则优先通过 ID 查询。
- * @returns {Promise<object | string>} 包含游戏详细信息的对象，若未找到则返回错误提示字符串。
+ * @param {number} [limit=25] 可选，返回的最大结果数量，默认 25。
+ * @returns {Promise<FullGameData[] | string>} 包含游戏详细信息的数组，若未找到则返回错误提示字符串。
  */
-export async function fetchVndbByName(name: string, id?: string) {
+export async function fetchVndbByName(
+	name: string,
+	id?: string,
+	limit = 25,
+): Promise<FullGameData[] | string> {
 	try {
 		// 构建 API 请求体
 		const requestBody = {
 			filters: id ? ["id", "=", id] : ["search", "=", name],
 			fields:
 				"id, titles.title, titles.lang, titles.main, aliases, image.url, released, rating, tags.name,tags.rating,tags.spoiler,description,developers.name,length_minutes",
+			results: limit,
 		};
 
 		// 调用 VNDB API
-		const VNDBdata = (
+		const rawResults = (
 			await http.post("https://api.vndb.org/kana/vn", requestBody, {
 				headers: {
 					Accept: "application/json",
 					"Content-Type": "application/json",
 				},
 			})
-		).data.results[0];
-		if (!VNDBdata)
+		).data.results as RawVNDBData[];
+		if (!rawResults || rawResults.length === 0)
 			return i18n.t(
 				"api.vndb.notFound",
 				"未找到相关条目，请确认ID或游戏名字后重试",
 			);
-
-		const { game, vndb_data } = transformVndbData(VNDBdata);
-
-		return {
-			game,
-			vndb_data,
-			bgm_data: null,
-			other_data: null,
-		};
+		return rawResults.map((VNDBdata) => {
+			const { game, vndb_data } = transformVndbData(VNDBdata);
+			return {
+				game,
+				vndb_data,
+				bgm_data: null,
+				other_data: null,
+			};
+		});
 	} catch (error) {
 		Promise.reject(
 			new Error(i18n.t("api.vndb.apiCallFailed", "VNDB API 调用失败")),
@@ -166,10 +172,14 @@ export async function fetchVndbByName(name: string, id?: string) {
  * 通过 ID 直接获取 VNDB 游戏信息。
  *
  * @param {string} id VNDB 游戏 ID（如 "v17"）。
- * @returns {Promise<object | string>} 包含游戏详细信息的对象，若未找到则返回错误提示字符串。
+ * @returns {Promise<FullGameData | string>} 包含游戏详细信息的对象，若未找到则返回错误提示字符串。
  */
-export async function fetchVndbById(id: string) {
-	return fetchVndbByName("", id);
+export async function fetchVndbById(
+	id: string,
+): Promise<FullGameData | string> {
+	const result = await fetchVndbByName("", id);
+	if (typeof result === "string") return result;
+	return result[0];
 }
 
 /**

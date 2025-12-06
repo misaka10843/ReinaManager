@@ -393,19 +393,6 @@
 				"newCategoryName": "新分类名称"
 			}
 		},
-		"AlertBox": {
-			"cancel": "取消",
-			"confirm": "确认",
-			"deleteGameTitle": "删除游戏",
-			"deleteGameMessage": "确定要删除这个游戏吗？此操作不可撤销。",
-			"confirmDelete": "确认删除",
-			"processing": "处理中...",
-			"confirmUpdateTitle": "确认更新游戏信息",
-			"bgmData": "Bangumi 数据",
-			"vndbData": "VNDB 数据",
-			"gameName": "游戏名称",
-			"noData": "无可用数据"
-		},
 		"Snackbar": {
 			"failedOpenGameFolder": "打开游戏文件夹失败",
 			"failedOpenBackupFolder": "打开备份文件夹失败",
@@ -424,7 +411,29 @@
 			"cancel": "取消",
 			"processing": "处理中...",
 			"confirm": "确认",
-			"idSearch": "启用ID搜索模式"
+			"idSearch": "启用ID搜索模式",
+			"viewMore": "查看更多",
+			"selectGame": "选择游戏",
+			"noResults": "没有找到结果",
+			"developer": "开发商",
+			"invalidIDFormat": "ID格式无效",
+			"noDataSource": "无法获取游戏数据",
+			"unknownError": "发生未知错误",
+			"timeout": "请求超时，请稍后重试"
+		},
+		"AlertBox": {
+			"confirmAddTitle": "确认添加游戏",
+			"confirmUpdateTitle": "确认更新游戏信息",
+			"confirm": "确认",
+			"cancel": "取消",
+			"processing": "处理中...",
+			"bgmData": "BGM 数据",
+			"vndbData": "VNDB 数据",
+			"gameName": "游戏名称",
+			"noData": "没有数据",
+			"confirmDelete": "确认删除",
+			"deleteGameTitle": "删除游戏",
+			"deleteGameMessage": "确定要删除该游戏吗？"
 		},
 		"FilterModal": {
 			"filter": "筛选",

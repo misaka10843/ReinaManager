@@ -387,19 +387,6 @@
 				"newCategoryName": "New Category Name"
 			}
 		},
-		"AlertBox": {
-			"cancel": "Cancel",
-			"confirm": "Confirm",
-			"confirmDelete": "Confirm Delete",
-			"deleteGameTitle": "Delete Game?",
-			"deleteGameMessage": "This action cannot be undone. Are you sure you want to delete this game?",
-			"processing": "Processing...",
-			"confirmUpdateTitle": "Confirm Update Game Info",
-			"bgmData": "Bangumi Data",
-			"vndbData": "VNDB Data",
-			"gameName": "Game Name",
-			"noData": "No data available"
-		},
 		"Snackbar": {
 			"failedOpenGameFolder": "Failed to open the game folder",
 			"failedOpenBackupFolder": "Failed to open the backup folder",
@@ -418,7 +405,29 @@
 			"cancel": "Cancel",
 			"processing": "Processing...",
 			"confirm": "Confirm",
-			"idSearch": "Enable ID Search Mode"
+			"idSearch": "Enable ID Search Mode",
+			"viewMore": "View More",
+			"selectGame": "Select Game",
+			"noResults": "No results found",
+			"developer": "Developer",
+			"invalidIDFormat": "Invalid ID format",
+			"noDataSource": "Unable to fetch game data",
+			"unknownError": "An unknown error occurred",
+			"timeout": "Request timed out, please try again later"
+		},
+		"AlertBox": {
+			"confirmAddTitle": "Confirm Add Game",
+			"confirmUpdateTitle": "Confirm Update Game",
+			"confirm": "Confirm",
+			"cancel": "Cancel",
+			"processing": "Processing...",
+			"bgmData": "BGM Data",
+			"vndbData": "VNDB Data",
+			"gameName": "Game Name",
+			"noData": "No data",
+			"confirmDelete": "Confirm Delete",
+			"deleteGameTitle": "Delete Game",
+			"deleteGameMessage": "Are you sure you want to delete this game?"
 		},
 		"FilterModal": {
 			"filter": "Filter",

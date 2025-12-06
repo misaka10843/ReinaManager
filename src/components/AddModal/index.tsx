@@ -32,15 +32,38 @@ import DialogTitle from "@mui/material/DialogTitle";
 import Switch from "@mui/material/Switch";
 import TextField from "@mui/material/TextField";
 import { isTauri } from "@tauri-apps/api/core";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { fetchBgmById, fetchBgmByName } from "@/api/bgm";
 import { fetchMixedData } from "@/api/mixed";
 import { fetchVndbById, fetchVndbByName } from "@/api/vndb";
+import { ViewGameBox } from "@/components/AlertBox";
 import { useModal } from "@/components/Toolbar";
 import { useStore } from "@/store/";
 import type { FullGameData } from "@/types";
 import { handleDirectory } from "@/utils";
+import GameSelectDialog from "./GameSelectDialog";
+
+/**
+ * 常量定义
+ */
+const REQUEST_TIMEOUT_MS = 10000; // 请求超时时间
+const ERROR_DISPLAY_DURATION_MS = 5000; // 错误提示显示时长
+
+/**
+ * 弹窗状态类型定义
+ */
+interface DialogState {
+	confirm: {
+		open: boolean;
+		data: FullGameData | null;
+		showViewMore: boolean;
+	};
+	select: {
+		open: boolean;
+		results: FullGameData[];
+	};
+}
 
 /**
  * 从文件路径中提取文件夹名称（纯函数，置于组件外以保证稳定引用）
@@ -59,6 +82,7 @@ function extractFolderName(path: string): string {
  * - 支持通过 Bangumi 或 VNDB API 自动获取游戏信息。
  * - 支持自定义模式，允许用户手动选择本地可执行文件并填写名称。
  * - 支持错误提示、加载状态、国际化等功能。
+ * - 名称搜索时显示确认弹窗，支持查看更多选择其他结果。
  *
  * @component
  * @returns {JSX.Element} 添加游戏的弹窗组件
@@ -74,10 +98,31 @@ const AddModal: React.FC = () => {
 	const [customMode, setCustomMode] = useState(false);
 	// 保留 ID 搜索状态
 	const [isID, setisID] = useState(false);
+
+	// 弹窗状态（合并相关状态）
+	const [dialogState, setDialogState] = useState<DialogState>({
+		confirm: {
+			open: false,
+			data: null,
+			showViewMore: false,
+		},
+		select: {
+			open: false,
+			results: [],
+		},
+	});
+
+	// 请求取消控制器
+	const abortControllerRef = useRef<AbortController | null>(null);
+
+	const showError = useCallback((message: string) => {
+		setError(message);
+		setTimeout(() => setError(""), ERROR_DISPLAY_DURATION_MS);
+	}, []);
+
 	/**
 	 * 当路径变化时，自动提取文件夹名作为游戏名。
 	 */
-
 	useEffect(() => {
 		if (path) {
 			setFormText(extractFolderName(path));
@@ -85,11 +130,146 @@ const AddModal: React.FC = () => {
 	}, [path]);
 
 	/**
+	 * 重置所有状态
+	 */
+	const resetState = useCallback(() => {
+		setFormText("");
+		setPath("");
+		setError("");
+		setDialogState({
+			confirm: { open: false, data: null, showViewMore: false },
+			select: { open: false, results: [] },
+		});
+	}, []);
+
+	const checkGameExists = useCallback(
+		(gameData: FullGameData): boolean => {
+			return games.some((game) => {
+				if (gameData.game.bgm_id && game.bgm_id === gameData.game.bgm_id)
+					return true;
+				if (gameData.game.vndb_id && game.vndb_id === gameData.game.vndb_id)
+					return true;
+				return false;
+			});
+		},
+		[games],
+	);
+
+	const finalizeAddGame = useCallback(
+		(gameData: FullGameData) => {
+			const fullGameData: FullGameData = {
+				...gameData,
+				game: {
+					...gameData.game,
+					localpath: path,
+					autosave: 0,
+					clear: 0,
+				},
+			};
+
+			if (checkGameExists(fullGameData)) {
+				showError(t("components.AddModal.gameExists"));
+				return;
+			}
+
+			addGame(fullGameData);
+			resetState();
+			handleClose();
+		},
+		[addGame, checkGameExists, handleClose, path, resetState, showError, t],
+	);
+
+	/**
+	 * 检查游戏是否已存在
+	 */
+	// 删除旧实现（已由 useCallback 版本替代）
+
+	/**
+	 * 处理确认弹窗的确认操作
+	 */
+	const handleConfirmAdd = useCallback(() => {
+		if (dialogState.confirm.data) {
+			finalizeAddGame(dialogState.confirm.data);
+		}
+	}, [finalizeAddGame, dialogState.confirm.data]);
+
+	/**
+	 * 处理确认弹窗的取消操作
+	 */
+	const handleConfirmCancel = useCallback(() => {
+		setDialogState((prev) => ({
+			...prev,
+			confirm: { open: false, data: null, showViewMore: false },
+		}));
+	}, []);
+
+	const cancelOngoingRequest = useCallback(() => {
+		if (abortControllerRef.current) {
+			abortControllerRef.current.abort();
+		}
+		abortControllerRef.current = null;
+		setLoading(false);
+		resetState();
+		handleClose();
+	}, [handleClose, resetState]);
+
+	/**
+	 * 处理"查看更多"按钮点击
+	 */
+	const handleViewMore = useCallback(() => {
+		setDialogState((prev) => ({
+			...prev,
+			confirm: { ...prev.confirm, open: false },
+			select: { ...prev.select, open: true },
+		}));
+	}, []);
+
+	/**
+	 * 处理从列表中选择游戏
+	 */
+	const handleSelectGame = useCallback(
+		(index: number) => {
+			const selectedGame = dialogState.select.results[index];
+			if (selectedGame) {
+				setDialogState((prev) => ({
+					confirm: {
+						open: true,
+						data: selectedGame,
+						showViewMore: prev.confirm.showViewMore,
+					},
+					select: { ...prev.select, open: false },
+				}));
+			}
+		},
+		[dialogState.select.results],
+	);
+
+	/**
 	 * 提交表单，处理添加游戏的逻辑。
 	 * - 自定义模式下直接添加本地游戏。
-	 * - 其他模式下通过 API 获取游戏信息并添加。
+	 * - ID搜索模式下显示确认弹窗后添加。
+	 * - 名称搜索模式下显示确认弹窗，支持查看更多。
 	 */
 	const handleSubmit = async () => {
+		if (loading) return;
+		const controller = new AbortController();
+		if (abortControllerRef.current) abortControllerRef.current.abort();
+		abortControllerRef.current = controller;
+
+		const abortPromise = new Promise<never>((_, reject) => {
+			controller.signal.addEventListener("abort", () => {
+				reject(new DOMException("Aborted", "AbortError"));
+			});
+		});
+
+		const withAbort = <T,>(promise: Promise<T>) =>
+			Promise.race([promise, abortPromise]) as Promise<T>;
+
+		const timeoutId = window.setTimeout(() => {
+			controller.abort();
+			showError(t("components.AddModal.timeout", "请求超时，请稍后重试"));
+		}, REQUEST_TIMEOUT_MS);
+
 		try {
 			setLoading(true);
 
@@ -99,8 +279,7 @@ const AddModal: React.FC = () => {
 			// 场景1: 自定义模式
 			if (customMode) {
 				if (!path) {
-					setError(t("components.AddModal.noExecutableSelected"));
-					setTimeout(() => setError(""), 5000);
+					showError(t("components.AddModal.noExecutableSelected"));
 					return;
 				}
 
@@ -128,62 +307,87 @@ const AddModal: React.FC = () => {
 			}
 
 			// 场景2-4: 通过 API 获取数据
-			let apiData: FullGameData;
+			let apiData: FullGameData | null = null;
+			let allResults: FullGameData[] = [];
+			let canViewMore = false;
 
 			if (apiSource === "bgm") {
 				// BGM 单一数据源
-				const result = isID
-					? await fetchBgmById(formText, bgmToken)
-					: await fetchBgmByName(formText, bgmToken);
-
-				if (typeof result === "string") {
-					setError(result);
-					setTimeout(() => setError(""), 5000);
-					return;
+				if (isID) {
+					// ID 搜索返回单个结果
+					const result = await withAbort(fetchBgmById(formText, bgmToken));
+					if (typeof result === "string") {
+						showError(result);
+						return;
+					}
+					apiData = result;
+				} else {
+					// 名称搜索返回多个结果
+					const result = await withAbort(fetchBgmByName(formText, bgmToken));
+					if (typeof result === "string") {
+						showError(result);
+						return;
+					}
+					allResults = result;
+					apiData = result[0];
+					canViewMore = result.length > 1;
 				}
-				apiData = result;
 			} else if (apiSource === "vndb") {
 				// VNDB 单一数据源
-				const result = isID
-					? await fetchVndbById(formText)
-					: await fetchVndbByName(formText);
-
-				if (typeof result === "string") {
-					setError(result);
-					setTimeout(() => setError(""), 5000);
-					return;
+				if (isID) {
+					// ID 搜索返回单个结果
+					const result = await withAbort(fetchVndbById(formText));
+					if (typeof result === "string") {
+						showError(result);
+						return;
+					}
+					apiData = result;
+				} else {
+					// 名称搜索返回多个结果
+					const result = await withAbort(fetchVndbByName(formText));
+					if (typeof result === "string") {
+						showError(result);
+						return;
+					}
+					allResults = result;
+					apiData = result[0];
+					canViewMore = result.length > 1;
 				}
-				apiData = result;
 			} else {
-				// Mixed 混合数据源
-				const { bgmId, vndbId } = isID ? parseGameId(formText, true) : {};
+				// Mixed 混合数据源（不支持查看更多）
+				const { bgmId, vndbId } = isID ? parseGameId(formText) : {};
 
 				if (isID && !bgmId && !vndbId) {
-					setError(t("components.AddModal.invalidIDFormat"));
-					setTimeout(() => setError(""), 5000);
+					showError(t("components.AddModal.invalidIDFormat"));
 					return;
 				}
 
-				const { bgm_data, vndb_data } = await fetchMixedData({
-					bgm_id: bgmId,
-					vndb_id: vndbId,
-					name: !isID ? formText : undefined,
-					BGM_TOKEN: bgmToken,
-				});
+				const { bgm_data, vndb_data } = await withAbort(
+					fetchMixedData({
+						bgm_id: bgmId,
+						vndb_id: vndbId,
+						name: !isID ? formText : undefined,
+						BGM_TOKEN: bgmToken,
+					}),
+				);
 
 				if (!bgm_data && !vndb_data) {
-					setError(t("components.AddModal.noDataSource"));
-					setTimeout(() => setError(""), 5000);
+					showError(t("components.AddModal.noDataSource"));
 					return;
 				}
 
 				// 合并两个数据源
 				apiData = {
-					game: { ...bgm_data?.game, ...vndb_data?.game, id_type: "mixed" }, //date不一致时，可能会出现搜索结果不同的问题
+					game: { ...bgm_data?.game, ...vndb_data?.game, id_type: "mixed" },
 					bgm_data: bgm_data?.bgm_data || null,
 					vndb_data: vndb_data?.vndb_data || null,
 					other_data: null,
 				};
+			}
+
+			if (!apiData) {
+				showError(t("components.AddModal.noDataSource"));
+				return;
 			}
 
 			// 合并默认数据（路径信息）
@@ -195,39 +399,35 @@ const AddModal: React.FC = () => {
 				},
 			};
 
-			// 检查是否已存在相同游戏
-			const existingGame = games.find((game) => {
-				if (
-					fullGameData.game.bgm_id &&
-					game.bgm_id === fullGameData.game.bgm_id
-				)
-					return true;
-				if (
-					fullGameData.game.vndb_id &&
-					game.vndb_id === fullGameData.game.vndb_id
-				)
-					return true;
-				return false;
+			// 保存搜索结果并打开确认弹窗
+			setDialogState({
+				confirm: {
+					open: true,
+					data: fullGameData,
+					showViewMore: canViewMore,
+				},
+				select: {
+					open: false,
+					results: allResults.map((item) => ({
+						...item,
+						game: { ...item.game, ...defaultdata.game },
+					})),
+				},
 			});
-
-			if (existingGame) {
-				setError(t("components.AddModal.gameExists"));
-				setTimeout(() => setError(""), 5000);
+		} catch (error) {
+			if (error instanceof DOMException && error.name === "AbortError") {
 				return;
 			}
-
-			addGame(fullGameData);
-			setFormText("");
-			setPath("");
-			handleClose();
-		} catch (error) {
 			const errorMessage =
 				error instanceof Error
 					? error.message
 					: t("components.AddModal.unknownError");
-			setError(errorMessage);
-			setTimeout(() => setError(""), 5000);
+			showError(errorMessage);
 		} finally {
+			window.clearTimeout(timeoutId);
+			if (abortControllerRef.current === controller) {
+				abortControllerRef.current = null;
+			}
 			setLoading(false);
 		}
 	};
@@ -238,10 +438,7 @@ const AddModal: React.FC = () => {
 	 * @param isID 是否为 ID 搜索模式
 	 * @returns 包含 bgmId 和 vndbId 的对象
 	 */
-	const parseGameId = (
-		input: string,
-		isID: boolean,
-	): { bgmId?: string; vndbId?: string } => {
+	const parseGameId = (input: string): { bgmId?: string; vndbId?: string } => {
 		if (!isID) {
 			return {}; // 如果不是 ID 搜索模式，返回空对象
 		}
@@ -310,6 +507,7 @@ const AddModal: React.FC = () => {
 							onChange={() => {
 								setCustomMode(!customMode);
 							}}
+							disabled={loading}
 						/>
 						<span>{t("components.AddModal.enableCustomMode")}</span>
 						<RadioGroup
@@ -324,12 +522,19 @@ const AddModal: React.FC = () => {
 								value="bgm"
 								control={<Radio />}
 								label="Bangumi"
+								disabled={loading}
 							/>
-							<FormControlLabel value="vndb" control={<Radio />} label="VNDB" />
+							<FormControlLabel
+								value="vndb"
+								control={<Radio />}
+								label="VNDB"
+								disabled={loading}
+							/>
 							<FormControlLabel
 								value="mixed"
 								control={<Radio />}
 								label="Mixed"
+								disabled={loading}
 							/>
 						</RadioGroup>
 						<Switch
@@ -337,6 +542,7 @@ const AddModal: React.FC = () => {
 							onChange={() => {
 								setisID(!isID);
 							}}
+							disabled={loading}
 						/>
 						<span>{t("components.AddModal.idSearch")}</span>
 					</div>
@@ -361,15 +567,7 @@ const AddModal: React.FC = () => {
 				</DialogContent>
 				<DialogActions>
 					{/* 取消按钮 */}
-					<Button
-						variant="outlined"
-						onClick={() => {
-							setFormText("");
-							setPath("");
-							handleClose();
-						}}
-						disabled={loading}
-					>
+					<Button variant="outlined" onClick={cancelOngoingRequest}>
 						{t("components.AddModal.cancel")}
 					</Button>
 					{/* 确认按钮 */}
@@ -385,6 +583,36 @@ const AddModal: React.FC = () => {
 					</Button>
 				</DialogActions>
 			</Dialog>
+
+			{/* 确认游戏信息弹窗 */}
+			<ViewGameBox
+				fullgame={dialogState.confirm.data}
+				open={dialogState.confirm.open}
+				setOpen={(open) => {
+					if (!open) handleConfirmCancel();
+				}}
+				onConfirm={handleConfirmAdd}
+				showExtraButton={dialogState.confirm.showViewMore}
+				extraButtonText={t("components.AddModal.viewMore", "查看更多")}
+				extraButtonColor="primary"
+				extraButtonVariant="outlined"
+				onExtraButtonClick={handleViewMore}
+			/>
+
+			{/* 游戏列表选择弹窗 */}
+			<GameSelectDialog
+				open={dialogState.select.open}
+				onClose={() =>
+					setDialogState((prev) => ({
+						...prev,
+						select: { ...prev.select, open: false },
+					}))
+				}
+				results={dialogState.select.results}
+				onSelect={handleSelectGame}
+				dataSource={apiSource === "vndb" ? "vndb" : "bgm"}
+				title={t("components.AddModal.selectGame", "选择游戏")}
+			/>
 		</>
 	);
 };

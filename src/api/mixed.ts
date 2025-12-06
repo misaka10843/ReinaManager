@@ -30,13 +30,14 @@ async function getBangumiDataSafely(
 	bgm_id?: string,
 ): Promise<FullGameData | null> {
 	try {
-		let result: string | FullGameData;
 		if (bgm_id) {
-			result = await fetchBgmById(bgm_id, BGM_TOKEN);
-		} else {
-			result = await fetchBgmByName(name, BGM_TOKEN);
+			const result = await fetchBgmById(bgm_id, BGM_TOKEN);
+			return result && typeof result !== "string" ? result : null;
 		}
-		return result && typeof result !== "string" ? result : null;
+		// 名称搜索返回数组，取第一个
+		const result = await fetchBgmByName(name, BGM_TOKEN);
+		if (typeof result === "string") return null;
+		return result.length > 0 ? result[0] : null;
 	} catch {
 		return null;
 	}
@@ -48,13 +49,14 @@ async function getVNDBDataSafely(
 	vndb_id?: string,
 ): Promise<FullGameData | null> {
 	try {
-		let result: string | FullGameData;
 		if (vndb_id) {
-			result = await fetchVndbById(vndb_id);
-		} else {
-			result = await fetchVndbByName(searchName);
+			const result = await fetchVndbById(vndb_id);
+			return result && typeof result !== "string" ? result : null;
 		}
-		return result && typeof result !== "string" ? result : null;
+		// 名称搜索返回数组，取第一个
+		const result = await fetchVndbByName(searchName);
+		if (typeof result === "string") return null;
+		return result.length > 0 ? result[0] : null;
 	} catch {
 		return null;
 	}
