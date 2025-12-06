@@ -17,16 +17,30 @@
  * - react-i18next
  */
 
+import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import StopIcon from "@mui/icons-material/Stop";
+import SyncIcon from "@mui/icons-material/Sync";
 import TimerIcon from "@mui/icons-material/Timer";
-import { Typography } from "@mui/material";
-import Button from "@mui/material/Button";
+import {
+	Box,
+	Button,
+	Dialog,
+	DialogActions,
+	DialogContent,
+	DialogTitle,
+	IconButton,
+	TextField,
+	Typography,
+} from "@mui/material";
 import { isTauri } from "@tauri-apps/api/core";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { snackbar } from "@/components/Snackbar";
 import { useStore } from "@/store";
 import { useGamePlayStore } from "@/store/gamePlayStore";
+import type { FullGameData } from "@/types";
+import { handleDirectory } from "@/utils";
 
 /**
  * 格式化游戏时长显示
@@ -62,14 +76,19 @@ export const LaunchModal = () => {
 		selectedGameId,
 		getGameById,
 		isLocalGame,
-		allGames,
 		timeTrackingMode,
+		updateGame,
 	} = useStore();
 	const { launchGame, stopGame, isGameRunning, getGameRealTimeState } =
 		useGamePlayStore();
 
 	// 用于 elapsed 模式下的前端计时器显示
 	const timerRef = useRef<HTMLSpanElement>(null);
+
+	// 路径设置对话框状态
+	const [pathDialogOpen, setPathDialogOpen] = useState(false);
+	const [localPath, setLocalPath] = useState<string>("");
+	const [isSaving, setIsSaving] = useState(false);
 
 	// 检查这个特定游戏是否在运行
 	const isThisGameRunning = isGameRunning(
@@ -115,22 +134,6 @@ export const LaunchModal = () => {
 	}, [timeTrackingMode, isThisGameRunning, realTimeState?.startTime]);
 
 	/**
-	 * 判断当前游戏是否可以启动
-	 * 通过订阅 allGames 确保当游戏列表更新时组件重新渲染
-	 * @returns {boolean} 是否可启动
-	 */
-	const canUse = (): boolean => {
-		// 基础检查
-		if (!isTauri() || !selectedGameId || isThisGameRunning) {
-			return false;
-		}
-
-		// 检查是否为本地游戏
-		// isLocalGame 内部从 allGames 查找，组件已订阅 allGames 确保数据同步
-		return allGames.length >= 0 && isLocalGame(selectedGameId);
-	};
-
-	/**
 	 * 启动游戏按钮点击事件
 	 */
 	const handleStartGame = async () => {
@@ -160,6 +163,76 @@ export const LaunchModal = () => {
 			await stopGame(selectedGameId);
 		} catch (error) {
 			console.error(t("components.LaunchModal.stopFailed"), error);
+		}
+	};
+
+	/**
+	 * 打开路径设置对话框
+	 */
+	const handleOpenPathDialog = async () => {
+		if (!selectedGameId) return;
+
+		try {
+			const game = await getGameById(selectedGameId);
+			setLocalPath(game.localpath || "");
+			setPathDialogOpen(true);
+		} catch (error) {
+			console.error("Failed to load game data:", error);
+		}
+	};
+
+	/**
+	 * 关闭路径设置对话框
+	 */
+	const handleClosePathDialog = () => {
+		if (!isSaving) {
+			setPathDialogOpen(false);
+			setLocalPath("");
+		}
+	};
+
+	/**
+	 * 选择文件夹
+	 */
+	const handleSelectFolder = async () => {
+		try {
+			const selectedPath = await handleDirectory();
+			if (selectedPath) {
+				setLocalPath(selectedPath);
+			}
+		} catch (error) {
+			snackbar.error(
+				`${t("components.LaunchModal.selectFolder")}: ${error instanceof Error ? error.message : "Unknown error"}`,
+			);
+		}
+	};
+
+	/**
+	 * 保存路径
+	 */
+	const handleSavePath = async () => {
+		if (!selectedGameId || !localPath.trim()) {
+			snackbar.error(t("components.LaunchModal.pathRequired"));
+			return;
+		}
+
+		setIsSaving(true);
+		try {
+			const updateData: Partial<FullGameData> = {
+				game: {
+					localpath: localPath.trim(),
+				},
+			};
+
+			await updateGame(selectedGameId, updateData);
+			snackbar.success(t("components.LaunchModal.pathSaved"));
+			handleClosePathDialog();
+		} catch (error) {
+			snackbar.error(
+				`${t("components.LaunchModal.pathSaveFailed")}: ${error instanceof Error ? error.message : "Unknown error"}`,
+			);
+		} finally {
+			setIsSaving(false);
 		}
 	};
 
@@ -208,11 +281,73 @@ export const LaunchModal = () => {
 		);
 	}
 
+	// 如果不是本地游戏，显示"同步本地"按钮
+	if (isTauri() && selectedGameId && !isLocalGame(selectedGameId)) {
+		return (
+			<>
+				<Button
+					startIcon={<SyncIcon />}
+					onClick={handleOpenPathDialog}
+					variant="text"
+				>
+					{t("components.LaunchModal.syncLocalPath")}
+				</Button>
+
+				{/* 路径设置对话框 */}
+				<Dialog
+					open={pathDialogOpen}
+					onClose={handleClosePathDialog}
+					maxWidth="sm"
+					fullWidth
+				>
+					<DialogTitle>
+						{t("components.LaunchModal.setLocalPathTitle")}
+					</DialogTitle>
+					<DialogContent>
+						<Box sx={{ display: "flex", gap: 1, mt: 2 }}>
+							<TextField
+								label={t("components.LaunchModal.localPathLabel")}
+								variant="outlined"
+								fullWidth
+								value={localPath}
+								onChange={(e) => setLocalPath(e.target.value)}
+								disabled={isSaving}
+								onKeyDown={(e) => {
+									if (e.key === "Enter" && localPath.trim()) {
+										handleSavePath();
+									}
+								}}
+							/>
+							<IconButton
+								onClick={handleSelectFolder}
+								disabled={isSaving}
+								color="primary"
+							>
+								<FolderOpenIcon />
+							</IconButton>
+						</Box>
+					</DialogContent>
+					<DialogActions>
+						<Button onClick={handleClosePathDialog} disabled={isSaving}>
+							{t("common.cancel")}
+						</Button>
+						<Button
+							onClick={handleSavePath}
+							variant="contained"
+							disabled={!localPath.trim() || isSaving}
+						>
+							{isSaving ? t("common.saving") : t("common.confirm")}
+						</Button>
+					</DialogActions>
+				</Dialog>
+			</>
+		);
+	}
+
 	return (
 		<Button
 			startIcon={<PlayArrowIcon />}
 			onClick={handleStartGame}
-			disabled={!canUse()}
 		>
 			{t("components.LaunchModal.launchGame")}
 		</Button>

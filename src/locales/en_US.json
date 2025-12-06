@@ -351,7 +351,13 @@
 			"gamePathNotFound": "Game path not found",
 			"launchFailed": "Failed to launch game:",
 			"stopFailed": "Failed to stop game:",
-			"playing": "Playing..."
+			"syncLocalPath": "Sync Local",
+			"setLocalPathTitle": "Set Local Path",
+			"localPathLabel": "Executable File Path",
+			"selectFolder": "Select Folder",
+			"pathRequired": "Please select or enter a path",
+			"pathSaved": "Path saved",
+			"pathSaveFailed": "Failed to save path"
 		},
 		"SortModal": {
 			"sort": "Sort",

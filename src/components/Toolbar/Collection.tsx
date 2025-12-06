@@ -18,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import { AlertDeleteBox } from "@/components/AlertBox";
 import { ManageGamesDialog } from "@/components/Collection";
 import { InputDialog } from "@/components/CommonDialog";
+import { LaunchModal } from "@/components/LaunchModal";
 import { useStore } from "@/store";
 
 export const CollectionToolbar: React.FC = () => {
@@ -151,6 +152,7 @@ export const CollectionToolbar: React.FC = () => {
 	if (selectedCategoryId !== null && selectedCategoryId > 0) {
 		return (
 			<>
+				<LaunchModal />
 				<Button
 					startIcon={<EditIcon />}
 					onClick={() => setManageGamesDialogOpen(true)}

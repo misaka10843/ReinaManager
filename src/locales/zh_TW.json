@@ -351,7 +351,13 @@
 			"gamePathNotFound": "遊戲路徑未找到",
 			"launchFailed": "遊戲啟動失敗:",
 			"stopFailed": "遊戲停止失敗:",
-			"playing": "遊戲中..."
+			"syncLocalPath": "同步本地",
+			"setLocalPathTitle": "設置本地路徑",
+			"localPathLabel": "可執行文件路徑",
+			"selectFolder": "選擇文件夾",
+			"pathRequired": "請選擇或輸入路徑",
+			"pathSaved": "路徑已保存",
+			"pathSaveFailed": "保存路徑失敗"
 		},
 		"SortModal": {
 			"sort": "排序",
