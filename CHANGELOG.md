@@ -12,12 +12,12 @@
 
 ### 新功能
 
-* **AddModal:** 添加游戏选择与确认对话框，并增强 bgm api 的开发商字段获取逻辑 ([44413d2](https://github.com/huoshen80/ReinaManager/commit/44413d29ae2711b70fc03eb21b8d55ea503d8bdf))
-* **LaunchModal:** 为在线游戏添加本地路径同步功能按钮 ([a464ea6](https://github.com/huoshen80/ReinaManager/commit/a464ea66aa16d5ac1e41ebce54cd2d5f9178650b))
+* **游戏添加:** 添加游戏选择与确认对话框，并增强 bgm api 的开发商字段获取逻辑 ([44413d2](https://github.com/huoshen80/ReinaManager/commit/44413d29ae2711b70fc03eb21b8d55ea503d8bdf))
+* **游戏启动:** 为在线游戏添加本地路径同步功能按钮 ([a464ea6](https://github.com/huoshen80/ReinaManager/commit/a464ea66aa16d5ac1e41ebce54cd2d5f9178650b))
 
 ### 性能改进
 
-* **gameStats:** 将单个统计接口替换为获取全部游戏统计的接口，以减少软件启动时对数据库的请求 ([7ff7357](https://github.com/huoshen80/ReinaManager/commit/7ff7357a120a2cbda8fd243366d3ef825385d4a1))
+* **游戏状态:** 将单个统计接口替换为获取全部游戏统计的接口，以减少软件启动时对数据库的请求 ([7ff7357](https://github.com/huoshen80/ReinaManager/commit/7ff7357a120a2cbda8fd243366d3ef825385d4a1))
 
 </details>
 

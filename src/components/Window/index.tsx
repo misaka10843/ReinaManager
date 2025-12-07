@@ -17,10 +17,10 @@ import {
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open as openUrl } from "@tauri-apps/plugin-shell";
 import type { Update } from "@tauri-apps/plugin-updater";
-import { useEffect, useState } from "react";
+import parse, { domToReact, Element } from "html-react-parser";
+import { marked } from "marked";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import ReactMarkdown from "react-markdown";
-import rehypeRaw from "rehype-raw";
 import {
 	checkForUpdates,
 	downloadAndInstallUpdate,
@@ -28,6 +28,12 @@ import {
 	type UpdateProgress,
 } from "@/components/Update";
 import { useStore } from "@/store";
+
+// 配置 marked 支持 GFM 和换行
+marked.setOptions({
+	breaks: true,
+	gfm: true,
+});
 
 /**
  * UpdateModal 更新确认弹窗组件
@@ -43,6 +49,51 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ open, onClose, update }) => {
 	const [isDownloading, setIsDownloading] = useState(false);
 	const [progress, setProgress] = useState<UpdateProgress | null>(null);
 	const [downloadError, setDownloadError] = useState<string>("");
+
+	// 使用 marked 渲染 Markdown 内容，并处理链接点击
+	const renderedBody = useMemo(() => {
+		if (!update?.body) return null;
+
+		// 使用 marked 将 Markdown 转为 HTML（支持 details 内的 Markdown）
+		const htmlContent = marked.parse(update.body) as string;
+
+		// 使用 html-react-parser 将 HTML 转为 React 元素，并自定义链接行为
+		return parse(htmlContent, {
+			replace(domNode) {
+				// 只处理 <a> 标签
+				if (
+					domNode instanceof Element &&
+					domNode.type === "tag" &&
+					domNode.name === "a"
+				) {
+					const href = domNode.attribs?.href;
+					return (
+						<a
+							href={href}
+							onClick={async (e) => {
+								e.preventDefault();
+								if (href) {
+									try {
+										await openUrl(href);
+									} catch (error) {
+										console.error("Failed to open link:", error);
+									}
+								}
+							}}
+							style={{
+								color: "#1976d2",
+								textDecoration: "underline",
+								cursor: "pointer",
+							}}
+						>
+							{domToReact(domNode.children as never)}
+						</a>
+					);
+				}
+				return domNode;
+			},
+		});
+	}, [update?.body]);
 
 	const handleUpdate = async () => {
 		if (!update) return;
@@ -132,117 +183,12 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ open, onClose, update }) => {
 								sx={{
 									p: 2,
 									borderRadius: 1,
-									maxHeight: 250,
 									overflow: "auto",
 									border: "1px solid",
 									borderColor: "divider",
-									"& details": {
-										mb: 1,
-										border: "1px solid",
-										borderColor: "divider",
-										borderRadius: 1,
-										overflow: "hidden",
-									},
-									"& summary": {
-										cursor: "pointer",
-										fontWeight: "bold",
-										userSelect: "none",
-										p: 1,
-										backgroundColor: "action.hover",
-										"&:hover": {
-											backgroundColor: "action.selected",
-										},
-									},
-									"& details[open] > summary": {
-										borderBottom: "1px solid",
-										borderBottomColor: "divider",
-									},
-									"& details > :not(summary)": {
-										p: 1,
-									},
 								}}
 							>
-								<ReactMarkdown
-									rehypePlugins={[rehypeRaw]}
-									components={{
-										// 自定义渲染组件以确保样式兼容
-										p: (props) => (
-											<Typography variant="body2" component="p" sx={{ mb: 1 }}>
-												{props.children}
-											</Typography>
-										),
-										h1: (props) => (
-											<Typography
-												variant="h6"
-												component="h1"
-												sx={{ mb: 1, mt: 2, fontWeight: "bold" }}
-											>
-												{props.children}
-											</Typography>
-										),
-										h2: (props) => (
-											<Typography
-												variant="subtitle1"
-												component="h2"
-												sx={{ mb: 1, mt: 2, fontWeight: "bold" }}
-											>
-												{props.children}
-											</Typography>
-										),
-										h3: (props) => (
-											<Typography
-												variant="subtitle2"
-												component="h3"
-												sx={{ mb: 1, mt: 1, fontWeight: "bold" }}
-											>
-												{props.children}
-											</Typography>
-										),
-										ul: (props) => (
-											<Box component="ul" sx={{ pl: 2, mb: 1, mt: 0.5 }}>
-												{props.children}
-											</Box>
-										),
-										li: (props) => (
-											<Typography
-												variant="body2"
-												component="li"
-												sx={{ mb: 0.5 }}
-											>
-												{props.children}
-											</Typography>
-										),
-										// 自定义链接组件，点击时用默认浏览器打开
-										a: (props) => (
-											<Typography
-												component="span"
-												variant="body2"
-												sx={{
-													color: "primary.main",
-													textDecoration: "underline",
-													cursor: "pointer",
-													"&:hover": {
-														color: "primary.dark",
-													},
-												}}
-												onClick={async (e) => {
-													e.preventDefault();
-													if (props.href) {
-														try {
-															await openUrl(props.href);
-														} catch (error) {
-															console.error("Failed to open link:", error);
-														}
-													}
-												}}
-											>
-												{props.children}
-											</Typography>
-										),
-									}}
-								>
-									{update.body || ""}
-								</ReactMarkdown>
+								{renderedBody}
 							</Box>
 						</Box>
 					)}
