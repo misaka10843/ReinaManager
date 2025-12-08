@@ -58,7 +58,7 @@ The `Reina` in the name is the character <a href="https://vndb.org/c64303"><b>å¦
 - [ ] Beautify individual pages
 - [ ] Sync game status with Bangumi and VNDB
 - [ ] Bulk import games from folders
-- [ ] Better game adding module
+- [x] Better game adding module
 - [ ] Game savedata restore, and maximum backup count setting
 - [ ] Ymgal data source support
 
