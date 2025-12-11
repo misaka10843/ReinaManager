@@ -3,7 +3,7 @@ mod database;
 mod entity;
 mod utils;
 
-use backup::savedata::{create_savedata_backup, delete_savedata_backup};
+use backup::savedata::{create_savedata_backup, delete_savedata_backup, restore_savedata_backup};
 use database::*;
 use migration::MigratorTrait;
 use tauri::Manager;
@@ -44,6 +44,7 @@ pub fn run() {
             copy_file,
             create_savedata_backup,
             delete_savedata_backup,
+            restore_savedata_backup,
             delete_file,
             delete_game_covers,
             backup_database,

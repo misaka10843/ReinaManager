@@ -15,7 +15,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import Button from "@mui/material/Button";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AlertDeleteBox } from "@/components/AlertBox";
+import { AlertConfirmBox } from "@/components/AlertBox";
 import { ManageGamesDialog } from "@/components/Collection";
 import { InputDialog } from "@/components/CommonDialog";
 import { LaunchModal } from "@/components/LaunchModal";
@@ -136,7 +136,7 @@ export const CollectionToolbar: React.FC = () => {
 					)}
 				/>
 
-				<AlertDeleteBox
+				<AlertConfirmBox
 					open={deleteGroupDialogOpen}
 					setOpen={setDeleteGroupDialogOpen}
 					onConfirm={handleDeleteGroup}

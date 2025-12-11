@@ -219,7 +219,15 @@
 				"autoSaveDisabled": "Auto backup disabled",
 				"autoSaveUpdateFailed": "Failed to update auto backup setting",
 				"openBackupFolder": "Open Backup Folder",
-				"openSaveDataFolder": "Open Save Data Folder"
+				"openSaveDataFolder": "Open Save Data Folder",
+				"restoreBackup": "Restore Backup",
+				"restoreSuccess": "Save data restored successfully",
+				"restoreFailed": "Failed to restore",
+				"setPathForRestore": "Please set save data path first to restore backup",
+				"restoreBackupTitle": "Restore Save Data",
+				"confirmRestore": "Are you sure you want to restore the backup",
+				"confirmRestoreSuffix": "? This will overwrite your current save data. It's recommended to create a new backup before restoring.",
+				"confirmRestoreButton": "Restore"
 			},
 			"DataSourceUpdate": {
 				"bgmIdRequired": "Bangumi ID cannot be empty",

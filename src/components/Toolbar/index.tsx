@@ -47,7 +47,7 @@ import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import AddModal from "@/components/AddModal";
-import { AlertDeleteBox } from "@/components/AlertBox";
+import { AlertConfirmBox } from "@/components/AlertBox";
 import { FilterModal } from "@/components/FilterModal";
 import { LaunchModal } from "@/components/LaunchModal";
 import SortModal from "@/components/SortModal";
@@ -163,7 +163,7 @@ export const DeleteModal: React.FC<{ id: number }> = ({ id }) => {
 					? t("components.Toolbar.deleting")
 					: t("components.Toolbar.deleteGame")}
 			</Button>
-			<AlertDeleteBox
+			<AlertConfirmBox
 				open={openAlert}
 				setOpen={setOpenAlert}
 				onConfirm={handleDeleteGame}

@@ -1,6 +1,7 @@
 import BackupIcon from "@mui/icons-material/Backup";
 import DeleteIcon from "@mui/icons-material/Delete";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
+import RestoreIcon from "@mui/icons-material/Restore";
 import SaveIcon from "@mui/icons-material/Save";
 import {
 	Box,
@@ -23,7 +24,7 @@ import {
 } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AlertDeleteBox } from "@/components/AlertBox";
+import { AlertConfirmBox } from "@/components/AlertBox";
 import { snackbar } from "@/components/Snackbar";
 import { savedataService, settingsService } from "@/services";
 import { useStore } from "@/store";
@@ -35,6 +36,7 @@ import {
 	handleGetFolder,
 	openGameBackupFolder,
 	openGameSaveDataFolder,
+	restoreSavedataBackup,
 } from "@/utils";
 /**
  * Backup 组件
@@ -58,6 +60,14 @@ export const Backup: React.FC = () => {
 	const [isDeleting, setIsDeleting] = useState(false);
 	const [autoSaveEnabled, setAutoSaveEnabled] = useState<boolean>(false);
 	const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
+	const [isRestoring, setIsRestoring] = useState(false);
+	const [restoringBackupId, setRestoringBackupId] = useState<number | null>(
+		null,
+	);
+	const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
+	const [backupToRestore, setBackupToRestore] = useState<SavedataRecord | null>(
+		null,
+	);
 
 	// 加载备份列表函数（用 useCallback 包裹以便放入依赖数组）
 	const loadBackupList = useCallback(async () => {
@@ -271,6 +281,53 @@ export const Backup: React.FC = () => {
 		}
 	};
 
+	// 打开恢复确认对话框
+	const handleRestoreClick = (backup: SavedataRecord) => {
+		if (!saveDataPath) {
+			snackbar.error(
+				t("pages.Detail.Backup.pathRequired", "请先选择存档文件夹"),
+			);
+			return;
+		}
+		setBackupToRestore(backup);
+		setRestoreDialogOpen(true);
+	};
+
+	// 确认恢复备份
+	const handleConfirmRestore = async () => {
+		if (!backupToRestore || !saveDataPath) return;
+
+		setIsRestoring(true);
+		setRestoringBackupId(backupToRestore.id);
+		setRestoreDialogOpen(false);
+
+		try {
+			// 获取备份文件完整路径
+			const appDataDir = await getAppDataDir();
+			const saveRootPath = await settingsService.getSaveRootPath();
+			const backupGameDir =
+				saveRootPath === "" ? `${appDataDir}` : `${saveRootPath}`;
+			const backupFilePath = `${backupGameDir}/backups/game_${backupToRestore.game_id}/${backupToRestore.file}`;
+
+			// 恢复备份
+			await restoreSavedataBackup(backupFilePath, saveDataPath);
+
+			snackbar.success(t("pages.Detail.Backup.restoreSuccess", "存档恢复成功"));
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error
+					? error.message
+					: t("pages.Detail.Backup.unknownError", "未知错误");
+			snackbar.error(
+				`${t("pages.Detail.Backup.restoreFailed", "恢复失败")}: ${errorMessage}`,
+			);
+		} finally {
+			setIsRestoring(false);
+			setRestoringBackupId(null);
+			setBackupToRestore(null);
+		}
+	};
+
 	// 格式化文件大小
 	const formatFileSize = (bytes: number): string => {
 		if (bytes === 0) return "0 B";
@@ -480,10 +537,41 @@ export const Backup: React.FC = () => {
 											}
 										/>
 										<ListItemSecondaryAction>
+											<Tooltip
+												title={
+													!saveDataPath
+														? t(
+																"pages.Detail.Backup.setPathForRestore",
+																"请先设置存档路径以恢复备份",
+															)
+														: t("pages.Detail.Backup.restoreBackup", "恢复备份")
+												}
+											>
+												<span>
+													<IconButton
+														edge="end"
+														onClick={() => handleRestoreClick(backup)}
+														disabled={
+															isLoading ||
+															isRestoring ||
+															!saveDataPath ||
+															!selectedGame?.savepath
+														}
+														color="primary"
+														sx={{ mr: 1 }}
+													>
+														{isRestoring && restoringBackupId === backup.id ? (
+															<CircularProgress size={24} />
+														) : (
+															<RestoreIcon />
+														)}
+													</IconButton>
+												</span>
+											</Tooltip>
 											<IconButton
 												edge="end"
 												onClick={() => handleDeleteClick(backup)}
-												disabled={isLoading}
+												disabled={isLoading || isRestoring}
 												color="error"
 											>
 												<DeleteIcon />
@@ -498,7 +586,7 @@ export const Backup: React.FC = () => {
 			</Stack>
 
 			{/* 删除确认对话框 */}
-			<AlertDeleteBox
+			<AlertConfirmBox
 				open={deleteDialogOpen}
 				setOpen={setDeleteDialogOpen}
 				onConfirm={handleDeleteBackup}
@@ -509,6 +597,22 @@ export const Backup: React.FC = () => {
 						? `${t("pages.Detail.Backup.confirmDelete", "确定要删除备份")} "${backupToDelete.file}" ${t("pages.Detail.Backup.confirmDeleteSuffix", "吗？此操作不可撤销。")}`
 						: undefined
 				}
+			/>
+
+			{/* 恢复确认对话框 */}
+			<AlertConfirmBox
+				open={restoreDialogOpen}
+				setOpen={setRestoreDialogOpen}
+				onConfirm={handleConfirmRestore}
+				isLoading={isRestoring}
+				title={t("pages.Detail.Backup.restoreBackupTitle", "恢复存档")}
+				message={
+					backupToRestore
+						? `${t("pages.Detail.Backup.confirmRestore", "确定要恢复备份")} "${backupToRestore.file}"${t("pages.Detail.Backup.confirmRestoreSuffix", " 吗？这将覆盖当前存档，建议在恢复前先创建新备份。")}`
+						: undefined
+				}
+				confirmText={t("pages.Detail.Backup.confirmRestoreButton", "恢复")}
+				confirmColor="warning"
 			/>
 		</Box>
 	);

@@ -375,6 +375,26 @@ export async function deleteSavedataBackup(
 }
 
 /**
+ * 恢复存档备份
+ * @param backupFilePath 备份文件完整路径
+ * @param targetPath 目标恢复路径
+ */
+export async function restoreSavedataBackup(
+	backupFilePath: string,
+	targetPath: string,
+): Promise<void> {
+	try {
+		await invoke("restore_savedata_backup", {
+			backupFilePath,
+			targetPath,
+		});
+	} catch (error) {
+		console.error("恢复备份失败:", error);
+		throw error;
+	}
+}
+
+/**
  * 获取应用数据目录路径
  * @returns 应用数据目录路径
  */

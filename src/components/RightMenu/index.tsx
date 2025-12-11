@@ -34,7 +34,7 @@ import {
 import { isTauri } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AlertDeleteBox } from "@/components/AlertBox";
+import { AlertConfirmBox } from "@/components/AlertBox";
 import { useStore } from "@/store";
 import { useGamePlayStore } from "@/store/gamePlayStore";
 import type { GameData } from "@/types";
@@ -166,7 +166,7 @@ const RightMenu: React.FC<RightMenuProps> = ({
 			ariaLabel={t("components.RightMenu.label")}
 		>
 			{/* 删除确认弹窗 */}
-			<AlertDeleteBox
+			<AlertConfirmBox
 				open={openAlert}
 				setOpen={setOpenAlert}
 				onConfirm={handleDeleteGame}

@@ -15,7 +15,7 @@ import CardContent from "@mui/material/CardContent";
 import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import { memo, useState } from "react";
-import { AlertDeleteBox } from "@/components/AlertBox";
+import { AlertConfirmBox } from "@/components/AlertBox";
 
 interface EntityCardProps {
 	/** 实体信息 */
@@ -119,7 +119,7 @@ export const EntityCard = memo<EntityCardProps>(
 						</IconButton>
 					)}
 				</Card>
-				<AlertDeleteBox
+				<AlertConfirmBox
 					open={deleteDialogOpen}
 					setOpen={setDeleteDialogOpen}
 					onConfirm={handleConfirmDelete}

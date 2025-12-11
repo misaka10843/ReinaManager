@@ -1,9 +1,19 @@
+use crate::database::repository::games_repository::GamesRepository;
 use chrono::Utc;
+use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
-use sevenz_rust::{SevenZArchiveEntry, SevenZWriter};
+use sevenz_rust2::{decompress_file, encoder_options::Lzma2Options, ArchiveWriter};
 use std::fs;
 use std::path::Path;
-use tauri::AppHandle;
+use tauri::{AppHandle, State};
+
+// 最大备份数量
+const MAX_BACKUPS: usize = 20;
+
+// 针对存档备份优化的压缩配置
+// 使用较低的压缩级别以提升速度，存档文件通常已是二进制格式，高压缩率收益有限
+// LZMA2 级别 1-3 为快速，4-6 为正常，7-9 为最大压缩
+const COMPRESSION_LEVEL: u32 = 3;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct BackupInfo {
@@ -25,6 +35,7 @@ pub struct BackupInfo {
 #[tauri::command]
 pub async fn create_savedata_backup(
     _app: AppHandle,
+    db: State<'_, DatabaseConnection>,
     game_id: i64,
     source_path: String,
     backup_root_dir: String,
@@ -46,6 +57,9 @@ pub async fn create_savedata_backup(
 
     fs::create_dir_all(&game_backup_dir).map_err(|e| format!("创建备份目录失败: {}", e))?;
 
+    // 检查并清理超出限制的备份（异步处理）
+    cleanup_old_backups(&db, &game_backup_dir, game_id as i32).await?;
+
     // 生成备份文件名（带时间戳）
     let now = Utc::now();
     let timestamp = now.timestamp();
@@ -62,6 +76,39 @@ pub async fn create_savedata_backup(
         file_size: backup_size,
         backup_path: backup_file_path.to_string_lossy().to_string(),
     })
+}
+
+/// 恢复存档备份
+///
+/// # Arguments
+/// * `backup_file_path` - 备份文件完整路径
+/// * `target_path` - 目标恢复路径
+///
+/// # Returns
+/// * `Result<(), String>` - 成功或错误消息
+#[tauri::command]
+pub async fn restore_savedata_backup(
+    backup_file_path: String,
+    target_path: String,
+) -> Result<(), String> {
+    let normalized_backup_path = backup_file_path.replace('/', "\\");
+    let backup_path = Path::new(&normalized_backup_path);
+    let target_path = Path::new(&target_path);
+
+    // 验证备份文件是否存在
+    if !backup_path.exists() {
+        return Err("备份文件不存在".to_string());
+    }
+
+    // 确保目标路径存在
+    if !target_path.exists() {
+        fs::create_dir_all(target_path).map_err(|e| format!("创建目标目录失败: {}", e))?;
+    }
+
+    // 解压7z文件
+    extract_7z_archive(backup_path, target_path).map_err(|e| format!("解压备份失败: {}", e))?;
+
+    Ok(())
 }
 
 /// 删除备份文件
@@ -97,56 +144,87 @@ fn create_7z_archive(
     source_dir: &Path,
     archive_path: &Path,
 ) -> Result<u64, Box<dyn std::error::Error>> {
-    let archive_file = fs::File::create(archive_path)?;
-    let mut sz = SevenZWriter::new(archive_file)?;
+    // 创建 ArchiveWriter 并配置压缩方法
+    let mut writer = ArchiveWriter::create(archive_path)?;
 
-    // 递归添加目录中的所有文件
-    add_directory_to_archive(&mut sz, source_dir, "")?;
+    // 设置使用 LZMA2 压缩，级别为 3（快速）
+    writer.set_content_methods(vec![Lzma2Options::from_level(COMPRESSION_LEVEL).into()]);
 
-    sz.finish()?;
+    // 递归添加源目录中的所有文件
+    // 第二个参数是过滤器，这里返回 true 表示包含所有文件
+    writer.push_source_path(source_dir, |_| true)?;
+
+    // 完成压缩
+    writer.finish()?;
 
     // 获取压缩包文件大小
     let metadata = fs::metadata(archive_path)?;
     Ok(metadata.len())
 }
 
-/// 递归添加目录到压缩包
+/// 清理超出数量限制的旧备份（基于数据库记录，异步处理）
 ///
 /// # Arguments
-/// * `sz` - 7z写入器
-/// * `dir_path` - 目录路径
-/// * `archive_prefix` - 压缩包内的路径前缀
-fn add_directory_to_archive(
-    sz: &mut SevenZWriter<fs::File>,
-    dir_path: &Path,
-    archive_prefix: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let entries = fs::read_dir(dir_path)?;
+/// * `db` - 数据库连接
+/// * `backup_dir` - 备份目录路径
+/// * `game_id` - 游戏ID
+///
+/// # Returns
+/// * `Result<(), String>` - 成功或错误消息
+async fn cleanup_old_backups(
+    db: &DatabaseConnection,
+    backup_dir: &Path,
+    game_id: i32,
+) -> Result<(), String> {
+    // 从数据库获取该游戏的所有备份记录
+    let mut records = GamesRepository::get_savedata_records(db, game_id)
+        .await
+        .map_err(|e| format!("获取备份记录失败: {}", e))?;
 
-    for entry in entries {
-        let entry = entry?;
-        let path = entry.path();
-        let file_name = entry.file_name();
-        let file_name_str = file_name.to_string_lossy();
-
-        let archive_path = if archive_prefix.is_empty() {
-            file_name_str.to_string()
-        } else {
-            format!("{}/{}", archive_prefix, file_name_str)
-        };
-
-        if path.is_dir() {
-            // 递归处理子目录
-            add_directory_to_archive(sz, &path, &archive_path)?;
-        } else {
-            // 添加文件到压缩包
-            let file_content = fs::read(&path)?;
-            let mut entry = SevenZArchiveEntry::new();
-            entry.name = archive_path;
-            let cursor = std::io::Cursor::new(file_content);
-            sz.push_archive_entry(entry, Some(cursor))?;
-        }
+    // 如果备份数量未超过限制，直接返回
+    if records.len() < MAX_BACKUPS {
+        return Ok(());
     }
 
+    // 按备份时间排序（最旧的在前）
+    records.sort_by_key(|r| r.backup_time);
+
+    // 计算需要删除的备份数量（保留最新的 MAX_BACKUPS - 1 个，为新备份留出空间）
+    let to_delete_count = records.len() - (MAX_BACKUPS - 1);
+    let records_to_delete = &records[..to_delete_count];
+
+    // 删除文件和数据库记录
+    for record in records_to_delete {
+        let backup_file_path = backup_dir.join(&record.file);
+
+        // 删除文件（如果存在）
+        if backup_file_path.exists() {
+            fs::remove_file(&backup_file_path)
+                .map_err(|e| format!("删除备份文件失败 {:?}: {}", backup_file_path, e))?;
+        }
+
+        // 从数据库删除记录
+        GamesRepository::delete_savedata_record(db, record.id)
+            .await
+            .map_err(|e| format!("删除数据库记录失败 (ID: {}): {}", record.id, e))?;
+    }
+
+    Ok(())
+}
+
+/// 解压7z压缩包
+///
+/// # Arguments
+/// * `archive_path` - 压缩包路径
+/// * `target_dir` - 目标解压目录
+///
+/// # Returns
+/// * `Result<(), Box<dyn std::error::Error>>` - 成功或错误
+fn extract_7z_archive(
+    archive_path: &Path,
+    target_dir: &Path,
+) -> Result<(), Box<dyn std::error::Error>> {
+    // 使用 sevenz-rust2 提供的辅助函数进行解压
+    decompress_file(archive_path, target_dir)?;
     Ok(())
 }

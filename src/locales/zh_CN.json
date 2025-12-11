@@ -225,7 +225,15 @@
 				"pathUpdateFailed": "路径更新失败",
 				"autoSaveEnabled": "自动备份已启用",
 				"autoSaveDisabled": "自动备份已禁用",
-				"autoSaveUpdateFailed": "自动备份设置失败"
+				"autoSaveUpdateFailed": "自动备份设置失败",
+				"restoreBackup": "恢复备份",
+				"restoreSuccess": "存档恢复成功",
+				"restoreFailed": "恢复失败",
+				"setPathForRestore": "请先设置存档路径以恢复备份",
+				"restoreBackupTitle": "恢复存档",
+				"confirmRestore": "确定要恢复备份",
+				"confirmRestoreSuffix": " 吗？这将覆盖当前存档，建议在恢复前先创建新备份。",
+				"confirmRestoreButton": "恢复"
 			},
 			"DataSourceUpdate": {
 				"bgmIdRequired": "Bangumi ID 不能为空",

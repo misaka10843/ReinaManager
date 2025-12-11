@@ -219,7 +219,15 @@
 				"autoSaveDisabled": "自動バックアップが無効になりました",
 				"autoSaveUpdateFailed": "自動バックアップ設定の更新に失敗しました",
 				"openBackupFolder": "バックアップフォルダを開く",
-				"openSaveDataFolder": "セーブデータフォルダを開く"
+				"openSaveDataFolder": "セーブデータフォルダを開く",
+				"restoreBackup": "バックアップを復元",
+				"restoreSuccess": "セーブデータが正常に復元されました",
+				"restoreFailed": "復元に失敗しました",
+				"setPathForRestore": "バックアップを復元するには、まずセーブデータパスを設定してください",
+				"restoreBackupTitle": "セーブデータを復元",
+				"confirmRestore": "バックアップを復元してもよろしいですか",
+				"confirmRestoreSuffix": "？現在のセーブデータが上書きされます。復元前に新しいバックアップを作成することをお勧めします。",
+				"confirmRestoreButton": "復元"
 			},
 			"DataSourceUpdate": {
 				"bgmIdRequired": "Bangumi IDを空にすることはできません",

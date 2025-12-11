@@ -219,7 +219,15 @@
 				"autoSaveDisabled": "自動備份已禁用",
 				"autoSaveUpdateFailed": "自動備份設定失敗",
 				"openBackupFolder": "開啟備份資料夾",
-				"openSaveDataFolder": "開啟存檔資料夾"
+				"openSaveDataFolder": "開啟存檔資料夾",
+				"restoreBackup": "恢復備份",
+				"restoreSuccess": "存檔恢復成功",
+				"restoreFailed": "恢復失敗",
+				"setPathForRestore": "請先設定存檔路徑以恢復備份",
+				"restoreBackupTitle": "恢復存檔",
+				"confirmRestore": "確定要恢復備份",
+				"confirmRestoreSuffix": " 嗎？這將覆蓋當前存檔，建議在恢復前先建立新備份。",
+				"confirmRestoreButton": "恢復"
 			},
 			"DataSourceUpdate": {
 				"bgmIdRequired": "Bangumi ID 不能為空",

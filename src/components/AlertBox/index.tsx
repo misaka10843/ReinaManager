@@ -7,7 +7,7 @@
  *
  * 主要导出：
  * - AlertBox：通用提示框组件
- * - AlertDeleteBox：带加载状态的删除确认弹窗
+ * - AlertConfirmBox：带加载状态的确认弹窗（支持删除、恢复等操作）
  *
  * 依赖：
  * - @mui/material
@@ -52,15 +52,17 @@ interface AlertBoxProps {
 }
 
 /**
- * 删除提示框专用属性类型
+ * 确认提示框专用属性类型（支持删除、恢复等操作）
  */
-interface AlertDeleteBoxProps {
+interface AlertConfirmBoxProps {
 	open: boolean;
 	setOpen: (value: boolean) => void;
 	onConfirm: () => void;
 	isLoading?: boolean; // 添加加载状态
-	message?: string; // 自定义删除消息
-	title?: string; // 自定义删除标题
+	message?: string; // 自定义消息
+	title?: string; // 自定义标题
+	confirmText?: string; // 自定义确认按钮文本
+	confirmColor?: "primary" | "error" | "success" | "info" | "warning"; // 自定义确认按钮颜色
 }
 
 // 定义 ViewGameBoxProps 接口
@@ -175,18 +177,20 @@ export function AlertBox({
 }
 
 /**
- * 删除提示框组件，带加载状态
+ * 确认提示框组件，带加载状态（支持删除、恢复等操作）
  *
- * @param {AlertDeleteBoxProps} props 组件属性
- * @returns {JSX.Element} 删除确认弹窗
+ * @param {AlertConfirmBoxProps} props 组件属性
+ * @returns {JSX.Element} 确认弹窗
  */
-export const AlertDeleteBox: React.FC<AlertDeleteBoxProps> = ({
+export const AlertConfirmBox: React.FC<AlertConfirmBoxProps> = ({
 	open,
 	setOpen,
 	onConfirm,
 	isLoading = false,
 	message,
 	title,
+	confirmText,
+	confirmColor = "error",
 }) => {
 	const { t } = useTranslation();
 
@@ -197,9 +201,9 @@ export const AlertDeleteBox: React.FC<AlertDeleteBoxProps> = ({
 			title={title || t("components.AlertBox.deleteGameTitle")}
 			message={message || t("components.AlertBox.deleteGameMessage")}
 			onConfirm={onConfirm}
-			confirmText={t("components.AlertBox.confirmDelete")}
+			confirmText={confirmText || t("components.AlertBox.confirmDelete")}
 			cancelText={t("components.AlertBox.cancel")}
-			confirmColor="error"
+			confirmColor={confirmColor}
 			confirmVariant="contained"
 			autoCloseOnConfirm={false} // 不自动关闭，由父组件控制
 			isLoading={isLoading} // 传递加载状态
