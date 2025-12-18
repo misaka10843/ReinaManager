@@ -226,6 +226,10 @@ export interface AppState {
 	addGameToCategory: (gameId: number, categoryId: number) => Promise<void>; // 添加游戏到分类
 	removeGameFromCategory: (gameId: number, categoryId: number) => Promise<void>; // 从分类移除游戏
 	updateCategoryGames: (gameIds: number[], categoryId: number) => Promise<void>; // 批量更新分类中的游戏列表
+
+	// 主题样式
+	themeStyle: "default" | "m3" | "fluent";
+	setThemeStyle: (style: "default" | "m3" | "fluent") => void;
 }
 
 // 创建持久化的全局状态
@@ -324,6 +328,12 @@ export const useStore = create<AppState>()(
 			timeTrackingMode: "playtime",
 			setTimeTrackingMode: (mode: "playtime" | "elapsed") => {
 				set({ timeTrackingMode: mode });
+			},
+
+			// 主题样式
+			themeStyle: "fluent", // 默认使用 Fluent UI
+			setThemeStyle: (style: "default" | "m3" | "fluent") => {
+				set({ themeStyle: style });
 			},
 
 			/**

@@ -10,9 +10,14 @@ import { Outlet } from "react-router-dom";
 import { SnackbarUtilsConfigurator } from "@/components/Snackbar";
 import WindowsHandler from "@/components/Window";
 import { appRoutes } from "@/routes"; // 引入新的统一配置
+import { useStore } from "@/store";
+import { getTheme } from "@/theme";
+import { useMediaQuery } from "@mui/material";
+import { useMemo } from "react";
 
 const App: React.FC = () => {
 	const { t } = useTranslation();
+	const { themeStyle } = useStore();
 
 	// 从路由配置动态生成导航菜单
 	const generatedNavigation = appRoutes
@@ -33,6 +38,13 @@ const App: React.FC = () => {
 		...generatedNavigation,
 	];
 
+	const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
+
+	const theme = useMemo(
+		() => getTheme(themeStyle, prefersDarkMode ? "dark" : "light"),
+		[themeStyle, prefersDarkMode],
+	);
+
 	return (
 		<SnackbarProvider
 			maxSnack={3}
@@ -40,7 +52,7 @@ const App: React.FC = () => {
 			anchorOrigin={{ vertical: "top", horizontal: "center" }}
 		>
 			<SnackbarUtilsConfigurator />
-			<ReactRouterAppProvider navigation={NAVIGATION}>
+			<ReactRouterAppProvider navigation={NAVIGATION} theme={theme}>
 				{isTauri() && <WindowsHandler />}
 				<AliveScope>
 					<Outlet />

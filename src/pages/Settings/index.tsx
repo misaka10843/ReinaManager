@@ -22,6 +22,7 @@ import BackupIcon from "@mui/icons-material/Backup";
 import ClearIcon from "@mui/icons-material/Clear";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import RestoreIcon from "@mui/icons-material/Restore";
+import PaletteIcon from "@mui/icons-material/Palette";
 import SaveIcon from "@mui/icons-material/Save";
 import UpdateIcon from "@mui/icons-material/Update";
 import {
@@ -117,6 +118,36 @@ const LanguageSelect = () => {
 				<MenuItem value="zh-TW">繁体中文(zh-TW)</MenuItem>
 				<MenuItem value="en-US">English(en-US)</MenuItem>
 				<MenuItem value="ja-JP">日本語(ja-JP)</MenuItem>
+			</Select>
+		</Box>
+	);
+};
+
+const ThemeSettings = () => {
+	const { t } = useTranslation();
+	const { themeStyle, setThemeStyle } = useStore();
+
+	const handleChange = (event: SelectChangeEvent) => {
+		setThemeStyle(event.target.value as "default" | "m3" | "fluent");
+	};
+
+	return (
+		<Box className="mb-6">
+			<Box className="flex items-center mb-2">
+				<PaletteIcon className="mr-2 text-gray-500" fontSize="small" />
+				<InputLabel className="font-semibold">
+					{t("pages.Settings.theme.title", "主题风格")}
+				</InputLabel>
+			</Box>
+			<Select
+				value={themeStyle}
+				onChange={handleChange}
+				className="w-60"
+				size="medium"
+			>
+				<MenuItem value="default">Default (MUI)</MenuItem>
+				<MenuItem value="m3">Material 3</MenuItem>
+				<MenuItem value="fluent">Fluent UI (Windows 11)</MenuItem>
 			</Select>
 		</Box>
 	);
@@ -686,9 +717,9 @@ const DatabaseBackupSettings = () => {
 				error instanceof Error
 					? error.message
 					: t(
-							"pages.Settings.databaseBackup.openFolderFailed",
-							"打开文件夹失败",
-						);
+						"pages.Settings.databaseBackup.openFolderFailed",
+						"打开文件夹失败",
+					);
 			snackbar.error(
 				t("pages.Settings.databaseBackup.openFolderError", {
 					error: errorMessage,
@@ -1417,9 +1448,9 @@ const BatchUpdateSettings: React.FC = () => {
 						{isUpdatingVndb
 							? t("pages.Settings.batchUpdate.updating", "更新中...")
 							: t(
-									"pages.Settings.batchUpdate.updateVndb",
-									"批量更新 VNDB 数据",
-								)}
+								"pages.Settings.batchUpdate.updateVndb",
+								"批量更新 VNDB 数据",
+							)}
 					</Button>
 				</Stack>
 
@@ -1429,9 +1460,9 @@ const BatchUpdateSettings: React.FC = () => {
 						variant="body2"
 						color={
 							updateStatus.includes("失败") ||
-							updateStatus.includes("fail") ||
-							updateStatus.includes("错误") ||
-							updateStatus.includes("error")
+								updateStatus.includes("fail") ||
+								updateStatus.includes("错误") ||
+								updateStatus.includes("error")
 								? "error"
 								: "primary"
 						}
@@ -1463,6 +1494,10 @@ export const Settings: React.FC = () => {
 
 				{/* 语言设置 */}
 				<LanguageSelect />
+				<Divider sx={{ my: 3 }} />
+
+				{/* 主题设置 */}
+				<ThemeSettings />
 				<Divider sx={{ my: 3 }} />
 
 				<VndbDataSettings />
