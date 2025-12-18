@@ -1,8 +1,224 @@
+use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
-use tauri::command;
+use std::sync::Mutex;
+use tauri::{command, AppHandle, Manager};
+
+// ==================== 路径相关常量 ====================
+
+/// 数据库相关路径常量
+pub const DB_DATA_DIR: &str = "data";
+pub const DB_FILE_NAME: &str = "reina_manager.db";
+pub const DB_BACKUP_SUBDIR: &str = "backups";
+pub const RESOURCE_DIR: &str = "resources";
+
+// ==================== 路径基础函数 ====================
+
+/// 判断是否处于便携模式
+///
+/// 判断逻辑：
+/// 1. 检查 resources/data 目录是否存在
+/// 2. 检查 resources/data/reina_manager.db 文件是否存在
+/// 3. 两者都存在则为便携模式，否则为标准模式
+///
+pub fn is_portable_mode(app: &AppHandle) -> bool {
+    if let Ok(resource_dir) = app.path().resource_dir() {
+        let portable_data_dir = resource_dir.join(RESOURCE_DIR).join(DB_DATA_DIR);
+        let portable_db_file = portable_data_dir.join(DB_FILE_NAME);
+
+        portable_data_dir.exists() && portable_db_file.exists()
+    } else {
+        false
+    }
+}
+
+pub fn get_base_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    if is_portable_mode(app) {
+        // 便携模式：使用程序安装目录的 resources 子目录
+        Ok(app
+            .path()
+            .resource_dir()
+            .map_err(|e| format!("无法获取应用目录: {}", e))?
+            .join(RESOURCE_DIR))
+    } else {
+        // 非便携模式：使用系统应用数据目录
+        app.path()
+            .app_data_dir()
+            .map_err(|e| format!("无法获取应用数据目录: {}", e))
+    }
+}
+
+/// 获取数据库文件路径
+pub fn get_db_path(app: &AppHandle) -> Result<PathBuf, String> {
+    Ok(get_base_data_dir(app)?.join(DB_DATA_DIR).join(DB_FILE_NAME))
+}
+
+/// # Arguments
+/// * `app` - 应用句柄
+/// * `portable` - true 表示便携模式，false 表示标准模式
+pub fn get_base_data_dir_for_mode(app: &AppHandle, portable: bool) -> Result<PathBuf, String> {
+    if portable {
+        Ok(app
+            .path()
+            .resource_dir()
+            .map_err(|e| format!("无法获取应用目录: {}", e))?
+            .join(RESOURCE_DIR))
+    } else {
+        app.path()
+            .app_data_dir()
+            .map_err(|e| format!("无法获取应用数据目录: {}", e))
+    }
+}
+
+// ==================== 路径管理器 ====================
+
+/// 路径缓存，用于在应用运行期间复用已计算的路径
+#[derive(Debug, Default)]
+struct PathCache {
+    db_backup_path: Option<PathBuf>,
+    savedata_backup_path: Option<PathBuf>,
+}
+
+/// 全局路径管理器
+pub struct PathManager {
+    cache: Mutex<PathCache>,
+}
+
+impl PathManager {
+    pub fn new() -> Self {
+        Self {
+            cache: Mutex::new(PathCache::default()),
+        }
+    }
+
+    /// 获取数据库备份路径
+    pub async fn get_db_backup_path(
+        &self,
+        app: &AppHandle,
+        db: &DatabaseConnection,
+    ) -> Result<PathBuf, String> {
+        // 检查缓存
+        {
+            let cache = self.cache.lock().expect("路径管理器缓存锁已被污染");
+            if let Some(path) = &cache.db_backup_path {
+                return Ok(path.clone());
+            }
+        }
+
+        // 从数据库读取配置
+        let custom_path = self.get_db_backup_path_from_db(db).await?;
+
+        let path = if let Some(custom) = custom_path {
+            // 使用数据库中的自定义路径
+            PathBuf::from(custom)
+        } else {
+            // 使用默认路径（根据便携模式判断）
+            self.get_default_db_backup_path(app)?
+        };
+
+        // 缓存路径
+        {
+            let mut cache = self.cache.lock().expect("路径管理器缓存锁已被污染");
+            cache.db_backup_path = Some(path.clone());
+        }
+
+        Ok(path)
+    }
+
+    /// 获取存档备份路径
+    pub async fn get_savedata_backup_path(
+        &self,
+        app: &AppHandle,
+        db: &DatabaseConnection,
+    ) -> Result<PathBuf, String> {
+        // 检查缓存
+        {
+            let cache = self.cache.lock().expect("路径管理器缓存锁已被污染");
+            if let Some(path) = &cache.savedata_backup_path {
+                return Ok(path.clone());
+            }
+        }
+
+        // 从数据库读取配置
+        let custom_path = self.get_save_root_path_from_db(db).await?;
+
+        let path = if let Some(custom) = custom_path {
+            // 使用数据库中的自定义路径 + /backups
+            PathBuf::from(custom).join("backups")
+        } else {
+            // 使用默认路径（根据便携模式判断）
+            self.get_default_savedata_backup_path(app)?
+        };
+
+        // 缓存路径
+        {
+            let mut cache = self.cache.lock().expect("路径管理器缓存锁已被污染");
+            cache.savedata_backup_path = Some(path.clone());
+        }
+
+        Ok(path)
+    }
+
+    /// 清空路径缓存（用于用户修改配置后）
+    pub fn clear_cache(&self) {
+        let mut cache = self.cache.lock().expect("路径管理器缓存锁已被污染");
+        *cache = PathCache::default();
+    }
+
+    // ==================== 私有辅助方法 ====================
+
+    /// 从数据库读取数据库备份路径配置
+    async fn get_db_backup_path_from_db(
+        &self,
+        db: &DatabaseConnection,
+    ) -> Result<Option<String>, String> {
+        use crate::entity::prelude::*;
+        use sea_orm::EntityTrait;
+
+        let user = User::find()
+            .one(db)
+            .await
+            .map_err(|e| format!("查询用户配置失败: {}", e))?;
+
+        Ok(user
+            .and_then(|u| u.db_backup_path)
+            .filter(|s| !s.trim().is_empty()))
+    }
+
+    /// 从数据库读取存档根路径配置
+    async fn get_save_root_path_from_db(
+        &self,
+        db: &DatabaseConnection,
+    ) -> Result<Option<String>, String> {
+        use crate::entity::prelude::*;
+        use sea_orm::EntityTrait;
+
+        let user = User::find()
+            .one(db)
+            .await
+            .map_err(|e| format!("查询用户配置失败: {}", e))?;
+
+        Ok(user
+            .and_then(|u| u.save_root_path)
+            .filter(|s| !s.trim().is_empty()))
+    }
+
+    /// 获取默认的数据库备份路径
+    fn get_default_db_backup_path(&self, app: &AppHandle) -> Result<PathBuf, String> {
+        Ok(get_base_data_dir(app)?
+            .join(DB_DATA_DIR)
+            .join(DB_BACKUP_SUBDIR))
+    }
+
+    /// 获取默认的存档备份路径
+    fn get_default_savedata_backup_path(&self, app: &AppHandle) -> Result<PathBuf, String> {
+        Ok(get_base_data_dir(app)?.join("backups"))
+    }
+}
+
+// ==================== 文件操作相关 ====================
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MoveResult {

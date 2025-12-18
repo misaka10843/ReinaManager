@@ -21,16 +21,15 @@ interface ImportResult {
  * 此方法使用 SQLite 的 VACUUM INTO 语句，可以在数据库正在使用时安全地创建备份。
  * VACUUM INTO 会创建一个优化后的数据库副本，同时保持原数据库的完整性。
  *
- * @param backup_path - 可选的备份目标路径。如果为空，则使用默认的 AppData/data/backups 目录
+ * 备份路径从数据库的 user 表中读取配置：
+ * - 优先使用 user.db_backup_path（如果设置且非空）
+ * - 否则使用默认的 AppData/data/backups 目录（或便携模式下的程序目录）
+ *
  * @returns 备份结果，包含备份文件的路径
  */
-export async function backupDatabase(
-	backup_path?: string,
-): Promise<BackupResult> {
+export async function backupDatabase(): Promise<BackupResult> {
 	try {
-		const result = await invoke<BackupResult>("backup_database", {
-			backupPath: backup_path ?? null,
-		});
+		const result = await invoke<BackupResult>("backup_database");
 		console.log(`数据库已备份到: ${result.path}`);
 		return result;
 	} catch (error) {
@@ -48,14 +47,13 @@ export async function backupDatabase(
  * 3. 用导入的数据库文件覆盖现有数据库
  * 4. 重新建立数据库连接
  *
+ * 备份路径从数据库的 user 表中读取配置
+ *
  * 注意：由于需要关闭并重新打开数据库连接，导入后需要重启应用以确保数据正确加载
  *
- * @param backup_path - 可选的备份目标路径。如果为空，则使用默认的 AppData/data/backups 目录
  * @returns Promise<ImportResult | null> 导入成功返回结果对象，取消返回 null
  */
-export async function importDatabase(
-	backup_path?: string,
-): Promise<ImportResult | null> {
+export async function importDatabase(): Promise<ImportResult | null> {
 	// 打开文件选择对话框
 	const filePath = await open({
 		filters: [{ name: "SQLite Database", extensions: ["db"] }],
@@ -70,7 +68,6 @@ export async function importDatabase(
 	// 调用后端命令导入数据库
 	const result = await invoke<ImportResult>("import_database", {
 		sourcePath: filePath,
-		backupPath: backup_path ?? null,
 	});
 
 	return result;

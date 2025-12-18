@@ -26,13 +26,13 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertConfirmBox } from "@/components/AlertBox";
 import { snackbar } from "@/components/Snackbar";
-import { savedataService, settingsService } from "@/services";
+import { savedataService } from "@/services";
 import { useStore } from "@/store";
 import type { RawGameData, SavedataRecord } from "@/types";
 import {
 	createGameSavedataBackup,
 	deleteSavedataBackup,
-	getAppDataDir,
+	getSavedataBackupPath,
 	handleGetFolder,
 	openGameBackupFolder,
 	openGameSaveDataFolder,
@@ -249,11 +249,8 @@ export const Backup: React.FC = () => {
 
 		try {
 			// 获取备份文件完整路径
-			const appDataDir = await getAppDataDir();
-			const saveRootPath = await settingsService.getSaveRootPath();
-			const backupGameDir =
-				saveRootPath === "" ? `${appDataDir}` : `${saveRootPath}`;
-			const backupFilePath = `${backupGameDir}/backups/game_${backupToDelete.game_id}/${backupToDelete.file}`;
+			const savedataBackupPath = getSavedataBackupPath();
+			const backupFilePath = `${savedataBackupPath}/game_${backupToDelete.game_id}/${backupToDelete.file}`;
 
 			// 删除备份文件
 			await deleteSavedataBackup(backupFilePath);
@@ -303,11 +300,8 @@ export const Backup: React.FC = () => {
 
 		try {
 			// 获取备份文件完整路径
-			const appDataDir = await getAppDataDir();
-			const saveRootPath = await settingsService.getSaveRootPath();
-			const backupGameDir =
-				saveRootPath === "" ? `${appDataDir}` : `${saveRootPath}`;
-			const backupFilePath = `${backupGameDir}/backups/game_${backupToRestore.game_id}/${backupToRestore.file}`;
+			const savedataBackupPath = getSavedataBackupPath();
+			const backupFilePath = `${savedataBackupPath}/game_${backupToRestore.game_id}/${backupToRestore.file}`;
 
 			// 恢复备份
 			await restoreSavedataBackup(backupFilePath, saveDataPath);

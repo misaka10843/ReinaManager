@@ -27,18 +27,124 @@ export interface StopGameResult {
 	terminated_count: number;
 }
 
+// ==================== 路径管理缓存 ====================
+
 // 缓存资源目录路径
 let cachedResourceDirPath: string | null = null;
 
+// 缓存应用基础路径
+let cachedAppDataDir: string | null = null;
+let cachedIsPortableMode: boolean | null = null;
+
+// 缓存常用路径
+let cachedDbPath: string | null = null;
+let cachedDbBackupPath: string | null = null;
+let cachedSavedataBackupPath: string | null = null;
+
 /**
- * 初始化资源目录路径缓存
- * 应该在应用启动时调用
+ * 路径初始化结果类型
  */
-export const initResourceDirPath = async (): Promise<string> => {
+export interface PathInitResult {
+	resourceDir: string; // 资源目录路径
+	appDataDir: string; // 应用数据目录（便携或标准）
+	isPortableMode: boolean; // 是否便携模式
+	dbPath: string; // 数据库文件路径
+	dbBackupPath: string; // 数据库备份目录路径
+	savedataBackupPath: string; // 存档备份目录路径
+}
+
+/**
+ * 初始化所有路径缓存
+ * 应该在应用启动时调用，结合后端判断便携模式和数据库配置
+ * @returns 所有路径信息
+ */
+export const initPathCache = async (): Promise<PathInitResult> => {
+	// 使用 Promise.all 并行处理所有异步操作以提升初始化速度
+	const [resourceDirResult, isPortableResult, systemAppDataDirResult] =
+		await Promise.all([
+			// 1. 获取资源目录
+			cachedResourceDirPath
+				? Promise.resolve(cachedResourceDirPath)
+				: resourceDir(),
+			// 2. 判断便携模式
+			cachedIsPortableMode !== null
+				? Promise.resolve(cachedIsPortableMode)
+				: settingsService.getPortableMode(),
+			// 3. 获取系统 AppData 目录
+			cachedAppDataDir ? Promise.resolve(null) : path.appDataDir(),
+		]);
+
+	// 更新缓存
 	if (!cachedResourceDirPath) {
-		cachedResourceDirPath = await resourceDir();
+		cachedResourceDirPath = resourceDirResult;
 	}
-	return cachedResourceDirPath;
+	if (cachedIsPortableMode === null) {
+		cachedIsPortableMode = isPortableResult;
+	}
+
+	// 3. 确定应用数据目录
+	if (!cachedAppDataDir) {
+		if (cachedIsPortableMode) {
+			// 便携模式：使用资源目录/resources
+			cachedAppDataDir = `${cachedResourceDirPath}/resources`;
+		} else {
+			// 标准模式：使用系统 AppData
+			cachedAppDataDir = systemAppDataDirResult as string;
+		}
+	}
+
+	// 4. 获取数据库路径
+	if (!cachedDbPath) {
+		cachedDbPath = `${cachedAppDataDir}/data/reina_manager.db`;
+	}
+
+	// 5 & 6. 并行获取数据库备份路径和存档备份路径
+	await Promise.all([refreshDbBackupPath(), refreshSavedataBackupPath()]);
+
+	return {
+		resourceDir: cachedResourceDirPath,
+		appDataDir: cachedAppDataDir,
+		isPortableMode: cachedIsPortableMode,
+		dbPath: cachedDbPath,
+		dbBackupPath: cachedDbBackupPath || "",
+		savedataBackupPath: cachedSavedataBackupPath || "",
+	};
+};
+
+/**
+ * 刷新数据库备份路径缓存
+ * 用于用户修改数据库备份路径配置后更新缓存
+ */
+export const refreshDbBackupPath = async (): Promise<void> => {
+	if (!cachedAppDataDir) {
+		console.warn("应用数据目录未初始化，无法刷新数据库备份路径");
+		return;
+	}
+
+	const customDbBackupPath = await settingsService.getDbBackupPath();
+	if (customDbBackupPath && customDbBackupPath.trim() !== "") {
+		cachedDbBackupPath = customDbBackupPath;
+	} else {
+		cachedDbBackupPath = `${cachedAppDataDir}/data/backups`;
+	}
+};
+
+/**
+ * 刷新存档备份路径缓存
+ * 用于用户修改存档根路径配置后更新缓存
+ */
+export const refreshSavedataBackupPath = async (): Promise<void> => {
+	if (!cachedAppDataDir) {
+		console.warn("应用数据目录未初始化，无法刷新存档备份路径");
+		return;
+	}
+
+	const customSaveRootPath = await settingsService.getSaveRootPath();
+	if (customSaveRootPath && customSaveRootPath.trim() !== "") {
+		cachedSavedataBackupPath = `${customSaveRootPath}/backups`;
+	} else {
+		cachedSavedataBackupPath = `${cachedAppDataDir}/backups`;
+	}
 };
 
 /**
@@ -47,6 +153,42 @@ export const initResourceDirPath = async (): Promise<string> => {
  */
 export const getResourceDirPath = (): string => {
 	return cachedResourceDirPath || "";
+};
+
+/**
+ * 获取缓存的应用数据目录（同步）
+ * 如果未初始化则返回空字符串
+ */
+export const getAppDataDirPath = (): string => {
+	return cachedAppDataDir || "";
+};
+
+/**
+ * 获取缓存的数据库路径（同步）
+ */
+export const getDbPath = (): string => {
+	return cachedDbPath || "";
+};
+
+/**
+ * 获取缓存的数据库备份路径（同步）
+ */
+export const getDbBackupPath = (): string => {
+	return cachedDbBackupPath || "";
+};
+
+/**
+ * 获取缓存的存档备份路径（同步）
+ */
+export const getSavedataBackupPath = (): string => {
+	return cachedSavedataBackupPath || "";
+};
+
+/**
+ * 是否为便携模式（同步）
+ */
+export const isPortableMode = (): boolean => {
+	return cachedIsPortableMode || false;
 };
 
 export const getLocalDateString = (timestamp?: number): string => {
@@ -334,21 +476,24 @@ export interface BackupInfo {
 
 /**
  * 创建游戏存档备份
+ *
+ * 备份目录将根据以下优先级确定（由后端处理）：
+ * 1. 用户设置的自定义存档路径/backups
+ * 2. 便携模式：程序目录/backups
+ * 3. 非便携模式：AppData/backups
+ *
  * @param gameId 游戏ID
- * @param sourcePath 存档源路径
- * @param backupRootDir 备份根目录
+ * @param sourcePath 存档文件夹路径
  * @returns 备份信息
  */
 export async function createSavedataBackup(
 	gameId: number,
 	sourcePath: string,
-	backupRootDir: string,
 ): Promise<BackupInfo> {
 	try {
 		const result = await invoke<BackupInfo>("create_savedata_backup", {
 			gameId,
 			sourcePath,
-			backupRootDir,
 		});
 		return result;
 	} catch (error) {
@@ -395,20 +540,6 @@ export async function restoreSavedataBackup(
 }
 
 /**
- * 获取应用数据目录路径
- * @returns 应用数据目录路径
- */
-export async function getAppDataDir(): Promise<string> {
-	try {
-		const appDataDir = await path.appDataDir();
-		return appDataDir;
-	} catch (error) {
-		console.error("获取应用数据目录失败:", error);
-		throw error;
-	}
-}
-
-/**
  * 通用的创建游戏存档备份函数
  * @param gameId 游戏ID
  * @param saveDataPath 存档路径
@@ -423,19 +554,10 @@ export async function createGameSavedataBackup(
 	if (!skipPathCheck && !saveDataPath) {
 		throw new Error("存档路径不能为空");
 	}
-	const saveRootPath = await settingsService.getSaveRootPath();
 
 	try {
-		// 获取备份根目录
-		const appDataDir = await getAppDataDir();
-		const backupRootDir =
-			saveRootPath === "" ? `${appDataDir}/backups` : `${saveRootPath}/backups`;
-		// 创建备份
-		const backupInfo = await createSavedataBackup(
-			gameId,
-			saveDataPath,
-			backupRootDir,
-		);
+		// 创建备份（备份路径由后端根据配置自动确定）
+		const backupInfo = await createSavedataBackup(gameId, saveDataPath);
 
 		// 保存备份信息到数据库
 		await savedataService.saveSavedataRecord(
@@ -457,13 +579,9 @@ export async function createGameSavedataBackup(
  * @param gameId 游戏ID
  */
 export async function openGameBackupFolder(gameId: number): Promise<void> {
-	const saveRootPath = await settingsService.getSaveRootPath();
 	try {
-		const appDataDir = await getAppDataDir();
-		const backupGameDir =
-			saveRootPath === ""
-				? `${appDataDir}/backups/game_${gameId}`
-				: `${saveRootPath}/backups/game_${gameId}`;
+		const savedataBackupPath = getSavedataBackupPath();
+		const backupGameDir = `${savedataBackupPath}/game_${gameId}`;
 		// 使用后端函数打开文件夹
 		await invoke("open_directory", { dirPath: backupGameDir });
 	} catch (error) {
@@ -497,13 +615,9 @@ export async function openGameSaveDataFolder(
 /**
  * 打开数据库备份文件夹
  */
-export async function openDatabaseBackupFolder(
-	dbBackupPath?: string,
-): Promise<void> {
+export async function openDatabaseBackupFolder(): Promise<void> {
 	try {
-		const appDataDir = await getAppDataDir();
-		const backupDir =
-			dbBackupPath !== "" ? dbBackupPath : `${appDataDir}/data/backups`;
+		const backupDir = getDbBackupPath();
 		// 使用后端函数打开文件夹
 		await invoke("open_directory", { dirPath: backupDir });
 	} catch (error) {
@@ -527,7 +641,7 @@ export async function moveBackupFolder(
 ): Promise<{ moved: boolean; message: string }> {
 	try {
 		// 获取应用数据目录
-		const appDataDir = await getAppDataDir();
+		const appDataDir = getAppDataDirPath();
 
 		// 确定旧备份目录和新备份目录路径
 		const oldBackupDir = oldPath

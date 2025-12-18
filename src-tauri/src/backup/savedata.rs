@@ -1,4 +1,5 @@
 use crate::database::repository::games_repository::GamesRepository;
+use crate::utils::fs::PathManager;
 use chrono::Utc;
 use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
@@ -24,24 +25,28 @@ pub struct BackupInfo {
 }
 /// 创建游戏存档备份
 ///
+/// 备份目录优先级（通过 PathManager 统一管理）：
+/// 1. 使用 user.save_root_path/backups（如果设置且非空）
+/// 2. 使用默认路径：
+///    - 便携模式：程序目录/backups
+///    - 非便携模式：AppData/backups
+///
 /// # Arguments
 /// * `app` - Tauri应用句柄
 /// * `game_id` - 游戏ID
 /// * `source_path` - 源存档文件夹路径
-/// * `backup_root_dir` - 前端提供的备份根目录
 ///
 /// # Returns
 /// * `Result<BackupInfo, String>` - 备份信息或错误消息
 #[tauri::command]
 pub async fn create_savedata_backup(
-    _app: AppHandle,
+    app: AppHandle,
     db: State<'_, DatabaseConnection>,
+    path_manager: State<'_, PathManager>,
     game_id: i64,
     source_path: String,
-    backup_root_dir: String,
 ) -> Result<BackupInfo, String> {
     let source_path = Path::new(&source_path);
-    let backup_root = Path::new(&backup_root_dir);
 
     // 验证源路径是否存在
     if !source_path.exists() {
@@ -51,6 +56,9 @@ pub async fn create_savedata_backup(
     if !source_path.is_dir() {
         return Err("源路径必须是一个文件夹".to_string());
     }
+
+    // 使用统一的路径管理器获取备份目录
+    let backup_root = path_manager.get_savedata_backup_path(&app, &db).await?;
 
     // 创建游戏专属备份目录
     let game_backup_dir = backup_root.join(format!("game_{}", game_id));
@@ -227,4 +235,4 @@ fn extract_7z_archive(
     // 使用 sevenz-rust2 提供的辅助函数进行解压
     decompress_file(archive_path, target_dir)?;
     Ok(())
-}
+} // 没做覆盖

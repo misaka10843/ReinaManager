@@ -4,13 +4,15 @@ mod entity;
 mod utils;
 
 use backup::savedata::{create_savedata_backup, delete_savedata_backup, restore_savedata_backup};
+use database::db::{backup_database, import_database};
 use database::*;
 use migration::MigratorTrait;
 use tauri::Manager;
 use tauri_plugin_log::{Target, TargetKind, TimezoneStrategy};
 use utils::{
-    db::{backup_database, import_database},
-    fs::{copy_file, delete_file, delete_game_covers, move_backup_folder, open_directory},
+    fs::{
+        copy_file, delete_file, delete_game_covers, move_backup_folder, open_directory, PathManager,
+    },
     launch::{launch_game, stop_game},
     logs::{get_reina_log_level, set_reina_log_level},
 };
@@ -93,6 +95,8 @@ pub fn run() {
             set_db_backup_path,
             get_all_settings,
             update_settings,
+            get_portable_mode,
+            set_portable_mode,
             // 日志相关 commands（运行时动态调整）
             set_reina_log_level,
             get_reina_log_level,
@@ -117,10 +121,14 @@ pub fn run() {
             get_categories_with_count,
         ])
         .setup(|app| {
+            // 初始化路径管理器
+            let path_manager = PathManager::new();
+            app.manage(path_manager);
+
             // 执行 SeaORM 数据库迁移并注册到状态管理
             let app_handle = app.handle().clone();
             tauri::async_runtime::block_on(async move {
-                match connection::establish_connection(&app_handle).await {
+                match db::establish_connection(&app_handle).await {
                     Ok(conn) => {
                         log::info!("数据库连接建立成功");
 
@@ -178,7 +186,7 @@ pub fn run() {
 
                     // 使用 block_on 确保数据库连接在应用退出前完全关闭
                     tauri::async_runtime::block_on(async {
-                        match connection::close_connection(conn).await {
+                        match db::close_connection(conn).await {
                             Ok(_) => log::info!("数据库连接已成功关闭"),
                             Err(e) => log::error!("关闭数据库连接时出错: {}", e),
                         }

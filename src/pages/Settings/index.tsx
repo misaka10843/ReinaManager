@@ -68,6 +68,8 @@ import {
 	moveBackupFolder,
 	openDatabaseBackupFolder,
 	openurl,
+	refreshDbBackupPath,
+	refreshSavedataBackupPath,
 } from "@/utils";
 import { backupDatabase, importDatabase } from "@/utils/database";
 
@@ -628,30 +630,11 @@ const DatabaseBackupSettings = () => {
 	const [isBackingUp, setIsBackingUp] = useState(false);
 	const [isImporting, setIsImporting] = useState(false);
 
-	// db backup path state
-	const [dbBackupPath, setDbBackupPath] = useState("");
-	const [isLoadingDbPath, setIsLoadingDbPath] = useState(false);
-
-	useEffect(() => {
-		const load = async () => {
-			setIsLoadingDbPath(true);
-			try {
-				const path = await settingsService.getDbBackupPath();
-				setDbBackupPath(path);
-			} catch (e) {
-				console.error("加载数据库备份路径失败", e);
-			} finally {
-				setIsLoadingDbPath(false);
-			}
-		};
-		load();
-	}, []);
-
 	const handleBackupDatabase = async () => {
 		setIsBackingUp(true);
 
 		try {
-			const result = await backupDatabase(dbBackupPath);
+			const result = await backupDatabase();
 			if (result.success) {
 				snackbar.success(
 					t("pages.Settings.databaseBackup.backupSuccess", {
@@ -680,7 +663,7 @@ const DatabaseBackupSettings = () => {
 
 	const handleOpenBackupFolder = async () => {
 		try {
-			await openDatabaseBackupFolder(dbBackupPath);
+			await openDatabaseBackupFolder();
 		} catch (error) {
 			const errorMessage =
 				error instanceof Error
@@ -697,41 +680,10 @@ const DatabaseBackupSettings = () => {
 		}
 	};
 
-	const handleSaveDbBackupPath = async () => {
-		setIsLoadingDbPath(true);
-		try {
-			await settingsService.setDbBackupPath(dbBackupPath);
-			snackbar.success(
-				t("pages.Settings.databaseBackup.savePathSuccess", "备份路径已保存"),
-			);
-		} catch (e) {
-			console.error(e);
-			snackbar.error(
-				t("pages.Settings.databaseBackup.savePathError", "保存失败"),
-			);
-		} finally {
-			setIsLoadingDbPath(false);
-		}
-	};
-
-	const handleSelectFolder = async () => {
-		try {
-			const selectedPath = await handleGetFolder();
-			if (selectedPath) {
-				setDbBackupPath(selectedPath);
-			}
-		} catch (error) {
-			console.error(error);
-			snackbar.error(
-				t("pages.Settings.databaseBackup.selectFolderError", "选择文件夹失败"),
-			);
-		}
-	};
-
 	const handleImportDatabase = async () => {
 		setIsImporting(true);
 		try {
-			const result = await importDatabase(dbBackupPath);
+			const result = await importDatabase();
 			if (result) {
 				if (result.success) {
 					snackbar.success(
@@ -771,42 +723,6 @@ const DatabaseBackupSettings = () => {
 				{t("pages.Settings.databaseBackup.title", "数据库备份与恢复")}
 			</InputLabel>
 
-			<Stack direction="row" spacing={2} alignItems="center" className="mb-3">
-				<TextField
-					label={t(
-						"pages.Settings.databaseBackup.pathLabel",
-						"数据库备份保存路径",
-					)}
-					variant="outlined"
-					value={dbBackupPath}
-					onChange={(e) => setDbBackupPath(e.target.value)}
-					className="min-w-60 flex-grow"
-					placeholder={t(
-						"pages.Settings.databaseBackup.pathPlaceholder",
-						"选择或输入保存路径",
-					)}
-					disabled={isLoadingDbPath}
-				/>
-
-				<Button
-					variant="outlined"
-					onClick={handleSelectFolder}
-					disabled={isLoadingDbPath || !isTauri()}
-					startIcon={<FolderOpenIcon />}
-					className="px-4 py-2"
-				>
-					{t("pages.Settings.databaseBackup.selectFolder", "选择目录")}
-				</Button>
-				<Button
-					variant="contained"
-					color="primary"
-					onClick={handleSaveDbBackupPath}
-					startIcon={<SaveIcon />}
-					className="px-4 py-2 ml-2"
-				>
-					{t("pages.Settings.databaseBackup.savePathBtn", "保存")}
-				</Button>
-			</Stack>
 			<Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
 				<Button
 					variant="contained"
@@ -865,6 +781,248 @@ const DatabaseBackupSettings = () => {
 				{t(
 					"pages.Settings.databaseBackup.restoreWarning",
 					"恢复数据库将覆盖现有数据，请谨慎操作。导入后应用将自动重启。",
+				)}
+			</Typography>
+			<Typography
+				variant="caption"
+				color="text.secondary"
+				className="block mt-1"
+			>
+				{t(
+					"pages.Settings.databaseBackup.pathNote",
+					"备份路径配置已移至下方的「数据库备份路径」设置中",
+				)}
+			</Typography>
+		</Box>
+	);
+};
+
+const DbBackupPathSettings = () => {
+	const { t } = useTranslation();
+	const [dbBackupPath, setDbBackupPath] = useState("");
+	const [isLoading, setIsLoading] = useState(false);
+	const [originalPath, setOriginalPath] = useState("");
+
+	// 加载当前设置的备份路径
+	useEffect(() => {
+		const loadDbBackupPath = async () => {
+			setIsLoading(true);
+			try {
+				const path = await settingsService.getDbBackupPath();
+				setDbBackupPath(path);
+				setOriginalPath(path);
+			} catch (error) {
+				console.error("加载数据库备份路径失败:", error);
+			} finally {
+				setIsLoading(false);
+			}
+		};
+		loadDbBackupPath();
+	}, []);
+
+	const handleSelectFolder = async () => {
+		try {
+			const selectedPath = await handleGetFolder();
+			if (selectedPath) {
+				setDbBackupPath(selectedPath);
+			}
+		} catch (error) {
+			console.error("选择文件夹失败:", error);
+			snackbar.error(
+				t("pages.Settings.dbBackupPath.selectError", "选择文件夹失败"),
+			);
+		}
+	};
+
+	const handleSavePath = async () => {
+		setIsLoading(true);
+
+		try {
+			await settingsService.setDbBackupPath(dbBackupPath);
+			setOriginalPath(dbBackupPath);
+			// 刷新数据库备份路径缓存
+			try {
+				await refreshDbBackupPath();
+			} catch (refreshError) {
+				console.warn("刷新数据库备份路径缓存失败:", refreshError);
+			}
+			snackbar.success(
+				t("pages.Settings.dbBackupPath.saveSuccess", "备份路径已保存"),
+			);
+		} catch (error) {
+			console.error("保存备份路径失败:", error);
+			snackbar.error(t("pages.Settings.dbBackupPath.saveError", "保存失败"));
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	return (
+		<Box className="mb-6">
+			<InputLabel className="font-semibold mb-4">
+				{t("pages.Settings.dbBackupPath.title", "数据库备份路径")}
+			</InputLabel>
+
+			<Stack direction="row" spacing={2} alignItems="center" className="mb-2">
+				<TextField
+					label={t("pages.Settings.dbBackupPath.pathLabel", "备份保存路径")}
+					variant="outlined"
+					value={dbBackupPath}
+					onChange={(e) => setDbBackupPath(e.target.value)}
+					className="min-w-60 flex-grow"
+					placeholder={t(
+						"pages.Settings.dbBackupPath.pathPlaceholder",
+						"留空使用默认路径",
+					)}
+					disabled={isLoading || !isTauri()}
+				/>
+
+				<Button
+					variant="outlined"
+					onClick={handleSelectFolder}
+					disabled={isLoading || !isTauri()}
+					startIcon={<FolderOpenIcon />}
+					className="px-4 py-2"
+				>
+					{t("pages.Settings.dbBackupPath.selectBtn", "选择目录")}
+				</Button>
+
+				<Button
+					variant="contained"
+					color="primary"
+					onClick={handleSavePath}
+					disabled={isLoading || dbBackupPath === originalPath || !isTauri()}
+					startIcon={<SaveIcon />}
+					className="px-4 py-2"
+				>
+					{t("pages.Settings.dbBackupPath.saveBtn", "保存")}
+				</Button>
+			</Stack>
+
+			<Typography
+				variant="caption"
+				color="text.secondary"
+				className="block mt-1"
+			>
+				{t(
+					"pages.Settings.dbBackupPath.note",
+					"留空将使用默认路径（AppData/data/backups），或便携模式下的程序目录",
+				)}
+			</Typography>
+		</Box>
+	);
+};
+
+const PortableModeSettings = () => {
+	const { t } = useTranslation();
+	const [portableMode, setPortableMode] = useState(false);
+	const [isLoading, setIsLoading] = useState(false);
+
+	useEffect(() => {
+		const loadPortableMode = async () => {
+			setIsLoading(true);
+			try {
+				const enabled = await settingsService.getPortableMode();
+				setPortableMode(enabled);
+			} catch (error) {
+				console.error("加载便携模式状态失败:", error);
+			} finally {
+				setIsLoading(false);
+			}
+		};
+		loadPortableMode();
+	}, []);
+
+	const handleTogglePortableMode = async (
+		event: React.ChangeEvent<HTMLInputElement>,
+	) => {
+		const newValue = event.target.checked;
+		setIsLoading(true);
+
+		try {
+			const result = await settingsService.setPortableMode(newValue);
+			setPortableMode(newValue);
+
+			// 显示详细的迁移结果
+			if (result.total_files > 0) {
+				const details = [];
+				if (result.database_migrated) {
+					details.push("数据库文件");
+				}
+				if (result.database_backups_count > 0) {
+					details.push(`${result.database_backups_count} 个数据库备份`);
+				}
+				if (result.savedata_backups_count > 0) {
+					details.push(`${result.savedata_backups_count} 个存档备份`);
+				}
+				snackbar.success(`${result.message}（${details.join("、")}）`);
+			} else {
+				snackbar.success(result.message);
+			}
+
+			// 如果需要重启，自动重启应用
+			if (result.requires_restart) {
+				setTimeout(async () => {
+					try {
+						const { relaunch } = await import("@tauri-apps/plugin-process");
+						await relaunch();
+					} catch (error) {
+						console.error("重启应用失败:", error);
+						snackbar.error(
+							t("pages.Settings.restartError", "重启失败，请手动重启应用"),
+						);
+					}
+				}, 1500); // 给用户时间看到提示消息
+			}
+		} catch (error) {
+			console.error("切换便携模式失败:", error);
+			snackbar.error(t("pages.Settings.portableMode.toggleError", "切换失败"));
+			// 恢复原值
+			setPortableMode(!newValue);
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	return (
+		<Box className="mb-6">
+			<InputLabel className="font-semibold mb-4">
+				{t("pages.Settings.portableMode.title", "便携模式")}
+			</InputLabel>
+
+			<Stack direction="row" alignItems="center" className="mb-2">
+				<FormControlLabel
+					control={
+						<Switch
+							checked={portableMode}
+							onChange={handleTogglePortableMode}
+							disabled={isLoading || !isTauri()}
+							color="primary"
+						/>
+					}
+					label={t("pages.Settings.portableMode.enable", "启用便携模式")}
+				/>
+			</Stack>
+
+			<Typography
+				variant="caption"
+				color="text.secondary"
+				className="block mt-1"
+			>
+				{t(
+					"pages.Settings.portableMode.description",
+					"开启便携模式后，数据库和备份将保存在程序安装目录，而非系统应用数据目录。适合需要将程序放在U盘或移动硬盘中使用的场景。",
+				)}
+			</Typography>
+
+			<Typography
+				variant="caption"
+				color="warning.main"
+				className="block mt-2 font-semibold"
+			>
+				{t(
+					"pages.Settings.portableMode.warning",
+					"⚠️ 切换便携模式需要重启应用，且会改变数据存储位置，请谨慎操作！",
 				)}
 			</Typography>
 		</Box>
@@ -983,6 +1141,12 @@ const SavePathSettings = () => {
 		try {
 			// 首先保存新路径到数据库
 			await settingsService.setSaveRootPath(savePath);
+			// 刷新存档备份路径缓存
+			try {
+				await refreshSavedataBackupPath();
+			} catch (refreshError) {
+				console.warn("刷新存档备份路径缓存失败:", refreshError);
+			}
 
 			// 如果路径发生了变化，需要移动备份文件夹
 			if (originalPath !== savePath || originalPath !== "") {
@@ -1490,6 +1654,14 @@ export const Settings: React.FC = () => {
 
 				{/* 备份路径设置 */}
 				<SavePathSettings />
+				<Divider sx={{ my: 3 }} />
+
+				{/* 便携模式设置 */}
+				<PortableModeSettings />
+				<Divider sx={{ my: 3 }} />
+
+				{/* 数据库备份路径设置 */}
+				<DbBackupPathSettings />
 				<Divider sx={{ my: 3 }} />
 
 				{/* 数据库备份与恢复 */}
