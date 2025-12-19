@@ -6,6 +6,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { readFile } from "@tauri-apps/plugin-fs";
+import { basename, join } from "pathe";
 import { getcustomCoverFolder } from "./index";
 
 /**
@@ -54,7 +55,7 @@ export const uploadSelectedImage = async (
 	imagePath: string,
 ): Promise<string> => {
 	try {
-		const fileName = imagePath.split(/[/\\]/).pop() || "image";
+		const fileName = basename(imagePath);
 		const extension = getFileExtension(fileName);
 
 		// 获取应用资源目录（使用缓存的路径）
@@ -68,7 +69,10 @@ export const uploadSelectedImage = async (
 		const versionedFileName = `${extension}_${timestamp}`;
 
 		// 构建目标路径
-		const targetPath = `${customCoverFolder}\\cover_${gameId}_${versionedFileName}`;
+		const targetPath = join(
+			customCoverFolder,
+			`cover_${gameId}_${versionedFileName}`,
+		);
 
 		// 删除该游戏的所有旧封面文件（通过模式匹配）
 		try {
@@ -105,7 +109,7 @@ export const getPreviewUrlFromPath = async (
 		const result = await readFile(imagePath);
 
 		// 根据扩展名确定 mimeType
-		const fileName = imagePath.split(/[/\\]/).pop() || "";
+		const fileName = basename(imagePath);
 		const ext = getFileExtension(fileName) || "png";
 		const mime = `image/${ext === "jpg" ? "jpeg" : ext}`;
 
@@ -162,7 +166,10 @@ export const deleteCustomCoverFile = async (
 		}
 
 		// 构建完整的文件路径
-		const targetPath = `${customCoverFolder}\\cover_${gameId}_${versionedFileName}`;
+		const targetPath = join(
+			customCoverFolder,
+			`cover_${gameId}_${versionedFileName}`,
+		);
 
 		// 删除物理文件
 		await invoke<void>("delete_file", {

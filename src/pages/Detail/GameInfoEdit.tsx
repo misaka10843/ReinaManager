@@ -13,6 +13,7 @@ import {
 	TextField,
 	Typography,
 } from "@mui/material";
+import { basename } from "pathe";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { snackbar } from "@/components/Snackbar";
@@ -339,7 +340,7 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 											"pages.Detail.GameInfoEdit.previewSelected",
 											"已选择新图片，保存后生效",
 										)}
-										: {selectedImagePath.split(/[/\\]/).pop()}
+										: {basename(selectedImagePath)}
 									</Typography>
 								)}
 							</Stack>

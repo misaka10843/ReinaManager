@@ -4,6 +4,7 @@
  */
 
 import { convertFileSrc } from "@tauri-apps/api/core";
+import { join } from "pathe";
 import type { FullGameData, GameData } from "@/types";
 import { getResourceDirPath } from "@/utils";
 
@@ -167,8 +168,16 @@ function getCustomCoverUrl(
 		return;
 	}
 
-	const customCoverFolder = `${resourceFolder}\\resources\\covers\\game_${gameId}`;
-	const customCoverPath = `${customCoverFolder}\\cover_${gameId}_${customCover}`;
+	const customCoverFolder = join(
+		resourceFolder,
+		"resources",
+		"covers",
+		`game_${gameId}`,
+	);
+	const customCoverPath = join(
+		customCoverFolder,
+		`cover_${gameId}_${customCover}`,
+	);
 
 	try {
 		return convertFileSrc(customCoverPath);

@@ -54,6 +54,7 @@ import { invoke, isTauri } from "@tauri-apps/api/core";
 import { isEnabled } from "@tauri-apps/plugin-autostart";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { PageContainer } from "@toolpad/core/PageContainer";
+import { join } from "pathe";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toggleAutostart } from "@/components/AutoStart";
@@ -335,7 +336,7 @@ const LogLevelSettings = () => {
 	const handleOpenLogFolder = async () => {
 		try {
 			const AppLocalData = await path.appLocalDataDir();
-			const logDir = `${AppLocalData}/logs`;
+			const logDir = join(AppLocalData, "logs");
 			await invoke("open_directory", { dirPath: logDir });
 		} catch (error) {
 			const errorMessage =

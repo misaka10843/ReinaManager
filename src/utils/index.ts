@@ -4,6 +4,7 @@ import { resourceDir } from "@tauri-apps/api/path";
 import { open as openDirectory } from "@tauri-apps/plugin-dialog";
 import { open } from "@tauri-apps/plugin-shell";
 import i18next, { t } from "i18next";
+import { join } from "pathe";
 import { fetchBgmByIds } from "@/api/bgm";
 import { fetchVNDBByIds } from "@/api/vndb";
 import { snackbar } from "@/components/Snackbar";
@@ -86,7 +87,7 @@ export const initPathCache = async (): Promise<PathInitResult> => {
 	if (!cachedAppDataDir) {
 		if (cachedIsPortableMode) {
 			// 便携模式：使用资源目录/resources
-			cachedAppDataDir = `${cachedResourceDirPath}/resources`;
+			cachedAppDataDir = join(cachedResourceDirPath, "resources");
 		} else {
 			// 标准模式：使用系统 AppData
 			cachedAppDataDir = systemAppDataDirResult as string;
@@ -95,7 +96,7 @@ export const initPathCache = async (): Promise<PathInitResult> => {
 
 	// 4. 获取数据库路径
 	if (!cachedDbPath) {
-		cachedDbPath = `${cachedAppDataDir}/data/reina_manager.db`;
+		cachedDbPath = join(cachedAppDataDir, "data", "reina_manager.db");
 	}
 
 	// 5 & 6. 并行获取数据库备份路径和存档备份路径
@@ -103,9 +104,9 @@ export const initPathCache = async (): Promise<PathInitResult> => {
 
 	return {
 		resourceDir: cachedResourceDirPath,
-		appDataDir: cachedAppDataDir,
+		appDataDir: cachedAppDataDir || "",
 		isPortableMode: cachedIsPortableMode,
-		dbPath: cachedDbPath,
+		dbPath: cachedDbPath || "",
 		dbBackupPath: cachedDbBackupPath || "",
 		savedataBackupPath: cachedSavedataBackupPath || "",
 	};
@@ -125,7 +126,7 @@ export const refreshDbBackupPath = async (): Promise<void> => {
 	if (customDbBackupPath && customDbBackupPath.trim() !== "") {
 		cachedDbBackupPath = customDbBackupPath;
 	} else {
-		cachedDbBackupPath = `${cachedAppDataDir}/data/backups`;
+		cachedDbBackupPath = join(cachedAppDataDir, "data", "backups");
 	}
 };
 
@@ -141,9 +142,9 @@ export const refreshSavedataBackupPath = async (): Promise<void> => {
 
 	const customSaveRootPath = await settingsService.getSaveRootPath();
 	if (customSaveRootPath && customSaveRootPath.trim() !== "") {
-		cachedSavedataBackupPath = `${customSaveRootPath}/backups`;
+		cachedSavedataBackupPath = join(customSaveRootPath, "backups");
 	} else {
-		cachedSavedataBackupPath = `${cachedAppDataDir}/backups`;
+		cachedSavedataBackupPath = join(cachedAppDataDir, "backups");
 	}
 };
 
@@ -395,7 +396,12 @@ export const getGameDisplayName = (
 };
 export const getcustomCoverFolder = (gameID: number): string => {
 	const resourceFolder = getResourceDirPath();
-	const customCoverFolder = `${resourceFolder}\\resources\\covers\\game_${gameID}`;
+	const customCoverFolder = join(
+		resourceFolder,
+		"resources",
+		"covers",
+		`game_${gameID}`,
+	);
 	return customCoverFolder;
 };
 export const getGameCover = (game: GameData): string => {
@@ -406,7 +412,10 @@ export const getGameCover = (game: GameData): string => {
 		if (customCoverFolder) {
 			// 使用数据库的custom_cover字段作为完整文件名（包含版本信息）
 			// 例如：custom_cover = "jpg_1703123456789"
-			const customCoverPath = `${customCoverFolder}\\cover_${game.id}_${game.custom_cover}`;
+			const customCoverPath = join(
+				customCoverFolder,
+				`cover_${game.id}_${game.custom_cover}`,
+			);
 
 			// 在 Tauri 环境中使用 convertFileSrc 转换路径
 			try {
@@ -581,7 +590,7 @@ export async function createGameSavedataBackup(
 export async function openGameBackupFolder(gameId: number): Promise<void> {
 	try {
 		const savedataBackupPath = getSavedataBackupPath();
-		const backupGameDir = `${savedataBackupPath}/game_${gameId}`;
+		const backupGameDir = join(savedataBackupPath, `game_${gameId}`);
 		// 使用后端函数打开文件夹
 		await invoke("open_directory", { dirPath: backupGameDir });
 	} catch (error) {
@@ -645,9 +654,9 @@ export async function moveBackupFolder(
 
 		// 确定旧备份目录和新备份目录路径
 		const oldBackupDir = oldPath
-			? `${oldPath}/backups`
-			: `${appDataDir}/backups`;
-		const newBackupDir = `${newPath}/backups`;
+			? join(oldPath, "backups")
+			: join(appDataDir, "backups");
+		const newBackupDir = join(newPath, "backups");
 
 		// 调用 Rust 后端函数移动文件夹
 		const result = await invoke<{ success: boolean; message: string }>(

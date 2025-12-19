@@ -99,8 +99,7 @@ pub async fn restore_savedata_backup(
     backup_file_path: String,
     target_path: String,
 ) -> Result<(), String> {
-    let normalized_backup_path = backup_file_path.replace('/', "\\");
-    let backup_path = Path::new(&normalized_backup_path);
+    let backup_path = Path::new(&backup_file_path);
     let target_path = Path::new(&target_path);
 
     // 验证备份文件是否存在
@@ -128,8 +127,7 @@ pub async fn restore_savedata_backup(
 /// * `Result<(), String>` - 成功或错误消息
 #[tauri::command]
 pub async fn delete_savedata_backup(backup_file_path: String) -> Result<(), String> {
-    let normalized_path = backup_file_path.replace('/', "\\");
-    let backup_path = Path::new(&normalized_path);
+    let backup_path = Path::new(&backup_file_path);
 
     if !backup_path.exists() {
         return Err("备份文件不存在".to_string());
