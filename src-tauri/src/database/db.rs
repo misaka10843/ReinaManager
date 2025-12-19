@@ -8,8 +8,8 @@ use url::Url;
 
 // 从 fs 模块导入路径管理相关功能
 use crate::utils::fs::{
-    get_base_data_dir_for_mode, get_db_path, is_portable_mode, DB_BACKUP_SUBDIR, DB_DATA_DIR,
-    DB_FILE_NAME,
+    get_base_data_dir_for_mode, get_db_path, is_portable_mode, move_dir_recursive, move_file,
+    DB_BACKUP_SUBDIR, DB_DATA_DIR, DB_FILE_NAME,
 };
 
 /// 数据库备份结果
@@ -262,96 +262,6 @@ pub async fn import_database(
 
 // ==================== 便携模式切换辅助函数 ====================
 
-/// 递归移动目录（剪切操作）
-///
-/// 优先使用 fs::rename (性能更好)，如果失败（如跨盘符）则回退到 copy + remove
-///
-/// # Arguments
-/// * `from` - 源目录
-/// * `to` - 目标目录
-///
-/// # Returns
-/// * `Result<usize, String>` - 成功移动的文件数量或错误消息
-fn move_dir_recursive(from: &Path, to: &Path) -> Result<usize, String> {
-    let mut moved_count = 0;
-
-    // 确保目标目录存在
-    fs::create_dir_all(to).map_err(|e| format!("创建目标目录失败: {}", e))?;
-
-    // 遍历源目录
-    for entry in fs::read_dir(from).map_err(|e| format!("读取源目录失败: {}", e))? {
-        let entry = entry.map_err(|e| format!("读取目录项失败: {}", e))?;
-        let entry_path = entry.path();
-        let file_name = entry.file_name();
-        let target_path = to.join(&file_name);
-
-        if entry_path.is_dir() {
-            // 递归移动子目录
-            moved_count += move_dir_recursive(&entry_path, &target_path)?;
-            // 移动完子目录后删除空目录
-            let _ = fs::remove_dir(&entry_path);
-        } else {
-            // 尝试使用 rename（性能更好）
-            match fs::rename(&entry_path, &target_path) {
-                Ok(_) => {
-                    moved_count += 1;
-                    log::debug!(
-                        "已移动文件(rename): {} -> {}",
-                        entry_path.display(),
-                        target_path.display()
-                    );
-                }
-                Err(_) => {
-                    // rename 失败（可能跨盘符），使用 copy + remove
-                    fs::copy(&entry_path, &target_path).map_err(|e| {
-                        format!("复制文件 {} 失败: {}", file_name.to_string_lossy(), e)
-                    })?;
-                    fs::remove_file(&entry_path).map_err(|e| {
-                        format!("删除源文件 {} 失败: {}", file_name.to_string_lossy(), e)
-                    })?;
-                    moved_count += 1;
-                    log::debug!(
-                        "已移动文件(copy+remove): {} -> {}",
-                        entry_path.display(),
-                        target_path.display()
-                    );
-                }
-            }
-        }
-    }
-
-    Ok(moved_count)
-}
-
-/// 移动单个文件（剪切操作）
-///
-/// 优先使用 fs::rename，失败则使用 copy + remove
-fn move_file(from: &Path, to: &Path) -> Result<(), String> {
-    // 确保目标目录存在
-    if let Some(parent) = to.parent() {
-        fs::create_dir_all(parent).map_err(|e| format!("创建目标目录失败: {}", e))?;
-    }
-
-    // 尝试使用 rename（性能更好）
-    match fs::rename(from, to) {
-        Ok(_) => {
-            log::debug!("已移动文件(rename): {} -> {}", from.display(), to.display());
-            Ok(())
-        }
-        Err(_) => {
-            // rename 失败（可能跨盘符），使用 copy + remove
-            fs::copy(from, to).map_err(|e| format!("复制文件失败: {}", e))?;
-            fs::remove_file(from).map_err(|e| format!("删除源文件失败: {}", e))?;
-            log::debug!(
-                "已移动文件(copy+remove): {} -> {}",
-                from.display(),
-                to.display()
-            );
-            Ok(())
-        }
-    }
-}
-
 /// **重要说明**：
 /// - 此函数会关闭数据库连接以确保数据安全迁移
 /// - 使用**剪切**操作（移动文件），源文件将被删除
@@ -408,14 +318,35 @@ pub async fn migrate_data_files(
     let to_db_file = to_base_dir.join(DB_DATA_DIR).join(DB_FILE_NAME);
 
     if from_db_file.exists() {
-        move_file(&from_db_file, &to_db_file).map_err(|e| format!("迁移数据库文件失败: {}", e))?;
-        result.database_migrated = true;
-        result.total_files += 1;
-        log::info!(
-            "已迁移数据库文件: {} -> {}",
-            from_db_file.display(),
-            to_db_file.display()
-        );
+        // 数据库文件迁移是关键操作，如果失败需要明确报错
+        match move_file(&from_db_file, &to_db_file) {
+            Ok(_) => {
+                result.database_migrated = true;
+                result.total_files += 1;
+                log::info!(
+                    "已迁移数据库文件: {} -> {}",
+                    from_db_file.display(),
+                    to_db_file.display()
+                );
+            }
+            Err(e) => {
+                let error_msg = format!(
+                    "迁移数据库文件失败: {}\n源文件: {}\n目标文件: {}\n提示: 请检查目标目录是否有写入权限，或目标文件是否被占用。源数据库文件保持不变",
+                    e,
+                    from_db_file.display(),
+                    to_db_file.display()
+                );
+                log::error!("{}", error_msg);
+
+                // 清理可能创建的不完整目标文件
+                if to_db_file.exists() {
+                    log::warn!("清理不完整的目标数据库文件");
+                    let _ = fs::remove_file(&to_db_file);
+                }
+
+                return Err(error_msg);
+            }
+        }
     }
 
     // 3. 迁移数据库备份文件（data/backups/*.db）
@@ -423,17 +354,27 @@ pub async fn migrate_data_files(
     let to_db_backups_dir = to_base_dir.join(DB_DATA_DIR).join(DB_BACKUP_SUBDIR);
 
     if from_db_backups_dir.exists() && from_db_backups_dir.is_dir() {
-        let count =
-            move_dir_recursive(&from_db_backups_dir, &to_db_backups_dir).unwrap_or_else(|e| {
-                log::warn!("迁移数据库备份文件失败: {}", e);
-                0
-            });
-        result.database_backups_count = count;
-        result.total_files += count;
-        if count > 0 {
-            log::info!("已迁移 {} 个数据库备份文件", count);
-            // 删除空的源目录
-            let _ = fs::remove_dir(&from_db_backups_dir);
+        match move_dir_recursive(&from_db_backups_dir, &to_db_backups_dir) {
+            Ok(count) => {
+                result.database_backups_count = count;
+                result.total_files += count;
+                if count > 0 {
+                    log::info!("已迁移 {} 个数据库备份文件", count);
+                    // 删除空的源目录
+                    let _ = fs::remove_dir(&from_db_backups_dir);
+                }
+            }
+            Err(e) => {
+                let error_msg = format!(
+                    "迁移数据库备份文件失败: {}\n源目录: {}\n目标目录: {}\n提示: 数据库文件已迁移，但备份文件迁移失败。源备份文件保持不变，请解决问题后手动迁移",
+                    e,
+                    from_db_backups_dir.display(),
+                    to_db_backups_dir.display()
+                );
+                log::error!("{}", error_msg);
+
+                return Err(error_msg);
+            }
         }
     }
 
@@ -448,17 +389,27 @@ pub async fn migrate_data_files(
         let to_savedata_backups_dir = to_base_dir.join("backups");
 
         if from_savedata_backups_dir.exists() && from_savedata_backups_dir.is_dir() {
-            let count = move_dir_recursive(&from_savedata_backups_dir, &to_savedata_backups_dir)
-                .unwrap_or_else(|e| {
-                    log::warn!("迁移存档备份文件失败: {}", e);
-                    0
-                });
-            result.savedata_backups_count = count;
-            result.total_files += count;
-            if count > 0 {
-                log::info!("已迁移 {} 个存档备份文件", count);
-                // 删除空的源目录
-                let _ = fs::remove_dir(&from_savedata_backups_dir);
+            match move_dir_recursive(&from_savedata_backups_dir, &to_savedata_backups_dir) {
+                Ok(count) => {
+                    result.savedata_backups_count = count;
+                    result.total_files += count;
+                    if count > 0 {
+                        log::info!("已迁移 {} 个存档备份文件", count);
+                        // 删除空的源目录
+                        let _ = fs::remove_dir(&from_savedata_backups_dir);
+                    }
+                }
+                Err(e) => {
+                    let error_msg = format!(
+                        "迁移存档备份文件失败: {}\n源目录: {}\n目标目录: {}\n提示: 数据库和数据库备份已迁移，但存档备份迁移失败。源存档备份保持不变，请解决问题后手动迁移",
+                        e,
+                        from_savedata_backups_dir.display(),
+                        to_savedata_backups_dir.display()
+                    );
+                    log::error!("{}", error_msg);
+
+                    return Err(error_msg);
+                }
             }
         }
     } else {

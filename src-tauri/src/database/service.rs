@@ -548,17 +548,16 @@ pub async fn set_portable_mode(
     let user_save_root_path = SettingsRepository::get_save_root_path(&db).await.ok();
 
     // 迁移数据文件（此函数会关闭数据库连接，使用剪切操作）
+    // 如果迁移失败，直接返回错误给前端
     let migration_result = migrate_data_files(&app, enabled, user_save_root_path)
         .await
-        .unwrap_or_else(|e| {
-            log::warn!("数据文件迁移失败: {}", e);
-            crate::database::db::MigrationResult {
-                database_migrated: false,
-                database_backups_count: 0,
-                savedata_backups_count: 0,
-                total_files: 0,
-            }
-        });
+        .map_err(|e| {
+            log::error!("数据文件迁移失败: {}", e);
+            format!(
+                "数据文件迁移失败: {}\n\n应用将不会自动重启，请解决问题后重启重试",
+                e
+            )
+        })?;
 
     let mode_name = if enabled {
         "便携模式"

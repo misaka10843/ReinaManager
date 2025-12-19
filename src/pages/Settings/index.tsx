@@ -57,6 +57,7 @@ import { PageContainer } from "@toolpad/core/PageContainer";
 import { join } from "pathe";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { AlertConfirmBox } from "@/components/AlertBox";
 import { toggleAutostart } from "@/components/AutoStart";
 import { snackbar } from "@/components/Snackbar";
 import { checkForUpdates } from "@/components/Update";
@@ -918,6 +919,8 @@ const PortableModeSettings = () => {
 	const { t } = useTranslation();
 	const [portableMode, setPortableMode] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
+	const [showConfirm, setShowConfirm] = useState(false);
+	const [pendingValue, setPendingValue] = useState(false);
 
 	useEffect(() => {
 		const loadPortableMode = async () => {
@@ -938,11 +941,18 @@ const PortableModeSettings = () => {
 		event: React.ChangeEvent<HTMLInputElement>,
 	) => {
 		const newValue = event.target.checked;
+		// 显示确认对话框
+		setPendingValue(newValue);
+		setShowConfirm(true);
+	};
+
+	const handleConfirmToggle = async () => {
+		setShowConfirm(false);
 		setIsLoading(true);
 
 		try {
-			const result = await settingsService.setPortableMode(newValue);
-			setPortableMode(newValue);
+			const result = await settingsService.setPortableMode(pendingValue);
+			setPortableMode(pendingValue);
 
 			// 显示详细的迁移结果
 			if (result.total_files > 0) {
@@ -965,7 +975,6 @@ const PortableModeSettings = () => {
 			if (result.requires_restart) {
 				setTimeout(async () => {
 					try {
-						const { relaunch } = await import("@tauri-apps/plugin-process");
 						await relaunch();
 					} catch (error) {
 						console.error("重启应用失败:", error);
@@ -977,56 +986,78 @@ const PortableModeSettings = () => {
 			}
 		} catch (error) {
 			console.error("切换便携模式失败:", error);
-			snackbar.error(t("pages.Settings.portableMode.toggleError", "切换失败"));
-			// 恢复原值
-			setPortableMode(!newValue);
+
+			// 显示详细的错误信息（包含换行符）
+			const errorMessage =
+				error instanceof Error ? error.message : String(error);
+
+			// 使用多行显示错误信息
+			snackbar.error(
+				errorMessage ||
+					t("pages.Settings.portableMode.toggleError", "切换失败"),
+			);
 		} finally {
 			setIsLoading(false);
 		}
 	};
 
 	return (
-		<Box className="mb-6">
-			<InputLabel className="font-semibold mb-4">
-				{t("pages.Settings.portableMode.title", "便携模式")}
-			</InputLabel>
+		<>
+			<Box className="mb-6">
+				<InputLabel className="font-semibold mb-4">
+					{t("pages.Settings.portableMode.title", "便携模式")}
+				</InputLabel>
 
-			<Stack direction="row" alignItems="center" className="mb-2">
-				<FormControlLabel
-					control={
-						<Switch
-							checked={portableMode}
-							onChange={handleTogglePortableMode}
-							disabled={isLoading || !isTauri()}
-							color="primary"
-						/>
-					}
-					label={t("pages.Settings.portableMode.enable", "启用便携模式")}
-				/>
-			</Stack>
+				<Stack direction="row" alignItems="center" className="mb-2">
+					<FormControlLabel
+						control={
+							<Switch
+								checked={portableMode}
+								onChange={handleTogglePortableMode}
+								disabled={isLoading || !isTauri()}
+								color="primary"
+							/>
+						}
+						label={t("pages.Settings.portableMode.enable", "启用便携模式")}
+					/>
+				</Stack>
 
-			<Typography
-				variant="caption"
-				color="text.secondary"
-				className="block mt-1"
-			>
-				{t(
-					"pages.Settings.portableMode.description",
-					"开启便携模式后，数据库和备份将保存在程序安装目录，而非系统应用数据目录。适合需要将程序放在U盘或移动硬盘中使用的场景。",
+				<Typography
+					variant="caption"
+					color="text.secondary"
+					className="block mt-1"
+				>
+					{t(
+						"pages.Settings.portableMode.description",
+						"开启便携模式后，数据库和备份将保存在程序安装目录resources文件夹下，而非系统应用数据目录。适合需要将程序放在U盘或移动硬盘中使用的场景。",
+					)}
+				</Typography>
+			</Box>
+
+			{/* 确认对话框 */}
+			<AlertConfirmBox
+				open={showConfirm}
+				setOpen={setShowConfirm}
+				title={t(
+					"pages.Settings.portableMode.confirmTitle",
+					"确认切换便携模式",
 				)}
-			</Typography>
-
-			<Typography
-				variant="caption"
-				color="warning.main"
-				className="block mt-2 font-semibold"
-			>
-				{t(
-					"pages.Settings.portableMode.warning",
-					"⚠️ 切换便携模式需要重启应用，且会改变数据存储位置，请谨慎操作！",
-				)}
-			</Typography>
-		</Box>
+				message={
+					pendingValue
+						? t(
+								"pages.Settings.portableMode.confirmEnableMessage",
+								"启用便携模式后，数据库和备份将迁移至程序安装目录。操作成功后应用将自动重启。",
+							)
+						: t(
+								"pages.Settings.portableMode.confirmDisableMessage",
+								"关闭便携模式后，数据库和备份将迁移至系统应用数据目录。操作成功后应用将自动重启。",
+							)
+				}
+				onConfirm={handleConfirmToggle}
+				confirmText={t("common.confirm", "确认")}
+				confirmColor="warning"
+			/>
+		</>
 	);
 };
 
@@ -1653,12 +1684,12 @@ export const Settings: React.FC = () => {
 				<CloseBtnSettings />
 				<Divider sx={{ my: 3 }} />
 
-				{/* 备份路径设置 */}
-				<SavePathSettings />
-				<Divider sx={{ my: 3 }} />
-
 				{/* 便携模式设置 */}
 				<PortableModeSettings />
+				<Divider sx={{ my: 3 }} />
+
+				{/* 备份路径设置 */}
+				<SavePathSettings />
 				<Divider sx={{ my: 3 }} />
 
 				{/* 数据库备份路径设置 */}

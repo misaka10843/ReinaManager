@@ -94,6 +94,25 @@
 				"moveSuccess": "备份路径保存成功，备份文件夹已移动到新位置",
 				"moveWarning": "备份路径已保存，但移动备份文件夹时出现问题: {{message}}"
 			},
+			"portableMode": {
+				"title": "便携模式",
+				"enable": "启用便携模式",
+				"description": "开启便携模式后，数据库和备份将保存在程序安装目录resources文件夹下，而非系统应用数据目录。适合需要将程序放在U盘或移动硬盘中使用的场景。",
+				"confirmTitle": "确认切换便携模式",
+				"confirmEnableMessage": "启用便携模式后，数据库和备份将迁移至程序安装目录。操作成功后应用将自动重启。",
+				"confirmDisableMessage": "关闭便携模式后，数据库和备份将迁移至系统应用数据目录。操作成功后应用将自动重启。",
+				"toggleError": "切换失败"
+			},
+			"dbBackupPath": {
+				"title": "数据库备份路径",
+				"pathLabel": "备份保存路径",
+				"pathPlaceholder": "留空使用默认路径",
+				"selectBtn": "选择目录",
+				"saveBtn": "保存",
+				"saveSuccess": "备份路径已保存",
+				"saveError": "保存失败",
+				"note": "留空将使用默认路径（AppData/data/backups），或便携模式下的程序目录"
+			},
 			"databaseBackup": {
 				"title": "数据库备份与恢复",
 				"pathLabel": "数据库备份保存路径",

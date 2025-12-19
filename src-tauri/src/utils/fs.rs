@@ -244,7 +244,8 @@ pub async fn open_directory(dir_path: String) -> Result<(), String> {
 
     #[cfg(target_os = "windows")]
     {
-        // 使用正斜杠转换为反斜杠，Windows Explorer 更喜欢反斜杠
+        // Windows Explorer 在某些情况下对反斜杠的处理更稳定
+        // 虽然 Windows 系统本身支持正斜杠，但 Explorer 更喜欢原生的反斜杠格式
         let normalized_path = dir_path.replace('/', "\\");
 
         let result = Command::new("explorer").arg(&normalized_path).spawn();
@@ -329,7 +330,7 @@ pub async fn move_backup_folder(old_path: String, new_path: String) -> Result<Mo
         }),
         Err(_e) => {
             // 如果简单重命名失败（可能是跨分区），尝试复制然后删除
-            match copy_dir_all(old_backup_path, new_backup_path) {
+            match copy_dir_recursive(old_backup_path, new_backup_path) {
                 Ok(_) => {
                     // 复制成功后删除原文件夹
                     match fs::remove_dir_all(old_backup_path) {
@@ -352,7 +353,234 @@ pub async fn move_backup_folder(old_path: String, new_path: String) -> Result<Mo
     }
 }
 
-/// 递归复制目录
+// ==================== 数据迁移相关文件操作 ====================
+
+/// 移动单个文件（剪切操作）
+///
+/// 优先使用 fs::rename，失败则使用 copy + remove
+/// 如果目标文件已存在，会先尝试删除后重试
+///
+/// **跨盘策略**：对于跨盘符场景，先完整复制文件，成功后再删除源文件
+pub fn move_file(from: &Path, to: &Path) -> Result<(), String> {
+    // 确保目标目录存在
+    if let Some(parent) = to.parent() {
+        fs::create_dir_all(parent).map_err(|e| format!("创建目标目录失败: {}", e))?;
+    }
+
+    // 尝试使用 rename（性能最好，适用于同盘符）
+    match fs::rename(from, to) {
+        Ok(_) => {
+            log::debug!("已移动文件(rename): {} -> {}", from.display(), to.display());
+            Ok(())
+        }
+        Err(_) => {
+            // rename 失败（可能跨盘符或目标文件已存在）
+            // 策略：先复制，成功后再删除源文件
+
+            // 如果目标文件已存在，先尝试删除
+            if to.exists() {
+                log::warn!("目标文件已存在，尝试删除: {}", to.display());
+                fs::remove_file(to)
+                    .map_err(|e| format!("无法删除已存在的目标文件 {}: {}", to.display(), e))?;
+            }
+
+            // 复制文件
+            fs::copy(from, to).map_err(|e| format!("复制文件失败: {}", e))?;
+
+            // 复制成功，删除源文件
+            fs::remove_file(from).map_err(|e| format!("删除源文件失败: {}", e))?;
+
+            log::debug!(
+                "已移动文件(copy+remove): {} -> {}",
+                from.display(),
+                to.display()
+            );
+            Ok(())
+        }
+    }
+}
+
+/// 递归移动目录（剪切操作）
+///
+/// 优先使用 fs::rename (性能最好)，失败则使用 copy + remove
+///
+/// **跨盘策略**：
+/// 1. 先尝试 rename（同盘符时最快）
+/// 2. rename 失败则使用分步骤策略：
+///    - 第一阶段：复制所有文件到目标位置（记录错误但继续尝试）
+///    - 第二阶段：如果复制全部成功，才删除源目录
+///    - 如果有任何错误，保留源文件，返回错误信息
+///    - **不会清理目标目录**，避免删除已成功复制的文件
+///
+/// # Arguments
+/// * `from` - 源目录
+/// * `to` - 目标目录
+///
+/// # Returns
+/// * `Result<usize, String>` - 成功移动的文件数量或错误消息
+pub fn move_dir_recursive(from: &Path, to: &Path) -> Result<usize, String> {
+    // 尝试使用 rename（同盘符时性能最好）
+    match fs::rename(from, to) {
+        Ok(_) => {
+            // rename 成功，统计文件数量
+            let count = count_files_in_dir(to).unwrap_or(0);
+            log::info!(
+                "已移动目录(rename): {} -> {} ({} 个文件)",
+                from.display(),
+                to.display(),
+                count
+            );
+            Ok(count)
+        }
+        Err(_) => {
+            // rename 失败，可能是跨盘符
+            log::info!(
+                "rename 失败，使用分步骤复制策略: {} -> {}",
+                from.display(),
+                to.display()
+            );
+
+            // 第一阶段：复制所有文件到目标位置（收集错误但继续）
+            let mut copy_errors = Vec::new();
+            let copied_count = match copy_dir_with_error_collection(from, to, &mut copy_errors) {
+                Ok(count) => count,
+                Err(e) => {
+                    // 复制过程中出现致命错误
+                    return Err(format!(
+                        "目录复制失败: {}\n注意: 源目录保持不变，目标目录可能包含部分文件",
+                        e
+                    ));
+                }
+            };
+
+            // 检查是否有错误
+            if !copy_errors.is_empty() {
+                // 有文件复制失败，不删除源目录，也不清理目标目录
+                let error_summary = copy_errors.join("\n");
+                return Err(format!(
+                    "目录复制部分失败（已复制 {} 个文件）：\n{}\n\n注意: 源目录保持不变，目标目录包含部分文件，请解决问题后重试",
+                    copied_count,
+                    error_summary
+                ));
+            }
+
+            // 第二阶段：所有文件复制成功，删除源目录
+            fs::remove_dir_all(from).map_err(|e| {
+                format!(
+                    "所有文件已复制到目标位置，但删除源目录失败: {}\n源目录: {}\n目标目录: {}\n请手动删除源目录",
+                    e,
+                    from.display(),
+                    to.display()
+                )
+            })?;
+
+            log::info!(
+                "已移动目录(copy+remove): {} -> {} ({} 个文件)",
+                from.display(),
+                to.display(),
+                copied_count
+            );
+
+            Ok(copied_count)
+        }
+    }
+}
+
+/// 递归复制目录（带错误收集）
+///
+/// 此函数会尝试复制所有文件，遇到错误时不会立即停止，
+/// 而是记录错误并继续处理其他文件。
+///
+/// # Returns
+/// * `Result<usize, String>` - 成功复制的文件数量或致命错误
+fn copy_dir_with_error_collection(
+    from: &Path,
+    to: &Path,
+    errors: &mut Vec<String>,
+) -> Result<usize, String> {
+    let mut copied_count = 0;
+
+    // 确保目标目录存在
+    if let Err(e) = fs::create_dir_all(to) {
+        return Err(format!("创建目标目录失败: {}", e));
+    }
+
+    // 遍历源目录
+    let entries = fs::read_dir(from).map_err(|e| format!("读取源目录失败: {}", e))?;
+
+    for entry in entries {
+        let entry = match entry {
+            Ok(e) => e,
+            Err(e) => {
+                errors.push(format!("读取目录项失败: {}", e));
+                continue;
+            }
+        };
+
+        let entry_path = entry.path();
+        let file_name = entry.file_name();
+        let target_path = to.join(&file_name);
+
+        if entry_path.is_dir() {
+            // 递归复制子目录
+            match copy_dir_with_error_collection(&entry_path, &target_path, errors) {
+                Ok(count) => copied_count += count,
+                Err(e) => {
+                    errors.push(format!(
+                        "复制子目录 {} 失败: {}",
+                        file_name.to_string_lossy(),
+                        e
+                    ));
+                }
+            }
+        } else {
+            // 复制文件
+            match fs::copy(&entry_path, &target_path) {
+                Ok(_) => {
+                    copied_count += 1;
+                    log::debug!(
+                        "已复制文件: {} -> {}",
+                        entry_path.display(),
+                        target_path.display()
+                    );
+                }
+                Err(e) => {
+                    errors.push(format!(
+                        "复制文件 {} 失败: {}",
+                        file_name.to_string_lossy(),
+                        e
+                    ));
+                }
+            }
+        }
+    }
+
+    Ok(copied_count)
+}
+
+/// 统计目录中的文件数量（递归）
+fn count_files_in_dir(dir: &Path) -> Result<usize, String> {
+    let mut count = 0;
+
+    if !dir.exists() {
+        return Ok(0);
+    }
+
+    for entry in fs::read_dir(dir).map_err(|e| format!("读取目录失败: {}", e))? {
+        let entry = entry.map_err(|e| format!("读取目录项失败: {}", e))?;
+        let entry_path = entry.path();
+
+        if entry_path.is_dir() {
+            count += count_files_in_dir(&entry_path)?;
+        } else {
+            count += 1;
+        }
+    }
+
+    Ok(count)
+}
+
+/// 递归复制目录（用于 move_backup_folder）
 ///
 /// # Arguments
 ///
@@ -362,7 +590,7 @@ pub async fn move_backup_folder(old_path: String, new_path: String) -> Result<Mo
 /// # Returns
 ///
 /// 复制操作的结果
-fn copy_dir_all(src: &Path, dst: &Path) -> Result<(), Box<dyn std::error::Error>> {
+fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<(), Box<dyn std::error::Error>> {
     fs::create_dir_all(dst)?;
 
     for entry in fs::read_dir(src)? {
@@ -372,7 +600,7 @@ fn copy_dir_all(src: &Path, dst: &Path) -> Result<(), Box<dyn std::error::Error>
         let dst_path = dst.join(entry.file_name());
 
         if ty.is_dir() {
-            copy_dir_all(&src_path, &dst_path)?;
+            copy_dir_recursive(&src_path, &dst_path)?;
         } else {
             fs::copy(&src_path, &dst_path)?;
         }

@@ -88,6 +88,24 @@
 				"moveSuccess": "備份路徑儲存成功，備份資料夾已移動到新位置",
 				"moveWarning": "備份路徑已儲存，但移動備份資料夾時出現問題: {{message}}"
 			},
+			"portableMode": {
+				"title": "攜帶式模式",
+				"enable": "啟用攜帶式模式",
+				"description": "啟用攜帶式模式後，資料庫和備份將儲存在程式安裝目錄resources資料夾下，而非系統應用資料目錄。適合需要將程式放在隨身碟或移動硬碟中使用的場景。",
+				"confirmTitle": "確認切換模式",
+				"confirmEnableMessage": "啟用攜帶式模式後，應用程式將自動重新啟動。確定要繼續嗎？",
+				"confirmDisableMessage": "停用攜帶式模式後，應用程式將自動重新啟動。確定要繼續嗎？",
+				"toggleError": "切換攜帶式模式失敗: {{error}}"
+			},
+			"dbBackupPath": {
+				"title": "資料庫備份路徑設定",
+				"pathLabel": "資料庫備份儲存路徑",
+				"pathPlaceholder": "選擇資料庫備份儲存路徑",
+				"selectFolder": "選擇目錄",
+				"savePathBtn": "儲存",
+				"savePathSuccess": "資料庫備份路徑已儲存",
+				"savePathError": "儲存資料庫備份路徑失敗: {{error}}"
+			},
 			"databaseBackup": {
 				"title": "資料庫備份與還原",
 				"pathLabel": "資料庫備份儲存路徑",
