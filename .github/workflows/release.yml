@@ -25,7 +25,7 @@ jobs:
     steps:
       - name: Checkout repository
 
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -62,13 +62,13 @@ jobs:
     environment: TAURI_KEY
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Install Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24
       - name: Install pnpm
-        uses: pnpm/action-setup@v2
+        uses: pnpm/action-setup@v4
         with:
           version: 10
       - name: Install Rust
@@ -121,7 +121,7 @@ jobs:
       contents: write # 需要权限来编辑 release
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Determine release type
         id: release-type
@@ -161,6 +161,20 @@ jobs:
           **Windows** (不支持 Win7)
             - [**64位 (x64)**]($X64_MSI_URL)
             - [**ARM64**]($ARM64_MSI_URL)
+          
+          > ⚠️ **安装提醒 (Installation Notice)**
+          > 
+          > 不建议安装在 **C:\\Program Files** 目录下。该目录需要以管理员权限运行软件才能正常使用以下功能：
+          > - 自定义游戏封面
+          > - 便携模式
+          > 
+          > **建议安装路径**：C:\\ReinaManager 或其他用户目录
+          > 
+          > ---
+          > 
+          > It is **NOT recommended** to install in **C:\\Program Files**. This directory requires administrator privileges for the following features:
+          > - Custom game covers
+          > - Portable mode
           EOF
           )
             
@@ -192,7 +206,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/')
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Update latest.json with CDN URLs
         shell: bash
