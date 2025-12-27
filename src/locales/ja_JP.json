@@ -1,4 +1,11 @@
 {
+	"common": {
+		"locale": "ja-JP",
+		"cancel": "キャンセル",
+		"confirm": "確認",
+		"adding": "追加中...",
+		"saving": "保存中..."
+	},
 	"api": {
 		"bgm": {
 			"notFound": "BGMデータが見つかりません",
@@ -196,6 +203,7 @@
 			"totalPlayTime": "累計総プレイ時間",
 			"todayPlayTime": "本日のプレイ時間",
 			"backupCount": "バックアップ数",
+			"playTimeChart": "プレイ時間チャート",
 			"gameDatafrom": "データソース",
 			"expected_hours": "予想時間",
 			"playTimeMinutes": "プレイ時間(分)",

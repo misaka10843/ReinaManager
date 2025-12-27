@@ -1,4 +1,11 @@
 {
+	"common": {
+		"locale": "zh-TW",
+		"cancel": "取消",
+		"confirm": "確認",
+		"adding": "添加中...",
+		"saving": "保存中..."
+	},
 	"api": {
 		"bgm": {
 			"notFound": "未找到BGM數據",
@@ -195,6 +202,7 @@
 			"totalPlayTime": "累計總時長",
 			"todayPlayTime": "今日遊戲時長",
 			"backupCount": "存檔備份數",
+			"playTimeChart": "統計圖表",
 			"gameDatafrom": "資料來源",
 			"expected_hours": "預計時長",
 			"playTimeMinutes": "遊戲時長(分鐘)",

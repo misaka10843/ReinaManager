@@ -1,4 +1,11 @@
 {
+	"common": {
+		"locale": "en-US",
+		"cancel": "Cancel",
+		"confirm": "Confirm",
+		"adding": "Adding...",
+		"saving": "Saving..."
+	},
 	"app": {
 		"NAVIGATION": {
 			"menu": "Menu",
@@ -196,6 +203,7 @@
 			"totalPlayTime": "Total Play Time",
 			"todayPlayTime": "Today's Play Time",
 			"backupCount": "Backup Count",
+			"playTimeChart": "Play Time Chart",
 			"gameDatafrom": "Data Source",
 			"expected_hours": "Expected Hours",
 			"playTimeMinutes": "Play Time (minutes)",

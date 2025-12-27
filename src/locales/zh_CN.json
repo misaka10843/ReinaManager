@@ -1,5 +1,6 @@
 {
 	"common": {
+		"locale": "zh-CN",
 		"cancel": "取消",
 		"confirm": "确认",
 		"adding": "添加中...",
@@ -202,6 +203,7 @@
 			"totalPlayTime": "累计总时长",
 			"todayPlayTime": "今日游戏时长",
 			"backupCount": "存档备份数",
+			"playTimeChart": "统计图表",
 			"gameDatafrom": "数据来源",
 			"expected_hours": "预计时长",
 			"playTimeMinutes": "游戏时长(分钟)",
