@@ -1,3 +1,44 @@
+## [0.13.0](https://github.com/huoshen80/ReinaManager/compare/v0.12.0...v0.13.0) (2025-12-27)
+
+<details>
+<summary>查看中文版本</summary>
+
+### Bug 修复
+
+* 修复软件内中文更新日志显示错误的问题，更新更新日志 ([4a804b0](https://github.com/huoshen80/ReinaManager/commit/4a804b0692bf116468345d7d9508672fbbe83670))
+* 恢复存档时不覆盖原始存档目录 ([5a5bec2](https://github.com/huoshen80/ReinaManager/commit/5a5bec2856f3faa7442fbfc637d9155d362e0eed))
+
+### 新功能
+
+* 添加存档恢复功能，限制存档备份最大数量为 20，使用 sevenz-rust2 替代原压缩库 ([9c9c10a](https://github.com/huoshen80/ReinaManager/commit/9c9c10abef05697b19e3238c1e435b19a9e285ac))
+* **详情页:** 为游戏游玩时长图表添加时间范围选择器 ([94912da](https://github.com/huoshen80/ReinaManager/commit/94912da1df9fb80c4e304208d16bcf655ba18fa1))
+* 实现便携模式并重构部分路径管理 ([af7d602](https://github.com/huoshen80/ReinaManager/commit/af7d602a568c42887ec9e7419a12c7803898d30f))
+
+### 性能改进
+
+* 改进切换便携模式时的错误处理，并整理文件操作相关的函数以提高代码可读性 ([45e7ff1](https://github.com/huoshen80/ReinaManager/commit/45e7ff1adf2e54da441347cc688e12423c64ec51))
+
+</details>
+
+### Bug Fixes
+
+* issue where Chinese changelog display incorrectly in software,update changelog ([4a804b0](https://github.com/huoshen80/ReinaManager/commit/4a804b0692bf116468345d7d9508672fbbe83670))
+* no overwrite the original save directory when restoring saves ([5a5bec2](https://github.com/huoshen80/ReinaManager/commit/5a5bec2856f3faa7442fbfc637d9155d362e0eed))
+
+
+### Features
+
+* add savedata restore fn, limit the max number of savedata backups to 20, using sevenz-rust2 instead ([9c9c10a](https://github.com/huoshen80/ReinaManager/commit/9c9c10abef05697b19e3238c1e435b19a9e285ac))
+* **detail:** add time range selector for game playtime chart ([94912da](https://github.com/huoshen80/ReinaManager/commit/94912da1df9fb80c4e304208d16bcf655ba18fa1))
+* implement portable mode and refactor some path management ([af7d602](https://github.com/huoshen80/ReinaManager/commit/af7d602a568c42887ec9e7419a12c7803898d30f))
+
+
+### Performance Improvements
+
+* improve error handling when switching portable mode, and organize fs functions to enhance code readability ([45e7ff1](https://github.com/huoshen80/ReinaManager/commit/45e7ff1adf2e54da441347cc688e12423c64ec51))
+
+
+
 ## [0.12.0](https://github.com/huoshen80/ReinaManager/compare/v0.10.0...v0.12.0) (2025-12-06)
 
 <details>
