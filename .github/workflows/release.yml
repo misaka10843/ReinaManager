@@ -162,19 +162,14 @@ jobs:
             - [**64位 (x64)**]($X64_MSI_URL)
             - [**ARM64**]($ARM64_MSI_URL)
           
-          > ⚠️ **安装提醒 (Installation Notice)**
-          > 
-          > 不建议安装在 **C:\\Program Files** 目录下。该目录需要以管理员权限运行软件才能正常使用以下功能：
-          > - 自定义游戏封面
-          > - 便携模式
-          > 
-          > **建议安装路径**：C:\\ReinaManager 或其他用户目录
-          > 
-          > ---
-          > 
-          > It is **NOT recommended** to install in **C:\\Program Files**. This directory requires administrator privileges for the following features:
-          > - Custom game covers
-          > - Portable mode
+          ### ⚠️ **安装提醒 (Installation Notice)**
+          不建议安装在 **C:\\Program Files** 目录下。该目录需要以管理员权限运行软件才能正常使用以下功能：
+          - 自定义游戏封面
+          - 便携模式
+          ---
+          It is **NOT recommended** to install in **C:\\Program Files**. This directory requires administrator privileges for the following features:
+          - Custom game covers
+          - Portable mode
           EOF
           )
             
