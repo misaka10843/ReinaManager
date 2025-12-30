@@ -3,9 +3,8 @@
  * @description 处理自定义封面的选择、预览、上传和管理
  */
 
-import { invoke } from "@tauri-apps/api/core";
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
-import { readFile } from "@tauri-apps/plugin-fs";
 import { basename, join } from "pathe";
 import { getcustomCoverFolder } from "./index";
 
@@ -34,7 +33,6 @@ export const selectImageFile = async (): Promise<string | null> => {
 				},
 			],
 		});
-
 		if (!selected || Array.isArray(selected)) return null;
 
 		return selected as string;
@@ -98,33 +96,13 @@ export const uploadSelectedImage = async (
 };
 
 /**
- * 从本地路径读取图片并返回一个可用于 <img> 的 blob URL（仅用于预览）
- * @param imagePath 本地图片绝对路径
- * @returns Promise<string> blob URL
+ * 将本地文件路径转换为可用于 <img> 的 asset URL
+ * 使用 Tauri 的 convertFileSrc，零内存开销，无需清理
+ * @param filePath 本地文件绝对路径
+ * @returns asset URL
  */
-export const getPreviewUrlFromPath = async (
-	imagePath: string,
-): Promise<string> => {
-	try {
-		const result = await readFile(imagePath);
-
-		// 根据扩展名确定 mimeType
-		const fileName = basename(imagePath);
-		const ext = getFileExtension(fileName) || "png";
-		const mime = `image/${ext === "jpg" ? "jpeg" : ext}`;
-
-		// 将 Uint8Array 转为标准 ArrayBuffer 子段，构造 Blob 并创建对象 URL
-		const arrayBuffer = result.buffer.slice(
-			result.byteOffset,
-			result.byteOffset + result.byteLength,
-		);
-		const blob = new Blob([arrayBuffer as ArrayBuffer], { type: mime });
-		const url = URL.createObjectURL(blob);
-		return url;
-	} catch (error) {
-		console.error("生成预览 URL 失败:", error);
-		throw error;
-	}
+export const getAssetUrl = (filePath: string): string => {
+	return convertFileSrc(filePath);
 };
 
 /**
