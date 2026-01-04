@@ -890,6 +890,126 @@ export async function batchUpdateBgmData(bgmToken?: string): Promise<{
 	);
 }
 
+// ==================== 脏检查工具函数 ====================
+
+/**
+ * 计算 UI 状态与原始数据的差异 (String & Number)
+ *
+ * 用于 React 受控组件向后端提交更新时的"三态"比对逻辑：
+ * - undefined: 没变，不传（后端跳过此字段）
+ * - null: 被清空，传 null（后端更新为 NULL）
+ * - T: 被修改，传新值（后端更新为新值）
+ *
+ * @param current 当前 UI 中的状态 (例如 input 的 value)
+ * @param original 原始数据 (可能是 null/undefined)
+ * @returns undefined | null | T
+ *
+ * @example
+ * // 字符串示例
+ * getDiff("", null)        // → undefined (没变，原本就是空)
+ * getDiff("ABC", "ABC")    // → undefined (没变)
+ * getDiff("", "ABC")       // → null (被清空)
+ * getDiff("DEF", "ABC")    // → "DEF" (被修改)
+ *
+ * @example
+ * // 数字示例
+ * getDiff(0, undefined)    // → undefined (没变，原本就是 0)
+ * getDiff(10, 10)          // → undefined (没变)
+ * getDiff(20, 10)          // → 20 (被修改)
+ */
+export function getDiff<T extends string | number>(
+	current: T,
+	original: T | null | undefined,
+): T | null | undefined {
+	// --- 1. 字符串处理 ---
+	if (typeof current === "string") {
+		// 归一化：将原始数据的 null/undefined 都视为 "" 与当前状态对比
+		const normOriginal = (original ?? "") as string;
+		const normCurrent = current.trim(); // 去除首尾空格
+
+		// [逻辑1：没变] 归一化后相等 -> 不传 (undefined)
+		if (normOriginal === normCurrent) return undefined;
+
+		// [逻辑2：被清空] 当前为空，说明用户删光了 -> 传 null
+		if (normCurrent === "") return null;
+
+		// [逻辑3：被修改] 有值且不等 -> 传新值
+		return normCurrent as T;
+	}
+
+	// --- 2. 数字处理 ---
+	if (typeof current === "number") {
+		// 归一化：undefined/null 视为 0
+		const normOriginal = original ?? 0;
+
+		// [逻辑1：没变]
+		if (normOriginal === current) return undefined;
+
+		// [逻辑2：数字变了] 数字通常直接覆盖
+		return current;
+	}
+
+	return undefined;
+}
+
+/**
+ * 计算数组差异（用于 aliases, tags 等字符串数组）
+ *
+ * @param current 当前 UI 状态
+ * @param original 原始数据
+ * @returns undefined | null | T[]
+ *
+ * @example
+ * getArrayDiff([], [])           // → undefined (没变)
+ * getArrayDiff(["a"], ["a"])     // → undefined (没变)
+ * getArrayDiff([], ["a", "b"])   // → null (被清空)
+ * getArrayDiff(["c"], ["a"])     // → ["c"] (被修改)
+ */
+export function getArrayDiff<T>(
+	current: T[],
+	original: T[] | null | undefined,
+): T[] | null | undefined {
+	const normOriginal = original ?? [];
+
+	// 使用 JSON 比较（适用于简单类型数组）
+	if (JSON.stringify(current) === JSON.stringify(normOriginal)) {
+		return undefined; // 没变
+	}
+
+	// 被清空
+	if (current.length === 0) {
+		return null;
+	}
+
+	// 被修改
+	return current;
+}
+
+/**
+ * 计算布尔值差异
+ *
+ * @param current 当前 UI 状态
+ * @param original 原始数据
+ * @returns undefined | boolean
+ *
+ * @example
+ * getBoolDiff(false, undefined)  // → undefined (没变，原本就是 false)
+ * getBoolDiff(true, true)        // → undefined (没变)
+ * getBoolDiff(true, false)       // → true (被修改)
+ */
+export function getBoolDiff(
+	current: boolean,
+	original: boolean | null | undefined,
+): boolean | undefined {
+	const normOriginal = original ?? false;
+
+	if (current === normOriginal) {
+		return undefined; // 没变
+	}
+
+	return current; // 被修改
+}
+
 // 导出数据转换工具
 export {
 	getDisplayGameData,
