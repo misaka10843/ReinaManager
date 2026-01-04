@@ -452,10 +452,11 @@ export function initGameTimeTracking(
 					console.error("游戏数据未找到，无法进行自动备份");
 					return;
 				}
-				const game = fullgame.game;
-				if (game && game.autosave === 1 && game.savepath) {
-					console.log(`开始自动备份游戏 ${gameId}，存档路径: ${game.savepath}`);
-					await createGameSavedataBackup(gameId, game.savepath, true);
+				if (fullgame.autosave === 1 && fullgame.savepath) {
+					console.log(
+						`开始自动备份游戏 ${gameId}，存档路径: ${fullgame.savepath}`,
+					);
+					await createGameSavedataBackup(gameId, fullgame.savepath, true);
 					console.log(`游戏 ${gameId} 自动备份完成`);
 				}
 			} catch (backupError) {

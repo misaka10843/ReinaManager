@@ -281,6 +281,24 @@ export const ViewGameBox: React.FC<ViewGameBoxProps> = ({
 								)}
 							</Box>
 						)}
+						{fullgame.ymgal_data && (
+							<Box className="text-left">
+								<Typography variant="subtitle1" gutterBottom>
+									{t("components.AlertBox.ymgalData", "YMGal 数据")}
+								</Typography>
+								<Typography variant="body2" className="mb-1">
+									{t("components.AlertBox.gameName")}:{" "}
+									{fullgame.ymgal_data.name_cn || fullgame.ymgal_data.name}
+								</Typography>
+								{fullgame.ymgal_data.image && (
+									<img
+										src={fullgame.ymgal_data.image}
+										alt={`YMGal ${fullgame.ymgal_data.name_cn || fullgame.ymgal_data.name}`}
+										className="w-full h-auto max-h-64 object-contain rounded"
+									/>
+								)}
+							</Box>
+						)}
 					</Box>
 				) : (
 					<Typography>{t("components.AlertBox.noData", "没有数据")}</Typography>

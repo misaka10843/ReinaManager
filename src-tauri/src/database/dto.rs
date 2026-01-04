@@ -1,8 +1,16 @@
-use crate::entity::{bgm_data, other_data, vndb_data};
-use sea_orm::prelude::Decimal;
-use sea_orm::Set;
+//! 数据传输对象 (DTO)
+//!
+//! 用于前后端数据交互的结构定义。
+//! 重构后采用单表架构，元数据以 JSON 列形式嵌入 games 表。
+
+use crate::entity::bgm_data::BgmData;
+use crate::entity::custom_data::CustomData;
+use crate::entity::vndb_data::VndbData;
+use crate::entity::ymgal_data::YmgalData;
 use serde::{Deserialize, Deserializer, Serialize};
 
+/// 辅助函数：支持 Option<Option<T>> 的反序列化
+/// 用于区分"未提供字段"和"显式设为 null"
 fn double_option<'de, D, T>(deserializer: D) -> Result<Option<Option<T>>, D::Error>
 where
     D: Deserializer<'de>,
@@ -11,17 +19,18 @@ where
     Ok(Some(Option::deserialize(deserializer)?))
 }
 
-/// Trait：将 DTO 转换为 ActiveModel
-pub trait IntoActiveModel<T> {
-    fn into_active_model(self, game_id: i32) -> T;
-}
-
-/// 用于插入游戏的数据结构（不包含 id, created_at, updated_at）
+/// 用于插入游戏的数据结构（单表架构）
+///
+/// 包含所有需要插入的字段，元数据通过 JSON 结构体传入
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct InsertGameData {
+    // === 外部 ID ===
     pub bgm_id: Option<String>,
     pub vndb_id: Option<String>,
+    pub ymgal_id: Option<String>,
     pub id_type: String,
+
+    // === 核心状态 ===
     pub date: Option<String>,
     pub localpath: Option<String>,
     pub savepath: Option<String>,
@@ -29,17 +38,30 @@ pub struct InsertGameData {
     pub clear: Option<i32>,
     pub custom_name: Option<String>,
     pub custom_cover: Option<String>,
+
+    // === JSON 元数据 ===
+    pub vndb_data: Option<VndbData>,
+    pub bgm_data: Option<BgmData>,
+    pub ymgal_data: Option<YmgalData>,
+    pub custom_data: Option<CustomData>,
 }
 
-/// 用于更新游戏的数据结构（不包含 id, created_at, updated_at）
-/// 所有字段均为 Option，允许部分更新
+/// 用于更新游戏的数据结构（单表架构）
+///
+/// 所有字段均为 Option，允许部分更新。
+/// 使用 Option<Option<T>> 来区分"未提供"和"设为 null"。
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct UpdateGameData {
+    // === 外部 ID ===
     #[serde(default, deserialize_with = "double_option")]
     pub bgm_id: Option<Option<String>>,
     #[serde(default, deserialize_with = "double_option")]
     pub vndb_id: Option<Option<String>>,
+    #[serde(default, deserialize_with = "double_option")]
+    pub ymgal_id: Option<Option<String>>,
     pub id_type: Option<String>,
+
+    // === 核心状态 ===
     #[serde(default, deserialize_with = "double_option")]
     pub date: Option<Option<String>>,
     #[serde(default, deserialize_with = "double_option")]
@@ -52,102 +74,13 @@ pub struct UpdateGameData {
     pub clear: Option<Option<i32>>,
     #[serde(default, deserialize_with = "double_option")]
     pub custom_name: Option<Option<String>>,
+    // === JSON 元数据 ===
     #[serde(default, deserialize_with = "double_option")]
-    pub custom_cover: Option<Option<String>>,
-}
-
-/// BGM DTO
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BgmDataInput {
-    pub image: Option<String>,
-    pub name: Option<String>,
-    pub name_cn: Option<String>,
-    pub aliases: Option<Vec<String>>,
-    pub summary: Option<String>,
-    pub tags: Option<Vec<String>>,
-    pub rank: Option<i32>,
-    pub score: Option<Decimal>,
-    pub developer: Option<String>,
-}
-
-impl IntoActiveModel<bgm_data::ActiveModel> for BgmDataInput {
-    fn into_active_model(self, game_id: i32) -> bgm_data::ActiveModel {
-        bgm_data::ActiveModel {
-            game_id: Set(game_id),
-            image: Set(self.image),
-            name: Set(self.name),
-            name_cn: Set(self.name_cn),
-            aliases: Set(self.aliases.and_then(|v| serde_json::to_string(&v).ok())),
-            summary: Set(self.summary),
-            tags: Set(self.tags.and_then(|v| serde_json::to_string(&v).ok())),
-            rank: Set(self.rank),
-            score: Set(self.score),
-            developer: Set(self.developer),
-        }
-    }
-}
-
-/// VNDB DTO
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct VndbDataInput {
-    pub image: Option<String>,
-    pub name: Option<String>,
-    pub name_cn: Option<String>,
-    pub all_titles: Option<Vec<String>>,
-    pub aliases: Option<Vec<String>>,
-    pub summary: Option<String>,
-    pub tags: Option<Vec<String>>,
-    pub average_hours: Option<Decimal>,
-    pub developer: Option<String>,
-    pub score: Option<Decimal>,
-}
-
-impl IntoActiveModel<vndb_data::ActiveModel> for VndbDataInput {
-    fn into_active_model(self, game_id: i32) -> vndb_data::ActiveModel {
-        vndb_data::ActiveModel {
-            game_id: Set(game_id),
-            image: Set(self.image),
-            name: Set(self.name),
-            name_cn: Set(self.name_cn),
-            all_titles: Set(self.all_titles.and_then(|v| serde_json::to_string(&v).ok())),
-            aliases: Set(self.aliases.and_then(|v| serde_json::to_string(&v).ok())),
-            summary: Set(self.summary),
-            tags: Set(self.tags.and_then(|v| serde_json::to_string(&v).ok())),
-            average_hours: Set(self.average_hours),
-            developer: Set(self.developer),
-            score: Set(self.score),
-        }
-    }
-}
-
-/// Other DTO
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OtherDataInput {
-    pub image: Option<String>,
-    pub name: Option<String>,
-    pub summary: Option<String>,
-    pub tags: Option<Vec<String>>,
-    pub developer: Option<String>,
-}
-
-impl IntoActiveModel<other_data::ActiveModel> for OtherDataInput {
-    fn into_active_model(self, game_id: i32) -> other_data::ActiveModel {
-        other_data::ActiveModel {
-            game_id: Set(game_id),
-            image: Set(self.image),
-            name: Set(self.name),
-            summary: Set(self.summary),
-            tags: Set(self.tags.and_then(|v| serde_json::to_string(&v).ok())),
-            developer: Set(self.developer),
-        }
-    }
-}
-
-/// 批量更新数据传输对象
-#[derive(Debug, Serialize, Deserialize)]
-pub struct GameWithRelatedUpdate {
-    pub game: Option<UpdateGameData>,
-    pub bgm_data: Option<BgmDataInput>,
-    pub vndb_data: Option<VndbDataInput>,
-    pub other_data: Option<OtherDataInput>,
+    pub vndb_data: Option<Option<VndbData>>,
+    #[serde(default, deserialize_with = "double_option")]
+    pub bgm_data: Option<Option<BgmData>>,
+    #[serde(default, deserialize_with = "double_option")]
+    pub ymgal_data: Option<Option<YmgalData>>,
+    #[serde(default, deserialize_with = "double_option")]
+    pub custom_data: Option<Option<CustomData>>,
 }

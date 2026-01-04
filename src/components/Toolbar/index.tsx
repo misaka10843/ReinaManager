@@ -194,13 +194,15 @@ const MoreButton = () => {
 
 	/**
 	 * 跳转到外部链接
-	 * @param {string} type 链接类型（bgm/vndb）
+	 * @param {string} type 链接类型（bgm/vndb/ymgal）
 	 */
 	const handleView = (type: string) => {
 		if (type === "bgm") {
 			openurl(`https://bgm.tv/subject/${selectedGame?.bgm_id}`);
 		} else if (type === "vndb") {
 			openurl(`https://vndb.org/${selectedGame?.vndb_id}`);
+		} else if (type === "ymgal") {
+			openurl(`https://www.ymgal.games/ga${selectedGame?.ymgal_id}`);
 		}
 	};
 
@@ -265,6 +267,20 @@ const MoreButton = () => {
 						<CallMadeIcon fontSize="small" />
 					</ListItemIcon>
 					<ListItemText>{t("components.Toolbar.vndblink")}</ListItemText>
+				</MenuItem>
+				<MenuItem
+					disabled={!selectedGame || !selectedGame.ymgal_id}
+					onClick={() => {
+						handleView("ymgal");
+						handleClose();
+					}}
+				>
+					<ListItemIcon>
+						<CallMadeIcon fontSize="small" />
+					</ListItemIcon>
+					<ListItemText>
+						{t("components.Toolbar.ymgallink", "月幕Gal页面")}
+					</ListItemText>
 				</MenuItem>
 				<MenuItem onClick={handleToggleClearStatus}>
 					<ListItemIcon>

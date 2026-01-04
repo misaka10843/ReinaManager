@@ -69,8 +69,8 @@ function extractNameFromApi(apiData: FullGameData | null): string | undefined {
 	if (bgmName) return bgmName as string;
 	const vndbName = apiData.vndb_data?.name;
 	if (vndbName) return vndbName as string;
-	// 其次使用游戏基础数据中的 custom_name
-	const custom = apiData.game?.custom_name;
+	// 其次使用 custom_data 中的名称
+	const custom = apiData.custom_data?.name;
 	if (custom) return custom as string;
 	return undefined;
 }

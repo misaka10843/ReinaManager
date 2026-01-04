@@ -32,7 +32,9 @@ import type {
 	FullGameData,
 	GameData,
 	Group,
+	InsertGameParams,
 	LogLevel,
+	UpdateGameParams,
 } from "@/types";
 import {
 	applyNsfwFilter,
@@ -92,13 +94,10 @@ export interface AppState {
 		resetSearch?: boolean,
 	) => Promise<void>;
 	fetchGame: (id: number) => Promise<void>;
-	addGame: (fullgame: FullGameData) => Promise<void>;
+	addGame: (gameParams: InsertGameParams) => Promise<void>;
 	deleteGame: (gameId: number) => Promise<void>;
 	getGameById: (gameId: number) => Promise<GameData>;
-	updateGame: (
-		id: number,
-		gameUpdates: Partial<FullGameData> | Partial<GameData>,
-	) => Promise<void>;
+	updateGame: (id: number, gameUpdates: UpdateGameParams) => Promise<void>;
 
 	// BGM 令牌方法
 	fetchBgmToken: () => Promise<void>;
@@ -129,8 +128,8 @@ export interface AppState {
 	isLocalGame: (gameId: number) => boolean;
 
 	// 数据来源选择
-	apiSource: "bgm" | "vndb" | "mixed";
-	setApiSource: (source: "bgm" | "vndb" | "mixed") => void;
+	apiSource: "bgm" | "vndb" | "ymgal" | "mixed";
+	setApiSource: (source: "bgm" | "vndb" | "ymgal" | "mixed") => void;
 
 	// NSFW相关
 	nsfwFilter: boolean;
@@ -267,7 +266,7 @@ export const useStore = create<AppState>()(
 
 			// 数据来源选择
 			apiSource: "vndb",
-			setApiSource: (source: "bgm" | "vndb" | "mixed") => {
+			setApiSource: (source: "bgm" | "vndb" | "ymgal" | "mixed") => {
 				set({ apiSource: source });
 			},
 
@@ -373,7 +372,7 @@ export const useStore = create<AppState>()(
 
 						// 优化：如果 gameFilterType 是 "all"，只请求一次
 						if (gameFilterType === "all") {
-							const fullGames = await gameService.getFullGames(
+							const fullGames = await gameService.getAllGames(
 								"all",
 								backendSortOption,
 								backendSortOrder,
@@ -406,7 +405,7 @@ export const useStore = create<AppState>()(
 							}
 						} else {
 							// 需要两次请求：一次获取筛选数据，一次获取全部
-							const fullGames = await gameService.getFullGames(
+							const fullGames = await gameService.getAllGames(
 								gameFilterType,
 								backendSortOption,
 								backendSortOrder,
@@ -430,7 +429,7 @@ export const useStore = create<AppState>()(
 							}
 
 							// 第二次请求获取全部游戏
-							const allFullGames = await gameService.getFullGames();
+							const allFullGames = await gameService.getAllGames();
 							allData = getDisplayGameDataList(allFullGames, i18next.language);
 						}
 					} else {
@@ -486,7 +485,7 @@ export const useStore = create<AppState>()(
 						const backendSortOrder = option === "namesort" ? "asc" : order;
 
 						// 只调用一次，获取所有游戏
-						const fullGames = await gameService.getFullGames(
+						const fullGames = await gameService.getAllGames(
 							"all",
 							backendSortOption,
 							backendSortOrder,
@@ -562,17 +561,17 @@ export const useStore = create<AppState>()(
 			},
 
 			// 使用通用函数简化 addGame
-			addGame: async (fullgame: FullGameData) => {
+			addGame: async (gameParams: InsertGameParams) => {
 				try {
 					if (isTauri()) {
-						await gameService.insertGame(
-							fullgame.game,
-							fullgame.bgm_data,
-							fullgame.vndb_data,
-							fullgame.other_data,
-						);
+						// 确保 id_type 有值
+						const gameToInsert = {
+							...gameParams,
+							id_type: gameParams.id_type || "custom",
+						};
+						await gameService.insertGame(gameToInsert);
 					} else {
-						insertGameLocal(fullgame);
+						insertGameLocal(gameParams);
 					}
 					// 使用通用刷新函数
 					await get().refreshGameData();
@@ -652,30 +651,29 @@ export const useStore = create<AppState>()(
 				return await Promise.resolve(getGameByIdLocal(gameId));
 			},
 
-			updateGame: async (id: number, gameUpdates: Partial<FullGameData>) => {
+			updateGame: async (id: number, gameUpdates: UpdateGameParams) => {
 				try {
 					if (isTauri()) {
-						await gameService.updateGameWithRelated(id, gameUpdates);
+						await gameService.updateGame(id, gameUpdates);
 						// gameUpdates 的键会在下面被遍历，直接使用 gameUpdates 而不是解构未使用的变量
 						// 只有当更新的字段可能影响游戏列表显示时才刷新列表
 						// 游戏设置类字段（如 savepath, autosave）不需要刷新列表
 						// 注意：localpath 字段虽然不影响列表显示，但会影响 isLocalGame 判断，因此需要刷新
 						const listAffectingFields = [
 							"name",
-							"custom_name",
 							"developer",
 							"date",
 							"score",
 							"rank",
 							"tags",
-							"custom_cover",
 							"localpath", // 添加 localpath，确保更新后 allGames 也同步更新
-						]; // 将 gameUpdates 展开为一组字段名（支持一层嵌套：game / bgm_data / vndb_data / other_data）
+							"custom_data", // 自定义数据可能影响封面和名称
+						]; // 将 gameUpdates 展开为一组字段名（支持一层嵌套：game / bgm_data / vndb_data / custom_data）
 						const updatedFieldNames = new Set<string>();
 
-						// 如果外层直接包含字段（理论上 FullGameData 只有四个键，但保持通用）
+						// 如果外层直接包含字段
 						Object.keys(gameUpdates).forEach((key) => {
-							const value = gameUpdates[key as keyof FullGameData];
+							const value = gameUpdates[key as keyof UpdateGameParams];
 							if (value && typeof value === "object" && !Array.isArray(value)) {
 								// 展开一层嵌套的字段名
 								Object.keys(value).forEach((subKey) => {

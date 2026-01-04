@@ -26,7 +26,7 @@ interface GameSelectDialogProps {
 	onSelect: (index: number) => void;
 	loading?: boolean;
 	title?: string;
-	dataSource: "bgm" | "vndb";
+	dataSource: "bgm" | "vndb" | "ymgal";
 }
 
 /**
@@ -34,7 +34,7 @@ interface GameSelectDialogProps {
  */
 function extractDisplayInfo(
 	item: FullGameData,
-	dataSource: "bgm" | "vndb",
+	dataSource: "bgm" | "vndb" | "ymgal",
 ): {
 	id: string;
 	name: string;
@@ -43,14 +43,24 @@ function extractDisplayInfo(
 	developer: string | null;
 	date: string | null;
 } {
-	const data = dataSource === "bgm" ? item.bgm_data : item.vndb_data;
+	const data =
+		dataSource === "bgm"
+			? item.bgm_data
+			: dataSource === "vndb"
+				? item.vndb_data
+				: item.ymgal_data;
 	return {
-		id: dataSource === "bgm" ? item.game.bgm_id || "" : item.game.vndb_id || "",
+		id:
+			dataSource === "bgm"
+				? item.bgm_id || ""
+				: dataSource === "vndb"
+					? item.vndb_id || ""
+					: item.ymgal_id || "",
 		name: data?.name || "",
 		name_cn: data?.name_cn || null,
 		image: data?.image || null,
 		developer: data?.developer || null,
-		date: item.game.date || null,
+		date: item.date || null,
 	};
 }
 
@@ -164,7 +174,9 @@ const GameSelectDialog: React.FC<GameSelectDialogProps> = ({
 													>
 														{dataSource === "bgm"
 															? `BGM: ${displayInfo.id}`
-															: `VNDB: ${displayInfo.id}`}
+															: dataSource === "vndb"
+																? `VNDB: ${displayInfo.id}`
+																: `YMGal: ${displayInfo.id}`}
 													</Typography>
 												</Box>
 											</Box>

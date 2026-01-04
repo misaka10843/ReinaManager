@@ -130,8 +130,8 @@ export function insertGame(fullgame: FullGameData): void {
 	const games = getGames();
 
 	// 如果游戏没有ID，分配一个新ID
-	if (!fullgame.game.id) {
-		fullgame.game.id = getNextId();
+	if (!fullgame.id) {
+		fullgame.id = getNextId();
 	}
 
 	// games.push(fullgame);纯前端摆烂~

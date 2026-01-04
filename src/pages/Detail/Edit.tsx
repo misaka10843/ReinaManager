@@ -4,9 +4,8 @@ import { useTranslation } from "react-i18next";
 import { useLocation } from "react-router";
 import { ViewGameBox } from "@/components/AlertBox";
 import { snackbar } from "@/components/Snackbar";
-import { gameService } from "@/services/gameService";
 import { useStore } from "@/store";
-import type { FullGameData } from "@/types";
+import type { FullGameData, UpdateGameParams } from "@/types";
 import { DataSourceUpdate } from "./DataSourceUpdate";
 import { GameInfoEdit } from "./GameInfoEdit";
 
@@ -29,18 +28,28 @@ export const Edit: React.FC = () => {
 	// 确认更新游戏数据（从数据源）
 	const handleConfirmGameUpdate = () => {
 		if (gameData) {
-			updateGame(id, gameData);
-			switch (gameData.game.id_type) {
+			// 根据新的数据源类型，清除其他数据源的数据
+			const updateData: UpdateGameParams = { ...gameData };
+
+			switch (gameData.id_type) {
 				case "bgm":
-					gameService.deleteVndbData(id);
-					gameService.deleteOtherData(id);
+					// 只保留 bgm_data，清除其他数据源
+					updateData.vndb_data = undefined;
+					updateData.ymgal_data = undefined;
 					break;
 				case "vndb":
-					gameService.deleteBgmData(id);
-					gameService.deleteOtherData(id);
+					// 只保留 vndb_data，清除其他数据源
+					updateData.bgm_data = undefined;
+					updateData.ymgal_data = undefined;
+					break;
+				case "ymgal":
+					// 只保留 ymgal_data，清除其他数据源
+					updateData.bgm_data = undefined;
+					updateData.vndb_data = undefined;
 					break;
 			}
 
+			updateGame(id, updateData);
 			setOpenViewBox(false);
 			snackbar.success(t("pages.Detail.Edit.updateSuccess", "游戏信息已更新"));
 		}
@@ -53,7 +62,7 @@ export const Edit: React.FC = () => {
 	};
 
 	// 处理游戏信息保存
-	const handleGameInfoSave = async (data: Partial<FullGameData>) => {
+	const handleGameInfoSave = async (data: UpdateGameParams) => {
 		if (!selectedGame) return;
 
 		try {

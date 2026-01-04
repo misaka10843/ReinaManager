@@ -1,3 +1,12 @@
+//! 游戏表拆分迁移（已废弃）
+//!
+//! **重要提示：此迁移已被 m20251229_000004_hybrid_single_table.rs 重构**
+//!
+//! 原功能：将游戏表拆分为 games + bgm_data + vndb_data + other_data 多表架构
+//! 新架构：采用单表架构，元数据以 JSON 列形式嵌入 games 表
+//!
+//! 此文件保留用于历史数据库的升级路径，新部署请直接运行最新的 baseline 或跳过此迁移。
+
 use sea_orm::{ConnectionTrait, DatabaseBackend, Statement};
 use sea_orm_migration::prelude::*;
 use sea_orm_migration::sea_orm::TransactionTrait;

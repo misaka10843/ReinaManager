@@ -15,6 +15,7 @@ import { useTranslation } from "react-i18next";
 import { fetchBgmById } from "@/api/bgm";
 import { fetchMixedData } from "@/api/mixed";
 import { fetchVndbById } from "@/api/vndb";
+import { fetchYmById } from "@/api/ymgal";
 import { snackbar } from "@/components/Snackbar";
 import type { FullGameData, GameData } from "@/types";
 
@@ -27,7 +28,7 @@ interface DataSourceUpdateProps {
 
 /**
  * DataSourceUpdate 组件
- * 负责从外部数据源(BGM, VNDB, Mixed)更新游戏信息
+ * 负责从外部数据源(BGM, VNDB, YMGal, Mixed)更新游戏信息
  */
 export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 	bgmToken,
@@ -40,12 +41,14 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 	// 数据源更新相关状态
 	const [bgmId, setBgmId] = useState<string>(selectedGame?.bgm_id || "");
 	const [vndbId, setVndbId] = useState<string>(selectedGame?.vndb_id || "");
+	const [ymgalId, setYmgalId] = useState<string>(selectedGame?.ymgal_id || "");
 	const [idType, setIdType] = useState<string>(selectedGame?.id_type || "");
 	const [isLoading, setIsLoading] = useState(false);
 
 	useEffect(() => {
 		setBgmId(selectedGame?.bgm_id || "");
 		setVndbId(selectedGame?.vndb_id || "");
+		setYmgalId(selectedGame?.ymgal_id || "");
 		setIdType(selectedGame?.id_type || "");
 	}, [selectedGame]);
 
@@ -89,6 +92,18 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 			const result = await fetchVndbById(vndbId);
 			if (typeof result === "string") throw new Error(result);
 			apiData = result;
+		} else if (idType === "ymgal") {
+			// YMGal 单一数据源
+			if (!ymgalId)
+				throw new Error(
+					t(
+						"pages.Detail.DataSourceUpdate.ymgalIdRequired",
+						"YMGal ID 不能为空",
+					),
+				);
+			const result = await fetchYmById(Number(ymgalId));
+			if (typeof result === "string") throw new Error(result);
+			apiData = result;
 		} else {
 			// Mixed 混合数据源
 			if (!bgmId && !vndbId)
@@ -122,15 +137,16 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 			}
 			// 合并两个数据源
 			apiData = {
-				game: { ...bgm_data?.game, ...vndb_data?.game, id_type },
-				bgm_data: bgm_data?.bgm_data || null,
-				vndb_data: vndb_data?.vndb_data || null,
-				other_data: null,
+				...bgm_data,
+				...vndb_data,
+				id_type,
+				bgm_data: bgm_data?.bgm_data || undefined,
+				vndb_data: vndb_data?.vndb_data || undefined,
 			};
 		}
 		// 后端已经处理了序列化，直接返回
 		return apiData;
-	}, [idType, bgmId, vndbId, bgmToken, selectedGame, t]);
+	}, [idType, bgmId, vndbId, ymgalId, bgmToken, selectedGame, t]);
 
 	// 获取并预览游戏数据
 	const handleFetchAndPreview = async () => {
@@ -169,6 +185,7 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 				>
 					<MenuItem value="bgm">Bangumi</MenuItem>
 					<MenuItem value="vndb">VNDB</MenuItem>
+					<MenuItem value="ymgal">YMGal</MenuItem>
 					<MenuItem value="mixed">Mixed</MenuItem>
 					<MenuItem value="custom">Custom</MenuItem>
 					<MenuItem value="Whitecloud" disabled>
@@ -178,7 +195,7 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 			</FormControl>
 
 			{/* Bangumi ID 编辑框 */}
-			{idType !== "vndb" && idType !== "custom" && (
+			{idType !== "vndb" && idType !== "ymgal" && idType !== "custom" && (
 				<TextField
 					label={t("pages.Detail.DataSourceUpdate.bgmId", "Bangumi ID")}
 					variant="outlined"
@@ -190,13 +207,25 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 			)}
 
 			{/* VNDB ID 编辑框 */}
-			{idType !== "bgm" && idType !== "custom" && (
+			{idType !== "bgm" && idType !== "ymgal" && idType !== "custom" && (
 				<TextField
 					label={t("pages.Detail.DataSourceUpdate.vndbId", "VNDB ID")}
 					variant="outlined"
 					fullWidth
 					value={vndbId}
 					onChange={(e) => setVndbId(e.target.value)}
+					disabled={isLoading || disabled}
+				/>
+			)}
+
+			{/* YMGal ID 编辑框 */}
+			{idType === "ymgal" && (
+				<TextField
+					label={t("pages.Detail.DataSourceUpdate.ymgalId", "YMGal ID")}
+					variant="outlined"
+					fullWidth
+					value={ymgalId}
+					onChange={(e) => setYmgalId(e.target.value)}
 					disabled={isLoading || disabled}
 				/>
 			)}
@@ -214,6 +243,7 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 					!selectedGame ||
 					(idType === "bgm" && !bgmId) ||
 					(idType === "vndb" && !vndbId) ||
+					(idType === "ymgal" && !ymgalId) ||
 					(idType === "mixed" && !bgmId && !vndbId)
 				}
 				onClick={handleFetchAndPreview}

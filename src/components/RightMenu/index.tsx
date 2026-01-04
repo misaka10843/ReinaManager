@@ -214,10 +214,12 @@ const RightMenu: React.FC<RightMenuProps> = ({
 				{/* 打开游戏文件夹 */}
 				<MenuItem
 					disabled={
-						!(isTauri() && id !== undefined && id !== null && isLocalGame(id))
+						!(isTauri() && id != null && isLocalGame(id))
 					}
 					onClick={() => {
-						handleOpenFolder({ id, getGameById });
+						if (id != null) {
+							handleOpenFolder({ id, getGameById });
+						}
 						setAnchorEl(null);
 					}}
 				>

@@ -15,7 +15,7 @@
  */
 
 import { useStore } from "@/store";
-import type { FullGameData, RawGameData, VndbData } from "@/types";
+import type { FullGameData, VndbData } from "@/types";
 import i18n from "@/utils/i18n";
 import http from "./http";
 
@@ -51,10 +51,7 @@ interface RawVNDBData {
 function transformVndbData(
 	VNDBdata: RawVNDBData,
 	update_batch?: boolean,
-): {
-	game: RawGameData;
-	vndb_data: VndbData;
-} {
+): FullGameData {
 	// 处理标题信息
 	const titles = VNDBdata.titles.map((title: VNDB_title) => ({
 		title: title.title,
@@ -75,13 +72,6 @@ function transformVndbData(
 	// 提取所有标题
 	const allTitles: string[] = titles.map((title: VNDB_title) => title.title);
 
-	// 格式化返回数据，和 bgm.ts 的返回格式保持一致
-	const game: RawGameData = {
-		vndb_id: VNDBdata.id,
-		...(update_batch ? {} : { id_type: "vndb" }),
-		date: VNDBdata.released,
-	};
-
 	// 根据 spoilerLevel 过滤标签
 	const filterLevel = useStore.getState().spoilerLevel;
 	const filtered_tags = (
@@ -91,7 +81,8 @@ function transformVndbData(
 		.filter(({ spoiler }) => spoiler <= filterLevel)
 		.map(({ name }) => name);
 
-	const vndb: VndbData = {
+	const vndb_data: VndbData = {
+		date: VNDBdata.released,
 		image: VNDBdata.image?.url,
 		summary: VNDBdata.description,
 		name: mainTitle,
@@ -100,13 +91,19 @@ function transformVndbData(
 		aliases: VNDBdata.aliases || [],
 		tags: filtered_tags,
 		score: Number((VNDBdata.rating / 10).toFixed(2)),
-		developer:
-			VNDBdata.developers?.map((dev: { name: string }) => dev.name).join("/") ||
-			null,
+		developer: VNDBdata.developers
+			?.map((dev: { name: string }) => dev.name)
+			.join("/"),
 		average_hours: Number((VNDBdata.length_minutes / 60).toFixed(1)),
+		nsfw: !filtered_tags.includes("No Sexual Content"),
 	};
 
-	return { game, vndb_data: vndb };
+	return {
+		vndb_id: VNDBdata.id,
+		...(update_batch ? {} : { id_type: "vndb" }),
+		date: VNDBdata.released,
+		vndb_data,
+	};
 }
 
 /**
@@ -148,15 +145,7 @@ export async function fetchVndbByName(
 				"api.vndb.notFound",
 				"未找到相关条目，请确认ID或游戏名字后重试",
 			);
-		return rawResults.map((VNDBdata) => {
-			const { game, vndb_data } = transformVndbData(VNDBdata);
-			return {
-				game,
-				vndb_data,
-				bgm_data: null,
-				other_data: null,
-			};
-		});
+		return rawResults.map((VNDBdata) => transformVndbData(VNDBdata));
 	} catch (error) {
 		Promise.reject(
 			new Error(i18n.t("api.vndb.apiCallFailed", "VNDB API 调用失败")),
@@ -212,12 +201,7 @@ export async function fetchVNDBByIds(ids: string[]) {
 		}
 
 		// 并发请求所有批次
-		const allResults: {
-			game: RawGameData;
-			vndb_data: VndbData;
-			bgm_data: null;
-			other_data: null;
-		}[] = [];
+		const allResults: FullGameData[] = [];
 
 		// 使用 Promise.all 并发请求所有批次
 		const batchPromises = batches.map(async (batch) => {
@@ -255,15 +239,9 @@ export async function fetchVNDBByIds(ids: string[]) {
 				}
 
 				// 转换所有结果数据
-				return results.map((vndbData: RawVNDBData) => {
-					const { game, vndb_data } = transformVndbData(vndbData, true);
-					return {
-						game,
-						vndb_data,
-						bgm_data: null,
-						other_data: null,
-					};
-				});
+				return results.map((vndbData: RawVNDBData) =>
+					transformVndbData(vndbData, true),
+				);
 			} catch (error) {
 				console.error(`批次请求失败:`, error);
 				return [];

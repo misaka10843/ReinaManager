@@ -10,13 +10,7 @@ import { fetchVNDBByIds } from "@/api/vndb";
 import { snackbar } from "@/components/Snackbar";
 import { gameService, savedataService, settingsService } from "@/services";
 import { useScrollStore } from "@/store/scrollStore";
-import type {
-	BgmData,
-	GameData,
-	HanleGamesProps,
-	RawGameData,
-	VndbData,
-} from "@/types";
+import type { BgmData, GameData, HanleGamesProps, VndbData } from "@/types";
 import { getDisplayGameData } from "./dataTransform";
 
 /**
@@ -386,8 +380,8 @@ export const getGameDisplayName = (
 	language?: string,
 ): string => {
 	const currentLanguage = language || i18next.language;
-	if (game.custom_name) {
-		return game.custom_name;
+	if (game.custom_data?.name) {
+		return game.custom_data.name;
 	}
 	// 只有当语言为zh-CN时才使用name_cn，其他语言都使用name
 	return currentLanguage === "zh-CN" && game.name_cn
@@ -406,7 +400,7 @@ export const getcustomCoverFolder = (gameID: number): string => {
 };
 export const getGameCover = (game: GameData): string => {
 	// 如果有自定义封面扩展名，构造自定义封面路径
-	if (game.custom_cover && game.id) {
+	if (game.custom_data?.image && game.id) {
 		// 获取缓存的资源目录路径
 		const customCoverFolder = getcustomCoverFolder(game.id);
 		if (customCoverFolder) {
@@ -414,7 +408,7 @@ export const getGameCover = (game: GameData): string => {
 			// 例如：custom_cover = "jpg_1703123456789"
 			const customCoverPath = join(
 				customCoverFolder,
-				`cover_${game.id}_${game.custom_cover}`,
+				`cover_${game.id}_${game.custom_data.image}`,
 			);
 
 			// 在 Tauri 环境中使用 convertFileSrc 转换路径
@@ -427,7 +421,7 @@ export const getGameCover = (game: GameData): string => {
 	}
 
 	// 使用默认封面 (来自 bgm/vndb/other 数据的 image 字段)
-	return game.image || "";
+	return game.image || "/images/default.png";
 };
 
 /**
@@ -452,8 +446,8 @@ export const toggleGameClearStatus = async (
 		const game = getDisplayGameData(fullgame);
 
 		const newClearStatus = game.clear === 1 ? 0 : 1;
-		await gameService.updateGameWithRelated(gameId, {
-			game: { clear: newClearStatus as 1 | 0 },
+		await gameService.updateGame(gameId, {
+			clear: newClearStatus as 1 | 0,
 		});
 
 		// 更新store中的games数组
@@ -755,10 +749,10 @@ async function batchUpdateCommon(
 	) => Promise<
 		| string
 		| Array<{
-				game: RawGameData;
-				bgm_data: BgmData | null;
-				vndb_data: VndbData | null;
-				other_data: null;
+				bgm_id?: string | null;
+				vndb_id?: string | null;
+				bgm_data?: BgmData | null;
+				vndb_data?: VndbData | null;
 		  }>
 	>,
 	getAllIdsFunction: () => Promise<Array<[number, string]>>,
@@ -810,18 +804,20 @@ async function batchUpdateCommon(
 		const errors: string[] = [];
 
 		// 4. 构建更新数据
-		const updates: Array<[number, BgmData | VndbData]> = [];
+		const updates: Array<
+			[number, Partial<{ bgm_data: BgmData; vndb_data: VndbData }>]
+		> = [];
 
 		for (const [gameId, apiId] of idPairs) {
 			const data = resultsTemp.find((result) => {
 				if (type === "bgm") {
-					return result.game.bgm_id === apiId;
+					return result.bgm_id === apiId;
 				}
-				return result.game.vndb_id === apiId;
+				return result.vndb_id === apiId;
 			});
 
 			if (data?.[updateKeyName]) {
-				updates.push([gameId, data[updateKeyName]]);
+				updates.push([gameId, { [updateKeyName]: data[updateKeyName] }]);
 			} else {
 				errors.push(
 					i18next.t(
@@ -834,21 +830,7 @@ async function batchUpdateCommon(
 
 		// 5. 批量更新数据库
 		if (updates.length > 0) {
-			if (updateKeyName === "bgm_data") {
-				await gameService.updateBatch(
-					undefined,
-					updates as Array<[number, BgmData]>,
-					undefined,
-					undefined,
-				);
-			} else {
-				await gameService.updateBatch(
-					undefined,
-					undefined,
-					updates as Array<[number, VndbData]>,
-					undefined,
-				);
-			}
+			await gameService.updateBatch(updates);
 		}
 
 		return {

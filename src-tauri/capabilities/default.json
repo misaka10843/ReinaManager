@@ -42,7 +42,7 @@
 		},
 		{
 			"identifier": "http:default",
-			"allow": [{ "url": "https://api.bgm.tv" }]
+			"allow": [{ "url": "https://api.bgm.tv"},{"url": "https://www.ymgal.games"}]
 		}
 	]
 }

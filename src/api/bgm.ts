@@ -14,7 +14,7 @@
  */
 
 import { version } from "@pkg";
-import type { BgmData, FullGameData, RawGameData } from "@/types";
+import type { BgmData, FullGameData } from "@/types";
 import i18n from "@/utils/i18n";
 import http, { tauriHttp } from "./http";
 
@@ -33,8 +33,8 @@ function filterSensitiveTags(tags: string[]): string[] {
 
 // 新增：将 BGM API 返回对象转换为统一的结构
 // biome-ignore lint/suspicious/noExplicitAny: external API has dynamic shape
-const transformBgmData = (BGMdata: any) => {
-	const game: RawGameData = {
+const transformBgmData = (BGMdata: any): FullGameData => {
+	const baseData = {
 		bgm_id: String(BGMdata.id),
 		id_type: "bgm",
 		date: BGMdata.date,
@@ -57,16 +57,17 @@ const transformBgmData = (BGMdata: any) => {
 	}
 
 	const bgm_data: BgmData = {
-		image: BGMdata.images?.large || null,
-		summary: BGMdata.summary || null,
-		name: BGMdata.name || null,
-		name_cn: BGMdata.name_cn || null,
+		date: BGMdata.date,
+		image: BGMdata.images?.large,
+		summary: BGMdata.summary,
+		name: BGMdata.name,
+		name_cn: BGMdata.name_cn,
 		aliases: aliasesArray,
 		tags: filterSensitiveTags(
 			(BGMdata.tags || []).map((tag: { name: string }) => tag.name),
 		),
-		rank: BGMdata.rating?.rank ?? null,
-		score: BGMdata.rating?.score ?? null,
+		rank: BGMdata.rating?.rank,
+		score: BGMdata.rating?.score,
 		developer: (() => {
 			const developers =
 				BGMdata.infobox?.flatMap(
@@ -82,11 +83,14 @@ const transformBgmData = (BGMdata: any) => {
 					},
 				) ?? [];
 			const uniqueDevelopers = [...new Set(developers)];
-			return uniqueDevelopers.length > 0 ? uniqueDevelopers.join("/") : null;
+			return uniqueDevelopers.length > 0
+				? uniqueDevelopers.join("/")
+				: undefined;
 		})(),
+		nsfw: BGMdata.nsfw,
 	};
 
-	return { game, bgm_data };
+	return { ...baseData, bgm_data };
 };
 
 /**
@@ -118,8 +122,6 @@ export async function fetchBgmById(id: string, BGM_TOKEN: string) {
 		const transformed = transformBgmData(BGMdata);
 		return {
 			...transformed,
-			vndb_data: null,
-			other_data: null,
 		};
 	} catch (error) {
 		console.error("BGM API调用失败:", error);
@@ -183,8 +185,6 @@ export async function fetchBgmByName(
 			const transformed = transformBgmData(item);
 			return {
 				...transformed,
-				vndb_data: null,
-				other_data: null,
 			};
 		});
 	} catch (error) {
@@ -227,12 +227,7 @@ export async function fetchBgmByIds(ids: string[], BGM_TOKEN?: string) {
 			},
 		};
 
-		const allResults: {
-			game: RawGameData;
-			bgm_data: BgmData;
-			vndb_data: null;
-			other_data: null;
-		}[] = [];
+		const allResults: FullGameData[] = [];
 
 		// 逐个请求，避免频繁调用 API
 		// BGM API 对频率有限制，建议间隔 1 秒
@@ -250,13 +245,7 @@ export async function fetchBgmByIds(ids: string[], BGM_TOKEN?: string) {
 				).data;
 
 				if (BGMdata?.id) {
-					const transformed = transformBgmData(BGMdata);
-					allResults.push({
-						game: transformed.game,
-						bgm_data: transformed.bgm_data,
-						vndb_data: null,
-						other_data: null,
-					});
+					allResults.push(transformBgmData(BGMdata));
 				}
 
 				// 每个请求之间延迟 200ms

@@ -81,12 +81,33 @@ export const tauriHttp = {
 	/**
 	 * 发送 GET 请求
 	 * @param url 请求 URL
-	 * @param options 请求选项，包含 headers 等
+	 * @param options 请求选项，包含 headers 和 params 等
 	 * @returns Promise<any> 响应数据
 	 */
-	async get(url: string, options?: { headers?: Record<string, string> }) {
+	async get(
+		url: string,
+		options?: {
+			headers?: Record<string, string>;
+			params?: Record<string, unknown>;
+		},
+	) {
 		try {
-			const response = await tauriFetch(url, {
+			// 处理查询参数
+			let fullUrl = url;
+			if (options?.params) {
+				const searchParams = new URLSearchParams();
+				for (const [key, value] of Object.entries(options.params)) {
+					if (value !== undefined && value !== null) {
+						searchParams.append(key, String(value));
+					}
+				}
+				const queryString = searchParams.toString();
+				if (queryString) {
+					fullUrl = `${url}${url.includes("?") ? "&" : "?"}${queryString}`;
+				}
+			}
+
+			const response = await tauriFetch(fullUrl, {
 				method: "GET",
 				headers: options?.headers || {},
 			});
@@ -153,9 +174,7 @@ function handleTauriHttpError(error: unknown): never {
 			: i18n.t("api.http.requestError", "请求错误");
 
 	if (errorMessage.includes("401")) {
-		throw new Error(
-			i18n.t("api.http.authFailed", "认证失败，请检查你的BGM_TOKEN是否正确"),
-		);
+		throw new Error(i18n.t("api.http.authFailed", "认证失败"));
 	}
 	if (errorMessage.includes("400")) {
 		throw new Error(

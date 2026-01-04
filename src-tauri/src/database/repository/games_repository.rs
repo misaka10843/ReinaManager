@@ -1,9 +1,11 @@
-use crate::database::dto::{
-    BgmDataInput, GameWithRelatedUpdate, InsertGameData, IntoActiveModel, OtherDataInput,
-    VndbDataInput,
-};
+//! 游戏数据仓库（单表架构）
+//!
+//! 重构后的 Repository，games 表包含所有元数据（以 JSON 列存储）。
+//! 移除了多表事务代码，简化为单表 CRUD 操作。
+
+use crate::database::dto::{InsertGameData, UpdateGameData};
 use crate::entity::prelude::*;
-use crate::entity::{bgm_data, games, other_data, savedata, vndb_data};
+use crate::entity::{games, savedata};
 use sea_orm::*;
 use serde::{Deserialize, Serialize};
 
@@ -37,391 +39,150 @@ pub enum GameType {
     Clear,
 }
 
-/// 用于序列化给前端的 BGM 数据（数组字段已反序列化）
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BgmDataSerialized {
-    pub game_id: i32,
-    pub image: Option<String>,
-    pub name: Option<String>,
-    pub name_cn: Option<String>,
-    pub aliases: Option<Vec<String>>,
-    pub summary: Option<String>,
-    pub tags: Option<Vec<String>>,
-    pub rank: Option<i32>,
-    pub score: Option<sea_orm::prelude::Decimal>,
-    pub developer: Option<String>,
-}
-
-/// 用于序列化给前端的 VNDB 数据（数组字段已反序列化）
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct VndbDataSerialized {
-    pub game_id: i32,
-    pub image: Option<String>,
-    pub name: Option<String>,
-    pub name_cn: Option<String>,
-    pub all_titles: Option<Vec<String>>,
-    pub aliases: Option<Vec<String>>,
-    pub summary: Option<String>,
-    pub tags: Option<Vec<String>>,
-    pub average_hours: Option<sea_orm::prelude::Decimal>,
-    pub developer: Option<String>,
-    pub score: Option<sea_orm::prelude::Decimal>,
-}
-
-/// 用于序列化给前端的 Other 数据（数组字段已反序列化）
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OtherDataSerialized {
-    pub game_id: i32,
-    pub image: Option<String>,
-    pub name: Option<String>,
-    pub summary: Option<String>,
-    pub tags: Option<Vec<String>>,
-    pub developer: Option<String>,
-}
-
-/// 完整的游戏数据，包含关联的 BGM、VNDB 和其他数据（发送给前端时字段已反序列化）
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FullGameData {
-    pub game: games::Model,
-    pub bgm_data: Option<BgmDataSerialized>,
-    pub vndb_data: Option<VndbDataSerialized>,
-    pub other_data: Option<OtherDataSerialized>,
-}
-
-/// 辅助函数：将数据库中的 JSON 字符串安全地反序列化为数组
-fn deserialize_json_array(json_str: Option<String>) -> Option<Vec<String>> {
-    json_str.and_then(|s| serde_json::from_str(&s).ok())
-}
-
-/// 转换 bgm_data::Model 为 BgmDataSerialized
-fn convert_bgm_model(model: bgm_data::Model) -> BgmDataSerialized {
-    BgmDataSerialized {
-        game_id: model.game_id,
-        image: model.image,
-        name: model.name,
-        name_cn: model.name_cn,
-        aliases: deserialize_json_array(model.aliases),
-        summary: model.summary,
-        tags: deserialize_json_array(model.tags),
-        rank: model.rank,
-        score: model.score,
-        developer: model.developer,
-    }
-}
-
-/// 转换 vndb_data::Model 为 VndbDataSerialized
-fn convert_vndb_model(model: vndb_data::Model) -> VndbDataSerialized {
-    VndbDataSerialized {
-        game_id: model.game_id,
-        image: model.image,
-        name: model.name,
-        name_cn: model.name_cn,
-        all_titles: deserialize_json_array(model.all_titles),
-        aliases: deserialize_json_array(model.aliases),
-        summary: model.summary,
-        tags: deserialize_json_array(model.tags),
-        average_hours: model.average_hours,
-        developer: model.developer,
-        score: model.score,
-    }
-}
-
-/// 转换 other_data::Model 为 OtherDataSerialized
-fn convert_other_model(model: other_data::Model) -> OtherDataSerialized {
-    OtherDataSerialized {
-        game_id: model.game_id,
-        image: model.image,
-        name: model.name,
-        summary: model.summary,
-        tags: deserialize_json_array(model.tags),
-        developer: model.developer,
-    }
-}
-
-/// 游戏数据仓库
+/// 游戏数据仓库（单表架构）
 pub struct GamesRepository;
 
 impl GamesRepository {
     // ==================== 游戏 CRUD 操作 ====================
 
-    /// 批量插入游戏数据（包含关联数据）
-    pub async fn insert_with_related(
-        db: &DatabaseConnection,
-        game: InsertGameData,
-        bgm: Option<BgmDataInput>,
-        vndb: Option<VndbDataInput>,
-        other: Option<OtherDataInput>,
-    ) -> Result<i32, DbErr> {
-        let txn = db.begin().await?;
-
-        // 构建 ActiveModel 并插入游戏基础数据
+    /// 插入游戏数据（单表操作）
+    ///
+    /// 所有元数据通过 JSON 列直接存储，无需多表事务
+    pub async fn insert(db: &DatabaseConnection, game: InsertGameData) -> Result<i32, DbErr> {
         let now = chrono::Utc::now().timestamp() as i32;
+
         let game_active = games::ActiveModel {
             id: NotSet,
             bgm_id: Set(game.bgm_id),
             vndb_id: Set(game.vndb_id),
+            ymgal_id: Set(game.ymgal_id),
             id_type: Set(game.id_type),
             date: Set(game.date),
             localpath: Set(game.localpath),
-            savepath: Set(game.savepath),
-            autosave: Set(game.autosave),
-            clear: Set(game.clear),
-            custom_name: Set(game.custom_name),
-            custom_cover: Set(game.custom_cover),
+            savepath: NotSet,
+            autosave: NotSet,
+            maxbackups: NotSet,
+            clear: NotSet,
+            le_launch: NotSet,
+            magpie: NotSet,
+            vndb_data: Set(game.vndb_data),
+            bgm_data: Set(game.bgm_data),
+            ymgal_data: Set(game.ymgal_data),
+            custom_data: Set(game.custom_data),
             created_at: Set(Some(now)),
             updated_at: Set(Some(now)),
         };
 
-        let game_model = game_active.insert(&txn).await?;
-        let game_id = game_model.id;
-
-        // 使用辅助函数插入关联数据
-        Self::insert_bgm_data(&txn, game_id, bgm).await?;
-        Self::insert_vndb_data(&txn, game_id, vndb).await?;
-        Self::insert_other_data(&txn, game_id, other).await?;
-
-        txn.commit().await?;
-        Ok(game_id)
+        let result = game_active.insert(db).await?;
+        Ok(result.id)
     }
 
-    /// 更新游戏数据（包含关联数据）
-    pub async fn update_with_related(
+    /// 更新游戏数据（单表操作）
+    ///
+    /// 支持部分更新，未提供的字段保持不变
+    pub async fn update(
         db: &DatabaseConnection,
         game_id: i32,
-        updates: GameWithRelatedUpdate,
-    ) -> Result<(), DbErr> {
-        let txn = db.begin().await?;
+        updates: UpdateGameData,
+    ) -> Result<games::Model, DbErr> {
+        let now = chrono::Utc::now().timestamp() as i32;
 
-        // 更新游戏基础数据（如果有）
-        if let Some(g) = updates.game {
+        let game_active = games::ActiveModel {
+            id: Set(game_id),
+            bgm_id: updates.bgm_id.map_or(NotSet, Set),
+            vndb_id: updates.vndb_id.map_or(NotSet, Set),
+            ymgal_id: updates.ymgal_id.map_or(NotSet, Set),
+            id_type: updates.id_type.map_or(NotSet, Set),
+            date: updates.date.map_or(NotSet, Set),
+            localpath: updates.localpath.map_or(NotSet, Set),
+            savepath: updates.savepath.map_or(NotSet, Set),
+            autosave: updates.autosave.map_or(NotSet, Set),
+            maxbackups: updates.maxbackups.map_or(NotSet, Set),
+            clear: updates.clear.map_or(NotSet, Set),
+            le_launch: updates.le_launch.map_or(NotSet, Set),
+            magpie: updates.magpie.map_or(NotSet, Set),
+            vndb_data: updates.vndb_data.map_or(NotSet, Set),
+            bgm_data: updates.bgm_data.map_or(NotSet, Set),
+            ymgal_data: updates.ymgal_data.map_or(NotSet, Set),
+            custom_data: updates.custom_data.map_or(NotSet, Set),
+            updated_at: Set(Some(now)),
+            ..Default::default()
+        };
+
+        game_active.update(db).await
+    }
+
+    /// 批量更新游戏数据
+    ///
+    /// 在事务中批量更新，保证原子性
+    pub async fn update_batch(
+        db: &DatabaseConnection,
+        updates: Vec<(i32, UpdateGameData)>,
+    ) -> Result<u64, DbErr> {
+        if updates.is_empty() {
+            return Ok(0);
+        }
+
+        let txn = db.begin().await?;
+        let now = chrono::Utc::now().timestamp() as i32;
+        let mut count = 0u64;
+
+        for (game_id, update) in updates {
             let game_active = games::ActiveModel {
                 id: Set(game_id),
-                bgm_id: g.bgm_id.map_or(NotSet, Set),
-                vndb_id: g.vndb_id.map_or(NotSet, Set),
-                id_type: g.id_type.map_or(NotSet, Set),
-                date: g.date.map_or(NotSet, Set),
-                localpath: g.localpath.map_or(NotSet, Set),
-                savepath: g.savepath.map_or(NotSet, Set),
-                autosave: g.autosave.map_or(NotSet, Set),
-                clear: g.clear.map_or(NotSet, Set),
-                custom_name: g.custom_name.map_or(NotSet, Set),
-                custom_cover: g.custom_cover.map_or(NotSet, Set),
-                updated_at: Set(Some(chrono::Utc::now().timestamp() as i32)),
+                bgm_id: update.bgm_id.map_or(NotSet, Set),
+                vndb_id: update.vndb_id.map_or(NotSet, Set),
+                ymgal_id: update.ymgal_id.map_or(NotSet, Set),
+                id_type: update.id_type.map_or(NotSet, Set),
+                date: update.date.map_or(NotSet, Set),
+                localpath: update.localpath.map_or(NotSet, Set),
+                savepath: update.savepath.map_or(NotSet, Set),
+                autosave: update.autosave.map_or(NotSet, Set),
+                maxbackups: update.maxbackups.map_or(NotSet, Set),
+                clear: update.clear.map_or(NotSet, Set),
+                le_launch: update.le_launch.map_or(NotSet, Set),
+                magpie: update.magpie.map_or(NotSet, Set),
+                vndb_data: update.vndb_data.map_or(NotSet, Set),
+                bgm_data: update.bgm_data.map_or(NotSet, Set),
+                ymgal_data: update.ymgal_data.map_or(NotSet, Set),
+                custom_data: update.custom_data.map_or(NotSet, Set),
+                updated_at: Set(Some(now)),
                 ..Default::default()
             };
-            game_active.update(&txn).await?;
-        }
 
-        // 使用辅助函数更新或插入关联数据
-        Self::upsert_bgm_data(&txn, game_id, updates.bgm_data).await?;
-        Self::upsert_vndb_data(&txn, game_id, updates.vndb_data).await?;
-        Self::upsert_other_data(&txn, game_id, updates.other_data).await?;
+            let result = game_active.update(&txn).await?;
+            if result.id > 0 {
+                count += 1;
+            }
+        }
 
         txn.commit().await?;
-        Ok(())
-    }
-
-    // ==================== 私有辅助函数 ====================
-
-    /// 插入 BGM 关联数据
-    async fn insert_bgm_data(
-        txn: &DatabaseTransaction,
-        game_id: i32,
-        data: Option<BgmDataInput>,
-    ) -> Result<(), DbErr> {
-        if let Some(input) = data {
-            input.into_active_model(game_id).insert(txn).await?;
-        }
-        Ok(())
-    }
-
-    /// 插入 VNDB 关联数据
-    async fn insert_vndb_data(
-        txn: &DatabaseTransaction,
-        game_id: i32,
-        data: Option<VndbDataInput>,
-    ) -> Result<(), DbErr> {
-        if let Some(input) = data {
-            input.into_active_model(game_id).insert(txn).await?;
-        }
-        Ok(())
-    }
-
-    /// 插入 Other 关联数据
-    async fn insert_other_data(
-        txn: &DatabaseTransaction,
-        game_id: i32,
-        data: Option<OtherDataInput>,
-    ) -> Result<(), DbErr> {
-        if let Some(input) = data {
-            input.into_active_model(game_id).insert(txn).await?;
-        }
-        Ok(())
-    }
-
-    /// 更新或插入 BGM 关联数据
-    async fn upsert_bgm_data(
-        txn: &DatabaseTransaction,
-        game_id: i32,
-        data: Option<BgmDataInput>,
-    ) -> Result<(), DbErr> {
-        if let Some(input) = data {
-            let active_model = input.into_active_model(game_id);
-            let existing = BgmData::find_by_id(game_id).one(txn).await?;
-            if existing.is_some() {
-                active_model.update(txn).await?;
-            } else {
-                active_model.insert(txn).await?;
-            }
-        }
-        Ok(())
-    }
-
-    /// 更新或插入 VNDB 关联数据
-    async fn upsert_vndb_data(
-        txn: &DatabaseTransaction,
-        game_id: i32,
-        data: Option<VndbDataInput>,
-    ) -> Result<(), DbErr> {
-        if let Some(input) = data {
-            let active_model = input.into_active_model(game_id);
-            let existing = VndbData::find_by_id(game_id).one(txn).await?;
-            if existing.is_some() {
-                active_model.update(txn).await?;
-            } else {
-                active_model.insert(txn).await?;
-            }
-        }
-        Ok(())
-    }
-
-    /// 更新或插入 Other 关联数据
-    async fn upsert_other_data(
-        txn: &DatabaseTransaction,
-        game_id: i32,
-        data: Option<OtherDataInput>,
-    ) -> Result<(), DbErr> {
-        if let Some(input) = data {
-            let active_model = input.into_active_model(game_id);
-            let existing = OtherData::find_by_id(game_id).one(txn).await?;
-            if existing.is_some() {
-                active_model.update(txn).await?;
-            } else {
-                active_model.insert(txn).await?;
-            }
-        }
-        Ok(())
+        Ok(count)
     }
 
     // ==================== 查询操作 ====================
 
-    /// 根据 ID 查询完整游戏数据（包含关联数据）
-    pub async fn find_full_by_id(
+    /// 根据 ID 查询游戏
+    pub async fn find_by_id(
         db: &DatabaseConnection,
         id: i32,
-    ) -> Result<Option<FullGameData>, DbErr> {
-        let game = match Games::find_by_id(id).one(db).await? {
-            Some(g) => g,
-            None => return Ok(None),
-        };
-
-        let bgm = BgmData::find_by_id(id).one(db).await?;
-        let vndb = VndbData::find_by_id(id).one(db).await?;
-        let other = OtherData::find_by_id(id).one(db).await?;
-
-        Ok(Some(FullGameData {
-            game,
-            bgm_data: bgm.map(convert_bgm_model),
-            vndb_data: vndb.map(convert_vndb_model),
-            other_data: other.map(convert_other_model),
-        }))
+    ) -> Result<Option<games::Model>, DbErr> {
+        Games::find_by_id(id).one(db).await
     }
 
-    /// 获取完整游戏数据（包含关联），支持按类型筛选和排序
-    ///
-    /// # 参数
-    /// * `db` - 数据库连接
-    /// * `game_type` - 游戏类型筛选（All、Local、Online、NoClear、Clear），默认为 All
-    /// * `sort_option` - 排序选项
-    /// * `sort_order` - 排序顺序
-    pub async fn find_full_games(
+    /// 获取所有游戏，支持按类型筛选和排序
+    pub async fn find_all(
         db: &DatabaseConnection,
         game_type: GameType,
         sort_option: SortOption,
         sort_order: SortOrder,
-    ) -> Result<Vec<FullGameData>, DbErr> {
-        // 1. 使用通用方法获取排序后的游戏列表
-        let games = Self::find_with_sort(db, game_type, sort_option, sort_order).await?;
-
-        // 2. 如果没有游戏，直接返回空列表
-        if games.is_empty() {
-            return Ok(Vec::new());
-        }
-
-        // 3. 批量查询关联数据
-        let game_ids: Vec<i32> = games.iter().map(|g| g.id).collect();
-
-        let bgm_data_list = BgmData::find()
-            .filter(bgm_data::Column::GameId.is_in(game_ids.clone()))
-            .all(db)
-            .await?;
-
-        let vndb_data_list = VndbData::find()
-            .filter(vndb_data::Column::GameId.is_in(game_ids.clone()))
-            .all(db)
-            .await?;
-
-        let other_data_list = OtherData::find()
-            .filter(other_data::Column::GameId.is_in(game_ids))
-            .all(db)
-            .await?;
-
-        // 4. 构建 HashMap 方便查找
-        use std::collections::HashMap;
-        let bgm_map: HashMap<i32, bgm_data::Model> =
-            bgm_data_list.into_iter().map(|d| (d.game_id, d)).collect();
-        let vndb_map: HashMap<i32, vndb_data::Model> =
-            vndb_data_list.into_iter().map(|d| (d.game_id, d)).collect();
-        let other_map: HashMap<i32, other_data::Model> = other_data_list
-            .into_iter()
-            .map(|d| (d.game_id, d))
-            .collect();
-
-        // 5. 组合数据，并转换为序列化格式
-        let full_games = games
-            .into_iter()
-            .map(|game| FullGameData {
-                game: game.clone(),
-                bgm_data: bgm_map.get(&game.id).cloned().map(convert_bgm_model),
-                vndb_data: vndb_map.get(&game.id).cloned().map(convert_vndb_model),
-                other_data: other_map.get(&game.id).cloned().map(convert_other_model),
-            })
-            .collect();
-
-        Ok(full_games)
+    ) -> Result<Vec<games::Model>, DbErr> {
+        Self::find_with_sort(db, game_type, sort_option, sort_order).await
     }
 
-    /// 删除游戏（级联删除关联数据）
+    /// 删除游戏
     pub async fn delete(db: &DatabaseConnection, id: i32) -> Result<DeleteResult, DbErr> {
         Games::delete_by_id(id).exec(db).await
-    }
-
-    /// 删除指定游戏的 BGM 关联数据
-    pub async fn delete_bgm_data(db: &DatabaseConnection, game_id: i32) -> Result<u64, DbErr> {
-        let res = BgmData::delete_by_id(game_id).exec(db).await?;
-        Ok(res.rows_affected)
-    }
-
-    /// 删除指定游戏的 VNDB 关联数据
-    pub async fn delete_vndb_data(db: &DatabaseConnection, game_id: i32) -> Result<u64, DbErr> {
-        let res = VndbData::delete_by_id(game_id).exec(db).await?;
-        Ok(res.rows_affected)
-    }
-
-    /// 删除指定游戏的 Other 关联数据
-    pub async fn delete_other_data(db: &DatabaseConnection, game_id: i32) -> Result<u64, DbErr> {
-        let res = OtherData::delete_by_id(game_id).exec(db).await?;
-        Ok(res.rows_affected)
     }
 
     /// 批量删除游戏
@@ -440,8 +201,7 @@ impl GamesRepository {
         Games::find().count(db).await
     }
 
-    /// 获取所有游戏的 BGM ID（返回 {id, bgm_id} 对象数组）
-    /// 只返回 bgm_id 不为 NULL 的记录
+    /// 获取所有游戏的 BGM ID
     pub async fn get_all_bgm_ids(db: &DatabaseConnection) -> Result<Vec<(i32, String)>, DbErr> {
         Games::find()
             .filter(games::Column::BgmId.is_not_null())
@@ -455,8 +215,7 @@ impl GamesRepository {
             })
     }
 
-    /// 获取所有游戏的 VNDB ID（返回 {id, vndb_id} 对象数组）
-    /// 只返回 vndb_id 不为 NULL 的记录
+    /// 获取所有游戏的 VNDB ID
     pub async fn get_all_vndb_ids(db: &DatabaseConnection) -> Result<Vec<(i32, String)>, DbErr> {
         Games::find()
             .filter(games::Column::VndbId.is_not_null())
@@ -470,113 +229,30 @@ impl GamesRepository {
             })
     }
 
-    /// 批量更新数据（支持游戏基础数据和关联数据的统一接口）
-    ///
-    /// 使用单个事务处理所有更新操作，支持同时更新游戏基础数据和关联数据。
-    /// 性能远优于逐个更新。
-    ///
-    /// # 参数
-    /// * `db` - 数据库连接
-    /// * `games_updates` - 游戏基础数据更新列表（可选）
-    /// * `bgm_updates` - BGM 数据更新列表（可选）
-    /// * `vndb_updates` - VNDB 数据更新列表（可选）
-    /// * `other_updates` - Other 数据更新列表（可选）
-    ///
-    /// # 返回值
-    /// 返回成功更新的游戏数量（仅计算 games 表的更新数）
-    pub async fn update_batch(
-        db: &DatabaseConnection,
-        games_updates: Option<Vec<(i32, crate::database::dto::UpdateGameData)>>,
-        bgm_updates: Option<Vec<(i32, BgmDataInput)>>,
-        vndb_updates: Option<Vec<(i32, VndbDataInput)>>,
-        other_updates: Option<Vec<(i32, OtherDataInput)>>,
-    ) -> Result<u64, DbErr> {
-        // 如果没有任何更新，直接返回
-        if games_updates.is_none()
-            && bgm_updates.is_none()
-            && vndb_updates.is_none()
-            && other_updates.is_none()
-        {
-            return Ok(0);
-        }
-
-        let txn = db.begin().await?;
-        let now = chrono::Utc::now().timestamp() as i32;
-        let mut games_count = 0u64;
-
-        // 批量更新游戏基础数据
-        if let Some(updates) = games_updates {
-            for (game_id, update) in updates {
-                let game_active = games::ActiveModel {
-                    id: Set(game_id),
-                    bgm_id: update.bgm_id.map_or(NotSet, Set),
-                    vndb_id: update.vndb_id.map_or(NotSet, Set),
-                    id_type: update.id_type.map_or(NotSet, Set),
-                    date: update.date.map_or(NotSet, Set),
-                    localpath: update.localpath.map_or(NotSet, Set),
-                    savepath: update.savepath.map_or(NotSet, Set),
-                    autosave: update.autosave.map_or(NotSet, Set),
-                    clear: update.clear.map_or(NotSet, Set),
-                    custom_name: update.custom_name.map_or(NotSet, Set),
-                    custom_cover: update.custom_cover.map_or(NotSet, Set),
-                    updated_at: Set(Some(now)),
-                    ..Default::default()
-                };
-                let result = game_active.update(&txn).await?;
-                if result.id > 0 {
-                    games_count += 1;
-                }
-            }
-        }
-
-        // 批量更新 BGM 数据
-        if let Some(updates) = bgm_updates {
-            for (game_id, data) in updates {
-                let active_model = data.into_active_model(game_id);
-                let existing = BgmData::find_by_id(game_id).one(&txn).await?;
-                if existing.is_some() {
-                    active_model.update(&txn).await?;
-                } else {
-                    active_model.insert(&txn).await?;
-                }
-            }
-        }
-
-        // 批量更新 VNDB 数据
-        if let Some(updates) = vndb_updates {
-            for (game_id, data) in updates {
-                let active_model = data.into_active_model(game_id);
-                let existing = VndbData::find_by_id(game_id).one(&txn).await?;
-                if existing.is_some() {
-                    active_model.update(&txn).await?;
-                } else {
-                    active_model.insert(&txn).await?;
-                }
-            }
-        }
-
-        // 批量更新 Other 数据
-        if let Some(updates) = other_updates {
-            for (game_id, data) in updates {
-                let active_model = data.into_active_model(game_id);
-                let existing = OtherData::find_by_id(game_id).one(&txn).await?;
-                if existing.is_some() {
-                    active_model.update(&txn).await?;
-                } else {
-                    active_model.insert(&txn).await?;
-                }
-            }
-        }
-
-        txn.commit().await?;
-        Ok(games_count)
+    /// 检查 BGM ID 是否已存在
+    pub async fn exists_bgm_id(db: &DatabaseConnection, bgm_id: &str) -> Result<bool, DbErr> {
+        Ok(Games::find()
+            .filter(games::Column::BgmId.eq(bgm_id))
+            .count(db)
+            .await?
+            > 0)
     }
 
-    /// 通用的查询构建器：应用类型筛选和关键词搜索
+    /// 检查 VNDB ID 是否已存在
+    pub async fn exists_vndb_id(db: &DatabaseConnection, vndb_id: &str) -> Result<bool, DbErr> {
+        Ok(Games::find()
+            .filter(games::Column::VndbId.eq(vndb_id))
+            .count(db)
+            .await?
+            > 0)
+    }
+
+    // ==================== 私有方法 ====================
+
+    /// 通用的查询构建器：应用类型筛选
     fn build_base_query(game_type: GameType) -> Select<Games> {
         let mut query = Games::find();
 
-        // 应用类型筛选
         query = match game_type {
             GameType::All => query,
             GameType::Local => query.filter(
@@ -609,7 +285,6 @@ impl GamesRepository {
             SortOrder::Desc => Order::Desc,
         };
 
-        // 根据排序选项决定是否需要 JOIN
         match sort_option {
             SortOption::Addtime => {
                 let mut query = Self::build_base_query(game_type);
@@ -628,54 +303,26 @@ impl GamesRepository {
                 query.all(db).await
             }
             SortOption::LastPlayed => {
-                // LEFT JOIN game_statistics
-                let mut query =
-                    Self::build_base_query(game_type).left_join(game_statistics::Entity);
-                query = query
+                let query = Self::build_base_query(game_type).left_join(game_statistics::Entity);
+                query
                     .order_by(game_statistics::Column::LastPlayed, Order::Desc)
-                    .order_by_asc(games::Column::Id);
-                query.all(db).await
+                    .order_by_asc(games::Column::Id)
+                    .all(db)
+                    .await
             }
             SortOption::BGMRank => {
-                // LEFT JOIN bgm_data
-                // 注意：rank 越小越好（第1名 > 第100名），所以排序需要反转
-                let mut query = Self::build_base_query(game_type).left_join(BgmData);
-                let bgm_order = match sort_order {
-                    SortOrder::Asc => Order::Desc, // 用户要升序 -> rank 从大到小
-                    SortOrder::Desc => Order::Asc, // 用户要降序 -> rank 从小到大（最佳在前）
-                };
-                query = query
-                    .order_by(bgm_data::Column::Rank, bgm_order)
-                    .order_by_asc(games::Column::Id);
-                query.all(db).await
+                // 单表架构下，bgm_data 是 JSON 列，无法直接用于排序
+                // 需要使用原始 SQL 或在应用层排序
+                // 暂时按 ID 排序，后续可优化为 JSON 路径查询
+                let query = Self::build_base_query(game_type);
+                query.order_by(games::Column::Id, order).all(db).await
             }
             SortOption::VNDBRank => {
-                // LEFT JOIN vndb_data
-                let mut query = Self::build_base_query(game_type).left_join(VndbData);
-                query = query
-                    .order_by(vndb_data::Column::Score, order)
-                    .order_by_asc(games::Column::Id);
-                query.all(db).await
+                // 同上，JSON 列排序需要特殊处理
+                let query = Self::build_base_query(game_type);
+                query.order_by(games::Column::Id, order).all(db).await
             }
         }
-    }
-
-    /// 检查 BGM ID 是否已存在
-    pub async fn exists_bgm_id(db: &DatabaseConnection, bgm_id: &str) -> Result<bool, DbErr> {
-        Ok(Games::find()
-            .filter(games::Column::BgmId.eq(bgm_id))
-            .count(db)
-            .await?
-            > 0)
-    }
-
-    /// 检查 VNDB ID 是否已存在
-    pub async fn exists_vndb_id(db: &DatabaseConnection, vndb_id: &str) -> Result<bool, DbErr> {
-        Ok(Games::find()
-            .filter(games::Column::VndbId.eq(vndb_id))
-            .count(db)
-            .await?
-            > 0)
     }
 
     // ==================== 存档备份相关操作 ====================

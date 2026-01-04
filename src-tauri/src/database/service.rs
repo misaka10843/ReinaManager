@@ -2,17 +2,14 @@ use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Manager, State};
 
-use crate::database::dto::{
-    BgmDataInput, GameWithRelatedUpdate, InsertGameData, OtherDataInput, UpdateGameData,
-    VndbDataInput,
-};
+use crate::database::dto::{InsertGameData, UpdateGameData};
 use crate::database::repository::{
     collections_repository::{CategoryWithCount, CollectionsRepository, GroupWithCategories},
     game_stats_repository::{DailyStats, GameStatsRepository},
-    games_repository::{FullGameData, GameType, GamesRepository, SortOption, SortOrder},
+    games_repository::{GameType, GamesRepository, SortOption, SortOrder},
     settings_repository::SettingsRepository,
 };
-use crate::entity::{savedata, user};
+use crate::entity::{games, savedata, user};
 
 // ==================== 便携模式相关类型 ====================
 
@@ -35,54 +32,51 @@ pub struct PortableModeResult {
 
 // ==================== 游戏数据相关 ====================
 
-/// 插入游戏数据（包含关联数据）
+/// 插入游戏数据（单表架构）
 #[tauri::command]
-pub async fn insert_game_with_related(
+pub async fn insert_game(
     db: State<'_, DatabaseConnection>,
     game: InsertGameData,
-    bgm: Option<BgmDataInput>,
-    vndb: Option<VndbDataInput>,
-    other: Option<OtherDataInput>,
 ) -> Result<i32, String> {
-    GamesRepository::insert_with_related(&db, game, bgm, vndb, other)
+    GamesRepository::insert(&db, game)
         .await
         .map_err(|e| format!("插入游戏数据失败: {}", e))
 }
 
-/// 根据 ID 查询完整游戏数据（包含关联数据）
+/// 根据 ID 查询游戏数据
 #[tauri::command]
-pub async fn find_full_game_by_id(
+pub async fn find_game_by_id(
     db: State<'_, DatabaseConnection>,
     id: i32,
-) -> Result<Option<FullGameData>, String> {
-    GamesRepository::find_full_by_id(&db, id)
+) -> Result<Option<games::Model>, String> {
+    GamesRepository::find_by_id(&db, id)
         .await
-        .map_err(|e| format!("查询完整游戏数据失败: {}", e))
+        .map_err(|e| format!("查询游戏数据失败: {}", e))
 }
 
-/// 获取完整游戏数据（包含关联），支持按类型筛选和排序
+/// 获取所有游戏数据，支持按类型筛选和排序
 #[tauri::command]
-pub async fn find_full_games(
+pub async fn find_all_games(
     db: State<'_, DatabaseConnection>,
     game_type: GameType,
     sort_option: SortOption,
     sort_order: SortOrder,
-) -> Result<Vec<FullGameData>, String> {
-    GamesRepository::find_full_games(&db, game_type, sort_option, sort_order)
+) -> Result<Vec<games::Model>, String> {
+    GamesRepository::find_all(&db, game_type, sort_option, sort_order)
         .await
-        .map_err(|e| format!("获取完整游戏数据失败: {}", e))
+        .map_err(|e| format!("获取游戏数据失败: {}", e))
 }
 
-/// 批量更新游戏数据（包含关联数据）
+/// 更新游戏数据（单表架构）
 #[tauri::command]
-pub async fn update_game_with_related(
+pub async fn update_game(
     db: State<'_, DatabaseConnection>,
     game_id: i32,
-    updates: GameWithRelatedUpdate,
-) -> Result<(), String> {
-    GamesRepository::update_with_related(&db, game_id, updates)
+    updates: UpdateGameData,
+) -> Result<games::Model, String> {
+    GamesRepository::update(&db, game_id, updates)
         .await
-        .map_err(|e| format!("批量更新游戏数据失败: {}", e))
+        .map_err(|e| format!("更新游戏数据失败: {}", e))
 }
 
 /// 删除游戏
@@ -92,39 +86,6 @@ pub async fn delete_game(db: State<'_, DatabaseConnection>, id: i32) -> Result<u
         .await
         .map(|result| result.rows_affected)
         .map_err(|e| format!("删除游戏失败: {}", e))
-}
-
-/// 删除指定游戏的 BGM 关联数据
-#[tauri::command]
-pub async fn delete_bgm_data(
-    db: State<'_, DatabaseConnection>,
-    game_id: i32,
-) -> Result<u64, String> {
-    GamesRepository::delete_bgm_data(&db, game_id)
-        .await
-        .map_err(|e| format!("删除 BGM 关联数据失败: {}", e))
-}
-
-/// 删除指定游戏的 VNDB 关联数据
-#[tauri::command]
-pub async fn delete_vndb_data(
-    db: State<'_, DatabaseConnection>,
-    game_id: i32,
-) -> Result<u64, String> {
-    GamesRepository::delete_vndb_data(&db, game_id)
-        .await
-        .map_err(|e| format!("删除 VNDB 关联数据失败: {}", e))
-}
-
-/// 删除指定游戏的 Other 关联数据
-#[tauri::command]
-pub async fn delete_other_data(
-    db: State<'_, DatabaseConnection>,
-    game_id: i32,
-) -> Result<u64, String> {
-    GamesRepository::delete_other_data(&db, game_id)
-        .await
-        .map_err(|e| format!("删除 Other 关联数据失败: {}", e))
 }
 
 /// 批量删除游戏
@@ -189,19 +150,15 @@ pub async fn get_all_vndb_ids(
         .map_err(|e| format!("获取 VNDB ID 列表失败: {}", e))
 }
 
-/// 批量更新数据（支持游戏基础数据和关联数据的统一接口）
+/// 批量更新游戏数据
 ///
-/// 使用单个事务处理所有更新操作，支持同时更新游戏基础数据和关联数据。
-/// 性能远优于逐个更新。
+/// 使用单个事务处理所有更新操作，性能远优于逐个更新
 #[tauri::command]
-pub async fn update_batch(
+pub async fn update_games_batch(
     db: State<'_, DatabaseConnection>,
-    games_updates: Option<Vec<(i32, UpdateGameData)>>,
-    bgm_updates: Option<Vec<(i32, BgmDataInput)>>,
-    vndb_updates: Option<Vec<(i32, VndbDataInput)>>,
-    other_updates: Option<Vec<(i32, OtherDataInput)>>,
+    updates: Vec<(i32, UpdateGameData)>,
 ) -> Result<u64, String> {
-    GamesRepository::update_batch(&db, games_updates, bgm_updates, vndb_updates, other_updates)
+    GamesRepository::update_batch(&db, updates)
         .await
         .map_err(|e| format!("批量更新数据失败: {}", e))
 }
