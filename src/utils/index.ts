@@ -681,36 +681,39 @@ export async function moveBackupFolder(
  * @param tags
  */
 export function isNsfwGame(tags: string[]): boolean {
-	if (!tags || tags.length === 0) return false;
+	if (tags.length === 0) return false;
 
-	// 检查是否包含R18相关标签
-	const hasR18Tag = tags.some((tag) => tag.includes("R18"));
-	if (hasR18Tag) return true;
+	if (tags.some((tag) => tag.includes("R18") || tag === "拔作")) {
+		// 1. 显式 R18 或 拔作
+		return true;
+	}
 
-	// 检查是否包含拔作标签
-	if (tags.includes("拔作")) return true;
-
-	// 如果tags均为英文且没有包含No Sexual Content 也为NSFW
-	// biome-ignore lint/suspicious/noControlCharactersInRegex: 非字面上的控制字符
-	const allEnglish = tags.every((tag) => /^[\x00-\x7F]+$/.test(tag));
-	return allEnglish && !tags.includes("No Sexual Content");
+	// 2. 纯英文标签且无 "No Sexual Content" (沿用你原本的逻辑)
+	// biome-ignore lint/suspicious/noControlCharactersInRegex: 允许 ASCII 范围检查
+	const isAllEnglish = tags.every((tag) => /^[\x00-\x7F]+$/.test(tag));
+	return isAllEnglish && !tags.includes("No Sexual Content");
 }
 
 /**
- * 通过tags中的R18来判断是否为NSFW并过滤
- * @param data 游戏数据数组
- * @param nsfwFilter 是否启用NSFW过滤
- * @returns 过滤后的游戏数据
+ * 统一判断单个游戏是否为 NSFW
+ * 策略：优先读取 game.nsfw 字段，如果为 null/undefined 则回退到标签判断
+ */
+export function getGameNsfwStatus(game: GameData): boolean {
+	return game.nsfw ?? isNsfwGame(game.tags || []);
+}
+
+/**
+ * 应用 NSFW 过滤器
  */
 export function applyNsfwFilter(
 	data: GameData[],
-	nsfwFilter: boolean,
+	enableFilter: boolean,
 ): GameData[] {
-	if (!nsfwFilter) return data;
-	return data.filter((game) => {
-		const tags = game.tags || [];
-		return !isNsfwGame(tags);
-	});
+	// 如果没开启过滤，直接返回原数据（这是最快路径）
+	if (!enableFilter) return data;
+
+	// 过滤掉判定为 NSFW 的游戏
+	return data.filter((game) => !getGameNsfwStatus(game));
 }
 
 //主动保存指定路径的滚动条位置
