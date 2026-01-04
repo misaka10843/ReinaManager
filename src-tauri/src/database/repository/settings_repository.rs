@@ -16,6 +16,8 @@ impl SettingsRepository {
                 bgm_token: Set(None),
                 save_root_path: Set(None),
                 db_backup_path: Set(None),
+                le_path: Set(None),
+                magpie_path: Set(None),
             };
 
             user.insert(db).await?;
@@ -103,6 +105,62 @@ impl SettingsRepository {
 
         let mut active: user::ActiveModel = user.into();
         active.db_backup_path = Set(Some(path));
+
+        active.update(db).await?;
+        Ok(())
+    }
+
+    /// 获取LE转区软件路径
+    pub async fn get_le_path(db: &DatabaseConnection) -> Result<String, DbErr> {
+        Self::ensure_user_exists(db).await?;
+
+        let user = User::find_by_id(1)
+            .one(db)
+            .await?
+            .ok_or(DbErr::RecordNotFound("User record not found".to_string()))?;
+
+        Ok(user.le_path.unwrap_or_default())
+    }
+
+    /// 设置LE转区软件路径
+    pub async fn set_le_path(db: &DatabaseConnection, path: String) -> Result<(), DbErr> {
+        Self::ensure_user_exists(db).await?;
+
+        let user = User::find_by_id(1)
+            .one(db)
+            .await?
+            .ok_or(DbErr::RecordNotFound("User record not found".to_string()))?;
+
+        let mut active: user::ActiveModel = user.into();
+        active.le_path = Set(Some(path));
+
+        active.update(db).await?;
+        Ok(())
+    }
+
+    /// 获取Magpie转区软件路径
+    pub async fn get_magpie_path(db: &DatabaseConnection) -> Result<String, DbErr> {
+        Self::ensure_user_exists(db).await?;
+
+        let user = User::find_by_id(1)
+            .one(db)
+            .await?
+            .ok_or(DbErr::RecordNotFound("User record not found".to_string()))?;
+
+        Ok(user.magpie_path.unwrap_or_default())
+    }
+
+    /// 设置Magpie转区软件路径
+    pub async fn set_magpie_path(db: &DatabaseConnection, path: String) -> Result<(), DbErr> {
+        Self::ensure_user_exists(db).await?;
+
+        let user = User::find_by_id(1)
+            .one(db)
+            .await?
+            .ok_or(DbErr::RecordNotFound("User record not found".to_string()))?;
+
+        let mut active: user::ActiveModel = user.into();
+        active.magpie_path = Set(Some(path));
 
         active.update(db).await?;
         Ok(())

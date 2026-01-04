@@ -4,7 +4,14 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import TodayIcon from "@mui/icons-material/Today";
-import { Box, IconButton, Paper, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
+import {
+	Box,
+	IconButton,
+	Paper,
+	ToggleButton,
+	ToggleButtonGroup,
+	Typography,
+} from "@mui/material";
 import { LineChart } from "@mui/x-charts/LineChart";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -92,7 +99,7 @@ export const InfoBox: React.FC<InfoBoxProps> = ({ gameID }: InfoBoxProps) => {
 		const nextDate = new Date(year, month, 1); // month 会自动进位
 		const now = new Date();
 		const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-		
+
 		// 不能超过当前月份
 		const nextMonth = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, "0")}`;
 		if (nextMonth <= currentMonth) {
@@ -103,16 +110,19 @@ export const InfoBox: React.FC<InfoBoxProps> = ({ gameID }: InfoBoxProps) => {
 	/**
 	 * 格式化月份显示
 	 */
-	const formatMonthDisplay = useCallback((monthStr: string) => {
-		const [year, month] = monthStr.split("-").map(Number);
-		const date = new Date(year, month - 1, 1);
-		// 使用Intl.DateTimeFormat进行国际化格式化
-		const formatter = new Intl.DateTimeFormat(t("common.locale", "zh-CN"), {
-			year: "numeric",
-			month: "long"
-		});
-		return formatter.format(date);
-	}, [t]);
+	const formatMonthDisplay = useCallback(
+		(monthStr: string) => {
+			const [year, month] = monthStr.split("-").map(Number);
+			const date = new Date(year, month - 1, 1);
+			// 使用Intl.DateTimeFormat进行国际化格式化
+			const formatter = new Intl.DateTimeFormat(t("common.locale", "zh-CN"), {
+				year: "numeric",
+				month: "long",
+			});
+			return formatter.format(date);
+		},
+		[t],
+	);
 
 	// 监听当前游戏的运行状态变化，关闭后自动刷新统计
 	useEffect(() => {
@@ -203,7 +213,7 @@ export const InfoBox: React.FC<InfoBoxProps> = ({ gameID }: InfoBoxProps) => {
 			const [year, month] = selectedMonth.split("-").map(Number);
 			// 获取该月的天数
 			const daysInMonth = new Date(year, month, 0).getDate();
-			
+
 			// 生成该月每一天的数据
 			for (let day = 1; day <= daysInMonth; day++) {
 				const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
@@ -234,7 +244,7 @@ export const InfoBox: React.FC<InfoBoxProps> = ({ gameID }: InfoBoxProps) => {
 		} else if (timeRange === "ALL") {
 			// 全部：判断数据量决定是否按月聚合
 			const allDates = Array.from(datePlaytimeMap.keys()).sort();
-			
+
 			if (allDates.length > 60) {
 				// 数据点较多，按月聚合
 				const monthlyMap = new Map<string, number>();
@@ -242,7 +252,7 @@ export const InfoBox: React.FC<InfoBoxProps> = ({ gameID }: InfoBoxProps) => {
 					const monthKey = dateStr.substring(0, 7); // YYYY-MM
 					monthlyMap.set(monthKey, (monthlyMap.get(monthKey) || 0) + playtime);
 				}
-				
+
 				// 按月排序输出
 				const sortedMonths = Array.from(monthlyMap.keys()).sort();
 				for (const monthKey of sortedMonths) {
@@ -291,7 +301,7 @@ export const InfoBox: React.FC<InfoBoxProps> = ({ gameID }: InfoBoxProps) => {
 	const chartConfig = useMemo(() => {
 		const showMark = timeRange === "7D";
 		const showArea = timeRange === "1Y";
-		
+
 		return {
 			showMark,
 			showArea,
@@ -339,27 +349,33 @@ export const InfoBox: React.FC<InfoBoxProps> = ({ gameID }: InfoBoxProps) => {
 				<Box>
 					<Box className="flex items-center justify-between mb-4">
 						<Typography variant="h6" fontWeight="bold" component="div">
-							{t("pages.Detail.playTimeChart","统计图表")}
+							{t("pages.Detail.playTimeChart", "统计图表")}
 						</Typography>
 						<Box className="flex items-center gap-2">
 							{/* 月份选择器 - 仅在MONTH模式下显示 */}
 							{timeRange === "MONTH" && (
 								<Box className="flex items-center gap-1 mr-2">
-									<IconButton 
-										size="small" 
+									<IconButton
+										size="small"
 										onClick={handlePreviousMonth}
 										aria-label="previous month"
 									>
 										<ChevronLeftIcon fontSize="small" />
 									</IconButton>
-									<Typography variant="body2" className="min-w-[80px] text-center">
+									<Typography
+										variant="body2"
+										className="min-w-[80px] text-center"
+									>
 										{formatMonthDisplay(selectedMonth)}
 									</Typography>
-									<IconButton 
-										size="small" 
+									<IconButton
+										size="small"
 										onClick={handleNextMonth}
 										aria-label="next month"
-										disabled={selectedMonth >= `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`}
+										disabled={
+											selectedMonth >=
+											`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`
+										}
 									>
 										<ChevronRightIcon fontSize="small" />
 									</IconButton>

@@ -453,6 +453,41 @@ pub async fn set_db_backup_path(
     Ok(())
 }
 
+/// 获取LE转区软件路径
+#[tauri::command]
+pub async fn get_le_path(db: State<'_, DatabaseConnection>) -> Result<String, String> {
+    SettingsRepository::get_le_path(&db)
+        .await
+        .map_err(|e| format!("获取LE转区软件路径失败: {}", e))
+}
+
+/// 设置LE转区软件路径
+#[tauri::command]
+pub async fn set_le_path(db: State<'_, DatabaseConnection>, path: String) -> Result<(), String> {
+    SettingsRepository::set_le_path(&db, path)
+        .await
+        .map_err(|e| format!("设置LE转区软件路径失败: {}", e))
+}
+
+/// 获取Magpie转区软件路径
+#[tauri::command]
+pub async fn get_magpie_path(db: State<'_, DatabaseConnection>) -> Result<String, String> {
+    SettingsRepository::get_magpie_path(&db)
+        .await
+        .map_err(|e| format!("获取Magpie转区软件路径失败: {}", e))
+}
+
+/// 设置Magpie转区软件路径
+#[tauri::command]
+pub async fn set_magpie_path(
+    db: State<'_, DatabaseConnection>,
+    path: String,
+) -> Result<(), String> {
+    SettingsRepository::set_magpie_path(&db, path)
+        .await
+        .map_err(|e| format!("设置Magpie转区软件路径失败: {}", e))
+}
+
 /// 获取所有设置
 #[tauri::command]
 pub async fn get_all_settings(db: State<'_, DatabaseConnection>) -> Result<user::Model, String> {

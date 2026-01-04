@@ -1278,6 +1278,250 @@ const SavePathSettings = () => {
 };
 
 /**
+ * LePathSettings 组件
+ * LE转区软件路径设置
+ */
+const LePathSettings = () => {
+	const { t } = useTranslation();
+	const [lePath, setLePath] = useState("");
+	const [isLoading, setIsLoading] = useState(false);
+
+	// 加载当前设置的LE路径
+	useEffect(() => {
+		const loadLePath = async () => {
+			try {
+				const currentPath = await settingsService.getLePath();
+				setLePath(currentPath);
+			} catch (error) {
+				console.error("加载LE路径失败:", error);
+			}
+		};
+		if (isTauri()) {
+			loadLePath();
+		}
+	}, []);
+
+	const handleSelectFile = async () => {
+		try {
+			const { open } = await import("@tauri-apps/plugin-dialog");
+			const selectedPath = await open({
+				multiple: false,
+				directory: false,
+				filters: [
+					{
+						name: "Executable",
+						extensions: ["exe"],
+					},
+				],
+			});
+			if (selectedPath) {
+				setLePath(selectedPath);
+			}
+		} catch (error) {
+			console.error(error);
+			snackbar.error(
+				t("pages.Settings.lePath.selectFileError", "选择文件失败"),
+			);
+		}
+	};
+
+	const handleSavePath = async () => {
+		setIsLoading(true);
+
+		try {
+			await settingsService.setLePath(lePath);
+			snackbar.success(
+				t("pages.Settings.lePath.saveSuccess", "LE路径保存成功"),
+			);
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error
+					? error.message
+					: t("pages.Settings.lePath.saveFailed", "保存失败");
+			snackbar.error(
+				t("pages.Settings.lePath.saveError", { error: errorMessage }),
+			);
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	return (
+		<Box className="mb-6">
+			<InputLabel className="font-semibold mb-4">
+				{t("pages.Settings.lePath.title", "LE转区软件路径")}
+			</InputLabel>
+
+			<Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+				<TextField
+					label={t("pages.Settings.lePath.pathLabel", "LE转区软件路径")}
+					variant="outlined"
+					value={lePath}
+					onChange={(e) => setLePath(e.target.value)}
+					className="min-w-60 flex-grow"
+					placeholder={t(
+						"pages.Settings.lePath.pathPlaceholder",
+						"选择LE转区软件可执行文件",
+					)}
+					disabled={isLoading}
+				/>
+
+				<Button
+					variant="outlined"
+					onClick={handleSelectFile}
+					disabled={isLoading || !isTauri()}
+					startIcon={<FolderOpenIcon />}
+					className="px-4 py-2"
+				>
+					{t("pages.Settings.lePath.selectFile", "选择文件")}
+				</Button>
+
+				<Button
+					variant="contained"
+					color="primary"
+					onClick={handleSavePath}
+					disabled={isLoading}
+					startIcon={
+						isLoading ? (
+							<CircularProgress size={16} color="inherit" />
+						) : (
+							<SaveIcon />
+						)
+					}
+					className="px-6 py-2"
+				>
+					{isLoading
+						? t("pages.Settings.lePath.saving", "保存中...")
+						: t("pages.Settings.saveBtn")}
+				</Button>
+			</Stack>
+		</Box>
+	);
+};
+
+/**
+ * MagpiePathSettings 组件
+ * Magpie 软件路径设置
+ */
+const MagpiePathSettings = () => {
+	const { t } = useTranslation();
+	const [magpiePath, setMagpiePath] = useState("");
+	const [isLoading, setIsLoading] = useState(false);
+
+	// 加载当前设置的Magpie路径
+	useEffect(() => {
+		const loadMagpiePath = async () => {
+			try {
+				const currentPath = await settingsService.getMagpiePath();
+				setMagpiePath(currentPath);
+			} catch (error) {
+				console.error("加载Magpie路径失败:", error);
+			}
+		};
+		if (isTauri()) {
+			loadMagpiePath();
+		}
+	}, []);
+
+	const handleSelectFile = async () => {
+		try {
+			const { open } = await import("@tauri-apps/plugin-dialog");
+			const selectedPath = await open({
+				multiple: false,
+				directory: false,
+				filters: [
+					{
+						name: "Executable",
+						extensions: ["exe"],
+					},
+				],
+			});
+			if (selectedPath) {
+				setMagpiePath(selectedPath);
+			}
+		} catch (error) {
+			console.error(error);
+			snackbar.error(
+				t("pages.Settings.magpiePath.selectFileError", "选择文件失败"),
+			);
+		}
+	};
+
+	const handleSavePath = async () => {
+		setIsLoading(true);
+
+		try {
+			await settingsService.setMagpiePath(magpiePath);
+			snackbar.success(
+				t("pages.Settings.magpiePath.saveSuccess", "Magpie 路径保存成功"),
+			);
+		} catch (error) {
+			const errorMessage =
+				error instanceof Error
+					? error.message
+					: t("pages.Settings.magpiePath.saveFailed", "保存失败");
+			snackbar.error(
+				t("pages.Settings.magpiePath.saveError", { error: errorMessage }),
+			);
+		} finally {
+			setIsLoading(false);
+		}
+	};
+
+	return (
+		<Box className="mb-6">
+			<InputLabel className="font-semibold mb-4">
+				{t("pages.Settings.magpiePath.title", "Magpie 软件路径")}
+			</InputLabel>
+
+			<Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+				<TextField
+					label={t("pages.Settings.magpiePath.pathLabel", "Magpie 软件路径")}
+					variant="outlined"
+					value={magpiePath}
+					onChange={(e) => setMagpiePath(e.target.value)}
+					className="min-w-60 flex-grow"
+					placeholder={t(
+						"pages.Settings.magpiePath.pathPlaceholder",
+						"选择 Magpie 软件可执行文件",
+					)}
+					disabled={isLoading}
+				/>
+
+				<Button
+					variant="outlined"
+					onClick={handleSelectFile}
+					disabled={isLoading || !isTauri()}
+					startIcon={<FolderOpenIcon />}
+					className="px-4 py-2"
+				>
+					{t("pages.Settings.magpiePath.selectFile", "选择文件")}
+				</Button>
+
+				<Button
+					variant="contained"
+					color="primary"
+					onClick={handleSavePath}
+					disabled={isLoading}
+					startIcon={
+						isLoading ? (
+							<CircularProgress size={16} color="inherit" />
+						) : (
+							<SaveIcon />
+						)
+					}
+					className="px-6 py-2"
+				>
+					{isLoading
+						? t("pages.Settings.magpiePath.saving", "保存中...")
+						: t("pages.Settings.saveBtn")}
+				</Button>
+			</Stack>
+		</Box>
+	);
+};
+
+/**
  * AboutSection 组件
  * 关于模块，显示应用信息、版本、更新检查等功能
  */
@@ -1690,6 +1934,14 @@ export const Settings: React.FC = () => {
 
 				{/* 备份路径设置 */}
 				<SavePathSettings />
+				<Divider sx={{ my: 3 }} />
+
+				{/* LE 转区软件路径设置 */}
+				<LePathSettings />
+				<Divider sx={{ my: 3 }} />
+
+				{/* Magpie 软件路径设置 */}
+				<MagpiePathSettings />
 				<Divider sx={{ my: 3 }} />
 
 				{/* 数据库备份路径设置 */}

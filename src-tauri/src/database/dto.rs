@@ -37,8 +37,8 @@ pub struct InsertGameData {
     pub autosave: Option<i32>,
     pub maxbackups: Option<i32>,
     pub clear: Option<i32>,
-    pub custom_name: Option<String>,
-    pub custom_cover: Option<String>,
+    pub le_launch: Option<i32>,
+    pub magpie: Option<i32>,
 
     // === JSON 元数据 ===
     pub vndb_data: Option<VndbData>,
@@ -76,7 +76,9 @@ pub struct UpdateGameData {
     #[serde(default, deserialize_with = "double_option")]
     pub clear: Option<Option<i32>>,
     #[serde(default, deserialize_with = "double_option")]
-    pub custom_name: Option<Option<String>>,
+    pub le_launch: Option<Option<i32>>,
+    #[serde(default, deserialize_with = "double_option")]
+    pub magpie: Option<Option<i32>>,
     // === JSON 元数据 ===
     #[serde(default, deserialize_with = "double_option")]
     pub vndb_data: Option<Option<VndbData>>,

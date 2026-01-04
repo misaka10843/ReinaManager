@@ -14,6 +14,10 @@ pub struct Model {
     pub save_root_path: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub db_backup_path: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub le_path: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub magpie_path: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

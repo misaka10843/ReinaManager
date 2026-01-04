@@ -94,6 +94,34 @@ class SettingsService extends BaseService {
 		return this.invoke<PortableModeResult>("set_portable_mode", { enabled });
 	}
 
+	/**
+	 * 获取LE转区软件路径
+	 */
+	async getLePath(): Promise<string> {
+		return this.invoke<string>("get_le_path");
+	}
+
+	/**
+	 * 设置LE转区软件路径
+	 */
+	async setLePath(path: string): Promise<void> {
+		return this.invoke<void>("set_le_path", { path });
+	}
+
+	/**
+	 * 获取Magpie转区软件路径
+	 */
+	async getMagpiePath(): Promise<string> {
+		return this.invoke<string>("get_magpie_path");
+	}
+
+	/**
+	 * 设置Magpie转区软件路径
+	 */
+	async setMagpiePath(path: string): Promise<void> {
+		return this.invoke<void>("set_magpie_path", { path });
+	}
+
 	// 暂时无用开始
 	/**
 	 * 获取所有设置

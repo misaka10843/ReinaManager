@@ -142,10 +142,8 @@ export interface FullGameData {
 	autosave?: number;
 	maxbackups?: number;
 	clear?: number;
-	game: RawGameData;
-	bgm_data?: BgmData | null;
-	vndb_data?: VndbData | null;
-	other_data?: OtherData | null;
+	le_launch?: number;
+	magpie?: number;
 
 	// --- JSON Payload (嵌入式元数据) ---
 	bgm_data?: Nullable<BgmData>;
@@ -181,6 +179,8 @@ export interface InsertGameParams {
 	autosave?: number;
 	maxbackups?: number;
 	clear?: number;
+	le_launch?: number;
+	magpie?: number;
 
 	// --- JSON Payload ---
 	bgm_data?: BgmData;
@@ -213,6 +213,8 @@ export interface UpdateGameParams {
 	autosave?: Nullable<number>;
 	maxbackups?: Nullable<number>;
 	clear?: Nullable<number>;
+	le_launch?: Nullable<number>;
+	magpie?: Nullable<number>;
 
 	// --- JSON Payload（支持三态） ---
 	bgm_data?: Nullable<BgmData>;
@@ -240,15 +242,8 @@ export interface GameData {
 	autosave?: number;
 	maxbackups?: number;
 	clear?: number;
-	date?: string | null;
-	localpath?: string | null;
-	savepath?: string | null;
-	autosave?: number | null;
-	clear?: number | null;
-	custom_name?: string | null;
-	custom_cover?: string | null;
-	created_at?: number | null;
-	updated_at?: number | null;
+	le_launch?: number;
+	magpie?: number;
 	custom_data?: CustomData;
 	created_at?: number;
 	updated_at?: number;

@@ -94,6 +94,10 @@ pub fn run() {
             update_settings,
             get_portable_mode,
             set_portable_mode,
+            get_le_path,
+            set_le_path,
+            get_magpie_path,
+            set_magpie_path,
             // 日志相关 commands（运行时动态调整）
             set_reina_log_level,
             get_reina_log_level,
