@@ -29,7 +29,7 @@ import { AlertConfirmBox } from "@/components/AlertBox";
 import { snackbar } from "@/components/Snackbar";
 import { savedataService } from "@/services";
 import { useStore } from "@/store";
-import type { RawGameData, SavedataRecord } from "@/types";
+import type { SavedataRecord, UpdateGameParams } from "@/types";
 import {
 	createGameSavedataBackup,
 	deleteSavedataBackup,
@@ -69,6 +69,7 @@ export const Backup: React.FC = () => {
 	const [backupToRestore, setBackupToRestore] = useState<SavedataRecord | null>(
 		null,
 	);
+	const [maxBackups, setMaxBackups] = useState<number>(20);
 
 	// 加载备份列表函数（用 useCallback 包裹以便放入依赖数组）
 	const loadBackupList = useCallback(async () => {
@@ -104,9 +105,16 @@ export const Backup: React.FC = () => {
 		}
 	}, [selectedGame?.savepath]);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: 仅在 selectedGame.maxbackups 变化时更新
+	useEffect(() => {
+		if (selectedGame) {
+			setMaxBackups(selectedGame.maxbackups ?? 20);
+		}
+	}, [selectedGame?.maxbackups]);
+
 	// 统一的设置更新逻辑
 	const handleSettingUpdate = async (
-		updateData: Partial<RawGameData>,
+		updateData: UpdateGameParams,
 		successMessage: string,
 		failureMessage: string,
 	) => {
@@ -115,10 +123,7 @@ export const Backup: React.FC = () => {
 		setIsUpdatingSettings(true);
 
 		try {
-			const fullgame = {
-				game: { ...updateData },
-			};
-			await updateGame(selectedGame.id, fullgame);
+			await updateGame(selectedGame.id, updateData);
 			snackbar.success(successMessage);
 
 			// 移除本地状态同步，由 useEffect 负责
@@ -163,9 +168,25 @@ export const Backup: React.FC = () => {
 			: t("pages.Detail.Backup.autoSaveDisabled", "自动备份已禁用");
 
 		await handleSettingUpdate(
-			{ autosave: enabled ? (1 as const) : (0 as const) },
+			{ autosave: enabled ? 1 : 0 },
 			message,
 			t("pages.Detail.Backup.autoSaveUpdateFailed", "自动备份设置失败"),
+		);
+	};
+
+	// 更新最大备份数量
+	const handleUpdateMaxBackups = async () => {
+		if (!selectedGame?.id || maxBackups < 1) {
+			snackbar.error(
+				t("pages.Detail.Backup.invalidMaxBackups", "最大备份数量必须大于0"),
+			);
+			return;
+		}
+
+		await handleSettingUpdate(
+			{ maxbackups: maxBackups },
+			t("pages.Detail.Backup.maxBackupsUpdateSuccess", "最大备份数量更新成功"),
+			t("pages.Detail.Backup.maxBackupsUpdateFailed", "最大备份数量更新失败"),
 		);
 	};
 
@@ -356,31 +377,70 @@ export const Backup: React.FC = () => {
 						</Typography>
 
 						<Stack spacing={2}>
-							{/* 自动备份开关 */}
-							<Tooltip
-								title={
-									!selectedGame?.savepath
-										? t(
-												"pages.Detail.Backup.setPathForAutosave",
-												"请先设置存档路径以启用自动备份",
-											)
-										: ""
-								}
-							>
-								{/* 需要一个 div 包裹来让 Tooltip 在 disabled 元素上生效 */}
-								<div>
-									<FormControlLabel
-										control={
-											<Switch
-												checked={autoSaveEnabled}
-												onChange={(e) => handleAutoSaveToggle(e.target.checked)}
-												disabled={isUpdatingSettings || !selectedGame?.savepath}
-											/>
-										}
-										label={t("pages.Detail.Backup.autoSave", "自动备份")}
+							{/* 自动备份开关和最大备份数量设置 */}
+							<Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+								<Tooltip
+									title={
+										!selectedGame?.savepath
+											? t(
+													"pages.Detail.Backup.setPathForAutosave",
+													"请先设置存档路径以启用自动备份",
+												)
+											: ""
+									}
+								>
+									{/* 需要一个 div 包裹来让 Tooltip 在 disabled 元素上生效 */}
+									<div>
+										<FormControlLabel
+											control={
+												<Switch
+													checked={autoSaveEnabled}
+													onChange={(e) =>
+														handleAutoSaveToggle(e.target.checked)
+													}
+													disabled={
+														isUpdatingSettings || !selectedGame?.savepath
+													}
+												/>
+											}
+											label={t("pages.Detail.Backup.autoSave", "自动备份")}
+										/>
+									</div>
+								</Tooltip>
+
+								<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+									<TextField
+										label={t("pages.Detail.Backup.maxBackups", "最大备份数量")}
+										type="number"
+										variant="outlined"
+										size="small"
+										value={maxBackups}
+										onChange={(e) => {
+											const value = Number.parseInt(e.target.value, 10);
+											if (!Number.isNaN(value) && value > 0) {
+												setMaxBackups(value);
+											}
+										}}
+										disabled={isUpdatingSettings || !selectedGame}
 									/>
-								</div>
-							</Tooltip>
+									<Button
+										variant="outlined"
+										onClick={handleUpdateMaxBackups}
+										disabled={
+											isUpdatingSettings || !selectedGame || maxBackups < 1
+										}
+										startIcon={
+											isUpdatingSettings ? (
+												<CircularProgress size={16} />
+											) : (
+												<SaveIcon />
+											)
+										}
+									>
+										{t("pages.Detail.Backup.save", "保存")}
+									</Button>
+								</Box>
+							</Box>
 
 							<Divider />
 

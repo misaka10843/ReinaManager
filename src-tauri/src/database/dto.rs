@@ -35,6 +35,7 @@ pub struct InsertGameData {
     pub localpath: Option<String>,
     pub savepath: Option<String>,
     pub autosave: Option<i32>,
+    pub maxbackups: Option<i32>,
     pub clear: Option<i32>,
     pub custom_name: Option<String>,
     pub custom_cover: Option<String>,
@@ -70,6 +71,8 @@ pub struct UpdateGameData {
     pub savepath: Option<Option<String>>,
     #[serde(default, deserialize_with = "double_option")]
     pub autosave: Option<Option<i32>>,
+    #[serde(default, deserialize_with = "double_option")]
+    pub maxbackups: Option<Option<i32>>,
     #[serde(default, deserialize_with = "double_option")]
     pub clear: Option<Option<i32>>,
     #[serde(default, deserialize_with = "double_option")]

@@ -34,6 +34,7 @@ pub struct Model {
     #[sea_orm(column_type = "Text", nullable)]
     pub savepath: Option<String>,
     pub autosave: Option<i32>,
+    pub maxbackups: Option<i32>,
     pub clear: Option<i32>,
 
     // === JSON 元数据列 ===

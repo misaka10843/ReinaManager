@@ -140,6 +140,7 @@ export interface FullGameData {
 	localpath?: Nullable<string>;
 	savepath?: Nullable<string>;
 	autosave?: number;
+	maxbackups?: number;
 	clear?: number;
 	game: RawGameData;
 	bgm_data?: BgmData | null;
@@ -178,6 +179,7 @@ export interface InsertGameParams {
 	localpath?: string;
 	savepath?: string;
 	autosave?: number;
+	maxbackups?: number;
 	clear?: number;
 
 	// --- JSON Payload ---
@@ -209,6 +211,7 @@ export interface UpdateGameParams {
 	localpath?: Nullable<string>;
 	savepath?: Nullable<string>;
 	autosave?: Nullable<number>;
+	maxbackups?: Nullable<number>;
 	clear?: Nullable<number>;
 
 	// --- JSON Payload（支持三态） ---
@@ -235,6 +238,7 @@ export interface GameData {
 	localpath?: string;
 	savepath?: string;
 	autosave?: number;
+	maxbackups?: number;
 	clear?: number;
 	date?: string | null;
 	localpath?: string | null;

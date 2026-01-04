@@ -8,9 +8,6 @@ use std::fs;
 use std::path::Path;
 use tauri::{AppHandle, State};
 
-// 最大备份数量
-const MAX_BACKUPS: usize = 20;
-
 // 针对存档备份优化的压缩配置
 // 使用较低的压缩级别以提升速度，存档文件通常已是二进制格式，高压缩率收益有限
 // LZMA2 级别 1-3 为快速，4-6 为正常，7-9 为最大压缩
@@ -66,7 +63,7 @@ pub async fn create_savedata_backup(
     fs::create_dir_all(&game_backup_dir).map_err(|e| format!("创建备份目录失败: {}", e))?;
 
     // 检查并清理超出限制的备份（异步处理）
-    cleanup_old_backups(&db, &game_backup_dir, game_id as i32).await?;
+    cleanup_old_backups(&db, &game_backup_dir, game_id).await?;
 
     // 生成备份文件名（带时间戳）
     let now = Utc::now();
@@ -170,6 +167,8 @@ fn create_7z_archive(
 
 /// 清理超出数量限制的旧备份（基于数据库记录，异步处理）
 ///
+/// 从 games 表中读取该游戏的 maxbackups 设置
+///
 /// # Arguments
 /// * `db` - 数据库连接
 /// * `backup_dir` - 备份目录路径
@@ -180,23 +179,33 @@ fn create_7z_archive(
 async fn cleanup_old_backups(
     db: &DatabaseConnection,
     backup_dir: &Path,
-    game_id: i32,
+    game_id: i64,
 ) -> Result<(), String> {
+    // 从数据库获取游戏信息，读取 maxbackups 设置
+    let game = GamesRepository::find_by_id(db, game_id as i32)
+        .await
+        .map_err(|e| format!("获取游戏信息失败: {}", e))?;
+
+    // 获取最大备份数量（前端已设置默认值20，不会为null）
+    let max_backups = game
+        .and_then(|g| g.maxbackups)
+        .expect("maxbackups should not be null") as usize;
+
     // 从数据库获取该游戏的所有备份记录
-    let mut records = GamesRepository::get_savedata_records(db, game_id)
+    let mut records = GamesRepository::get_savedata_records(db, game_id as i32)
         .await
         .map_err(|e| format!("获取备份记录失败: {}", e))?;
 
     // 如果备份数量未超过限制，直接返回
-    if records.len() < MAX_BACKUPS {
+    if records.len() < max_backups {
         return Ok(());
     }
 
     // 按备份时间排序（最旧的在前）
     records.sort_by_key(|r| r.backup_time);
 
-    // 计算需要删除的备份数量（保留最新的 MAX_BACKUPS - 1 个，为新备份留出空间）
-    let to_delete_count = records.len() - (MAX_BACKUPS - 1);
+    // 计算需要删除的备份数量（保留最新的 max_backups - 1 个，为新备份留出空间）
+    let to_delete_count = records.len() - (max_backups - 1);
     let records_to_delete = &records[..to_delete_count];
 
     // 删除文件和数据库记录
