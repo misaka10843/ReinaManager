@@ -28,7 +28,6 @@ import {
 	DashboardSidebarPageItem,
 	type SidebarFooterProps,
 } from "@toolpad/core/DashboardLayout";
-import { PageContainer } from "@toolpad/core/PageContainer";
 import { useCallback, useMemo } from "react";
 import KeepAlive from "react-activation";
 import { useTranslation } from "react-i18next";
@@ -129,15 +128,13 @@ export const Layout: React.FC = () => {
 			renderPageItem={handleRenderPageItem}
 		>
 			{isLibraries ? (
-				<PageContainer sx={{ maxWidth: "100% !important" }}>
-					<KeepAlive
-						name="libraries"
-						cacheKey="libraries"
-						saveScrollPosition={false}
-					>
-						<Outlet />
-					</KeepAlive>
-				</PageContainer>
+				<KeepAlive
+					name="libraries"
+					cacheKey="libraries"
+					saveScrollPosition={false}
+				>
+					<Outlet />
+				</KeepAlive>
 			) : (
 				<Outlet />
 			)}

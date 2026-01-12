@@ -76,6 +76,12 @@ export interface AppState {
 	logLevel: LogLevel;
 	setLogLevel: (level: LogLevel) => void;
 
+	// 主题设置
+	themeMode: "light" | "dark";
+	setThemeMode: (mode: "light" | "dark") => void;
+	themeColor: string;
+	setThemeColor: (color: string) => void;
+
 	// 排序选项
 	sortOption: string;
 	sortOrder: "asc" | "desc";
@@ -251,6 +257,12 @@ export const useStore = create<AppState>()(
 			// 日志级别（运行时，不持久化）
 			logLevel: "error",
 			setLogLevel: (level: LogLevel) => set({ logLevel: level }),
+
+			// 主题设置
+			themeMode: "light",
+			setThemeMode: (mode: "light" | "dark") => set({ themeMode: mode }),
+			themeColor: "#F48FB1",
+			setThemeColor: (color: string) => set({ themeColor: color }),
 
 			// 排序选项默认值
 			sortOption: "addtime",

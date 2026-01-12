@@ -24,6 +24,7 @@ import {
 	useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardActionArea from "@mui/material/CardActionArea";
 import CardMedia from "@mui/material/CardMedia";
@@ -344,9 +345,13 @@ export const CardItem = memo(
 							duration-100 
 							hover:shadow-lg hover:scale-105 
 							active:shadow-sm active:scale-95 
-							${isLongPressing ? "ring-2 ring-blue-500 shadow-lg" : ""}
 							${isOverlay ? "shadow-lg scale-105" : ""}
 						`}
+						sx={{
+							...(isLongPressing && {
+								boxShadow: (theme) => `0 0 0 2px ${theme.palette.primary.main}`,
+							}),
+						}}
 					>
 						<CardMedia
 							component="img"
@@ -356,13 +361,16 @@ export const CardItem = memo(
 							draggable="false"
 							loading="lazy"
 						/>
-						<div
-							className={`flex items-center justify-center h-8 px-1 w-full ${isActive ? "!font-bold text-blue-500" : ""}`}
+						<Box
+							className={`flex items-center justify-center h-8 px-1 w-full ${isActive ? "!font-bold" : ""}`}
+							sx={{
+								color: isActive ? "primary.main" : "inherit",
+							}}
 						>
 							<span className="text-base truncate max-w-full">
 								{displayName}
 							</span>
-						</div>
+						</Box>
 					</CardActionArea>
 				</Card>
 			);
@@ -534,7 +542,7 @@ const Cards: React.FC<CardsProps> = ({ gamesData, categoryId }) => {
 
 	// 卡片列表
 	const cardList = (
-		<div className="flex-1 text-center grid grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-4 p-4">
+		<div className="flex-1 text-center grid grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 gap-4 p-4 content-start">
 			<RightMenu
 				id={menuPosition?.cardId}
 				isopen={Boolean(menuPosition)}
@@ -582,10 +590,10 @@ const Cards: React.FC<CardsProps> = ({ gamesData, categoryId }) => {
 							isOverlay
 							displayName={getGameDisplayName(activeGame, i18n.language)}
 							useDelayedClick={false}
-							onContextMenu={() => {}}
-							onClick={() => {}}
-							onDoubleClick={() => {}}
-							onLongPress={() => {}}
+							onContextMenu={() => { }}
+							onClick={() => { }}
+							onDoubleClick={() => { }}
+							onLongPress={() => { }}
 						/>
 					)}
 				</DragOverlay>

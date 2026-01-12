@@ -13,6 +13,7 @@ import Box from "@mui/material/Box";
 import Breadcrumbs from "@mui/material/Breadcrumbs";
 import Link from "@mui/material/Link";
 import Typography from "@mui/material/Typography";
+import { PageContainer } from "@toolpad/core/PageContainer";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Cards from "@/components/Cards";
@@ -403,7 +404,7 @@ export const Collection: React.FC = () => {
 	const allGroups = [...defaultGroups, ...customGroups];
 
 	return (
-		<Box sx={{ p: 3 }}>
+		<PageContainer>
 			{/* 面包屑导航或标题 */}
 			{showLevel === "groups" ? (
 				<Typography variant="h4" sx={{ mb: 3 }}>
@@ -630,6 +631,6 @@ export const Collection: React.FC = () => {
 						categoryName={selectedItem.name}
 					/>
 				)}
-		</Box>
+		</PageContainer>
 	);
 };

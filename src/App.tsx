@@ -9,10 +9,20 @@ import { useTranslation } from "react-i18next";
 import { Outlet } from "react-router-dom";
 import { SnackbarUtilsConfigurator } from "@/components/Snackbar";
 import WindowsHandler from "@/components/Window";
+import { useMemo } from "react";
+import { useStore } from "@/store";
+import { createAppTheme } from "@/theme";
 import { appRoutes } from "@/routes"; // 引入新的统一配置
 
 const App: React.FC = () => {
 	const { t } = useTranslation();
+	const themeMode = useStore((s) => s.themeMode);
+	const themeColor = useStore((s) => s.themeColor);
+
+	const theme = useMemo(
+		() => createAppTheme(themeMode, themeColor),
+		[themeMode, themeColor],
+	);
 
 	// 从路由配置动态生成导航菜单
 	const generatedNavigation = appRoutes
@@ -40,7 +50,7 @@ const App: React.FC = () => {
 			anchorOrigin={{ vertical: "top", horizontal: "center" }}
 		>
 			<SnackbarUtilsConfigurator />
-			<ReactRouterAppProvider navigation={NAVIGATION}>
+			<ReactRouterAppProvider navigation={NAVIGATION} theme={theme}>
 				{isTauri() && <WindowsHandler />}
 				<AliveScope>
 					<Outlet />
