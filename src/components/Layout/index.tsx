@@ -80,7 +80,7 @@ const CustomAppTitle = ({ isLibraries }: CustomAppTitleProps) => {
 				onDragStart={(event) => event.preventDefault()}
 			/>
 			<Typography variant="h6">ReinaManager</Typography>
-			<Chip size="small" label="BETA" color="info" />
+			<Chip size="small" label="BETA" color="primary" />
 			{isLibraries && <SearchBox />}
 		</Stack>
 	);

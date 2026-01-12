@@ -34,6 +34,9 @@ export const createAppTheme = (
             : `linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)), url("/images/reina.png"), linear-gradient(135deg, #000000 0%, #2d2d2d 100%)`;
 
     return createTheme({
+        cssVariables: {
+            colorSchemeSelector: 'data-mui-color-scheme',
+        },
         palette: {
             mode,
             primary: {

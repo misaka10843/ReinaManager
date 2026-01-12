@@ -394,12 +394,12 @@ export const Home: React.FC = () => {
 										"&:hover": { color: "primary.main" },
 									}}
 								>
-									<RepositoryIcon className="mr-2" color="primary" />
+									<RepositoryIcon className="mr-2 text-amber-500" />
 									<Typography variant="h6" className="font-bold">
 										{t("home.repository", "游戏仓库")}
 									</Typography>
 								</Box>
-								<Box className="grid grid-cols-1 gap-2 max-h-44vh overflow-y-auto pr-1">
+								<Box className="grid grid-cols-1 gap-2 max-h-44vh overflow-y-auto py-5 px-3 pr-1">
 									{gamesList.map((category) => (
 										<Card
 											key={category.id}
@@ -411,9 +411,12 @@ export const Home: React.FC = () => {
 												textAlign: "center",
 												cursor: "pointer",
 												textDecoration: "none",
+												boxShadow: 0,
+												transition: "all 0.2s ease-in-out",
+												borderColor: "rgba(219, 219, 219, 0.67)",
 												"&:hover": {
 													transform: "translateY(-2px)",
-													boxShadow: 2,
+													boxShadow: 0,
 													borderColor: "primary.main",
 												},
 											}}
@@ -431,7 +434,7 @@ export const Home: React.FC = () => {
 						<Card className="h-full shadow-md">
 							<CardContent>
 								<Box className="flex items-center mb-3">
-									<ActivityIcon className="mr-2" color="primary" />
+									<ActivityIcon className="mr-2 text-purple-500" />
 									<Typography variant="h6" className="font-bold">
 										{t("home.activityTitle", "动态")}
 									</Typography>
@@ -458,7 +461,7 @@ export const Home: React.FC = () => {
 										{activityData.activities.map((activity, idx) => (
 											<React.Fragment key={activity.id}>
 												<ListItem
-													className="px-0 text-inherit"
+													className="px-0 text-inherit hover:text-[var(--mui-palette-primary-main)] transition-colors"
 													component={Link}
 													to={`/libraries/${activity.gameId}`}
 												>
@@ -515,7 +518,7 @@ export const Home: React.FC = () => {
 						<Card className="h-full shadow-md">
 							<CardContent>
 								<Box className="flex items-center mb-3">
-									<RecentlyPlayedIcon className="mr-2" color="primary" />
+									<RecentlyPlayedIcon className="mr-2 text-blue-500" />
 									<Typography variant="h6" className="font-bold">
 										{t("home.recentlyPlayed", "最近游玩")}
 									</Typography>
@@ -542,7 +545,7 @@ export const Home: React.FC = () => {
 										{activityData.sessions.map((session, idx) => (
 											<React.Fragment key={session.session_id}>
 												<ListItem
-													className="px-0 text-inherit"
+													className="px-0 text-inherit hover:text-[var(--mui-palette-primary-main)] transition-colors"
 													component={Link}
 													to={`/libraries/${session.game_id}`}
 												>
@@ -570,7 +573,7 @@ export const Home: React.FC = () => {
 						<Card className="h-full shadow-md">
 							<CardContent>
 								<Box className="flex items-center mb-3">
-									<RecentlyAddedIcon className="mr-2" color="primary" />
+									<RecentlyAddedIcon className="mr-2 text-green-500" />
 									<Typography variant="h6" className="font-bold">
 										{t("home.recentlyAdded", "最近添加")}
 									</Typography>
@@ -597,7 +600,7 @@ export const Home: React.FC = () => {
 										{activityData.added.map((game, idx) => (
 											<React.Fragment key={game.id}>
 												<ListItem
-													className="px-0 text-inherit"
+													className="px-0 text-inherit hover:text-[var(--mui-palette-primary-main)] transition-colors"
 													component={Link}
 													to={`/libraries/${game.id}`}
 												>
