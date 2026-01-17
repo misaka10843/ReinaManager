@@ -6,44 +6,31 @@ use std::process::Command;
 use std::sync::Mutex;
 use tauri::{command, AppHandle, Manager};
 
-// ==================== 路径相关常量 ====================
+// ==================== 路径相关常量（重导出） ====================
 
-/// 数据库相关路径常量
-pub const DB_DATA_DIR: &str = "data";
-pub const DB_FILE_NAME: &str = "reina_manager.db";
-pub const DB_BACKUP_SUBDIR: &str = "backups";
-pub const RESOURCE_DIR: &str = "resources";
+pub use reina_path::{DB_DATA_DIR, DB_FILE_NAME, DB_BACKUP_SUBDIR, RESOURCE_DIR};
 
-// ==================== 路径基础函数 ====================
+// ==================== 路径基础函数（直接使用 Tauri API） ====================
 
 /// 判断是否处于便携模式
-///
-/// 判断逻辑：
-/// 1. 检查 resources/data 目录是否存在
-/// 2. 检查 resources/data/reina_manager.db 文件是否存在
-/// 3. 两者都存在则为便携模式，否则为标准模式
-///
 pub fn is_portable_mode(app: &AppHandle) -> bool {
     if let Ok(resource_dir) = app.path().resource_dir() {
         let portable_data_dir = resource_dir.join(RESOURCE_DIR).join(DB_DATA_DIR);
         let portable_db_file = portable_data_dir.join(DB_FILE_NAME);
-
         portable_data_dir.exists() && portable_db_file.exists()
     } else {
         false
     }
 }
 
+/// 获取基础数据目录
 pub fn get_base_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
     if is_portable_mode(app) {
-        // 便携模式：使用程序安装目录的 resources 子目录
-        Ok(app
-            .path()
+        Ok(app.path()
             .resource_dir()
             .map_err(|e| format!("无法获取应用目录: {}", e))?
             .join(RESOURCE_DIR))
     } else {
-        // 非便携模式：使用系统应用数据目录
         app.path()
             .app_data_dir()
             .map_err(|e| format!("无法获取应用数据目录: {}", e))
@@ -55,13 +42,10 @@ pub fn get_db_path(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(get_base_data_dir(app)?.join(DB_DATA_DIR).join(DB_FILE_NAME))
 }
 
-/// # Arguments
-/// * `app` - 应用句柄
-/// * `portable` - true 表示便携模式，false 表示标准模式
+/// 获取指定模式的数据库目录
 pub fn get_base_data_dir_for_mode(app: &AppHandle, portable: bool) -> Result<PathBuf, String> {
     if portable {
-        Ok(app
-            .path()
+        Ok(app.path()
             .resource_dir()
             .map_err(|e| format!("无法获取应用目录: {}", e))?
             .join(RESOURCE_DIR))
