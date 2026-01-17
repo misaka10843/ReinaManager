@@ -18,10 +18,11 @@ const App: React.FC = () => {
 	const { t } = useTranslation();
 	const themeMode = useStore((s) => s.themeMode);
 	const themeColor = useStore((s) => s.themeColor);
+	const themeStyle = useStore((s) => s.themeStyle);
 
 	const theme = useMemo(
-		() => createAppTheme(themeMode, themeColor),
-		[themeMode, themeColor],
+		() => createAppTheme(themeMode, themeColor, themeStyle),
+		[themeMode, themeColor, themeStyle],
 	);
 
 	// 从路由配置动态生成导航菜单

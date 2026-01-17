@@ -81,6 +81,8 @@ export interface AppState {
 	setThemeMode: (mode: "light" | "dark") => void;
 	themeColor: string;
 	setThemeColor: (color: string) => void;
+	themeStyle: "default" | "custom";
+	setThemeStyle: (style: "default" | "custom") => void;
 
 	// 排序选项
 	sortOption: string;
@@ -263,6 +265,8 @@ export const useStore = create<AppState>()(
 			setThemeMode: (mode: "light" | "dark") => set({ themeMode: mode }),
 			themeColor: "#F48FB1",
 			setThemeColor: (color: string) => set({ themeColor: color }),
+			themeStyle: "custom",
+			setThemeStyle: (style: "default" | "custom") => set({ themeStyle: style }),
 
 			// 排序选项默认值
 			sortOption: "addtime",

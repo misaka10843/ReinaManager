@@ -39,6 +39,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
+import { EditPlayTimeDialog } from "@/components/EditPlayTimeDialog";
 import RightMenu from "@/components/RightMenu";
 import { useStore } from "@/store";
 import { useGamePlayStore } from "@/store/gamePlayStore";
@@ -442,6 +443,11 @@ const Cards: React.FC<CardsProps> = ({ gamesData, categoryId }) => {
 
 	// 右键菜单状态
 	const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
+	// 编辑时间弹窗状态
+	const [editTimeDialog, setEditTimeDialog] = useState<{
+		open: boolean;
+		gameId: number;
+	}>({ open: false, gameId: 0 });
 
 	// 数据源
 	const sourceGames = gamesData ?? gamesFromStore;
@@ -554,6 +560,13 @@ const Cards: React.FC<CardsProps> = ({ gamesData, categoryId }) => {
 				setAnchorEl={(value) => {
 					if (!value) closeMenu();
 				}}
+				onEditTime={(id) => setEditTimeDialog({ open: true, gameId: id })}
+			/>
+
+			<EditPlayTimeDialog
+				open={editTimeDialog.open}
+				onClose={() => setEditTimeDialog((prev) => ({ ...prev, open: false }))}
+				gameId={editTimeDialog.gameId}
 			/>
 
 			{games.map((card) => {

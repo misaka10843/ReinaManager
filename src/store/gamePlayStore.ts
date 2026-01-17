@@ -33,6 +33,7 @@ import {
 	getFormattedGameStats,
 	getGameSessions,
 	initGameTimeTracking,
+	updateGamePlayTime,
 } from "@/utils/gameStats";
 
 /**
@@ -89,6 +90,7 @@ interface GamePlayState {
 	getTotalPlayTime: () => Promise<number>;
 	getWeekPlayTime: () => Promise<number>;
 	getTodayPlayTime: () => Promise<number>;
+	updatePlayTime: (gameId: number, minutes: number) => Promise<void>;
 }
 
 // ====== 统计缓存优化：全局作用域 ======
@@ -566,6 +568,18 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
 		}
 		lastTodayPlayTime = total;
 		return total;
+	},
+
+	updatePlayTime: async (gameId: number, minutes: number) => {
+		if (!isTauri()) return;
+		try {
+			await updateGamePlayTime(gameId, minutes);
+			// 更新 statsVersion，强制组件刷新数据
+			set((state) => ({ statsVersion: state.statsVersion + 1 }));
+		} catch (error) {
+			console.error("Store 更新游戏时间失败:", error);
+			throw error;
+		}
 	},
 }));
 

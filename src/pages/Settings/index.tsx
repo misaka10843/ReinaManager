@@ -18,8 +18,10 @@
  */
 
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome";
 import BackupIcon from "@mui/icons-material/Backup";
 import ClearIcon from "@mui/icons-material/Clear";
+import ColorLensIcon from "@mui/icons-material/ColorLens";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import LightModeIcon from "@mui/icons-material/LightMode";
@@ -132,7 +134,14 @@ const LanguageSelect = () => {
 
 const AppearanceSettings = () => {
 	const { t } = useTranslation();
-	const { themeMode, setThemeMode, themeColor, setThemeColor } = useStore();
+	const {
+		themeMode,
+		setThemeMode,
+		themeColor,
+		setThemeColor,
+		themeStyle,
+		setThemeStyle,
+	} = useStore();
 
 	const presetColors = [
 		"#F48FB1", // Sakura Pink
@@ -148,8 +157,8 @@ const AppearanceSettings = () => {
 				{t("pages.Settings.appearance", "外观设置")}
 			</InputLabel>
 
-			<Stack direction="row" spacing={4} alignItems="start" flexWrap="wrap">
-				<Box className="mb-4">
+			<Stack spacing={4}>
+				<Box>
 					<InputLabel className="mb-2 text-sm">
 						{t("pages.Settings.themeMode", "主题模式")}
 					</InputLabel>
@@ -167,6 +176,28 @@ const AppearanceSettings = () => {
 						<ToggleButton value="dark">
 							<DarkModeIcon sx={{ mr: 1 }} />
 							{t("pages.Settings.dark", "暗黑")}
+						</ToggleButton>
+					</ToggleButtonGroup>
+				</Box>
+
+				<Box>
+					<InputLabel className="mb-2 text-sm">
+						{t("pages.Settings.themeStyle", "主题风格")}
+					</InputLabel>
+					<ToggleButtonGroup
+						value={themeStyle}
+						exclusive
+						onChange={(_, newStyle) => newStyle && setThemeStyle(newStyle)}
+						size="small"
+						color="primary"
+					>
+						<ToggleButton value="default">
+							<AutoAwesomeIcon sx={{ mr: 1 }} />
+							{t("pages.Settings.defaultTheme", "默认")}
+						</ToggleButton>
+						<ToggleButton value="custom">
+							<ColorLensIcon sx={{ mr: 1 }} />
+							{t("pages.Settings.customTheme", "自定义")}
 						</ToggleButton>
 					</ToggleButtonGroup>
 				</Box>
@@ -202,36 +233,14 @@ const AppearanceSettings = () => {
 							</Tooltip>
 						))}
 						<Tooltip title={t("pages.Settings.customColor", "自定义颜色")}>
-							<Box
-								sx={{
-									width: 32,
-									height: 32,
-									borderRadius: "50%",
-									overflow: "hidden",
-									border: "1px solid rgba(0,0,0,0.1)",
-									boxShadow: 2,
-									cursor: "pointer",
-									position: "relative",
-								}}
-							>
+							<div className="relative w-8 h-8 rounded-full overflow-hidden cursor-pointer shadow-md border border-black/10 hover:scale-110 transition-transform">
 								<input
 									type="color"
 									value={themeColor}
 									onChange={(e) => setThemeColor(e.target.value)}
-									style={{
-										width: "150%",
-										height: "150%",
-										padding: 0,
-										border: "none",
-										background: "transparent",
-										cursor: "pointer",
-										position: "absolute",
-										top: "50%",
-										left: "50%",
-										transform: "translate(-50%, -50%)",
-									}}
+									className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[150%] h-[150%] p-0 m-0 border-0 cursor-pointer"
 								/>
-							</Box>
+							</div>
 						</Tooltip>
 					</Stack>
 				</Box>
