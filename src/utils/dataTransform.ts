@@ -8,7 +8,15 @@
  * - 转换时将 null 值转换为 undefined（展示层不需要 null）
  */
 
-import type { FullGameData, GameData } from "@/types";
+import type {
+	BgmData,
+	CustomData,
+	FullGameData,
+	GameData,
+	Nullable,
+	VndbData,
+	YmgalData,
+} from "@/types";
 
 /**
  * 将 null 转换为 undefined
@@ -52,25 +60,12 @@ export function getDisplayGameData(
 	fullData: FullGameData,
 	_language?: string,
 ): GameData {
-	const { bgm_data, vndb_data, ymgal_data, custom_data } = fullData;
-
 	// 基础数据 - 直接从 fullData 中获取根节点字段
-	// 使用 nullToUndefined 将 null 转换为 undefined
 	const baseData: GameData = {
-		id: fullData.id,
-		bgm_id: fullData.bgm_id,
-		vndb_id: fullData.vndb_id,
-		ymgal_id: fullData.ymgal_id,
-		id_type: fullData.id_type,
-		date: fullData.date,
+		...fullData,
 		localpath: nullToUndefined(fullData.localpath),
 		savepath: nullToUndefined(fullData.savepath),
-		autosave: fullData.autosave,
-		maxbackups: fullData.maxbackups,
-		clear: fullData.clear,
 		custom_data: nullToUndefined(fullData.custom_data),
-		created_at: fullData.created_at,
-		updated_at: fullData.updated_at,
 		// 初始化展平字段
 		image: undefined,
 		name: undefined,
@@ -87,114 +82,143 @@ export function getDisplayGameData(
 	};
 
 	// 根据 id_type 决定数据来源
+	const { bgm_data, vndb_data, ymgal_data, custom_data } = fullData;
+
 	switch (fullData.id_type) {
 		case "bgm":
-			if (bgm_data) {
-				assignBasicFields(baseData, bgm_data);
-				baseData.tags = bgm_data.tags || [];
-				baseData.rank = bgm_data.rank || undefined;
-				baseData.score = bgm_data.score || undefined;
-				baseData.aliases = bgm_data.aliases || [];
-			}
+			if (bgm_data) assignFromDataSource(baseData, bgm_data, "bgm");
 			break;
 
 		case "vndb":
-			if (vndb_data) {
-				assignBasicFields(baseData, vndb_data);
-				baseData.tags = vndb_data.tags || [];
-				baseData.score = vndb_data.score || undefined;
-				baseData.all_titles = vndb_data.all_titles || [];
-				baseData.aliases = vndb_data.aliases || [];
-				baseData.average_hours = vndb_data.average_hours || undefined;
-			}
+			if (vndb_data) assignFromDataSource(baseData, vndb_data, "vndb");
 			break;
 
 		case "ymgal":
-			if (ymgal_data) {
-				assignBasicFields(baseData, ymgal_data);
-				baseData.aliases = ymgal_data.aliases || [];
-			}
+			if (ymgal_data) assignFromDataSource(baseData, ymgal_data, "ymgal");
 			break;
 
 		case "mixed":
-			// 混合数据 - BGM 优先，VNDB 补充
-			if (bgm_data || vndb_data) {
-				// 基础字段：BGM 优先，VNDB 补充
-				assignBasicFields(baseData, bgm_data || {});
-				assignBasicFields(baseData, vndb_data || {});
-
-				// 开发商: VNDB 优先（特殊处理）
-				baseData.developer =
-					vndb_data?.developer || bgm_data?.developer || undefined;
-
-				// 标签: 合并两者,去重
-				const bgmTags = bgm_data?.tags || [];
-				const vndbTags = vndb_data?.tags || [];
-				baseData.tags = Array.from(new Set([...bgmTags, ...vndbTags]));
-
-				// 别名: 合并两者
-				const bgmAliases = bgm_data?.aliases || [];
-				const vndbAliases = vndb_data?.aliases || [];
-				baseData.aliases = Array.from(new Set([...bgmAliases, ...vndbAliases]));
-
-				// BGM 特有字段
-				baseData.rank = bgm_data?.rank || undefined;
-				baseData.score = bgm_data?.score || vndb_data?.score || undefined;
-
-				// VNDB 特有字段
-				baseData.all_titles = vndb_data?.all_titles || [];
-				baseData.average_hours = vndb_data?.average_hours || undefined;
+			// 混合数据源：合并所有可用数据
+			if (bgm_data || vndb_data || ymgal_data) {
+				mergeMultipleDataSources(baseData, { bgm_data, vndb_data, ymgal_data });
 			}
 			break;
 
 		case "custom":
 		case "Whitecloud":
-			if (custom_data) {
-				assignBasicFields(baseData, custom_data);
-				baseData.aliases = custom_data.aliases || [];
-				baseData.tags = custom_data.tags || [];
-			}
+			if (custom_data) assignFromDataSource(baseData, custom_data, "custom");
 			break;
 
 		default: {
-			// 未知类型,尝试使用任何可用数据
-			const anyData = bgm_data || vndb_data || ymgal_data || custom_data;
-			if (anyData) {
-				assignBasicFields(baseData, anyData);
-				baseData.aliases = anyData.aliases || [];
-				baseData.tags = anyData.tags || [];
-			}
-			break;
-		}
-	}
-
-	// 自定义数据优先覆盖（通用逻辑）
-	// 注意：aliases 和 tags 采用追加模式（合并），其他字段采用覆盖模式
-	if (custom_data) {
-		if (custom_data.image != null) baseData.image = custom_data.image;
-		if (custom_data.name != null) baseData.name = custom_data.name;
-		if (custom_data.summary != null) baseData.summary = custom_data.summary;
-		if (custom_data.developer != null)
-			baseData.developer = custom_data.developer;
-		if (custom_data.nsfw != null) baseData.nsfw = custom_data.nsfw;
-		if (custom_data.date != null) baseData.date = custom_data.date;
-
-		// aliases 和 tags 追加合并（去重）
-		if (custom_data.aliases != null && custom_data.aliases.length > 0) {
-			const existingAliases = baseData.aliases || [];
-			baseData.aliases = Array.from(
-				new Set([...existingAliases, ...custom_data.aliases]),
-			);
-		}
-		if (custom_data.tags != null && custom_data.tags.length > 0) {
-			const existingTags = baseData.tags || [];
-			baseData.tags = Array.from(
-				new Set([...existingTags, ...custom_data.tags]),
-			);
+			// 未知类型：尝试使用任何可用数据
+			const anyData = bgm_data ?? vndb_data ?? ymgal_data ?? custom_data;
+			if (anyData)
+				assignFromDataSource(baseData, anyData as DataSource, "fallback");
 		}
 	}
 
 	return baseData;
+}
+
+/**
+ * 数据源类型联合
+ */
+type DataSource = BgmData | VndbData | YmgalData | CustomData;
+
+/**
+ * 从单个数据源分配字段
+ */
+function assignFromDataSource(
+	target: GameData,
+	source: DataSource,
+	sourceType: "bgm" | "vndb" | "ymgal" | "custom" | "fallback",
+) {
+	// 基础字段
+	assignBasicFields(target, source);
+
+	// 源特有的字段 - 使用类型断言处理不同数据源的属性差异
+	switch (sourceType) {
+		case "bgm": {
+			const bgmSource = source as BgmData;
+			target.tags = bgmSource.tags || [];
+			target.rank = bgmSource.rank;
+			target.score = bgmSource.score;
+			target.aliases = bgmSource.aliases || [];
+			break;
+		}
+
+		case "vndb": {
+			const vndbSource = source as VndbData;
+			target.tags = vndbSource.tags || [];
+			target.score = vndbSource.score;
+			target.all_titles = vndbSource.all_titles || [];
+			target.aliases = vndbSource.aliases || [];
+			target.average_hours = vndbSource.average_hours;
+			break;
+		}
+
+		case "ymgal": {
+			const ymgalSource = source as YmgalData;
+			target.aliases = ymgalSource.aliases || [];
+			break;
+		}
+
+		case "custom":
+		case "fallback": {
+			const customSource = source as CustomData;
+			target.aliases = customSource.aliases || [];
+			target.tags = customSource.tags || [];
+			break;
+		}
+	}
+}
+
+/**
+ * 合并多个数据源的字段
+ */
+function mergeMultipleDataSources(
+	target: GameData,
+	sources: {
+		bgm_data?: Nullable<BgmData>;
+		vndb_data?: Nullable<VndbData>;
+		ymgal_data?: Nullable<YmgalData>;
+	},
+) {
+	const { bgm_data, vndb_data, ymgal_data } = sources;
+
+	// 基础字段：优先级 BGM > VNDB > YMGal
+	const primarySource = bgm_data || vndb_data || ymgal_data;
+	if (primarySource) assignBasicFields(target, primarySource);
+
+	// 开发商: VNDB 优先
+	target.developer =
+		vndb_data?.developer || bgm_data?.developer || ymgal_data?.developer;
+
+	// 标签: 合并所有数据源的标签，去重
+	const allTags = [
+		...(bgm_data?.tags || []),
+		...(vndb_data?.tags || []),
+		...(ymgal_data?.tags || []),
+	];
+	target.tags = Array.from(new Set(allTags));
+
+	// 别名: 合并所有数据源的别名，去重
+	const allAliases = [
+		...(bgm_data?.aliases || []),
+		...(vndb_data?.aliases || []),
+		...(ymgal_data?.aliases || []),
+	];
+	target.aliases = Array.from(new Set(allAliases));
+
+	// 评分: BGM 优先，其次 VNDB
+	target.score = bgm_data?.score ?? vndb_data?.score;
+
+	// BGM 特有字段
+	target.rank = bgm_data?.rank;
+
+	// VNDB 特有字段
+	target.all_titles = vndb_data?.all_titles || [];
+	target.average_hours = vndb_data?.average_hours;
 }
 
 /**

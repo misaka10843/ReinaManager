@@ -89,6 +89,7 @@ export const tauriHttp = {
 		options?: {
 			headers?: Record<string, string>;
 			params?: Record<string, unknown>;
+			allowRetry?: boolean;
 		},
 	) {
 		try {
@@ -122,7 +123,7 @@ export const tauriHttp = {
 				statusText: response.statusText,
 			};
 		} catch (error) {
-			return handleTauriHttpError(error);
+			return handleTauriHttpError(error, options?.allowRetry);
 		}
 	},
 
@@ -136,7 +137,7 @@ export const tauriHttp = {
 	async post(
 		url: string,
 		data?: Record<string, unknown>,
-		options?: { headers?: Record<string, string> },
+		options?: { headers?: Record<string, string>; allowRetry?: boolean },
 	) {
 		try {
 			const response = await tauriFetch(url, {
@@ -158,7 +159,7 @@ export const tauriHttp = {
 				statusText: response.statusText,
 			};
 		} catch (error) {
-			return handleTauriHttpError(error);
+			return handleTauriHttpError(error, options?.allowRetry);
 		}
 	},
 };
@@ -166,12 +167,19 @@ export const tauriHttp = {
 /**
  * 处理 Tauri HTTP 请求错误
  * @param error 错误对象
+ * @param allowRetry 是否允许重试（某些API如YMGal需要自己的重试机制）
  */
-function handleTauriHttpError(error: unknown): never {
+function handleTauriHttpError(error: unknown, allowRetry = false): never {
 	const errorMessage =
 		error instanceof Error
 			? error.message
 			: i18n.t("api.http.requestError", "请求错误");
+
+	// 如果允许重试，对于认证错误不直接抛出，让上层处理
+	if (allowRetry && errorMessage.includes("401")) {
+		console.warn("Tauri HTTP 401错误，允许上层重试:", error);
+		throw error; // 重新抛出原始错误，让上层处理
+	}
 
 	if (errorMessage.includes("401")) {
 		throw new Error(i18n.t("api.http.authFailed", "认证失败"));

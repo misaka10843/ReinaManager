@@ -12,10 +12,7 @@ import {
 } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { fetchBgmById } from "@/api/bgm";
-import { fetchMixedData } from "@/api/mixed";
-import { fetchVndbById } from "@/api/vndb";
-import { fetchYmById } from "@/api/ymgal";
+import { gameMetadataService } from "@/api";
 import { snackbar } from "@/components/Snackbar";
 import type { FullGameData, GameData } from "@/types";
 
@@ -69,82 +66,56 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 			);
 		}
 
-		let apiData: FullGameData;
+		// 根据idType决定如何调用服务层
+		let apiData: FullGameData | null = null;
 
-		if (idType === "bgm") {
+		if (idType === "bgm" && bgmId) {
 			// BGM 单一数据源
-			if (!bgmId)
-				throw new Error(
-					t(
-						"pages.Detail.DataSourceUpdate.bgmIdRequired",
-						"Bangumi ID 不能为空",
-					),
-				);
-			const result = await fetchBgmById(bgmId, bgmToken);
-			if (typeof result === "string") throw new Error(result);
-			apiData = result;
-		} else if (idType === "vndb") {
+			apiData = await gameMetadataService.getGameByIds({
+				bgmId,
+				bgmToken,
+			});
+		} else if (idType === "vndb" && vndbId) {
 			// VNDB 单一数据源
-			if (!vndbId)
-				throw new Error(
-					t("pages.Detail.DataSourceUpdate.vndbIdRequired", "VNDB ID 不能为空"),
-				);
-			const result = await fetchVndbById(vndbId);
-			if (typeof result === "string") throw new Error(result);
-			apiData = result;
-		} else if (idType === "ymgal") {
+			apiData = await gameMetadataService.getGameByIds({
+				vndbId,
+			});
+		} else if (idType === "ymgal" && ymgalId) {
 			// YMGal 单一数据源
-			if (!ymgalId)
-				throw new Error(
-					t(
-						"pages.Detail.DataSourceUpdate.ymgalIdRequired",
-						"YMGal ID 不能为空",
-					),
-				);
-			const result = await fetchYmById(Number(ymgalId));
-			if (typeof result === "string") throw new Error(result);
-			apiData = result;
-		} else {
+			apiData = await gameMetadataService.getGameByIds({
+				ymgalId,
+			});
+		} else if (idType === "mixed") {
 			// Mixed 混合数据源
-			if (!bgmId && !vndbId)
+			if (!bgmId && !vndbId && !ymgalId) {
 				throw new Error(
 					t(
 						"pages.Detail.DataSourceUpdate.bgmOrVndbIdRequired",
-						"Bangumi ID 或 VNDB ID 不能为空",
+						"Bangumi ID、VNDB ID 或 YMGal ID 不能为空",
 					),
 				);
-
-			const { bgm_data, vndb_data } = await fetchMixedData({
-				bgm_id: bgmId || undefined,
-				vndb_id: vndbId || undefined,
-				BGM_TOKEN: bgmToken,
+			}
+			apiData = await gameMetadataService.getGameByIds({
+				bgmId: bgmId,
+				vndbId: vndbId,
+				ymgalId: ymgalId,
+				bgmToken,
 			});
-			let id_type: string;
-			if (!bgm_data && !vndb_data) {
-				throw new Error(
-					t(
-						"pages.Detail.DataSourceUpdate.noDataFetched",
-						"未获取到数据或数据源无效。",
-					),
-				);
-			}
-			if (bgm_data && !vndb_data) {
-				id_type = "bgm";
-			} else if (!bgm_data && vndb_data) {
-				id_type = "vndb";
-			} else {
-				id_type = "mixed";
-			}
-			// 合并两个数据源
-			apiData = {
-				...bgm_data,
-				...vndb_data,
-				id_type,
-				bgm_data: bgm_data?.bgm_data || undefined,
-				vndb_data: vndb_data?.vndb_data || undefined,
-			};
+		} else {
+			throw new Error(
+				t("pages.Detail.DataSourceUpdate.invalidIdType", "无效的ID类型"),
+			);
 		}
-		// 后端已经处理了序列化，直接返回
+
+		if (!apiData) {
+			throw new Error(
+				t(
+					"pages.Detail.DataSourceUpdate.noDataFetched",
+					"未获取到数据或数据源无效。",
+				),
+			);
+		}
+
 		return apiData;
 	}, [idType, bgmId, vndbId, ymgalId, bgmToken, selectedGame, t]);
 
@@ -195,7 +166,7 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 			</FormControl>
 
 			{/* Bangumi ID 编辑框 */}
-			{idType !== "vndb" && idType !== "ymgal" && idType !== "custom" && (
+			{(idType === "bgm" || idType === "mixed") && (
 				<TextField
 					label={t("pages.Detail.DataSourceUpdate.bgmId", "Bangumi ID")}
 					variant="outlined"
@@ -203,11 +174,12 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 					value={bgmId}
 					onChange={(e) => setBgmId(e.target.value)}
 					disabled={isLoading || disabled}
+					required={idType === "bgm"}
 				/>
 			)}
 
 			{/* VNDB ID 编辑框 */}
-			{idType !== "bgm" && idType !== "ymgal" && idType !== "custom" && (
+			{(idType === "vndb" || idType === "mixed") && (
 				<TextField
 					label={t("pages.Detail.DataSourceUpdate.vndbId", "VNDB ID")}
 					variant="outlined"
@@ -215,11 +187,12 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 					value={vndbId}
 					onChange={(e) => setVndbId(e.target.value)}
 					disabled={isLoading || disabled}
+					required={idType === "vndb"}
 				/>
 			)}
 
 			{/* YMGal ID 编辑框 */}
-			{idType === "ymgal" && (
+			{(idType === "ymgal" || idType === "mixed") && (
 				<TextField
 					label={t("pages.Detail.DataSourceUpdate.ymgalId", "YMGal ID")}
 					variant="outlined"
@@ -227,6 +200,7 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 					value={ymgalId}
 					onChange={(e) => setYmgalId(e.target.value)}
 					disabled={isLoading || disabled}
+					required={idType === "ymgal"}
 				/>
 			)}
 

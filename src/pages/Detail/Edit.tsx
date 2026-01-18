@@ -34,18 +34,33 @@ export const Edit: React.FC = () => {
 			switch (gameData.id_type) {
 				case "bgm":
 					// 只保留 bgm_data，清除其他数据源
-					updateData.vndb_data = undefined;
-					updateData.ymgal_data = undefined;
+					updateData.vndb_data = null;
+					updateData.ymgal_data = null;
 					break;
 				case "vndb":
 					// 只保留 vndb_data，清除其他数据源
-					updateData.bgm_data = undefined;
-					updateData.ymgal_data = undefined;
+					updateData.bgm_data = null;
+					updateData.ymgal_data = null;
 					break;
 				case "ymgal":
 					// 只保留 ymgal_data，清除其他数据源
-					updateData.bgm_data = undefined;
-					updateData.vndb_data = undefined;
+					updateData.bgm_data = null;
+					updateData.vndb_data = null;
+					break;
+				case "mixed":
+					// 对于混合模式，如果某个数据源的ID为空，则清除对应的数据和ID
+					if (!gameData.bgm_id) {
+						updateData.bgm_data = null;
+						updateData.bgm_id = null;
+					}
+					if (!gameData.vndb_id) {
+						updateData.vndb_data = null;
+						updateData.vndb_id = null;
+					}
+					if (!gameData.ymgal_id) {
+						updateData.ymgal_data = null;
+						updateData.ymgal_id = null;
+					}
 					break;
 			}
 

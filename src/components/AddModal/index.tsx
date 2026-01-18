@@ -35,10 +35,7 @@ import { isTauri } from "@tauri-apps/api/core";
 import { basename, dirname } from "pathe";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { fetchBgmById, fetchBgmByName } from "@/api/bgm";
-import { fetchMixedData } from "@/api/mixed";
-import { fetchVndbById, fetchVndbByName } from "@/api/vndb";
-import { fetchYmById, fetchYmByName } from "@/api/ymgal";
+import { gameMetadataService } from "@/api";
 import { ViewGameBox } from "@/components/AlertBox";
 import { useModal } from "@/components/Toolbar";
 import { useStore } from "@/store/";
@@ -190,16 +187,25 @@ const AddModal: React.FC = () => {
 		if (dialogState.confirm.data.id_type === "ymgal") {
 			try {
 				setLoading(true);
-				const result = await fetchYmById(
-					Number(dialogState.confirm.data.ymgal_id),
-				);
+				// 使用gameMetadataService获取完整的YMGal数据
+				const results = await gameMetadataService.searchGames({
+					query: dialogState.confirm.data.ymgal_id?.toString() || "",
+					source: "ymgal",
+					bgmToken,
+					defaults: {
+						localpath: dialogState.confirm.data.localpath ?? undefined,
+						autosave: dialogState.confirm.data.autosave,
+						clear: dialogState.confirm.data.clear,
+					},
+				});
 
-				if (typeof result === "string") {
-					showError(result);
+				if (results.length === 0) {
+					showError(t("components.AddModal.noDataSource"));
 					return;
 				}
 
-				// 合并路径信息，确保 id_type 存在
+				const result = results[0];
+
 				// 从 FullGameData 转换为 InsertGameParams（过滤 null 值）
 				const insertData: InsertGameParams = {
 					bgm_id: result.bgm_id,
@@ -207,9 +213,9 @@ const AddModal: React.FC = () => {
 					ymgal_id: result.ymgal_id,
 					id_type: result.id_type || "ymgal",
 					date: result.date,
-					localpath: dialogState.confirm.data.localpath ?? undefined,
-					autosave: dialogState.confirm.data.autosave,
-					clear: dialogState.confirm.data.clear,
+					localpath: result.localpath ?? undefined,
+					autosave: result.autosave,
+					clear: result.clear,
 					bgm_data: result.bgm_data ?? undefined,
 					vndb_data: result.vndb_data ?? undefined,
 					ymgal_data: result.ymgal_data ?? undefined,
@@ -230,7 +236,7 @@ const AddModal: React.FC = () => {
 			// 确保 id_type 存在后再调用
 			finalizeAddGame(dialogState.confirm.data as InsertGameParams);
 		}
-	}, [finalizeAddGame, dialogState.confirm.data, showError, t]);
+	}, [finalizeAddGame, dialogState.confirm.data, showError, t, bgmToken]);
 
 	/**
 	 * 处理确认弹窗的取消操作
@@ -292,79 +298,31 @@ const AddModal: React.FC = () => {
 		allResults: FullGameData[];
 		canViewMore: boolean;
 	}> => {
-		let apiData: FullGameData | null = null;
-		let allResults: FullGameData[] = [];
-		let canViewMore = false;
+		// 统一使用gameMetadataService.searchGames
+		const searchResults = await gameMetadataService.searchGames({
+			query: formText,
+			source:
+				apiSource === "mixed"
+					? undefined
+					: (apiSource as "bgm" | "vndb" | "ymgal"),
+			bgmToken,
+			defaults: {
+				localpath: path,
+				autosave: 0,
+				clear: 0,
+			},
+		});
 
-		if (apiSource === "bgm") {
-			// Bangumi 数据源
-			if (isID) {
-				const result = await fetchBgmById(formText, bgmToken);
-				if (typeof result === "string") throw new Error(result);
-				apiData = result;
-			} else {
-				const result = await fetchBgmByName(formText, bgmToken);
-				if (typeof result === "string") throw new Error(result);
-				allResults = result;
-				apiData = result[0];
-				canViewMore = result.length > 1;
-			}
-		} else if (apiSource === "vndb") {
-			// VNDB 数据源
-			if (isID) {
-				const result = await fetchVndbById(formText);
-				if (typeof result === "string") throw new Error(result);
-				apiData = result;
-			} else {
-				const result = await fetchVndbByName(formText);
-				if (typeof result === "string") throw new Error(result);
-				allResults = result;
-				apiData = result[0];
-				canViewMore = result.length > 1;
-			}
-		} else if (apiSource === "ymgal") {
-			// YMGal 数据源
-			if (isID) {
-				const result = await fetchYmById(Number(formText));
-				if (typeof result === "string") throw new Error(result);
-				apiData = result;
-			} else {
-				const result = await fetchYmByName(formText);
-				if (typeof result === "string") throw new Error(result);
-				allResults = result;
-				apiData = result[0];
-				canViewMore = result.length > 1;
-			}
-		} else {
-			// Mixed 混合数据源（不支持查看更多）
-			const { bgmId, vndbId } = isID ? parseGameId(formText) : {};
-
-			if (isID && !bgmId && !vndbId) {
-				throw new Error(t("components.AddModal.invalidIDFormat"));
-			}
-
-			const { bgm_data, vndb_data } = await fetchMixedData({
-				bgm_id: bgmId,
-				vndb_id: vndbId,
-				name: !isID ? formText : undefined,
-				BGM_TOKEN: bgmToken,
-			});
-
-			if (!bgm_data && !vndb_data) {
-				throw new Error(t("components.AddModal.noDataSource"));
-			}
-
-			// 合并两个数据源
-			apiData = {
-				...bgm_data,
-				...vndb_data,
-				id_type: "mixed",
-				bgm_data: bgm_data?.bgm_data || undefined,
-				vndb_data: vndb_data?.vndb_data || undefined,
-			};
+		if (searchResults.length === 0) {
+			throw new Error(t("components.AddModal.noDataSource"));
 		}
 
-		return { apiData, allResults, canViewMore };
+		// 返回第一个结果作为主要数据，保留所有结果用于查看更多
+		return {
+			apiData: searchResults[0],
+			allResults: searchResults,
+			canViewMore: searchResults.length > 1,
+		};
 	};
 
 	/**
@@ -434,25 +392,17 @@ const AddModal: React.FC = () => {
 				return;
 			}
 
-			// 合并默认数据（路径信息）
-			const fullGameData: FullGameData = {
-				...apiData,
-				...defaultdata,
-			};
-
 			// 保存搜索结果并打开确认弹窗
+			// 现在apiData和allResults已经包含了defaults
 			setDialogState({
 				confirm: {
 					open: true,
-					data: fullGameData,
+					data: apiData,
 					showViewMore: canViewMore,
 				},
 				select: {
 					open: false,
-					results: allResults.map((item) => ({
-						...item,
-						...defaultdata,
-					})),
+					results: allResults, // allResults中的项目已经包含defaults
 				},
 			});
 		} catch (error) {
@@ -471,31 +421,6 @@ const AddModal: React.FC = () => {
 			}
 			setLoading(false);
 		}
-	};
-
-	/**
-	 * 解析游戏 ID，判断是 Bangumi ID 还是 VNDB ID
-	 * @param input 用户输入的文本
-	 * @param isID 是否为 ID 搜索模式
-	 * @returns 包含 bgmId 和 vndbId 的对象
-	 */
-	const parseGameId = (input: string): { bgmId?: string; vndbId?: string } => {
-		if (!isID) {
-			return {}; // 如果不是 ID 搜索模式，返回空对象
-		}
-
-		// VNDB ID 格式：v + 数字（如 v17, v1234）
-		if (/^v\d+$/i.test(input)) {
-			return { vndbId: input };
-		}
-
-		// Bangumi ID 格式：纯数字字符串（如 123, 456789）
-		if (/^\d+$/.test(input)) {
-			return { bgmId: input };
-		}
-
-		// 如果格式不匹配，返回空对象
-		return {};
 	};
 
 	return (
