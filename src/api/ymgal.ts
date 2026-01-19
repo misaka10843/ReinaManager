@@ -13,7 +13,7 @@
  * 依赖：
  * - http: 封装的 HTTP 请求工具
  */
-
+// 注意认证失败重试机制未生效
 import type { FullGameData, YmgalData } from "@/types";
 import i18n from "@/utils/i18n";
 import { tauriHttp } from "./http";
@@ -71,55 +71,71 @@ async function getAccessToken(forceRefresh = false): Promise<string> {
 }
 
 /**
- * 发起 YMGal API 请求（自动处理认证）
+ * 发起 YMGal API 请求（自动处理认证和重试）
  * @param {string} path API 路径
  * @param {object} params 请求参数
+ * @param {number} maxRetries 最大重试次数
  * @returns {Promise<any>} API 响应数据
  */
 async function ymApiRequest(
 	path: string,
 	params: Record<string, unknown> = {},
+	maxRetries = 2,
 ) {
-	const tryRequest = async (forceRefresh = false) => {
-		const token = await getAccessToken(forceRefresh);
-		const response = await tauriHttp.get(`${YMGAL_CONFIG.baseUrl}${path}`, {
-			params,
-			headers: {
-				Accept: "application/json;charset=utf-8",
-				Authorization: `Bearer ${token}`,
-				version: "1",
-			},
-		});
+	let lastError: unknown;
 
-		// 接口异常码 401/403 也视为需要重取 token 的信号
-		if (!response.data.success || response.data.code !== 0) {
-			if (response.data.code === 401 || response.data.code === 403) {
-				throw new Error("YM_AUTH_RETRY");
+	for (let attempt = 0; attempt <= maxRetries; attempt++) {
+		try {
+			const token = await getAccessToken(attempt > 0); // 第一次尝试使用缓存，失败后强制刷新
+			const response = await tauriHttp.get(`${YMGAL_CONFIG.baseUrl}${path}`, {
+				params,
+				headers: {
+					Accept: "application/json;charset=utf-8",
+					Authorization: `Bearer ${token}`,
+					version: "1",
+				},
+				allowRetry: true, // 允许上层处理重试
+			});
+
+			// 接口异常码 401/403 也视为需要重取 token 的信号
+			if (!response.data.success || response.data.code !== 0) {
+				if (response.data.code === 401 || response.data.code === 403) {
+					if (attempt < maxRetries) {
+						tokenCache = null; // 清空token缓存，强制重新获取
+						continue; // 重试
+					}
+					throw new Error(
+						i18n.t("api.ym.tokenFailed", "YMGal认证失败，请稍后重试"),
+					);
+				}
+				throw new Error(response.data.msg || "API调用失败");
 			}
-			throw new Error(response.data.msg || "API调用失败");
+
+			return response.data.data;
+		} catch (error: unknown) {
+			lastError = error;
+
+			// 检查是否是认证错误且还有重试次数
+			const errorMessage = error instanceof Error ? error.message : "";
+			const isAuthError =
+				errorMessage.includes("401") || errorMessage.includes("403");
+
+			if (isAuthError && attempt < maxRetries) {
+				tokenCache = null; // 清空token缓存
+				console.warn(
+					`YMGal API请求失败，重试 ${attempt + 1}/${maxRetries}:`,
+					error,
+				);
+				continue; // 重试
+			}
+
+			// 如果不是认证错误或已达到最大重试次数，抛出错误
+			break;
 		}
-
-		return response.data.data;
-	};
-
-	try {
-		return await tryRequest(false);
-	} catch (error: unknown) {
-		// 请求被拒绝或 token 失效时，清空缓存并强制刷新 token 再重试一次
-		const status = (error as { response?: { status?: number } })?.response
-			?.status;
-		const isAuthError =
-			error instanceof Error &&
-			(error.message === "YM_AUTH_RETRY" || status === 401 || status === 403);
-
-		if (isAuthError) {
-			tokenCache = null;
-			return tryRequest(true);
-		}
-
-		console.error("YMGal API请求失败:", error);
-		throw error;
 	}
+
+	console.error("YMGal API请求失败，已达到最大重试次数:", lastError);
+	throw lastError;
 }
 
 /**

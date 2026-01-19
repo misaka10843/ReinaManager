@@ -2,7 +2,8 @@ use sea_orm::{ConnectionTrait, DatabaseBackend, Statement};
 use sea_orm_migration::prelude::*;
 use sea_orm_migration::sea_orm::TransactionTrait;
 
-use crate::backup::{backup_sqlite, get_db_path};
+use crate::backup::{backup_sqlite, path_to_sqlite_url};
+use reina_path::get_db_path;
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -261,7 +262,9 @@ async fn run_legacy_migrations_with_sqlx() -> Result<(), DbErr> {
     println!("[MIGRATION] Running legacy migrations with sqlx...");
 
     // 获取数据库连接 URL（从系统目录推导）
-    let database_url = get_db_path()?;
+    let db_path = get_db_path()
+        .map_err(|e| DbErr::Custom(format!("Failed to get database path: {}", e)))?;
+    let database_url = path_to_sqlite_url(&db_path)?;
 
     // 创建 sqlx 连接池
     let pool = sqlx::SqlitePool::connect(&database_url)

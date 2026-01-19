@@ -3,6 +3,7 @@ use std::path::PathBuf;
 
 use chrono::Local;
 use sea_orm_migration::sea_orm::DbErr;
+use reina_path::get_db_path;
 
 /// 备份 SQLite 数据库文件。
 ///
@@ -10,7 +11,8 @@ use sea_orm_migration::sea_orm::DbErr;
 /// - 若存在且非空，则备份到该路径下
 /// - 否则备份到数据库所在目录的 `backups/` 子目录
 pub async fn backup_sqlite(version: &str) -> Result<PathBuf, DbErr> {
-    let db_path = get_db_path_file()?;
+    let db_path = get_db_path()
+        .map_err(|e| DbErr::Custom(format!("Failed to get database path: {}", e)))?;
     let db_url = path_to_sqlite_url(&db_path)?;
 
     // 查询 user.db_backup_path
@@ -44,27 +46,9 @@ pub async fn backup_sqlite(version: &str) -> Result<PathBuf, DbErr> {
     Ok(backup_path)
 }
 
-/// 获取数据库文件的本地路径
-fn get_db_path_file() -> Result<PathBuf, DbErr> {
-    let base = dirs_next::config_dir()
-        .or_else(dirs_next::data_dir)
-        .ok_or_else(|| DbErr::Custom("Failed to resolve user data directory".to_string()))?;
-
-    Ok(base
-        .join("com.reinamanager.dev")
-        .join("data")
-        .join("reina_manager.db"))
-}
-
 /// 将文件路径转换为 sqlite 连接 URL
-fn path_to_sqlite_url(path: &PathBuf) -> Result<String, DbErr> {
+pub fn path_to_sqlite_url(path: &PathBuf) -> Result<String, DbErr> {
     let db_url = url::Url::from_file_path(path)
         .map_err(|_| DbErr::Custom("Invalid database path".to_string()))?;
     Ok(format!("sqlite:{}?mode=rwc", db_url.path()))
-}
-
-/// 从系统目录推导数据库连接字符串（兼容旧代码）
-pub fn get_db_path() -> Result<String, DbErr> {
-    let db_path = get_db_path_file()?;
-    path_to_sqlite_url(&db_path)
 }
