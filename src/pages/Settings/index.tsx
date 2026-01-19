@@ -28,6 +28,7 @@ import LightModeIcon from "@mui/icons-material/LightMode";
 import RestoreIcon from "@mui/icons-material/Restore";
 import SaveIcon from "@mui/icons-material/Save";
 import UpdateIcon from "@mui/icons-material/Update";
+import SettingsSystemDaydreamIcon from "@mui/icons-material/SettingsSystemDaydream";
 import {
 	Accordion,
 	AccordionDetails,
@@ -176,6 +177,10 @@ const AppearanceSettings = () => {
 						<ToggleButton value="dark">
 							<DarkModeIcon sx={{ mr: 1 }} />
 							{t("pages.Settings.dark", "暗黑")}
+						</ToggleButton>
+						<ToggleButton value="system">
+							<SettingsSystemDaydreamIcon sx={{ mr: 1 }} />
+							{t("pages.Settings.system", "跟随系统")}
 						</ToggleButton>
 					</ToggleButtonGroup>
 				</Box>

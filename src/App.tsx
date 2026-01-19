@@ -1,6 +1,7 @@
 import "./App.css";
 import "@/utils/i18n";
 import { isTauri } from "@tauri-apps/api/core";
+import { useMediaQuery } from "@mui/material";
 import type { Navigation } from "@toolpad/core/AppProvider";
 import { ReactRouterAppProvider } from "@toolpad/core/react-router";
 import { SnackbarProvider } from "notistack";
@@ -20,10 +21,20 @@ const App: React.FC = () => {
 	const themeColor = useStore((s) => s.themeColor);
 	const themeStyle = useStore((s) => s.themeStyle);
 
-	const theme = useMemo(
-		() => createAppTheme(themeMode, themeColor, themeStyle),
-		[themeMode, themeColor, themeStyle],
-	);
+	// 检测系统亮暗模式
+	const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
+
+	const theme = useMemo(() => {
+		// 计算实际应该使用的模式
+		const effectiveMode =
+			themeMode === "system"
+				? prefersDarkMode
+					? "dark"
+					: "light"
+				: themeMode;
+
+		return createAppTheme(effectiveMode, themeColor, themeStyle);
+	}, [themeMode, themeColor, themeStyle, prefersDarkMode]);
 
 	// 从路由配置动态生成导航菜单
 	const generatedNavigation = appRoutes

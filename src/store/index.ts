@@ -77,8 +77,8 @@ export interface AppState {
 	setLogLevel: (level: LogLevel) => void;
 
 	// 主题设置
-	themeMode: "light" | "dark";
-	setThemeMode: (mode: "light" | "dark") => void;
+	themeMode: "light" | "dark" | "system";
+	setThemeMode: (mode: "light" | "dark" | "system") => void;
 	themeColor: string;
 	setThemeColor: (color: string) => void;
 	themeStyle: "default" | "custom";
@@ -262,7 +262,7 @@ export const useStore = create<AppState>()(
 
 			// 主题设置
 			themeMode: "light",
-			setThemeMode: (mode: "light" | "dark") => set({ themeMode: mode }),
+			setThemeMode: (mode: "light" | "dark" | "system") => set({ themeMode: mode }),
 			themeColor: "#F48FB1",
 			setThemeColor: (color: string) => set({ themeColor: color }),
 			themeStyle: "custom",
