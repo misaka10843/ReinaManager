@@ -548,7 +548,7 @@ export async function updateGamePlayTime(
 		);
 
 		// 清除缓存
-		invalidateStatsCache();
+		// invalidateStatsCache();
 	} catch (error) {
 		console.error("更新游戏时间失败:", error);
 		throw error;

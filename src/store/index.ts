@@ -1329,6 +1329,10 @@ export const useStore = create<AppState>()(
 				sortOrder: state.sortOrder,
 				// 筛选偏好
 				gameFilterType: state.gameFilterType,
+				// 外观设置
+				themeMode: state.themeMode,
+				themeColor: state.themeColor,
+				themeStyle: state.themeStyle,
 				// 关闭应用相关
 				skipCloseRemind: state.skipCloseRemind,
 				defaultCloseAction: state.defaultCloseAction,

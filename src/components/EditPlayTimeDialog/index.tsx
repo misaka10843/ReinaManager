@@ -37,7 +37,7 @@ export const EditPlayTimeDialog: React.FC<EditPlayTimeDialogProps> = ({
             const fetchData = async () => {
                 try {
                     const game = await getGameById(gameId);
-                    if (game) setGameName(game.name);
+                    if (game && game.name) setGameName(game.name);
 
                     const stats = await loadGameStats(gameId);
                     if (stats) {
