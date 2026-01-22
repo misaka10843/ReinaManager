@@ -132,7 +132,10 @@ const RightMenu: React.FC<RightMenuProps> = ({
 				console.error(t("components.LaunchModal.gamePathNotFound"));
 				return;
 			}
-			await launchGame(selectedGame.localpath, id);
+			await launchGame(selectedGame.localpath, id, {
+				le_launch: selectedGame.le_launch === 1,
+				magpie: selectedGame.magpie === 1,
+			});
 		} catch (error) {
 			console.error(t("components.LaunchModal.launchFailed"), error);
 		}

@@ -10,6 +10,7 @@ use crate::database::repository::{
     settings_repository::SettingsRepository,
 };
 use crate::entity::{games, savedata, user};
+use crate::utils::fs::PathManager;
 
 // ==================== 便携模式相关类型 ====================
 
@@ -463,10 +464,20 @@ pub async fn get_le_path(db: State<'_, DatabaseConnection>) -> Result<String, St
 
 /// 设置LE转区软件路径
 #[tauri::command]
-pub async fn set_le_path(db: State<'_, DatabaseConnection>, path: String) -> Result<(), String> {
+pub async fn set_le_path(
+    db: State<'_, DatabaseConnection>,
+    app: AppHandle,
+    path: String
+) -> Result<(), String> {
     SettingsRepository::set_le_path(&db, path)
         .await
-        .map_err(|e| format!("设置LE转区软件路径失败: {}", e))
+        .map_err(|e| format!("设置LE转区软件路径失败: {}", e))?;
+
+    // 路径修改后刷新缓存
+    let path_manager = app.state::<PathManager>();
+    path_manager.preload_config_paths(&db).await?;
+
+    Ok(())
 }
 
 /// 获取Magpie转区软件路径
@@ -481,11 +492,18 @@ pub async fn get_magpie_path(db: State<'_, DatabaseConnection>) -> Result<String
 #[tauri::command]
 pub async fn set_magpie_path(
     db: State<'_, DatabaseConnection>,
+    app: AppHandle,
     path: String,
 ) -> Result<(), String> {
     SettingsRepository::set_magpie_path(&db, path)
         .await
-        .map_err(|e| format!("设置Magpie转区软件路径失败: {}", e))
+        .map_err(|e| format!("设置Magpie转区软件路径失败: {}", e))?;
+
+    // 路径修改后刷新缓存
+    let path_manager = app.state::<PathManager>();
+    path_manager.preload_config_paths(&db).await?;
+
+    Ok(())
 }
 
 /// 获取所有设置

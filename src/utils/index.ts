@@ -224,11 +224,18 @@ export const handleOpenFolder = async ({
 	}
 };
 
+// 游戏启动选项
+export interface GameLaunchOptions {
+	le_launch?: boolean;
+	magpie?: boolean;
+}
+
 // 启动游戏并开始监控
 export async function launchGameWithTracking(
 	gamePath: string,
 	gameId: number,
 	args?: string[],
+	launchOptions?: GameLaunchOptions,
 ): Promise<{ success: boolean; message: string; process_id?: number }> {
 	try {
 		const result = await invoke<{
@@ -239,6 +246,7 @@ export async function launchGameWithTracking(
 			gamePath,
 			gameId,
 			args: args || [],
+			launchOptions,
 		});
 
 		return result;

@@ -23,6 +23,7 @@ import { create } from "zustand";
 import { useStore } from "@/store";
 import type { GameSession, GameStatistics, GameTimeStats } from "@/types";
 import {
+	type GameLaunchOptions,
 	getLocalDateString,
 	launchGameWithTracking,
 	type StopGameResult,
@@ -72,6 +73,7 @@ interface GamePlayState {
 	launchGame: (
 		gamePath: string,
 		gameId: number,
+		launchOptions?: GameLaunchOptions,
 		args?: string[],
 	) => Promise<LaunchGameResult>;
 	stopGame: (gameId: number) => Promise<StopGameResult>;
@@ -187,10 +189,12 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
 	 * @param gamePath 游戏路径
 	 * @param gameId 游戏ID
 	 * @param args 启动参数
+	 * @param launchOptions 启动选项
 	 */
 	launchGame: async (
 		gamePath: string,
 		gameId: number,
+		launchOptions?: GameLaunchOptions,
 		args?: string[],
 	): Promise<LaunchGameResult> => {
 		if (!isTauri()) {
@@ -229,7 +233,12 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
 				get().initTimeTracking();
 			}
 
-			const result = await launchGameWithTracking(gamePath, gameId, args);
+			const result = await launchGameWithTracking(
+				gamePath,
+				gameId,
+				args,
+				launchOptions,
+			);
 
 			if (!result.success) {
 				// 启动失败，恢复状态
