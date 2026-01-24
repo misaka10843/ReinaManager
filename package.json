@@ -38,7 +38,7 @@
 		"axios": "^1.13.2",
 		"fuse.js": "^7.1.0",
 		"html-react-parser": "^5.2.10",
-		"i18next": "^25.6.0",
+		"i18next": "^25.8.0",
 		"i18next-browser-languagedetector": "^8.2.0",
 		"marked": "^17.0.1",
 		"notistack": "^3.0.2",
@@ -62,6 +62,7 @@
 		"@vitejs/plugin-react-swc": "^4.2.1",
 		"conventional-changelog-cli": "^5.0.0",
 		"globals": "^16.5.0",
+		"i18next-cli": "^1.37.0",
 		"typescript": "^5.9.3",
 		"unocss": "^66.5.4",
 		"vite": "^7.2.1"
