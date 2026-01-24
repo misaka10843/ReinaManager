@@ -13,7 +13,8 @@
 			"!dist",
 			"!src-tauri",
 			"!test",
-			"!scripts"
+			"!scripts",
+			"!others"
 		]
 	},
 	"formatter": {

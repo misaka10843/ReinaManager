@@ -35,12 +35,15 @@ import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
+import OpenInFullIcon from "@mui/icons-material/OpenInFull";
+import TurnRightIcon from "@mui/icons-material/TurnRight";
 import Button from "@mui/material/Button";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
+import Switch from "@mui/material/Switch";
 import { isTauri } from "@tauri-apps/api/core";
 import { ThemeSwitcher } from "@toolpad/core/DashboardLayout";
 import { useRef, useState } from "react";
@@ -178,8 +181,12 @@ export const DeleteModal: React.FC<{ id: number }> = ({ id }) => {
  * @returns {JSX.Element}
  */
 const MoreButton = () => {
-	const { selectedGame, setSelectedGame, updateGameClearStatusInStore } =
-		useStore();
+	const {
+		selectedGame,
+		setSelectedGame,
+		updateGameClearStatusInStore,
+		updateGame,
+	} = useStore();
 	const { t } = useTranslation();
 	const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 	const open = Boolean(anchorEl);
@@ -225,6 +232,34 @@ const MoreButton = () => {
 			);
 		} catch (error) {
 			console.error("更新游戏通关状态失败:", error);
+		}
+	};
+
+	/**
+	 * 切换LE转区启动状态
+	 */
+	const handleToggleLeLaunch = async (checked: boolean) => {
+		if (selectedGame?.id === undefined) return;
+		try {
+			await updateGame(selectedGame.id, { le_launch: checked ? 1 : 0 });
+			// 更新本地状态
+			setSelectedGame({ ...selectedGame, le_launch: checked ? 1 : 0 });
+		} catch (error) {
+			console.error("更新LE转区启动状态失败:", error);
+		}
+	};
+
+	/**
+	 * 切换Magpie放大状态
+	 */
+	const handleToggleMagpie = async (checked: boolean) => {
+		if (selectedGame?.id === undefined) return;
+		try {
+			await updateGame(selectedGame.id, { magpie: checked ? 1 : 0 });
+			// 更新本地状态
+			setSelectedGame({ ...selectedGame, magpie: checked ? 1 : 0 });
+		} catch (error) {
+			console.error("更新Magpie放大状态失败:", error);
 		}
 	};
 
@@ -281,6 +316,32 @@ const MoreButton = () => {
 					<ListItemText>
 						{t("components.Toolbar.ymgallink", "月幕Gal页面")}
 					</ListItemText>
+				</MenuItem>
+				<MenuItem
+					onClick={() => handleToggleLeLaunch(!(selectedGame?.le_launch === 1))}
+				>
+					<ListItemIcon>
+						<TurnRightIcon fontSize="small" />
+					</ListItemIcon>
+					<ListItemText>{t("components.Toolbar.leLaunch")}</ListItemText>
+					<Switch
+						checked={selectedGame?.le_launch === 1}
+						onChange={(e) => handleToggleLeLaunch(e.target.checked)}
+						size="small"
+					/>
+				</MenuItem>
+				<MenuItem
+					onClick={() => handleToggleMagpie(!(selectedGame?.magpie === 1))}
+				>
+					<ListItemIcon>
+						<OpenInFullIcon fontSize="small" />
+					</ListItemIcon>
+					<ListItemText>{t("components.Toolbar.magpieZoom")}</ListItemText>
+					<Switch
+						checked={selectedGame?.magpie === 1}
+						onChange={(e) => handleToggleMagpie(e.target.checked)}
+						size="small"
+					/>
 				</MenuItem>
 				<MenuItem onClick={handleToggleClearStatus}>
 					<ListItemIcon>

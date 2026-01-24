@@ -483,7 +483,10 @@ const Cards: React.FC<CardsProps> = ({ gamesData, categoryId }) => {
 			if (doubleClickLaunch && card.localpath) {
 				setSelectedGameId(cardId);
 				try {
-					await launchGame(card.localpath, cardId);
+					await launchGame(card.localpath, cardId, {
+						le_launch: card.le_launch === 1,
+						magpie: card.magpie === 1,
+					});
 				} catch (error) {
 					console.error("启动游戏失败:", error);
 				}
@@ -497,7 +500,10 @@ const Cards: React.FC<CardsProps> = ({ gamesData, categoryId }) => {
 			if (longPressLaunch && card.localpath) {
 				setSelectedGameId(cardId);
 				try {
-					await launchGame(card.localpath, cardId);
+					await launchGame(card.localpath, cardId, {
+						le_launch: card.le_launch === 1,
+						magpie: card.magpie === 1,
+					});
 				} catch (error) {
 					console.error("长按启动游戏失败:", error);
 				}

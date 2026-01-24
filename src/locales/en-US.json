@@ -1,0 +1,601 @@
+{
+	"api": {
+		"bgm": {
+			"fetchByIdFailed": "Failed to fetch BGM data by ID",
+			"fetchByNameFailed": "Failed to fetch BGM data by name",
+			"fetchFailed": "Failed to fetch BGM data",
+			"missingToken": "BGM Token is not set, please set it first and try again",
+			"notFound": "No related entries found, please check the game name and try again, or BGM_TOKEN is not set"
+		},
+		"http": {
+			"authFailed": "Authentication failed, please check your BGM_TOKEN",
+			"networkError": "Request error, please check your network connection",
+			"notFound": "No related entries found, please check the ID or game name and try again",
+			"requestError": "Request error"
+		},
+		"mixed": {
+			"noParameterProvided": "Must provide BGM ID, VNDB ID or game name"
+		},
+		"vndb": {
+			"apiCallFailed": "VNDB API call failed",
+			"fetchFailed": "Failed to fetch data, please try again later",
+			"notFound": "No related entries found, please check the ID or game name and try again"
+		},
+		"ym": {
+			"fetchByIdFailed": "Failed to fetch YM data by ID",
+			"fetchFailed": "Failed to fetch YM data",
+			"notFound": "YM data not found",
+			"tokenFailed": "YM token authentication failed"
+		}
+	},
+	"app": {
+		"NAVIGATION": {
+			"collection": "Collection",
+			"gameLibrary": "Game Library ",
+			"home": "Home",
+			"menu": "Menu",
+			"settings": "Settings"
+		}
+	},
+	"category": {
+		"playStatus": {
+			"dropped": "Dropped",
+			"onHold": "On Hold",
+			"played": "Played",
+			"playing": "Playing",
+			"wish": "Want to Play"
+		},
+		"unknownDeveloper": "Unknown Developer"
+	},
+	"common": {
+		"cancel": "Cancel",
+		"confirm": "Confirm",
+		"locale": "en-US",
+		"saving": "Saving..."
+	},
+	"components": {
+		"AddModal": {
+			"addGame": "Add Game",
+			"cancel": "Cancel",
+			"confirm": "Confirm",
+			"developer": "Developer",
+			"enableCustomMode": "Enable Custom Mode",
+			"gameExists": "Game already exists",
+			"gameIDTips": "Game ID (Enter BGM ID or VNDB ID)",
+			"gameName": "Game Name",
+			"idSearch": "Enable ID Search Mode",
+			"noDataSource": "Unable to fetch game data",
+			"noExecutableSelected": "No executable selected",
+			"noResults": "No results found",
+			"processing": "Processing...",
+			"selectExecutable": "Please select an executable file",
+			"selectGame": "Select Game",
+			"selectLauncher": "Select Launcher",
+			"timeout": "Request timed out, please try again later",
+			"unknownError": "An unknown error occurred",
+			"viewMore": "View More"
+		},
+		"AlertBox": {
+			"bgmData": "BGM Data",
+			"cancel": "Cancel",
+			"confirm": "Confirm",
+			"confirmAddTitle": "Confirm Add Game",
+			"confirmDelete": "Confirm Delete",
+			"confirmUpdateTitle": "Confirm Update Game",
+			"deleteBackupTitle": "Delete Backup",
+			"deleteGameMessage": "Are you sure you want to delete this game?",
+			"deleteGameTitle": "Delete Game",
+			"gameName": "Game Name",
+			"noData": "No data",
+			"processing": "Processing...",
+			"vndbData": "VNDB Data",
+			"ymgalData": "Ymgal Data"
+		},
+		"Collection": {
+			"errors": {
+				"cannotModifyVirtualCategory": "Cannot modify virtual category",
+				"updateCategoryGamesFailed": "Failed to update category games, please try again"
+			},
+			"success": {
+				"categoryGamesUpdated_one": "Category games updated: {{count}} game",
+				"categoryGamesUpdated_other": "Category games updated: {{count}} games"
+			}
+		},
+		"FilterModal": {
+			"allGames": "All Games",
+			"apply": "Apply",
+			"cancel": "Cancel",
+			"clearGames": "Completed Games",
+			"filter": "Filter",
+			"filterTitle": "Filter",
+			"localGames": "Local Games",
+			"noclearGames": "Not Completed Games",
+			"onlineGames": "Online Games"
+		},
+		"LaunchModal": {
+			"gamePathNotFound": "Game path not found",
+			"launchFailed": "Failed to launch game:",
+			"launchGame": "Launch Game",
+			"localPathLabel": "Executable File Path",
+			"pathRequired": "Please select or enter a path",
+			"pathSaved": "Path saved",
+			"pathSaveFailed": "Failed to save path",
+			"selectFolder": "Select Folder",
+			"setLocalPathTitle": "Set Local Path",
+			"stopFailed": "Failed to stop game:",
+			"syncLocalPath": "Sync Local"
+		},
+		"RightMenu": {
+			"Collection": {
+				"categoryMenu": "Category Menu",
+				"groupMenu": "Group Menu",
+				"manageGames": "Manage Games",
+				"newCategoryName": "New Category Name",
+				"newGroupName": "New Group Name",
+				"renameCategory": "Rename Category",
+				"renameCategoryTitle": "Rename Category",
+				"renameGroup": "Rename Group",
+				"renameGroupTitle": "Rename Group"
+			},
+			"deleteGame": "Delete Game",
+			"enterDetails": "Game Details",
+			"label": "Context Menu",
+			"markAsCompleted": "Mark as Completed",
+			"markAsNotCompleted": "Mark as Not Completed",
+			"openGameFolder": "Open Game Folder",
+			"startGame": "Start Game"
+		},
+		"SearchBox": {
+			"search": "Search"
+		},
+		"Snackbar": {
+			"failedOpenBackupFolder": "Failed to open the backup folder",
+			"failedOpenDatabaseBackupFolder": "Failed to open the database backup folder",
+			"failedOpenGameFolder": "Failed to open the game folder",
+			"failedOpenSaveFolder": "Failed to open the save folder"
+		},
+		"SortModal": {
+			"addTime": "Add Time (Default)",
+			"ascending": "Ascending",
+			"bgmRank": "BGM Rank",
+			"cancel": "Cancel",
+			"confirm": "Confirm",
+			"descending": "Descending",
+			"lastPlayed": "Last Played",
+			"nameSort": "Name Sort",
+			"releaseTime": "Game Release Time",
+			"sort": "Sort",
+			"sortMethod": "Sort Method:",
+			"vndbRank": "VNDB Rank"
+		},
+		"Toolbar": {
+			"bgmlink": "View Bangumi Page",
+			"Category": {
+				"availableGames": "Available Games",
+				"gamesInCategory": "Games in Category",
+				"manageGamesTitle": "Manage Category Games",
+				"noGames": "No games available",
+				"noGamesInCategory": "No games in this category",
+				"noSearchResults": "No matching games found",
+				"save": "Save Changes",
+				"searchPlaceholder": "Search games..."
+			},
+			"Collection": {
+				"Category": {
+					"manageGames": "Manage Games"
+				},
+				"Group": {
+					"addCategory": "Add Category",
+					"addGroup": "Add Group",
+					"deleteGroup": "Delete Group",
+					"deleteGroupMessage": "Are you sure you want to delete this group? This will also delete all categories in the group and cannot be undone.",
+					"deleteGroupTitle": "Delete Group",
+					"enterCategoryName": "Please enter category name",
+					"enterGroupName": "Please enter group name"
+				}
+			},
+			"deleteGame": "Delete Game",
+			"deleting": "Deleting...",
+			"leLaunch": "LE Region Launch",
+			"magpieZoom": "Magpie Zoom",
+			"markAsCompleted": "Mark as Completed",
+			"markAsNotCompleted": "Mark as Not Completed",
+			"more": "More",
+			"openGameFolder": "Open Game Folder",
+			"vndblink": "View Vndb Page",
+			"ymgallink": "View Ymgal Page"
+		},
+		"Tray": {
+			"exit": "Exit"
+		},
+		"Window": {
+			"closeDialog": {
+				"dontRemind": "Don't remind again",
+				"exitApp": "Exit application",
+				"message": "Please choose an action: Exit or Minimize to tray?",
+				"minimizeToTray": "Minimize to tray",
+				"title": "Close Application"
+			},
+			"UpdateModal": {
+				"cancel": "Cancel",
+				"changelog": "Changelog",
+				"downloading": "Downloading update...",
+				"newVersion": "New Version",
+				"releaseDate": "Release Date",
+				"title": "New Version Available",
+				"update": "Update Now"
+			}
+		}
+	},
+	"home": {
+		"activity": {
+			"added": "Added {{title}}",
+			"addedAt": "Added at {{time}}",
+			"duration": "Play duration: {{duration}}",
+			"played": "Played {{title}}",
+			"playedAtTime": "Played at {{time}}"
+		},
+		"activityTitle": "Activity",
+		"addedAt": "Added at: {{time}}",
+		"lastPlayed": "Last played: {{time}}",
+		"recentlyAdded": "Recently Added",
+		"recentlyPlayed": "Recently Played",
+		"repository": "Game Repository",
+		"stats": {
+			"completedGames": "Completed Games",
+			"localGames": "Local Games",
+			"todayPlayTime": "Today's Play Time",
+			"totalGames": "Total Games",
+			"totalPlayTime": "Total Play Time",
+			"weekPlayTime": "Weekly Play Time"
+		},
+		"title": "Home"
+	},
+	"pages": {
+		"Collection": {
+			"breadcrumb": {
+				"group": "Group",
+				"unknownCategory": "Unknown Category"
+			},
+			"defaultGroups": {
+				"developer": "Developer",
+				"playStatus": "Play Status"
+			},
+			"deleteCategoryMessage": "Are you sure you want to delete category \"{{name}}\"? This will remove the association between this category and all games, but will not delete the games themselves.",
+			"deleteCategoryTitle": "Delete Category",
+			"deleteGroupMessage": "Are you sure you want to delete group \"{{name}}\"? This will also delete all categories in the group and cannot be undone.",
+			"deleteGroupTitle": "Delete Group",
+			"errors": {
+				"cannotDeleteDefaultGroup": "Default group cannot be deleted",
+				"deleteCategoryFailed": "Failed to delete category, please try again",
+				"deleteGroupFailed": "Failed to delete group, please try again"
+			},
+			"gamesCount": "games",
+			"noCategoriesHint": "No categories in current group",
+			"success": {
+				"categoryDeleted": "Category deleted",
+				"groupDeleted": "Group deleted"
+			}
+		},
+		"Detail": {
+			"addTime": "Added Time",
+			"backup": "Backup",
+			"Backup": {
+				"autoSave": "Auto Backup",
+				"autoSaveDisabled": "Auto backup disabled",
+				"autoSaveEnabled": "Auto backup enabled",
+				"autoSaveUpdateFailed": "Failed to update auto backup setting",
+				"backupFailed": "Backup failed",
+				"backupHistory": "Backup History",
+				"backupSuccess": "Backup created successfully",
+				"backupTime": "Backup Time",
+				"confirmDelete": "Are you sure you want to delete backup",
+				"confirmDeleteSuffix": "? This action cannot be undone.",
+				"confirmRestore": "Are you sure you want to restore the backup",
+				"confirmRestoreButton": "Restore",
+				"confirmRestoreSuffix": "? This will overwrite your current save data. It's recommended to create a new backup before restoring.",
+				"createBackup": "Create Backup",
+				"creating": "Creating backup...",
+				"deleteFailed": "Delete failed",
+				"deleteSuccess": "Backup deleted successfully",
+				"fileSize": "File Size",
+				"invalidMaxBackups": "Invalid maximum backups value",
+				"loadBackupsFailed": "Failed to load backup list",
+				"manualBackup": "Manual Backup",
+				"maxBackups": "Maximum Backups",
+				"maxBackupsUpdateFailed": "Failed to update maximum backups",
+				"maxBackupsUpdateSuccess": "Maximum backups updated successfully",
+				"noBackups": "No backup records",
+				"openBackupFolder": "Open Backup Folder",
+				"openFolderFailed": "Failed to open folder",
+				"openSaveDataFolder": "Open Save Data Folder",
+				"pathRequired": "Please select a save data folder first",
+				"pathUpdateFailed": "Failed to update path",
+				"pathUpdateSuccess": "Save path updated successfully",
+				"restoreBackup": "Restore Backup",
+				"restoreBackupTitle": "Restore Save Data",
+				"restoreFailed": "Failed to restore",
+				"restoreSuccess": "Save data restored successfully",
+				"save": "Save",
+				"saveDataPath": "Save Data Folder Path",
+				"savePathSettings": "Save Path Settings",
+				"selectSaveDataFolder": "Select Save Data Folder",
+				"setPathForAutosave": "Please set the save path first to enable auto backup",
+				"setPathForRestore": "Please set save data path first to restore backup",
+				"settings": "Backup Settings",
+				"unknownError": "Unknown error",
+				"updatePath": "Update Path",
+				"updating": "Updating..."
+			},
+			"backupCount": "Backup Count",
+			"collapseTags": "Collapse Tags",
+			"DataSourceUpdate": {
+				"bgmId": "Bangumi ID",
+				"bgmOrVndbIdRequired": "Bangumi ID or VNDB ID cannot be empty",
+				"customModeWarning": "Custom mode cannot update from data source.",
+				"dataSource": "Data Source",
+				"invalidIdType": "Invalid ID type",
+				"loading": "Loading...",
+				"noDataFetched": "No data fetched or data source invalid.",
+				"noGameSelected": "No game selected",
+				"unknownError": "Unknown error",
+				"updateFromSource": "Update from data source",
+				"vndbId": "VNDB ID",
+				"ymgalId": "Ymgal ID"
+			},
+			"Edit": {
+				"dataSourceUpdate": "Data Source Update",
+				"gameInfoEdit": "Game Info Edit",
+				"unknownError": "Unknown error",
+				"updateSuccess": "Game information updated successfully"
+			},
+			"editPart": "Edit",
+			"expandTags": "Expand Tags",
+			"expected_hours": "Expected Hours",
+			"gameDatafrom": "Data Source",
+			"gameDeveloper": "Developer",
+			"GameInfoEdit": {
+				"addAliasPlaceholder": "Add alias...",
+				"addTagPlaceholder": "Add tag...",
+				"aliases": "Aliases",
+				"coverAndBasicInfo": "Cover and Basic Info",
+				"customGameName": "Custom Game Name",
+				"descriptionAndTags": "Description and Tags",
+				"developer": "Developer",
+				"developerHelperText": "The game's developer or production group name",
+				"developerPlaceholder": "Enter developer name",
+				"enterGameNote": "Please enter game note",
+				"gamePath": "Game Path",
+				"hasCustomCover": "Custom cover set",
+				"invalidGameId": "Invalid game ID",
+				"localPath": "Executable Path",
+				"noteHelperText": "You can set a custom display name for the game, leave blank to use the default name",
+				"nsfw": "NSFW",
+				"previewSelected": "New image selected, will take effect after saving",
+				"releaseDate": "Release Date",
+				"releaseDateHelperText": "The game's original release date",
+				"removeCustomCover": "Remove Custom Cover",
+				"saveAllChanges": "Save All Changes",
+				"saveGameInfoFailed": "Failed to save game info",
+				"saving": "Saving...",
+				"selectImage": "Select Image",
+				"selectImageFailed": "Failed to select image",
+				"selectPathFailed": "Failed to select path",
+				"summary": "Summary",
+				"summaryHelperText": "A short description of the game or story outline",
+				"summaryPlaceholder": "Enter game summary...",
+				"tags": "Tags",
+				"unknownError": "Unknown error"
+			},
+			"gameRanking": "Game Ranking",
+			"gameScore": "Game Score",
+			"gameStats": "Game Stats",
+			"gameTags": "Game Tags",
+			"introduction": "Introduction",
+			"loading": "Loading...",
+			"notFound": "Game data not found",
+			"playCount": "Total Play Count",
+			"playTimeChart": "Play Time Chart",
+			"releaseDate": "Release Date",
+			"todayPlayTime": "Today's Play Time",
+			"totalPlayTime": "Total Play Time"
+		},
+		"Settings": {
+			"about": {
+				"author": "Author",
+				"blog": "Author's Blog",
+				"checking": "Checking...",
+				"checkUpdate": "Check for Updates",
+				"github": "Project Repository",
+				"title": "About",
+				"version": "Version"
+			},
+			"autoStart": "Auto Start",
+			"batchUpdate": {
+				"description": "The batch update feature can be used to update BGM/VNDB data for existing games. When game metadata changes, you can use this feature to sync the latest information. Once you click the update button, please wait patiently as the update process may take some time. It is recommended to use when updating game data sources.",
+				"error": "Failed to batch update VNDB data: {{message}}",
+				"errorBgm": "Failed to batch update BGM data: {{message}}",
+				"failed": "Batch update failed",
+				"noBgmGames": "No games with BGM ID found",
+				"noBgmToken": "Update failed: BGM Token is not set",
+				"noGames": "No games with VNDB ID found",
+				"partialFailed": "{{failed}} games failed to update",
+				"success": "Successfully updated {{success}}/{{total}} games",
+				"title": "Batch Update Data",
+				"updateBgm": "Batch Update BGM Data",
+				"updateVndb": "Batch Update VNDB Data",
+				"updating": "Updating...",
+				"updatingBgm": "Batch updating BGM data..."
+			},
+			"bgmToken": "BGM Token",
+			"bgmTokenSettings": {
+				"clearToken": "Clear token",
+				"saveError": "Failed to save BGM Token",
+				"saveSuccess": "BGM Token saved successfully"
+			},
+			"cardClickMode": {
+				"doubleClickLaunch": "Double-click to launch game",
+				"doubleClickLaunchNote": "Enabling this will cause a 200ms delay for left-click (navigation mode only)",
+				"longPressLaunch": "Long-press to launch game",
+				"longPressLaunchNote": "Launch game after long-pressing card for 800ms. Enabling this will disable collection drag-sort feature",
+				"navigate": "Navigation Mode (Single click to view details)",
+				"select": "Selection Mode (Single click to select game)",
+				"title": "Card Click Mode"
+			},
+			"closeApp": "Exit application",
+			"closeSettings": "Close Settings",
+			"closeToTray": "Minimize to tray",
+			"databaseBackup": {
+				"backing": "Backing up...",
+				"backup": "Backup Database",
+				"backupError": "Database backup failed: {{error}}",
+				"backupFailed": "Backup failed",
+				"backupSuccess": "Database backup successful: {{path}}",
+				"importError": "Failed to import database: {{error}}",
+				"importFailed": "Import failed",
+				"importing": "Importing...",
+				"importSuccess": "Database imported successfully, application will restart automatically",
+				"openFolder": "Open Backup Folder",
+				"openFolderError": "Failed to open backup folder: {{error}}",
+				"openFolderFailed": "Failed to open folder",
+				"pathNote": "Leave empty to use the default path (AppData/data/backups), or the program directory in portable mode",
+				"restore": "Restore Database",
+				"restoreWarning": "Restoring database will overwrite existing data, please use with caution. The application will restart automatically after import.",
+				"title": "Database Backup & Restore"
+			},
+			"dbBackupPath": {
+				"note": "Leave empty to use the default path (AppData/data/backups), or the program directory in portable mode",
+				"pathLabel": "Backup Save Path",
+				"pathPlaceholder": "Leave empty to use default path",
+				"saveBtn": "Save",
+				"saveError": "Save failed",
+				"saveSuccess": "Backup path saved",
+				"selectBtn": "Select Directory",
+				"selectError": "Failed to select database backup path",
+				"title": "Database Backup Path"
+			},
+			"dev": {
+				"title": "Experimental Features",
+				"tooltip": "The following features are experimental, please use with caution"
+			},
+			"getToken": "Get Token",
+			"language": "Language",
+			"lePath": {
+				"pathLabel": "LE Executable File Path",
+				"pathPlaceholder": "Select LE executable file",
+				"saveError": "Failed to save LE path: {{error}}",
+				"saveFailed": "Failed to save LE path",
+				"saveSuccess": "LE path saved successfully",
+				"saving": "Saving...",
+				"selectFile": "Select File",
+				"selectFileError": "Failed to select LE executable file",
+				"title": "LE Executable File Path"
+			},
+			"logLevel": {
+				"changed": "Log level changed to {{level}}",
+				"changeFailed": "Failed to change log level",
+				"description": "Only effective for the current session, not saved. Used to temporarily adjust the backend log output verbosity.",
+				"levelLabel": "Log Output Level",
+				"openFolder": "Open Log Folder",
+				"openFolderError": "Failed to open log folder: {{error}}",
+				"openFolderFailed": "Failed to open folder",
+				"title": "Log Settings"
+			},
+			"magpiePath": {
+				"pathLabel": "Magpie Executable File Path",
+				"pathPlaceholder": "Select Magpie executable file",
+				"saveError": "Failed to save Magpie path: {{error}}",
+				"saveFailed": "Failed to save Magpie path",
+				"saveSuccess": "Magpie path saved successfully",
+				"saving": "Saving...",
+				"selectFile": "Select File",
+				"selectFileError": "Failed to select Magpie executable file",
+				"title": "Magpie Executable File Path"
+			},
+			"nsfw": {
+				"coverReplace": "NSFW cover replace",
+				"filter": "Filter NSFW content",
+				"title": "NSFW Settings"
+			},
+			"portableMode": {
+				"confirmDisableMessage": "After disabling portable mode, the database and backups will be migrated to the system application data directory. The application will restart automatically after successful operation.",
+				"confirmEnableMessage": "After enabling portable mode, the database and backups will be migrated to the program installation directory. The application will restart automatically after successful operation.",
+				"confirmTitle": "Confirm Portable Mode Switch",
+				"description": "When portable mode is enabled, the database and backups will be saved in the program installation directory's resources folder, instead of the system application data directory. Suitable for scenarios where you need to use the program on a USB drive or external hard drive.",
+				"enable": "Enable Portable Mode",
+				"title": "Portable Mode",
+				"toggleError": "Switch failed"
+			},
+			"restartError": "Failed to restart application",
+			"saveBtn": "Save",
+			"savePath": {
+				"moveSuccess": "Backup path saved successfully, backup folder has been moved to new location",
+				"moveWarning": "Backup path saved, but there was an issue moving the backup folder: {{message}}",
+				"movingBackups": "Moving backup folder to new location...",
+				"pathLabel": "Backup Root Directory Path",
+				"pathPlaceholder": "Select the root directory for game save backups",
+				"saveError": "Failed to save backup path: {{error}}",
+				"saveFailed": "Save failed",
+				"saveSuccess": "Backup path saved successfully",
+				"saving": "Saving...",
+				"selectFolder": "Select Directory",
+				"selectFolderError": "Failed to select folder",
+				"title": "Game Save Backup Path"
+			},
+			"skipCloseRemind": "Don't remind again",
+			"spoilerLevel": {
+				"description": "Select spoiler level to get appropriate tag content",
+				"level0": "0 - No Spoiler",
+				"level1": "1 - Mild Spoiler",
+				"level2": "2 - Severe Spoiler",
+				"title": "TAG Spoiler Level"
+			},
+			"tagTranslation": {
+				"description": "Enable Chinese translation for game tags",
+				"title": "TAG Translation"
+			},
+			"timeTrackingMode": {
+				"description": "Select how game time is calculated, affecting time display and statistics recording.",
+				"elapsed": "Total Elapsed Time",
+				"elapsedDesc": "Counts total time from game launch to exit, regardless of focus",
+				"playtime": "Real Game Time (Default)",
+				"playtimeDesc": "Only counts time when the game window is in focus, pauses when switching to other windows",
+				"title": "Game Time Tracking Mode"
+			},
+			"tokenPlaceholder": "Please enter your BGM_TOKEN",
+			"vndbData": {
+				"title": "VNDB Data Settings"
+			}
+		}
+	},
+	"utils": {
+		"batchUpdate": {
+			"bgmNotFound": "Game ID {{gameId}} (BGM: {{bgmId}}) data not found",
+			"noBgmGames": "No games with BGM ID found",
+			"noVndbGames": "No games with VNDB ID found",
+			"unknownError": "Unknown error",
+			"vndbNotFound": "Game ID {{gameId}} (VNDB: {{vndbId}}) data not found"
+		},
+		"formatPlayTime": {
+			"hours_one": "{{count}} hour",
+			"hours_other": "{{count}} hours",
+			"hoursAndMinutes": "{{hours}}h {{minutes}}min",
+			"minutes_one": "{{count}} minute",
+			"minutes_other": "{{count}} minutes"
+		},
+		"handleDirectory": {
+			"allFiles": "All Files",
+			"executable": "Executable File"
+		},
+		"relativetime": {
+			"daysAgo_one": "{{count}} day ago",
+			"daysAgo_other": "{{count}} days ago",
+			"hoursAgo_one": "{{count}} hour ago",
+			"hoursAgo_other": "{{count}} hours ago",
+			"justNow": "Just now",
+			"lastWeek": "Last week",
+			"minutesAgo_one": "{{count}} minute ago",
+			"minutesAgo_other": "{{count}} minutes ago"
+		}
+	}
+}

@@ -146,8 +146,11 @@ export const LaunchModal = () => {
 				return;
 			}
 
-			// 使用游戏启动函数
-			await launchGame(selectedGame.localpath, selectedGameId);
+			// 使用游戏启动函数，传递启动选项
+			await launchGame(selectedGame.localpath, selectedGameId, {
+				le_launch: selectedGame.le_launch === 1,
+				magpie: selectedGame.magpie === 1,
+			});
 		} catch (error) {
 			console.error(t("components.LaunchModal.launchFailed"), error);
 		}

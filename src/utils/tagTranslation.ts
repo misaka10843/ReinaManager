@@ -6,7 +6,7 @@
  * @copyright AGPL-3.0
  */
 
-import vndbTagTranslationsRaw from "@/locales/VndbTag_zh_CN.json";
+import vndbTagTranslationsRaw from "@/locales/_VndbTag_zh_CN.json";
 
 // 过滤掉元数据字段，只保留翻译内容
 const vndbTagTranslations = Object.fromEntries(

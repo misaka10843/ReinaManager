@@ -63,6 +63,8 @@ pub fn get_base_data_dir_for_mode(app: &AppHandle, portable: bool) -> Result<Pat
 struct PathCache {
     db_backup_path: Option<PathBuf>,
     savedata_backup_path: Option<PathBuf>,
+    le_path: Option<String>,
+    magpie_path: Option<String>,
 }
 
 /// 全局路径管理器
@@ -145,6 +147,49 @@ impl PathManager {
         Ok(path)
     }
 
+    /// 预加载所有配置路径到缓存
+    pub async fn preload_config_paths(
+        &self,
+        db: &DatabaseConnection,
+    ) -> Result<(), String> {
+        use crate::database::repository::settings_repository::SettingsRepository;
+
+        // 一次性获取所有设置，减少数据库查询次数
+        let settings = SettingsRepository::get_all_settings(db)
+            .await
+            .map_err(|e| format!("获取设置失败: {}", e))?;
+
+        // 提取配置路径（直接从设置获取，无需额外计算）
+        let le_path = settings.le_path.clone().unwrap_or_default();
+        let magpie_path = settings.magpie_path.clone().unwrap_or_default();
+
+        // 缓存所有路径
+        {
+            let mut cache = self.cache.lock().expect("路径管理器缓存锁已被污染");
+            cache.le_path = Some(le_path);
+            cache.magpie_path = Some(magpie_path);
+        }
+
+        Ok(())
+    }
+
+    /// 同步获取LE路径（需要先调用preload_config_paths）
+    pub fn get_le_path(&self) -> Result<String, String> {
+        let cache = self.cache.lock().expect("路径管理器缓存锁已被污染");
+        match &cache.le_path {
+            Some(path) => Ok(path.clone()),
+            None => Err("LE路径未加载，请先调用preload_config_paths".to_string()),
+        }
+    }
+
+    /// 同步获取Magpie路径（需要先调用preload_config_paths）
+    pub fn get_magpie_path(&self) -> Result<String, String> {
+        let cache = self.cache.lock().expect("路径管理器缓存锁已被污染");
+        match &cache.magpie_path {
+            Some(path) => Ok(path.clone()),
+            None => Err("Magpie路径未加载，请先调用preload_config_paths".to_string()),
+        }
+    }
     /// 清空路径缓存（用于用户修改配置后）
     pub fn clear_cache(&self) {
         let mut cache = self.cache.lock().expect("路径管理器缓存锁已被污染");
