@@ -263,7 +263,9 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
 					const store = useStore.getState();
 					if (minutes && store.sortOption === "lastplayed") {
 						// 如果当前排序是"最近游玩"，刷新游戏列表查询以更新顺序
-						await queryClient.invalidateQueries({ queryKey: gameKeys.lists() });
+						await queryClient.invalidateQueries({
+							queryKey: gameKeys.idLists(),
+						});
 					}
 					// ====== END ======
 				},

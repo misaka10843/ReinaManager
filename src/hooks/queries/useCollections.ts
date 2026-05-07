@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { getVirtualCategoryGames } from "@/hooks/common/useVirtualCollections";
 import { collectionService } from "@/services/invoke";
 import type { GameData } from "@/types";
-import { applyNsfwFilter } from "@/utils/appUtils";
+import { applyNsfwFilter, getGameNsfwStatus } from "@/utils/appUtils";
 
 export const collectionKeys = {
 	all: ["collections"] as const,
@@ -83,6 +83,13 @@ function useGameCategoryIds(gameId: number | null) {
 	});
 }
 
+/**
+ * 从收藏分类中获取游戏 ID 列表
+ *
+ * 支持虚拟分类（负数 ID）和真实分类（正数 ID）。
+ * 内部仍使用 GameData[] 进行筛选逻辑，
+ * 但只返回 number[]（ID 数组），子组件从缓存字典获取完整数据。
+ */
 function useCategoryGames(
 	categoryId: number | null,
 	categoryName: string | null,
@@ -92,35 +99,42 @@ function useCategoryGames(
 	const { t } = useTranslation();
 	const categoryGameIdsQuery = useCategoryGameIds(categoryId);
 
-	const data = useMemo(() => {
+	// gameById 只依赖 allGames，避免 nsfwFilter 变化时重建 Map
+	const gameById = useMemo(() => {
+		const map = new Map<number, GameData>();
+		for (const game of allGames) {
+			map.set(game.id, game);
+		}
+		return map;
+	}, [allGames]);
+
+	const data = useMemo((): number[] => {
 		if (categoryId === null) {
 			return [];
 		}
 
 		if (categoryId < 0) {
+			// 虚拟分类：从全量数据中按规则筛选，返回 ID 列表
 			const virtualGames = getVirtualCategoryGames(
 				categoryId,
 				categoryName,
 				allGames,
 				t,
 			);
-			return applyNsfwFilter(virtualGames, nsfwFilter);
+			return applyNsfwFilter(virtualGames, nsfwFilter).map((g) => g.id);
 		}
 
+		// 真实分类：直接返回 ID 列表
 		const ids = categoryGameIdsQuery.data ?? [];
-		const gameById = new Map<number, GameData>();
-		for (const game of allGames) {
-			gameById.set(game.id, game);
-		}
-		const games: GameData[] = [];
-		for (const id of ids) {
-			const game = gameById.get(id);
-			if (game) {
-				games.push(game);
-			}
+		if (!nsfwFilter) {
+			return ids;
 		}
 
-		return applyNsfwFilter(games, nsfwFilter);
+		// NSFW 过滤：从 Map 中查找对应游戏的 nsfw 状态
+		return ids.filter((id) => {
+			const game = gameById.get(id);
+			return game ? !getGameNsfwStatus(game) : true;
+		});
 	}, [
 		allGames,
 		categoryGameIdsQuery.data,
@@ -128,6 +142,7 @@ function useCategoryGames(
 		categoryName,
 		nsfwFilter,
 		t,
+		gameById,
 	]);
 
 	return {

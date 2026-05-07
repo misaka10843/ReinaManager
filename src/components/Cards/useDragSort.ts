@@ -7,33 +7,34 @@ import {
 	useSensors,
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useUpdateCategoryGames } from "@/hooks/queries/useCollections";
-import type { GameData } from "@/types";
 
 /**
  * 拖拽排序 Hook - 管理拖拽相关状态和逻辑
+ *
+ * 操作纯 ID 数组，不再依赖完整 GameData 对象。
  */
 export function useDragSort(options: {
-	gamesData: GameData[];
+	gameIds: number[];
 	categoryId?: number;
 	enabled: boolean;
 }) {
-	const { gamesData, categoryId, enabled } = options;
+	const { gameIds, categoryId, enabled } = options;
 	const updateCategoryGamesMutation = useUpdateCategoryGames();
 
-	const [sortableGames, setSortableGames] = useState(gamesData);
+	const [sortableIds, setSortableIds] = useState(gameIds);
 	const [activeId, setActiveId] = useState<number | null>(null);
 	const isDraggingRef = useRef(false);
 
-	const games = enabled ? sortableGames : gamesData;
+	const ids = enabled ? sortableIds : gameIds;
 
 	// 排序模式保留本地顺序，非排序模式直接使用外部数据，避免删除后慢一帧
 	useEffect(() => {
 		if (enabled && !isDraggingRef.current) {
-			setSortableGames(gamesData);
+			setSortableIds(gameIds);
 		}
-	}, [enabled, gamesData]);
+	}, [enabled, gameIds]);
 
 	// 传感器配置
 	const sensors = useSensors(
@@ -69,39 +70,32 @@ export function useDragSort(options: {
 				return;
 			}
 
-			const oldIndex = games.findIndex((g) => g.id === active.id);
-			const newIndex = games.findIndex((g) => g.id === over.id);
+			const oldIndex = ids.indexOf(active.id as number);
+			const newIndex = ids.indexOf(over.id as number);
 
 			if (oldIndex !== -1 && newIndex !== -1) {
-				const newGames = arrayMove(games, oldIndex, newIndex);
-				setSortableGames(newGames);
+				const newIds = arrayMove(ids, oldIndex, newIndex);
+				setSortableIds(newIds);
 
 				try {
-					const gameIds = newGames.map((g) => g.id as number);
 					await updateCategoryGamesMutation.mutateAsync({
 						categoryId,
-						gameIds,
+						gameIds: newIds,
 					});
 				} catch (error) {
 					console.error("排序更新失败:", error);
-					setSortableGames(games); // 回滚
+					setSortableIds(ids); // 回滚
 				}
 			}
 
 			isDraggingRef.current = false;
 		},
-		[games, categoryId, updateCategoryGamesMutation],
-	);
-
-	const activeGame = useMemo(
-		() => games.find((g) => g.id === activeId),
-		[activeId, games],
+		[ids, categoryId, updateCategoryGamesMutation],
 	);
 
 	return {
-		games,
+		ids,
 		activeId,
-		activeGame,
 		sensors,
 		handleDragStart,
 		handleDragCancel,

@@ -19,7 +19,7 @@ import { Autocomplete, Box, TextField } from "@mui/material";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useDebouncedValue } from "@/hooks/common/useDebouncedValue";
-import { useGameListFacade } from "@/hooks/features/games/useGameListFacade";
+import { useAllGameListFacade } from "@/hooks/features/games/useGameListFacade";
 import { useStore } from "@/store/appStore";
 import {
 	getSearchSuggestionsFromData,
@@ -51,7 +51,7 @@ export const SearchBox = () => {
 	const searchInput = useStore((state) => state.searchInput);
 	const setSearchInput = useStore((state) => state.setSearchInput);
 	const setSearchKeyword = useStore((state) => state.setSearchKeyword);
-	const { games: displayAllGames } = useGameListFacade();
+	const displayAllGames = useAllGameListFacade();
 
 	const [suggestions, setSuggestions] = useState<string[]>([]);
 	const [isOpen, setIsOpen] = useState(false);

@@ -63,6 +63,26 @@ class GameService extends BaseService {
 	}
 
 	/**
+	 * 只返回排序/筛选后的游戏 ID 列表
+	 *
+	 * 前端已缓存完整游戏数据，切换排序/筛选时只需传输 ID 数组，
+	 * IPC 传输量从数 MB 降到数 KB。
+	 */
+	async getGameIds(
+		gameType: GameType = "all",
+		sortOption: SortOption = "addtime",
+		sortOrder: SortOrder = "asc",
+		language?: string,
+	): Promise<number[]> {
+		return this.invoke<number[]>("find_game_ids", {
+			gameType,
+			sortOption,
+			sortOrder,
+			language: language ?? null,
+		});
+	}
+
+	/**
 	 * 更新游戏数据（单表架构）
 	 *
 	 * 支持三态逻辑：

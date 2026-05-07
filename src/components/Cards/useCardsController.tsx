@@ -1,8 +1,10 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
 import { useRemoveGamesFromCategory } from "@/hooks/queries/useCollections";
+import { gameKeys } from "@/hooks/queries/useGames";
 import { snackbar } from "@/providers/snackBar";
 import { useStore } from "@/store/appStore";
 import { useGamePlayStore } from "@/store/gamePlayStore";
@@ -14,15 +16,28 @@ import { RightMenuHost } from "./RightMenuHost";
 import type { RightMenuHostHandle, SortableCardItemProps } from "./types";
 
 interface UseCardsControllerOptions {
-	gamesData: GameData[];
+	gameIds: number[];
 	categoryId?: number;
 }
 
+/**
+ * 从缓存字典中读取游戏展示数据（非 hook，可在回调中使用）
+ */
+function getGameFromCache(
+	queryClient: ReturnType<typeof useQueryClient>,
+	gameId: number,
+): GameData | undefined {
+	return (
+		queryClient.getQueryData<GameData>(gameKeys.detail(gameId)) ?? undefined
+	);
+}
+
 export function useCardsController({
-	gamesData,
+	gameIds,
 	categoryId,
 }: UseCardsControllerOptions) {
 	const { i18n, t } = useTranslation();
+	const queryClient = useQueryClient();
 	const navigate = useNavigate();
 	const path = useLocation().pathname;
 	const isLibraries = path === "/libraries";
@@ -55,9 +70,6 @@ export function useCardsController({
 	const showBatchControls = canUseBatchMode && batchMode;
 	const removeGamesFromCategoryMutation = useRemoveGamesFromCategory();
 
-	const displayedGames = useMemo(() => gamesData, [gamesData]);
-	const gameIds = useMemo(() => gamesData.map((game) => game.id), [gamesData]);
-
 	const toggleBatchGame = useCallback((gameId: number) => {
 		setSelectedBatchGameIds((prev) =>
 			prev.includes(gameId)
@@ -67,7 +79,7 @@ export function useCardsController({
 	}, []);
 
 	const handleCardClick = useCallback(
-		(cardId: number, _card: GameData) => {
+		(cardId: number) => {
 			if (showBatchControls) {
 				toggleBatchGame(cardId);
 				return;
@@ -91,10 +103,13 @@ export function useCardsController({
 	);
 
 	const handleCardDoubleClick = useCallback(
-		async (cardId: number, card: GameData) => {
+		async (cardId: number) => {
 			if (showBatchControls) return;
 
-			if (doubleClickLaunch && card.localpath) {
+			if (doubleClickLaunch) {
+				const cached = getGameFromCache(queryClient, cardId);
+				if (!cached?.localpath) return;
+
 				setSelectedGameId(cardId);
 				try {
 					const result = await launchGame(cardId);
@@ -106,14 +121,24 @@ export function useCardsController({
 				}
 			}
 		},
-		[doubleClickLaunch, launchGame, setSelectedGameId, showBatchControls, i18n],
+		[
+			doubleClickLaunch,
+			launchGame,
+			queryClient,
+			setSelectedGameId,
+			showBatchControls,
+			i18n,
+		],
 	);
 
 	const handleCardLongPress = useCallback(
-		async (cardId: number, card: GameData) => {
+		async (cardId: number) => {
 			if (showBatchControls) return;
 
-			if (longPressLaunch && card.localpath) {
+			if (longPressLaunch) {
+				const cached = getGameFromCache(queryClient, cardId);
+				if (!cached?.localpath) return;
+
 				setSelectedGameId(cardId);
 				try {
 					const result = await launchGame(cardId);
@@ -125,7 +150,14 @@ export function useCardsController({
 				}
 			}
 		},
-		[longPressLaunch, launchGame, setSelectedGameId, showBatchControls, i18n],
+		[
+			longPressLaunch,
+			launchGame,
+			queryClient,
+			setSelectedGameId,
+			showBatchControls,
+			i18n,
+		],
 	);
 
 	const handleContextMenu = useCallback(
@@ -180,30 +212,33 @@ export function useCardsController({
 	);
 
 	const getCardProps = useCallback(
-		(card: GameData): SortableCardItemProps => ({
-			card,
-			displayName: getGameDisplayName(card),
-			batch: showBatchControls
-				? { selected: selectedBatchGameIdSet.has(card.id) }
-				: undefined,
-			removeAction:
-				isCollectionCategory && !showBatchControls
-					? {
-							title: t("components.Cards.removeFromCategory", "移出当前分类"),
-							onRemove: () => handleRemoveSingleFromCategory(card.id),
-						}
+		(gameId: number): SortableCardItemProps => {
+			const game = getGameFromCache(queryClient, gameId);
+			return {
+				gameId,
+				displayName: game ? getGameDisplayName(game) : "",
+				batch: showBatchControls
+					? { selected: selectedBatchGameIdSet.has(gameId) }
 					: undefined,
-			interaction: {
-				useDelayedClick:
-					!showBatchControls &&
-					cardClickMode === "navigate" &&
-					doubleClickLaunch,
-				onContextMenu: (e: React.MouseEvent) => handleContextMenu(e, card.id),
-				onClick: () => handleCardClick(card.id, card),
-				onDoubleClick: () => handleCardDoubleClick(card.id, card),
-				onLongPress: () => handleCardLongPress(card.id, card),
-			},
-		}),
+				removeAction:
+					isCollectionCategory && !showBatchControls
+						? {
+								title: t("components.Cards.removeFromCategory", "移出当前分类"),
+								onRemove: () => handleRemoveSingleFromCategory(gameId),
+							}
+						: undefined,
+				interaction: {
+					useDelayedClick:
+						!showBatchControls &&
+						cardClickMode === "navigate" &&
+						doubleClickLaunch,
+					onContextMenu: (e: React.MouseEvent) => handleContextMenu(e, gameId),
+					onClick: () => handleCardClick(gameId),
+					onDoubleClick: () => handleCardDoubleClick(gameId),
+					onLongPress: () => handleCardLongPress(gameId),
+				},
+			};
+		},
 		[
 			cardClickMode,
 			doubleClickLaunch,
@@ -213,6 +248,7 @@ export function useCardsController({
 			handleCardLongPress,
 			handleRemoveSingleFromCategory,
 			isCollectionCategory,
+			queryClient,
 			selectedBatchGameIdSet,
 			showBatchControls,
 			t,
@@ -240,7 +276,6 @@ export function useCardsController({
 
 	return {
 		controls,
-		displayedGames,
 		getCardProps,
 		longPressLaunch,
 		showBatchControls,

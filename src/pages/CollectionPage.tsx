@@ -647,11 +647,11 @@ export const Collection: React.FC = () => {
 			{showLevel === "games" &&
 				(selectedCategoryId !== null && selectedCategoryId > 0 ? (
 					<SortableCardsGrid
-						gamesData={categoryGames}
+						gameIds={categoryGames}
 						categoryId={selectedCategoryId}
 					/>
 				) : (
-					<CardsGrid gamesData={categoryGames} />
+					<CardsGrid gameIds={categoryGames} />
 				))}
 
 			{/* 统一的右键菜单 */}

@@ -6,21 +6,18 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { memo, useMemo } from "react";
-import type { GameData } from "@/types";
-import { getGameDisplayName } from "@/utils/appUtils";
 import { CardItem } from "./CardItem";
 import type { SortableCardItemProps } from "./types";
 import { useCardsController } from "./useCardsController";
 import { useDragSort } from "./useDragSort";
 
 interface SortableCardsGridProps {
-	gamesData: GameData[];
+	gameIds: number[];
 	categoryId: number;
 }
 
 const SortableCardItem = memo((props: SortableCardItemProps) => {
-	const { card, disabledSortable, ...restProps } = props;
-	const cardId = card.id;
+	const { gameId, disabledSortable, ...restProps } = props;
 
 	const {
 		attributes,
@@ -29,7 +26,7 @@ const SortableCardItem = memo((props: SortableCardItemProps) => {
 		transform,
 		transition,
 		isDragging,
-	} = useSortable({ id: cardId, disabled: disabledSortable });
+	} = useSortable({ id: gameId, disabled: disabledSortable });
 
 	const style = useMemo(
 		() => ({
@@ -45,7 +42,7 @@ const SortableCardItem = memo((props: SortableCardItemProps) => {
 		<CardItem
 			ref={setNodeRef}
 			style={style}
-			card={card}
+			gameId={gameId}
 			{...restProps}
 			{...(!disabledSortable ? attributes : {})}
 			{...(!disabledSortable ? listeners : {})}
@@ -57,32 +54,28 @@ SortableCardItem.displayName = "SortableCardItem";
 
 /**
  * SortableCardsGrid - 拖拽卡片布局。
+ *
+ * 接收纯 ID 数组，子组件 CardItem 通过缓存字典按需获取完整数据。
  */
 export const SortableCardsGrid = memo(
-	({ gamesData, categoryId }: SortableCardsGridProps) => {
+	({ gameIds, categoryId }: SortableCardsGridProps) => {
 		const {
-			games,
-			activeGame,
+			ids,
+			activeId,
 			sensors,
 			handleDragStart,
 			handleDragCancel,
 			handleDragEnd,
 		} = useDragSort({
-			gamesData,
+			gameIds,
 			categoryId,
 			enabled: true,
 		});
-		const {
-			controls,
-			displayedGames,
-			getCardProps,
-			longPressLaunch,
-			showBatchControls,
-		} = useCardsController({
-			gamesData: games,
-			categoryId,
-		});
-		const sortableIds = games.map((g) => g.id);
+		const { controls, getCardProps, longPressLaunch, showBatchControls } =
+			useCardsController({
+				gameIds: ids,
+				categoryId,
+			});
 		const isDragSortEnabled = !longPressLaunch && !showBatchControls;
 
 		return (
@@ -93,7 +86,7 @@ export const SortableCardsGrid = memo(
 				onDragCancel={handleDragCancel}
 				onDragEnd={isDragSortEnabled ? handleDragEnd : undefined}
 			>
-				<SortableContext items={sortableIds} strategy={rectSortingStrategy}>
+				<SortableContext items={ids} strategy={rectSortingStrategy}>
 					{controls}
 					<div className="flex-1 min-h-0">
 						<div
@@ -101,11 +94,11 @@ export const SortableCardsGrid = memo(
 								"text-center grid lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 3xl:grid-cols-9 4xl:grid-cols-10 gap-4"
 							}
 						>
-							{displayedGames.map((card) => {
-								const props = getCardProps(card);
+							{ids.map((gameId) => {
+								const props = getCardProps(gameId);
 								return (
 									<SortableCardItem
-										key={card.id}
+										key={gameId}
 										{...props}
 										disabledSortable={!isDragSortEnabled}
 									/>
@@ -115,11 +108,11 @@ export const SortableCardsGrid = memo(
 					</div>
 				</SortableContext>
 				<DragOverlay>
-					{activeGame && (
+					{activeId && (
 						<CardItem
-							card={activeGame}
+							gameId={activeId}
 							isOverlay
-							displayName={getGameDisplayName(activeGame)}
+							displayName={getCardProps(activeId).displayName}
 						/>
 					)}
 				</DragOverlay>

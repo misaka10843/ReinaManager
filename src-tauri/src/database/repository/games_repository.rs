@@ -232,6 +232,31 @@ impl GamesRepository {
         Self::find_with_sort(db, game_type, sort_option, sort_order, language).await
     }
 
+    /// 只返回排序后的 ID 列表，不返回完整游戏数据
+    ///
+    /// 对 SQL 层可直接排序的选项（Addtime/Datetime/LastPlayed）
+    /// 走 `SELECT id` 优化路径，避免加载 JSON 元数据列。
+    /// 其余选项（BGMRank/VNDBRank/Namesort）复用 find_with_sort 再提取 id。
+    /// 前端已缓存完整数据，切换排序/筛选时只需传输 ID 数组。
+    pub async fn find_ids(
+        db: &DatabaseConnection,
+        game_type: GameType,
+        sort_option: SortOption,
+        sort_order: SortOrder,
+        language: Option<String>,
+    ) -> Result<Vec<i32>, DbErr> {
+        match sort_option {
+            SortOption::Addtime | SortOption::Datetime | SortOption::LastPlayed => {
+                Self::find_ids_sql(db, game_type, sort_option, sort_order).await
+            }
+            _ => {
+                let games =
+                    Self::find_with_sort(db, game_type, sort_option, sort_order, language).await?;
+                Ok(games.into_iter().map(|g| g.id).collect())
+            }
+        }
+    }
+
     /// 删除游戏
     pub async fn delete(db: &DatabaseConnection, id: i32) -> Result<DeleteResult, DbErr> {
         Games::delete_by_id(id).exec(db).await
@@ -429,6 +454,53 @@ impl GamesRepository {
             }
         }
         result
+    }
+
+    /// 使用 SeaORM 的 `SELECT id` 优化路径，仅查询游戏 ID 列
+    ///
+    /// 仅适用于 SQL 层可直接排序的选项（Addtime/Datetime/LastPlayed），
+    /// 避免加载 5 个 JSON 元数据列（bgm_data/vndb_data/ymgal_data/kun_data/custom_data）。
+    async fn find_ids_sql(
+        db: &DatabaseConnection,
+        game_type: GameType,
+        sort_option: SortOption,
+        sort_order: SortOrder,
+    ) -> Result<Vec<i32>, DbErr> {
+        match sort_option {
+            SortOption::Addtime => {
+                let mut query = Self::build_base_query(game_type)
+                    .select_only()
+                    .column(games::Column::Id);
+                query = match sort_order {
+                    SortOrder::Asc => query.order_by_asc(games::Column::Id),
+                    SortOrder::Desc => query.order_by_desc(games::Column::Id),
+                };
+                query.into_tuple::<i32>().all(db).await
+            }
+            SortOption::Datetime => {
+                let mut query = Self::build_base_query(game_type)
+                    .select_only()
+                    .column(games::Column::Id);
+                query = match sort_order {
+                    SortOrder::Asc => query.order_by_asc(games::Column::Date),
+                    SortOrder::Desc => query.order_by_desc(games::Column::Date),
+                };
+                query.into_tuple::<i32>().all(db).await
+            }
+            SortOption::LastPlayed => {
+                use crate::entity::game_statistics;
+                Self::build_base_query(game_type)
+                    .select_only()
+                    .column(games::Column::Id)
+                    .left_join(game_statistics::Entity)
+                    .order_by(game_statistics::Column::LastPlayed, Order::Desc)
+                    .order_by_asc(games::Column::Id)
+                    .into_tuple::<i32>()
+                    .all(db)
+                    .await
+            }
+            _ => unreachable!(),
+        }
     }
 
     /// 通用的排序和查询方法

@@ -14,10 +14,11 @@ import type { GameType, SortOption, SortOrder } from "@/services/invoke";
 import { gameService } from "@/services/invoke";
 import type {
 	BatchOperationResult,
-	FullGameData,
+	GameData,
 	InsertGameParams,
 	UpdateGameParams,
 } from "@/types";
+import { getDisplayGameData } from "@/utils/dataTransform";
 
 const listRelevantUpdateFields = new Set<keyof UpdateGameParams>([
 	"bgm_id",
@@ -43,12 +44,12 @@ function shouldInvalidateGameLists(updates: UpdateGameParams): boolean {
 
 export const gameKeys = {
 	all: ["games"] as const,
-	lists: () => [...gameKeys.all, "list"] as const,
-	list: (params: {
+	idLists: () => [...gameKeys.all, "idList"] as const,
+	idList: (params: {
 		gameType: GameType;
 		sortOption: SortOption;
 		sortOrder: SortOrder;
-	}) => [...gameKeys.lists(), params] as const,
+	}) => [...gameKeys.idLists(), params] as const,
 	details: () => [...gameKeys.all, "detail"] as const,
 	detail: (id: number) => [...gameKeys.details(), id] as const,
 	vndbIds: () => [...gameKeys.all, "vndbIds"] as const,
@@ -62,32 +63,41 @@ function useAllGames() {
 	});
 }
 
-function useGameList(
+/**
+ * 查询单个游戏详情，返回展平后的 GameData
+ *
+ * 内部自动执行 FullGameData → GameData 转换，
+ * 缓存中存储 GameData，避免下游重复转换。
+ */
+function useGameDetail(gameId: number | null) {
+	return useQuery({
+		queryKey: gameKeys.detail(gameId ?? 0),
+		queryFn: async () => {
+			if (gameId === null) return null;
+			const fullData = await gameService.getGameById(gameId);
+			return fullData ? getDisplayGameData(fullData) : null;
+		},
+		enabled: gameId !== null,
+		placeholderData: keepPreviousData,
+	});
+}
+
+/**
+ * 查询排序/筛选后的游戏 ID 列表（轻量 IPC）
+ *
+ * 与 useAllGames（返回全量 FullGameData）不同：
+ * 本函数通过后端 find_game_ids 命令只获取 ID 数组，
+ * 前端已缓存完整数据，切换排序/筛选时 IPC 传输量从数 MB 降到数 KB。
+ */
+function useGameIdList(
 	gameType: GameType,
 	sortOption: SortOption,
 	sortOrder: SortOrder,
 ) {
 	return useQuery({
-		queryKey: gameKeys.list({ gameType, sortOption, sortOrder }),
+		queryKey: gameKeys.idList({ gameType, sortOption, sortOrder }),
 		queryFn: () =>
-			gameService.getAllGames(
-				gameType,
-				sortOption,
-				sortOrder,
-				i18next.language,
-			),
-		placeholderData: keepPreviousData,
-	});
-}
-
-function useGameDetail(gameId: number | null) {
-	return useQuery({
-		queryKey: gameKeys.detail(gameId ?? 0),
-		queryFn: () => {
-			if (gameId === null) return null;
-			return gameService.getGameById(gameId);
-		},
-		enabled: gameId !== null,
+			gameService.getGameIds(gameType, sortOption, sortOrder, i18next.language),
 		placeholderData: keepPreviousData,
 	});
 }
@@ -117,7 +127,7 @@ function useAddGame() {
 				queryKey: gameKeys.all,
 				exact: true,
 			});
-			await queryClient.invalidateQueries({ queryKey: gameKeys.lists() });
+			await queryClient.invalidateQueries({ queryKey: gameKeys.idLists() });
 			await queryClient.invalidateQueries({ queryKey: ["collections"] });
 		},
 	});
@@ -137,7 +147,7 @@ function useBatchAddGames() {
 				queryKey: gameKeys.all,
 				exact: true,
 			});
-			queryClient.invalidateQueries({ queryKey: gameKeys.lists() });
+			queryClient.invalidateQueries({ queryKey: gameKeys.idLists() });
 			queryClient.invalidateQueries({ queryKey: ["collections"] });
 		},
 	});
@@ -149,17 +159,13 @@ function useDeleteGame() {
 	return useMutation({
 		mutationFn: (gameId: number) => gameService.deleteGame(gameId),
 		onSuccess: (_, gameId) => {
-			// 乐观更新：立即从缓存中移除已删除的游戏，避免导航回来时闪烁
-			queryClient.setQueriesData<FullGameData[]>(
-				{ queryKey: gameKeys.lists() },
-				(old) => old?.filter((g) => g.id !== gameId),
-			);
-			queryClient.invalidateQueries({ queryKey: gameKeys.all, exact: true });
-			queryClient.invalidateQueries({ queryKey: gameKeys.lists() });
-			queryClient.invalidateQueries({
+			// 乐观更新：立即从缓存中移除已删除的游戏
+			queryClient.removeQueries({
 				queryKey: gameKeys.detail(gameId),
 				exact: true,
 			});
+			queryClient.invalidateQueries({ queryKey: gameKeys.all, exact: true });
+			queryClient.invalidateQueries({ queryKey: gameKeys.idLists() });
 			queryClient.invalidateQueries({ queryKey: ["collections"] });
 			queryClient.invalidateQueries({ queryKey: ["stats"] });
 		},
@@ -172,14 +178,15 @@ function useDeleteGames() {
 	return useMutation({
 		mutationFn: (gameIds: number[]) => gameService.deleteGames(gameIds),
 		onSuccess: (_, gameIds) => {
-			// 乐观更新：立即从缓存中移除已删除的游戏，避免导航回来时闪烁
-			const deleteIdSet = new Set(gameIds);
-			queryClient.setQueriesData<FullGameData[]>(
-				{ queryKey: gameKeys.lists() },
-				(old) => old?.filter((g) => !deleteIdSet.has(g.id)),
-			);
+			// 乐观更新：立即从缓存中移除已删除的游戏
+			for (const gameId of gameIds) {
+				queryClient.removeQueries({
+					queryKey: gameKeys.detail(gameId),
+					exact: true,
+				});
+			}
 			queryClient.invalidateQueries({ queryKey: gameKeys.all, exact: true });
-			queryClient.invalidateQueries({ queryKey: gameKeys.lists() });
+			queryClient.invalidateQueries({ queryKey: gameKeys.idLists() });
 			queryClient.invalidateQueries({ queryKey: ["collections"] });
 			queryClient.invalidateQueries({ queryKey: ["stats"] });
 		},
@@ -197,11 +204,15 @@ function useUpdateGame() {
 			gameId: number;
 			updates: UpdateGameParams;
 		}) => gameService.updateGame(gameId, updates),
-		onSuccess: (updatedGame, { gameId, updates }) => {
-			queryClient.setQueryData(gameKeys.detail(gameId), updatedGame);
+		onSuccess: (updatedFullGame, { gameId, updates }) => {
+			// 更新 detail 缓存（存储 GameData）
+			queryClient.setQueryData(
+				gameKeys.detail(gameId),
+				getDisplayGameData(updatedFullGame),
+			);
 
 			if (shouldInvalidateGameLists(updates)) {
-				queryClient.invalidateQueries({ queryKey: gameKeys.lists() });
+				queryClient.invalidateQueries({ queryKey: gameKeys.idLists() });
 				queryClient.invalidateQueries({
 					queryKey: gameKeys.all,
 					exact: true,
@@ -222,9 +233,19 @@ function useBatchUpdateGames() {
 				queryKey: gameKeys.all,
 				exact: true,
 			});
-			queryClient.invalidateQueries({ queryKey: gameKeys.lists() });
 		},
 	});
+}
+
+/**
+ * 从 React Query 缓存中读取单个游戏的 GameData
+ *
+ * 与 useGameDetail 不同：不创建 useQuery 订阅，以 O(1) 直接从缓存读取。
+ * 适用于回调、事件处理等非渲染场景。
+ */
+function useGameByIdFromCache(gameId: number): GameData | undefined {
+	const queryClient = useQueryClient();
+	return queryClient.getQueryData<GameData>(gameKeys.detail(gameId));
 }
 
 export {
@@ -236,7 +257,8 @@ export {
 	useBatchUpdateGames,
 	useDeleteGame,
 	useDeleteGames,
+	useGameByIdFromCache,
 	useGameDetail,
-	useGameList,
+	useGameIdList,
 	useUpdateGame,
 };

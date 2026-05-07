@@ -3,7 +3,7 @@ import { useScrollRestore } from "@/hooks/common/useScrollRestore";
 import { useGameListFacade } from "@/hooks/features/games/useGameListFacade";
 
 export const Libraries: React.FC = () => {
-	const { games, isLoading } = useGameListFacade();
+	const { gameIds, isLoading } = useGameListFacade();
 	useScrollRestore("/libraries", { isLoading });
-	return <CardsGrid gamesData={games} />;
+	return <CardsGrid gameIds={gameIds} />;
 };

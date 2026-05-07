@@ -77,9 +77,6 @@ export function useUpdatePlayStatus() {
 				exact: true,
 			});
 			queryClient.invalidateQueries({
-				queryKey: gameKeys.lists(),
-			});
-			queryClient.invalidateQueries({
 				queryKey: gameKeys.all,
 				exact: true,
 			});

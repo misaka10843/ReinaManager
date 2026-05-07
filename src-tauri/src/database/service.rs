@@ -61,6 +61,23 @@ pub async fn find_all_games(
         .map_err(|e| format!("获取游戏数据失败: {}", e))
 }
 
+/// 只返回排序/筛选后的游戏 ID 列表
+///
+/// 前端已缓存完整游戏数据，切换排序/筛选时只需传输 ID 数组，
+/// 避免数 MB 级 JSON 反复穿过 IPC 桥梁。
+#[tauri::command]
+pub async fn find_game_ids(
+    db: State<'_, DatabaseConnection>,
+    game_type: GameType,
+    sort_option: SortOption,
+    sort_order: SortOrder,
+    language: Option<String>,
+) -> Result<Vec<i32>, String> {
+    GamesRepository::find_ids(&db, game_type, sort_option, sort_order, language)
+        .await
+        .map_err(|e| format!("获取游戏 ID 列表失败: {}", e))
+}
+
 /// 更新游戏数据（单表架构）
 #[tauri::command]
 pub async fn update_game(

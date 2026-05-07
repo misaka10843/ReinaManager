@@ -1,5 +1,4 @@
 import type React from "react";
-import type { GameData } from "@/types";
 
 export interface CardInteraction {
 	onContextMenu?: (event: React.MouseEvent) => void;
@@ -19,7 +18,7 @@ export interface CardRemoveAction {
 }
 
 export interface CardItemProps extends React.HTMLAttributes<HTMLDivElement> {
-	card: GameData;
+	gameId: number;
 	displayName: string;
 	interaction?: CardInteraction;
 	batch?: CardBatchState;

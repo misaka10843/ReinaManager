@@ -1,20 +1,16 @@
-import { useMemo } from "react";
 import { useGameDetail } from "@/hooks/queries/useGames";
 
-import { getDisplayGameData } from "@/utils/appUtils";
-
+/**
+ * 按 ID 获取单个游戏的展示数据
+ *
+ * useGameDetail 缓存中已存储 GameData（由 useHydrateGameCache 写入），
+ * 此处直接使用，无需重复转换。
+ */
 export function useGameById(gameId: number | null) {
 	const gameDetailQuery = useGameDetail(gameId);
 
-	const selectedGame = useMemo(() => {
-		return gameDetailQuery.data
-			? getDisplayGameData(gameDetailQuery.data)
-			: null;
-	}, [gameDetailQuery.data]);
-
 	return {
-		selectedGame,
-		gameDetail: gameDetailQuery.data ?? null,
+		selectedGame: gameDetailQuery.data ?? null,
 		isLoadingSelectedGame: gameDetailQuery.isLoading,
 	};
 }

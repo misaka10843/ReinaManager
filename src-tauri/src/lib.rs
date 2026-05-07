@@ -66,6 +66,7 @@ pub fn run() {
             insert_games_batch,
             find_game_by_id,
             find_all_games,
+            find_game_ids,
             update_game,
             delete_game,
             delete_games_batch,

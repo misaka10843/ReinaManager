@@ -6,7 +6,7 @@ import {
 	useUpdatePlayStatus,
 } from "@/hooks/queries/usePlayStatus";
 import { snackbar } from "@/providers/snackBar";
-import type { FullGameData, GameData } from "@/types";
+import type { GameData } from "@/types";
 import { syncPlayStatusToCloud } from "@/utils/cloudCollectionSync";
 import { getUserErrorMessage } from "@/utils/errors";
 
@@ -45,11 +45,11 @@ export function useGameStatusActions() {
 
 		// 无论 invalidateScope 是什么，都统一进行乐观更新
 		// 确保依赖数据缓存的组件能第一时间获得更新反馈，从而彻底消除派生状态（Derived State）
-		const previousGame = queryClient.getQueryData(
+		const previousGame = queryClient.getQueryData<GameData | null>(
 			gameKeys.detail(params.gameId),
-		) as FullGameData | null;
+		);
 
-		queryClient.setQueryData<FullGameData | null>(
+		queryClient.setQueryData<GameData | null>(
 			gameKeys.detail(params.gameId),
 			(currentGame) => {
 				if (!currentGame) {
@@ -89,7 +89,7 @@ export function useGameStatusActions() {
 				},
 				onError: (error, variables) => {
 					// 恢复回退乐观更新
-					queryClient.setQueryData<FullGameData | null>(
+					queryClient.setQueryData<GameData | null>(
 						gameKeys.detail(variables.gameId),
 						previousGame,
 					);
