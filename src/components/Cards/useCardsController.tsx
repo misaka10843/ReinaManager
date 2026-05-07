@@ -1,5 +1,3 @@
-import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -14,8 +12,6 @@ import { getUserErrorMessage } from "@/utils/errors";
 import { CardsBatchBar } from "./CardsBatchBar";
 import { RightMenuHost } from "./RightMenuHost";
 import type { RightMenuHostHandle, SortableCardItemProps } from "./types";
-
-const CARD_LIMIT = 168;
 
 interface UseCardsControllerOptions {
 	gamesData: GameData[];
@@ -34,7 +30,6 @@ export function useCardsController({
 	const canUseBatchMode = isLibraries || isCollectionCategory;
 	const rightMenuRef = useRef<RightMenuHostHandle>(null);
 
-	const [showAll, setShowAll] = useState(false);
 	const {
 		setSelectedGameId,
 		cardClickMode,
@@ -60,10 +55,7 @@ export function useCardsController({
 	const showBatchControls = canUseBatchMode && batchMode;
 	const removeGamesFromCategoryMutation = useRemoveGamesFromCategory();
 
-	const displayedGames = useMemo(
-		() => (showAll ? gamesData : gamesData.slice(0, CARD_LIMIT)),
-		[gamesData, showAll],
-	);
+	const displayedGames = useMemo(() => gamesData, [gamesData]);
 	const gameIds = useMemo(() => gamesData.map((game) => game.id), [gamesData]);
 
 	const toggleBatchGame = useCallback((gameId: number) => {
@@ -246,23 +238,10 @@ export function useCardsController({
 		</>
 	);
 
-	const loadAllButton =
-		!showAll && gamesData.length > CARD_LIMIT ? (
-			<Box className="flex justify-center py-6">
-				<Button variant="outlined" onClick={() => setShowAll(true)}>
-					{t("components.Cards.loadAll", {
-						defaultValue: `加载全部（${gamesData.length}）`,
-						count: gamesData.length,
-					})}
-				</Button>
-			</Box>
-		) : null;
-
 	return {
 		controls,
 		displayedGames,
 		getCardProps,
-		loadAllButton,
 		longPressLaunch,
 		showBatchControls,
 	};

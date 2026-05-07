@@ -76,7 +76,6 @@ export const SortableCardsGrid = memo(
 			controls,
 			displayedGames,
 			getCardProps,
-			loadAllButton,
 			longPressLaunch,
 			showBatchControls,
 		} = useCardsController({
@@ -99,7 +98,7 @@ export const SortableCardsGrid = memo(
 					<div className="flex-1 min-h-0">
 						<div
 							className={
-								"text-center grid lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 3xl:grid-cols-10 4xl:grid-cols-12 gap-4"
+								"text-center grid lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 3xl:grid-cols-9 4xl:grid-cols-10 gap-4"
 							}
 						>
 							{displayedGames.map((card) => {
@@ -113,7 +112,6 @@ export const SortableCardsGrid = memo(
 								);
 							})}
 						</div>
-						{loadAllButton}
 					</div>
 				</SortableContext>
 				<DragOverlay>

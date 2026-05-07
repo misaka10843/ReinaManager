@@ -101,6 +101,7 @@ export const CardItem = memo(
 							image={coverImage}
 							alt="Card Image"
 							draggable="false"
+							loading="lazy"
 						/>
 						<div
 							className={`flex items-center justify-center h-8 px-1 w-full ${isActive ? "font-semibold text-blue-500" : ""}`}

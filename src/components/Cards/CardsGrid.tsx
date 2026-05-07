@@ -12,11 +12,10 @@ interface CardsGridProps {
  * CardsGrid - 普通卡片布局。
  */
 export const CardsGrid = memo(({ gamesData, categoryId }: CardsGridProps) => {
-	const { controls, displayedGames, getCardProps, loadAllButton } =
-		useCardsController({
-			gamesData,
-			categoryId,
-		});
+	const { controls, displayedGames, getCardProps } = useCardsController({
+		gamesData,
+		categoryId,
+	});
 
 	return (
 		<>
@@ -24,7 +23,7 @@ export const CardsGrid = memo(({ gamesData, categoryId }: CardsGridProps) => {
 			<div className="flex-1 min-h-0">
 				<div
 					className={
-						"text-center grid lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 3xl:grid-cols-10 4xl:grid-cols-12 gap-4"
+						"text-center grid lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 3xl:grid-cols-9 4xl:grid-cols-10 gap-4"
 					}
 				>
 					{displayedGames.map((card) => {
@@ -32,7 +31,6 @@ export const CardsGrid = memo(({ gamesData, categoryId }: CardsGridProps) => {
 						return <CardItem key={card.id} {...props} />;
 					})}
 				</div>
-				{loadAllButton}
 			</div>
 		</>
 	);

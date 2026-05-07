@@ -138,7 +138,6 @@
 			"saveFailed": "更新收藏夾失敗"
 		},
 		"Cards": {
-			"loadAll": "載入全部（{{count}}）",
 			"removeFromCategory": "移出目前分類",
 			"removeFromCategoryFailed": "移出分類失敗",
 			"removeFromCategorySuccess": "已從目前分類移除"
