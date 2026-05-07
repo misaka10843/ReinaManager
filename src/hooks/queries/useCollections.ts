@@ -4,7 +4,6 @@ import { useTranslation } from "react-i18next";
 import { getVirtualCategoryGames } from "@/hooks/common/useVirtualCollections";
 import { collectionService } from "@/services/invoke";
 import type { GameData } from "@/types";
-import { applyNsfwFilter, getGameNsfwStatus } from "@/utils/appUtils";
 
 export const collectionKeys = {
 	all: ["collections"] as const,
@@ -87,26 +86,15 @@ function useGameCategoryIds(gameId: number | null) {
  * 从收藏分类中获取游戏 ID 列表
  *
  * 支持虚拟分类（负数 ID）和真实分类（正数 ID）。
- * 内部仍使用 GameData[] 进行筛选逻辑，
- * 但只返回 number[]（ID 数组），子组件从缓存字典获取完整数据。
+ * 返回原始 ID 列表，不做 NSFW 过滤（收藏夹显示全部内容）。
  */
 function useCategoryGames(
 	categoryId: number | null,
 	categoryName: string | null,
 	allGames: GameData[],
-	nsfwFilter: boolean,
 ) {
 	const { t } = useTranslation();
 	const categoryGameIdsQuery = useCategoryGameIds(categoryId);
-
-	// gameById 只依赖 allGames，避免 nsfwFilter 变化时重建 Map
-	const gameById = useMemo(() => {
-		const map = new Map<number, GameData>();
-		for (const game of allGames) {
-			map.set(game.id, game);
-		}
-		return map;
-	}, [allGames]);
 
 	const data = useMemo((): number[] => {
 		if (categoryId === null) {
@@ -121,29 +109,12 @@ function useCategoryGames(
 				allGames,
 				t,
 			);
-			return applyNsfwFilter(virtualGames, nsfwFilter).map((g) => g.id);
+			return virtualGames.map((g) => g.id);
 		}
 
 		// 真实分类：直接返回 ID 列表
-		const ids = categoryGameIdsQuery.data ?? [];
-		if (!nsfwFilter) {
-			return ids;
-		}
-
-		// NSFW 过滤：从 Map 中查找对应游戏的 nsfw 状态
-		return ids.filter((id) => {
-			const game = gameById.get(id);
-			return game ? !getGameNsfwStatus(game) : true;
-		});
-	}, [
-		allGames,
-		categoryGameIdsQuery.data,
-		categoryId,
-		categoryName,
-		nsfwFilter,
-		t,
-		gameById,
-	]);
+		return categoryGameIdsQuery.data ?? [];
+	}, [allGames, categoryGameIdsQuery.data, categoryId, categoryName, t]);
 
 	return {
 		data,

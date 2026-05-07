@@ -81,7 +81,6 @@ export const Collection: React.FC = () => {
 		setCurrentGroup,
 		selectedCategoryId,
 		selectedCategoryName,
-		nsfwFilter,
 	} = useStore(
 		useShallow((s) => ({
 			currentGroupId: s.currentGroupId,
@@ -89,7 +88,6 @@ export const Collection: React.FC = () => {
 			setCurrentGroup: s.setCurrentGroup,
 			selectedCategoryId: s.selectedCategoryId,
 			selectedCategoryName: s.selectedCategoryName,
-			nsfwFilter: s.nsfwFilter,
 		})),
 	);
 	const displayAllGames = useAllGameListFacade();
@@ -101,7 +99,6 @@ export const Collection: React.FC = () => {
 		selectedCategoryId,
 		selectedCategoryName,
 		displayAllGames,
-		nsfwFilter,
 	);
 	const categoryGames = categoryGamesQuery.data;
 	const groupIds = groups.map((group) => group.id);

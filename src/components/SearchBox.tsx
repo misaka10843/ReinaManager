@@ -19,7 +19,7 @@ import { Autocomplete, Box, TextField } from "@mui/material";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useDebouncedValue } from "@/hooks/common/useDebouncedValue";
-import { useAllGameListFacade } from "@/hooks/features/games/useGameListFacade";
+import { useGameListFacade } from "@/hooks/features/games/useGameListFacade";
 import { useStore } from "@/store/appStore";
 import {
 	getSearchSuggestionsFromData,
@@ -51,7 +51,7 @@ export const SearchBox = () => {
 	const searchInput = useStore((state) => state.searchInput);
 	const setSearchInput = useStore((state) => state.setSearchInput);
 	const setSearchKeyword = useStore((state) => state.setSearchKeyword);
-	const displayAllGames = useAllGameListFacade();
+	const { filteredGames } = useGameListFacade();
 
 	const [suggestions, setSuggestions] = useState<string[]>([]);
 	const [isOpen, setIsOpen] = useState(false);
@@ -78,8 +78,8 @@ export const SearchBox = () => {
 
 	// 拼音预处理只依赖游戏列表，输入变化时复用
 	const suggestionEntries = useMemo(
-		() => preprocessSuggestionData(displayAllGames),
-		[displayAllGames],
+		() => preprocessSuggestionData(filteredGames),
+		[filteredGames],
 	);
 
 	// 生成搜索建议（只做字符串匹配，不再调用 pinyin）
