@@ -40,7 +40,7 @@ export const Edit: React.FC = () => {
 
 function EditContent({ selectedGame }: { selectedGame: GameData }) {
 	const { data: settings } = useAllSettings();
-	const bgmToken = settings?.bgm_token ?? "";
+	const bgmToken = settings?.bgm_auth?.access_token ?? "";
 	const updateGameMutation = useUpdateGame();
 	const { t } = useTranslation();
 	const id = selectedGame.id;

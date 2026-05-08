@@ -199,7 +199,7 @@ export const DevSettings: React.FC = () => {
 const BatchUpdateSettings: React.FC = () => {
 	const { t } = useTranslation();
 	const { data: settings } = useAllSettings();
-	const bgmToken = settings?.bgm_token ?? "";
+	const bgmToken = settings?.bgm_auth?.access_token ?? "";
 	const [isUpdatingVndb, setIsUpdatingVndb] = useState(false);
 	const [isUpdatingBgm, setIsUpdatingBgm] = useState(false);
 	const [updateStatus, setUpdateStatus] = useState<string>("");

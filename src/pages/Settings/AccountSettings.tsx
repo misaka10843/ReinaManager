@@ -1,6 +1,12 @@
 import ClearIcon from "@mui/icons-material/Clear";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import LoginIcon from "@mui/icons-material/Login";
 import {
+	Accordion,
+	AccordionDetails,
+	AccordionSummary,
 	Avatar,
+	Chip,
 	IconButton,
 	InputAdornment,
 	Switch,
@@ -11,46 +17,330 @@ import Button from "@mui/material/Button";
 import InputLabel from "@mui/material/InputLabel";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
+import { listen } from "@tauri-apps/api/event";
 import { open as openurl } from "@tauri-apps/plugin-shell";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import {
+	buildManualBgmAuth,
+	completeBgmAuth,
+	getBgmAvatarUrl,
+} from "@/api/bgm";
+import {
 	useAllSettings,
-	useBgmCurrentUserProfile,
 	useUpdateSettings,
 	useVndbCurrentUserProfile,
 } from "@/hooks/queries/useSettings";
 import { snackbar } from "@/providers/snackBar";
+import { settingsService } from "@/services/invoke";
 import { useStore } from "@/store/appStore";
+import type { BgmAuth } from "@/types";
+import { toError } from "@/utils/errors";
+
+function getDetailedErrorMessage(error: unknown) {
+	return toError(error).message;
+}
+
+type BgmAccountSummaryProps = {
+	bgmAuth?: BgmAuth | null;
+	isCompletingAuth: boolean;
+	onCompleteAuth: () => void;
+	onLogout: () => void;
+};
+
+const BgmAccountSummary = ({
+	bgmAuth,
+	isCompletingAuth,
+	onCompleteAuth,
+	onLogout,
+}: BgmAccountSummaryProps) => {
+	const { t } = useTranslation();
+	if (!bgmAuth?.access_token) return null;
+
+	const isOAuth = Boolean(bgmAuth.refresh_token);
+	const expiresAt = bgmAuth.expires_at ?? null;
+	const expiresDate = expiresAt
+		? new Date(expiresAt * 1000).toLocaleString()
+		: null;
+	const isExpired = expiresAt ? Date.now() / 1000 >= expiresAt : false;
+	const username = bgmAuth.username ?? "";
+	const displayName = bgmAuth.nickname || username;
+	const shouldShowCompleteButton =
+		!isOAuth && (bgmAuth.expires_at == null || !bgmAuth.username);
+
+	return (
+		<Box className="mb-4">
+			{username ? (
+				<Stack direction="row" spacing={2} alignItems="flex-start">
+					<Avatar
+						src={getBgmAvatarUrl(username)}
+						alt={displayName}
+						sx={{ width: 56, height: 56 }}
+					/>
+					<Box className="flex-1 min-w-0">
+						<Stack
+							direction="row"
+							spacing={1}
+							alignItems="center"
+							flexWrap="wrap"
+						>
+							<Typography variant="body1" className="font-semibold">
+								{displayName}
+							</Typography>
+							<Typography variant="caption" color="text.secondary">
+								@{username}
+							</Typography>
+							<Chip
+								label={isOAuth ? "OAuth" : "Access Token"}
+								size="small"
+								color={isOAuth ? "success" : "default"}
+								variant="outlined"
+							/>
+						</Stack>
+						<Typography
+							variant="caption"
+							color={isExpired ? "error.main" : "text.secondary"}
+							className="block mt-1"
+						>
+							{expiresDate
+								? t(
+										"pages.Settings.bgmTokenSettings.tokenExpiresAt",
+										"Token 有效期至: {{date}}",
+										{ date: expiresDate },
+									)
+								: t(
+										"pages.Settings.bgmTokenSettings.tokenExpiryUnknown",
+										"Token 有效期未知",
+									)}
+						</Typography>
+					</Box>
+					<Stack direction="row" spacing={1} alignItems="center">
+						{shouldShowCompleteButton && (
+							<Button
+								variant="outlined"
+								size="small"
+								onClick={onCompleteAuth}
+								disabled={isCompletingAuth}
+							>
+								{isCompletingAuth
+									? t(
+											"pages.Settings.bgmTokenSettings.queryingTokenStatus",
+											"正在查询 Token 状态...",
+										)
+									: t(
+											"pages.Settings.bgmTokenSettings.queryTokenStatus",
+											"查询 Token 状态",
+										)}
+							</Button>
+						)}
+						<Button
+							variant="outlined"
+							color="error"
+							size="small"
+							onClick={onLogout}
+						>
+							{t("pages.Settings.bgmTokenSettings.logout", "退出登录")}
+						</Button>
+					</Stack>
+				</Stack>
+			) : (
+				<Stack spacing={1} alignItems="flex-start">
+					<Typography variant="caption" color="text.secondary">
+						{t(
+							"pages.Settings.bgmTokenSettings.profileUnavailable",
+							"暂无用户信息，请尝试下方按钮以获取用户信息。",
+						)}
+					</Typography>
+					{shouldShowCompleteButton && (
+						<Stack direction="row" spacing={1} alignItems="center">
+							<Button
+								variant="outlined"
+								size="small"
+								onClick={onCompleteAuth}
+								disabled={isCompletingAuth}
+							>
+								{isCompletingAuth
+									? t(
+											"pages.Settings.bgmTokenSettings.queryingTokenStatus",
+											"正在查询 Token 状态...",
+										)
+									: t(
+											"pages.Settings.bgmTokenSettings.queryTokenStatus",
+											"查询 Token 状态",
+										)}
+							</Button>
+							<Button
+								variant="outlined"
+								color="error"
+								size="small"
+								onClick={onLogout}
+							>
+								{t("pages.Settings.bgmTokenSettings.logout", "退出登录")}
+							</Button>
+						</Stack>
+					)}
+				</Stack>
+			)}
+		</Box>
+	);
+};
+
+type BgmOAuthLoginButtonProps = {
+	isLoading: boolean;
+	onLogin: () => void;
+};
+
+const BgmOAuthLoginButton = ({
+	isLoading,
+	onLogin,
+}: BgmOAuthLoginButtonProps) => {
+	const { t } = useTranslation();
+
+	return (
+		<Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+			<Button
+				variant="contained"
+				color="primary"
+				startIcon={<LoginIcon />}
+				onClick={onLogin}
+				disabled={isLoading}
+			>
+				{isLoading
+					? t(
+							"pages.Settings.bgmTokenSettings.oauthWaiting",
+							"请在浏览器中完成授权...",
+						)
+					: t("pages.Settings.bgmTokenSettings.oauthLogin", "OAuth 快捷登录")}
+			</Button>
+		</Stack>
+	);
+};
+
+type BgmTokenLoginPanelProps = {
+	inputToken: string;
+	isSavingToken: boolean;
+	onInputTokenChange: (value: string) => void;
+	onSaveToken: () => void;
+	onClearToken: () => void;
+	onOpenTokenPage: () => void;
+};
+
+const BgmTokenLoginPanel = ({
+	inputToken,
+	isSavingToken,
+	onInputTokenChange,
+	onSaveToken,
+	onClearToken,
+	onOpenTokenPage,
+}: BgmTokenLoginPanelProps) => {
+	const { t } = useTranslation();
+
+	return (
+		<Accordion className="w-full">
+			<AccordionSummary expandIcon={<ExpandMoreIcon />}>
+				<Typography variant="body2">
+					{t("pages.Settings.bgmTokenSettings.tokenLogin", "Access Token 登录")}
+				</Typography>
+			</AccordionSummary>
+			<AccordionDetails>
+				<Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+					<TextField
+						autoComplete="off"
+						placeholder={t("pages.Settings.tokenPlaceholder")}
+						value={inputToken}
+						onChange={(e) => onInputTokenChange(e.target.value)}
+						variant="outlined"
+						size="medium"
+						className="min-w-60"
+						slotProps={{
+							htmlInput: {
+								style: {
+									WebkitTextSecurity: "disc",
+									textSecurity: "disc",
+								},
+							},
+							input: {
+								endAdornment: inputToken && (
+									<InputAdornment position="end">
+										<IconButton
+											onClick={onClearToken}
+											edge="end"
+											size="small"
+											aria-label={t(
+												"pages.Settings.bgmTokenSettings.clearToken",
+												"清除令牌",
+											)}
+										>
+											<ClearIcon />
+										</IconButton>
+									</InputAdornment>
+								),
+							},
+						}}
+					/>
+					<Button
+						variant="contained"
+						color="primary"
+						onClick={onSaveToken}
+						disabled={isSavingToken}
+						className="px-6 py-2"
+					>
+						{isSavingToken
+							? t(
+									"pages.Settings.bgmTokenSettings.queryingTokenStatus",
+									"正在查询 Token 状态...",
+								)
+							: t("pages.Settings.bgmTokenSettings.saveToken", "保存")}
+					</Button>
+					<Button
+						variant="outlined"
+						color="primary"
+						onClick={onOpenTokenPage}
+						className="px-6 py-2"
+					>
+						{t("pages.Settings.getToken")}
+					</Button>
+				</Stack>
+			</AccordionDetails>
+		</Accordion>
+	);
+};
 
 export const BgmTokenSettings = () => {
 	const { t } = useTranslation();
 	const { data: settings } = useAllSettings();
-	const bgmToken = settings?.bgm_token ?? "";
-	const { data: bgmProfile, isLoading: isBgmProfileLoading } =
-		useBgmCurrentUserProfile();
+	const bgmAuth = settings?.bgm_auth;
+	const bgmToken = bgmAuth?.access_token ?? "";
 	const updateSettingsMutation = useUpdateSettings();
 	const [inputToken, setInputToken] = useState("");
+	const [isOAuthLoading, setIsOAuthLoading] = useState(false);
+	const [isCompletingAuth, setIsCompletingAuth] = useState(false);
+	const [isSavingToken, setIsSavingToken] = useState(false);
+	const unlistenRef = useRef<(() => void) | null>(null);
 
 	useEffect(() => {
 		setInputToken(bgmToken);
 	}, [bgmToken]);
 
-	/**
-	 * 打开 Bangumi Token 获取页面
-	 */
+	useEffect(() => {
+		return () => {
+			unlistenRef.current?.();
+		};
+	}, []);
+
 	const handleOpen = () => {
 		openurl("https://next.bgm.tv/demo/access-token/create");
 	};
 
-	/**
-	 * 保存BGM Token
-	 */
 	const handleSaveToken = async () => {
+		const accessToken = inputToken.trim();
 		try {
+			setIsSavingToken(true);
+			const auth = await buildManualBgmAuth(accessToken);
+
 			await updateSettingsMutation.mutateAsync({
-				bgmToken: inputToken,
+				bgmAuth: auth,
 			});
 			snackbar.success(
 				t("pages.Settings.bgmTokenSettings.saveSuccess", "BGM Token 保存成功"),
@@ -58,8 +348,14 @@ export const BgmTokenSettings = () => {
 		} catch (error) {
 			console.error(error);
 			snackbar.error(
-				t("pages.Settings.bgmTokenSettings.saveError", "BGM Token 保存失败"),
+				t(
+					"pages.Settings.bgmTokenSettings.saveErrorWithDetail",
+					"BGM Token 保存失败: {{error}}",
+					{ error: getDetailedErrorMessage(error) },
+				),
 			);
+		} finally {
+			setIsSavingToken(false);
 		}
 	};
 
@@ -70,99 +366,158 @@ export const BgmTokenSettings = () => {
 		setInputToken("");
 	};
 
+	const handleOAuthLogin = useCallback(async () => {
+		try {
+			setIsOAuthLoading(true);
+			const authorizeUrl = await settingsService.bgmOAuthStartLogin();
+			await openurl(authorizeUrl);
+			snackbar.info(
+				t(
+					"pages.Settings.bgmTokenSettings.oauthWaiting",
+					"请在浏览器中完成授权...",
+				),
+			);
+
+			unlistenRef.current?.();
+			const unlisten = await listen<string>("bgm-oauth-code", async (event) => {
+				unlistenRef.current = null;
+				try {
+					const auth = await settingsService.bgmOAuthExchangeCode(
+						event.payload,
+					);
+					await updateSettingsMutation.mutateAsync({
+						bgmAuth: await completeBgmAuth(auth),
+					});
+					snackbar.success(
+						t(
+							"pages.Settings.bgmTokenSettings.oauthSuccess",
+							"Bangumi OAuth 登录成功",
+						),
+					);
+				} catch (error) {
+					console.error(error);
+					snackbar.error(
+						t(
+							"pages.Settings.bgmTokenSettings.oauthError",
+							"OAuth 登录失败: {{error}}",
+							{ error: getDetailedErrorMessage(error) },
+						),
+					);
+				} finally {
+					setIsOAuthLoading(false);
+				}
+			});
+			unlistenRef.current = unlisten;
+		} catch (error) {
+			console.error(error);
+			setIsOAuthLoading(false);
+			snackbar.error(
+				t(
+					"pages.Settings.bgmTokenSettings.oauthStartError",
+					"启动 OAuth 登录失败: {{error}}",
+					{ error: getDetailedErrorMessage(error) },
+				),
+			);
+		}
+	}, [t, updateSettingsMutation]);
+
+	const handleCompleteAuth = useCallback(async () => {
+		if (!bgmAuth?.access_token) return;
+		try {
+			setIsCompletingAuth(true);
+
+			await updateSettingsMutation.mutateAsync({
+				bgmAuth: await completeBgmAuth(bgmAuth),
+			});
+			snackbar.success(
+				t(
+					"pages.Settings.bgmTokenSettings.tokenStatusSuccess",
+					"授权信息已更新",
+				),
+			);
+		} catch (error) {
+			console.error(error);
+			snackbar.error(
+				t(
+					"pages.Settings.bgmTokenSettings.tokenStatusError",
+					"无法查询 Token 状态: {{error}}",
+					{ error: getDetailedErrorMessage(error) },
+				),
+			);
+		} finally {
+			setIsCompletingAuth(false);
+		}
+	}, [bgmAuth, t, updateSettingsMutation]);
+
+	const handleLogout = useCallback(async () => {
+		try {
+			await updateSettingsMutation.mutateAsync({
+				bgmAuth: null,
+			});
+			setInputToken("");
+			snackbar.success(
+				t("pages.Settings.bgmTokenSettings.logoutSuccess", "已退出 BGM 登录"),
+			);
+		} catch (error) {
+			console.error(error);
+			snackbar.error(
+				t("pages.Settings.bgmTokenSettings.logoutError", "退出登录失败"),
+			);
+		}
+	}, [t, updateSettingsMutation]);
+
 	return (
 		<Box className="mb-8">
 			<InputLabel className="font-semibold mb-4">
 				{t("pages.Settings.bgmToken")}
 			</InputLabel>
-			{bgmToken && (
-				<Box className="mb-4">
-					{isBgmProfileLoading ? (
-						<Typography variant="caption" color="text.secondary">
-							{t(
-								"pages.Settings.bgmTokenSettings.loadingProfile",
-								"正在获取当前 Bangumi 账号信息...",
-							)}
-						</Typography>
-					) : bgmProfile ? (
-						<Stack direction="row" spacing={2} alignItems="center">
-							<Avatar
-								src={bgmProfile.avatar?.large}
-								alt={bgmProfile.nickname || bgmProfile.username}
-							/>
-							<Box>
-								<Typography variant="body2" className="font-semibold">
-									{bgmProfile.nickname || bgmProfile.username}
-								</Typography>
-								<Typography variant="caption" color="text.secondary">
-									@{bgmProfile.username}
-								</Typography>
-							</Box>
-						</Stack>
-					) : (
+			<Box className="pl-2 space-y-6">
+				<Box>
+					<InputLabel className="font-semibold mb-2">
+						{t("pages.Settings.bgmTokenSettings.userInfo", "用户信息")}
+					</InputLabel>
+					<BgmAccountSummary
+						bgmAuth={bgmAuth}
+						isCompletingAuth={isCompletingAuth}
+						onCompleteAuth={handleCompleteAuth}
+						onLogout={handleLogout}
+					/>
+					{!bgmAuth?.access_token && (
 						<Typography variant="caption" color="text.secondary">
 							{t(
 								"pages.Settings.bgmTokenSettings.profileUnavailable",
-								"当前 BGM Token 无法获取用户信息，请检查令牌是否有效。",
+								"暂无用户信息，请尝试下方按钮以获取用户信息。",
 							)}
 						</Typography>
 					)}
 				</Box>
-			)}
 
-			<Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
-				<TextField
-					autoComplete="off"
-					placeholder={t("pages.Settings.tokenPlaceholder")}
-					value={inputToken}
-					onChange={(e) => setInputToken(e.target.value)}
-					variant="outlined"
-					size="medium"
-					className="min-w-60"
-					slotProps={{
-						htmlInput: {
-							style: {
-								WebkitTextSecurity: "disc",
-								textSecurity: "disc",
-							},
-						},
-						input: {
-							endAdornment: inputToken && (
-								<InputAdornment position="end">
-									<IconButton
-										onClick={handleClearToken}
-										edge="end"
-										size="small"
-										aria-label={t(
-											"pages.Settings.bgmTokenSettings.clearToken",
-											"清除令牌",
-										)}
-									>
-										<ClearIcon />
-									</IconButton>
-								</InputAdornment>
-							),
-						},
-					}}
-				/>
-				<Button
-					variant="contained"
-					color="primary"
-					onClick={handleSaveToken}
-					disabled={updateSettingsMutation.isPending}
-					className="px-6 py-2"
-				>
-					{t("pages.Settings.saveBtn")}
-				</Button>
-				<Button
-					variant="outlined"
-					color="primary"
-					onClick={handleOpen}
-					className="px-6 py-2"
-				>
-					{t("pages.Settings.getToken")}
-				</Button>
-			</Stack>
+				<Stack spacing={2}>
+					<Box>
+						<InputLabel className="font-semibold mb-2">
+							{t("pages.Settings.bgmTokenSettings.loginMethods", "登录方式")}
+						</InputLabel>
+						<Typography variant="caption" color="text.secondary">
+							{t(
+								"pages.Settings.bgmTokenSettings.loginMethodsHint",
+								"请任选一种登录方式，推荐 OAuth 快捷登录。",
+							)}
+						</Typography>
+					</Box>
+					<BgmOAuthLoginButton
+						isLoading={isOAuthLoading}
+						onLogin={handleOAuthLogin}
+					/>
+					<BgmTokenLoginPanel
+						inputToken={inputToken}
+						isSavingToken={isSavingToken || updateSettingsMutation.isPending}
+						onInputTokenChange={setInputToken}
+						onSaveToken={handleSaveToken}
+						onClearToken={handleClearToken}
+						onOpenTokenPage={handleOpen}
+					/>
+				</Stack>
+			</Box>
 		</Box>
 	);
 };

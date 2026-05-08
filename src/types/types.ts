@@ -46,6 +46,14 @@ export interface ScanResult {
 	executables: string[];
 }
 
+export interface BgmAuth {
+	access_token: string;
+	refresh_token?: Nullable<string>;
+	expires_at?: Nullable<number>;
+	username?: Nullable<string>;
+	nickname?: Nullable<string>;
+}
+
 // ==================== 元数据结构 ====================
 
 /**
@@ -307,7 +315,7 @@ export interface UpdateGameParams {
  * 对应 Rust 后端的 Option<Option<T>> 反序列化
  */
 export interface UpdateSettingsParams {
-	bgmToken?: Nullable<string>;
+	bgmAuth?: Nullable<BgmAuth>;
 	vndbToken?: Nullable<string>;
 	saveRootPath?: Nullable<string>;
 	dbBackupPath?: Nullable<string>;

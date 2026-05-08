@@ -13,8 +13,8 @@
  * - http: 封装的 HTTP 请求工具
  */
 
-import type { BgmData, GameCandidateData } from "@/types";
-import { AppError } from "@/utils/errors";
+import type { BgmAuth, BgmData, GameCandidateData } from "@/types";
+import { AppError, isHttpStatus } from "@/utils/errors";
 import http, { USER_AGENT } from "./http";
 
 const BGM_JSON_HEADERS = {
@@ -29,6 +29,21 @@ interface BgmSubjectResponse {
 
 interface BgmSearchResponse {
 	data?: unknown[];
+}
+
+export interface BgmUserProfile {
+	id: number;
+	username: string;
+	nickname: string;
+	sign?: string;
+	avatar: { large: string; medium: string; small: string };
+}
+
+export interface BgmTokenStatus {
+	access_token: string;
+	client_id: string;
+	expires: number | null;
+	scope: string | null;
 }
 
 function buildBgmAuthHeaders(token?: string) {
@@ -253,20 +268,68 @@ export async function fetchBgmByIds(
 /**
  * 获取当前用户的 Profile 信息
  * @param token Bangumi API 访问令牌
- * @returns { username: string, avatar: string, nickname: string } 或 null
+ * @returns 当前用户资料。
  */
 export async function fetchCurrentUserProfile(token: string) {
-	if (!token) return null;
-	try {
-		const res = await http.get<{
-			username: string;
-			nickname: string;
-			avatar: { large: string; medium: string; small: string };
-		}>("https://api.bgm.tv/v0/me", buildBgmAuthHeaders(token));
-		return res.data;
-	} catch {
-		return null;
-	}
+	const res = await http.get<BgmUserProfile>(
+		"https://api.bgm.tv/v0/me",
+		buildBgmAuthHeaders(token),
+	);
+	return res.data;
+}
+
+export async function fetchBgmTokenStatus(
+	token: string,
+): Promise<BgmTokenStatus> {
+	const res = await http.post<BgmTokenStatus>(
+		"https://bgm.tv/oauth/token_status",
+		null,
+		buildBgmAuthHeaders(token),
+	);
+	return res.data;
+}
+
+export function getBgmAvatarUrl(username?: string | null) {
+	return username
+		? `https://api.bgm.tv/v0/users/${encodeURIComponent(username)}/avatar?type=large`
+		: undefined;
+}
+
+export async function buildManualBgmAuth(
+	accessToken: string,
+): Promise<BgmAuth | null> {
+	if (!accessToken) return null;
+
+	const [tokenStatus, profile] = await Promise.all([
+		fetchBgmTokenStatus(accessToken),
+		fetchCurrentUserProfile(accessToken),
+	]);
+
+	return {
+		access_token: accessToken,
+		refresh_token: null,
+		expires_at: tokenStatus?.expires ?? null,
+		username: profile.username,
+		nickname: profile.nickname,
+	};
+}
+
+export async function completeBgmAuth(auth: BgmAuth): Promise<BgmAuth> {
+	const [tokenStatus, profile] = await Promise.all([
+		auth.expires_at == null
+			? fetchBgmTokenStatus(auth.access_token)
+			: Promise.resolve(null),
+		auth.username && auth.nickname
+			? Promise.resolve(null)
+			: fetchCurrentUserProfile(auth.access_token),
+	]);
+
+	return {
+		...auth,
+		expires_at: auth.expires_at ?? tokenStatus?.expires ?? null,
+		username: auth.username ?? profile?.username ?? null,
+		nickname: auth.nickname ?? profile?.nickname ?? null,
+	};
 }
 
 /**
@@ -291,34 +354,28 @@ export async function fetchUserCollection(
 			buildBgmAuthHeaders(token),
 		);
 		return res.data;
-	} catch {
-		return null;
+	} catch (error) {
+		if (isHttpStatus(error, 404)) return null;
+		throw error;
 	}
 }
 
 /**
  * 更新当前用户的条目收藏状态
- * @param username 用户名
  * @param subjectId Bangumi 条目 ID
  * @param type 收藏状态 (1=wish, 2=collect, 3=do, 4=on_hold, 5=dropped)
  * @param token Bangumi API 访问令牌
  */
 export async function updateUserCollection(
-	username: string,
 	subjectId: string,
 	type: number,
 	token: string,
 ): Promise<boolean> {
-	if (!token || !username) return false;
-	try {
-		await http.post(
-			`https://api.bgm.tv/v0/users/-/collections/${subjectId}`,
-			{ type },
-			buildBgmAuthHeaders(token),
-		);
-		// HTTP 204 does not return response body (但是官方api调试文档返回的是202(?))
-		return true;
-	} catch {
-		return false;
-	}
+	await http.post(
+		`https://api.bgm.tv/v0/users/-/collections/${subjectId}`,
+		{ type },
+		buildBgmAuthHeaders(token),
+	);
+	// HTTP 204 does not return response body (但是官方api调试文档返回的是202(?))
+	return true;
 }

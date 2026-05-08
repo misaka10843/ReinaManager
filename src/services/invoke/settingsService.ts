@@ -3,11 +3,11 @@
  * @description 封装所有用户设置相关的后端调用
  */
 
-import type { LogLevel, UpdateSettingsParams } from "@/types";
+import type { BgmAuth, LogLevel, UpdateSettingsParams } from "@/types";
 import { BaseService } from "./base";
 
 export interface UserSettings {
-	bgm_token?: string | null;
+	bgm_auth?: BgmAuth | null;
 	vndb_token?: string | null;
 	save_root_path?: string | null;
 	db_backup_path?: string | null;
@@ -44,6 +44,18 @@ class SettingsService extends BaseService {
 		return this.invoke<void>("update_settings", {
 			data: updates,
 		});
+	}
+
+	async bgmOAuthStartLogin(): Promise<string> {
+		return this.invoke<string>("bgm_oauth_start_login");
+	}
+
+	async bgmOAuthExchangeCode(code: string): Promise<BgmAuth> {
+		return this.invoke<BgmAuth>("bgm_oauth_exchange_code", { code });
+	}
+
+	async bgmOAuthRefreshToken(refreshToken: string): Promise<BgmAuth> {
+		return this.invoke<BgmAuth>("bgm_oauth_refresh_token", { refreshToken });
 	}
 }
 

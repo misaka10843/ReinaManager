@@ -88,7 +88,7 @@ const AddModal: React.FC = () => {
 	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const { data: settings } = useAllSettings();
-	const bgmToken = settings?.bgm_token ?? "";
+	const bgmToken = settings?.bgm_auth?.access_token ?? "";
 	const addGameMutation = useAddGame();
 	const { addGameFromMetadata, isAddingGame } = useSingleGameAddActions();
 

@@ -38,7 +38,7 @@ const VNDB_NORMAL_STATUS_LABEL_IDS = [
 async function getBgmToken() {
 	try {
 		const settings = await fetchAllSettings(queryClient);
-		return settings.bgm_token ?? "";
+		return settings.bgm_auth?.access_token ?? "";
 	} catch (error) {
 		console.error("获取 BGM Token 失败:", error);
 		return "";
@@ -56,13 +56,10 @@ async function getVndbToken() {
 }
 
 async function getBgmUsername(token: string) {
-	try {
-		const profile = await fetchBgmCurrentUserProfile(queryClient, token);
-		return profile?.username ?? null;
-	} catch (error) {
-		console.error("获取 BGM 用户名失败:", error);
-		return null;
-	}
+	const settings = await fetchAllSettings(queryClient);
+	if (settings.bgm_auth?.username) return settings.bgm_auth.username;
+	const profile = await fetchBgmCurrentUserProfile(queryClient, token);
+	return profile.username;
 }
 
 function mapBgmTypeToPlayStatus(type?: number | null) {
@@ -136,7 +133,6 @@ async function resolveBgmPlayStatus(game: Pick<FullGameData, "bgm_id">) {
 		if (!token) return undefined;
 
 		const username = await getBgmUsername(token);
-		if (!username) return undefined;
 
 		const collection = await fetchUserCollection(username, game.bgm_id, token);
 		return mapBgmTypeToPlayStatus(collection?.type);
@@ -189,10 +185,7 @@ async function syncPlayStatusToBgm(
 		const token = await getBgmToken();
 		if (!token) return true;
 
-		const username = await getBgmUsername(token);
-		if (!username) return false;
-
-		return updateUserCollection(username, game.bgm_id, newStatus, token);
+		return updateUserCollection(game.bgm_id, newStatus, token);
 	} catch (error) {
 		console.error("同步 BGM 收藏状态失败:", error);
 		return false;

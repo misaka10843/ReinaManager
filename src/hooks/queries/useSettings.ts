@@ -80,19 +80,6 @@ export function fetchBgmCurrentUserProfile(
 // ============================================================================
 
 /**
- * 获取当前 BGM Token 对应的用户资料
- */
-export function useBgmCurrentUserProfile(options?: SettingsQueryOptions) {
-	const { data: settings } = useAllSettings(options);
-	const bgmToken = settings?.bgm_token ?? "";
-
-	return useQuery({
-		...bgmCurrentUserProfileQueryOptions(bgmToken),
-		enabled: (options?.enabled ?? true) && Boolean(bgmToken),
-	});
-}
-
-/**
  * 获取当前 VNDB Token 对应的用户资料
  */
 export function useVndbCurrentUserProfile(options?: SettingsQueryOptions) {
@@ -161,9 +148,12 @@ export function useUpdateSettings() {
 				queryKey: settingsKeys.allSettings(),
 			});
 
-			if (updates.bgmToken !== undefined) {
+			if (updates.bgmAuth !== undefined) {
 				queryClient.invalidateQueries({
 					queryKey: settingsKeys.bgmCurrentUserProfile(),
+				});
+				queryClient.invalidateQueries({
+					queryKey: settingsKeys.all,
 				});
 			}
 

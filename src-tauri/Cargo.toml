@@ -19,12 +19,14 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
 tauri-build = { version = "~2.6.1", features = [] }
+dotenvy = "0.15"
 
 [dependencies]
 # Serialization & logging
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0"
 log = "0.4"
+dotenvy = "0.15"
 
 # Tauri core and plugins
 tauri = { version = "~2.11.1", features = ["protocol-asset", "tray-icon"] }

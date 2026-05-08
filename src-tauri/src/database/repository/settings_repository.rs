@@ -28,7 +28,7 @@ impl SettingsRepository {
         if existing.is_none() {
             let user = user::ActiveModel {
                 id: Set(1),
-                bgm_token: Set(None),
+                bgm_auth: Set(None),
                 vndb_token: Set(None),
                 save_root_path: Set(None),
                 db_backup_path: Set(None),
@@ -68,8 +68,8 @@ impl SettingsRepository {
 
         let mut active: user::ActiveModel = user.into();
 
-        if let Some(token) = data.bgm_token {
-            active.bgm_token = Set(token);
+        if let Some(auth) = data.bgm_auth {
+            active.bgm_auth = Set(auth);
         }
 
         if let Some(token) = data.vndb_token {

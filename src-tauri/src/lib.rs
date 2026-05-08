@@ -10,6 +10,7 @@ use migration::MigratorTrait;
 use tauri::Manager;
 use tauri_plugin_log::{Target, TargetKind, TimezoneStrategy};
 use utils::{
+    bgm_auth::{bgm_oauth_exchange_code, bgm_oauth_refresh_token, bgm_oauth_start_login},
     fs::{
         backup_custom_covers, copy_file, delete_file, delete_game_covers, is_portable_mode,
         move_backup_folder, open_directory,
@@ -95,6 +96,10 @@ pub fn run() {
             // 用户设置相关 commands
             get_all_settings,
             update_settings,
+            // BGM OAuth 相关 commands
+            bgm_oauth_start_login,
+            bgm_oauth_exchange_code,
+            bgm_oauth_refresh_token,
             // 日志相关 commands（运行时动态调整）
             set_reina_log_level,
             get_reina_log_level,

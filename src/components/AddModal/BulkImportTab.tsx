@@ -85,7 +85,7 @@ function getMatchedGameName(
 const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 	const { t, i18n } = useTranslation();
 	const { data: settings } = useAllSettings();
-	const bgmToken = settings?.bgm_token ?? "";
+	const bgmToken = settings?.bgm_auth?.access_token ?? "";
 	const { mixedEnableYmgal, mixedEnableKun } = useStore(
 		useShallow((s) => ({
 			mixedEnableYmgal: s.mixedEnableYmgal,

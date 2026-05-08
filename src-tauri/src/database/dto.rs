@@ -6,6 +6,7 @@
 use crate::entity::bgm_data::BgmData;
 use crate::entity::custom_data::CustomData;
 use crate::entity::kun_data::KunData;
+use crate::entity::user::BgmAuth;
 use crate::entity::vndb_data::VndbData;
 use crate::entity::ymgal_data::YmgalData;
 use serde::{Deserialize, Deserializer, Serialize};
@@ -34,6 +35,15 @@ fn clean_option_string(s: Option<String>) -> Option<String> {
 /// 保持外层的 Some 表示"用户提供了这个字段"。
 fn clean_double_option_string(s: Option<Option<String>>) -> Option<Option<String>> {
     s.map(|inner| inner.filter(|v| !v.trim().is_empty()))
+}
+
+fn clean_bgm_auth(mut auth: BgmAuth) -> Option<BgmAuth> {
+    auth.access_token = auth.access_token.trim().to_string();
+    if auth.access_token.is_empty() {
+        None
+    } else {
+        Some(auth)
+    }
 }
 
 /// 清洗 InsertGameData 中的空字符串
@@ -117,7 +127,7 @@ impl UpdateCollectionData {
 #[serde(default, rename_all = "camelCase")]
 pub struct UpdateSettingsData {
     #[serde(default, deserialize_with = "double_option")]
-    pub bgm_token: Option<Option<String>>,
+    pub bgm_auth: Option<Option<BgmAuth>>,
     #[serde(default, deserialize_with = "double_option")]
     pub vndb_token: Option<Option<String>>,
     #[serde(default, deserialize_with = "double_option")]
@@ -134,7 +144,7 @@ pub struct UpdateSettingsData {
 impl UpdateSettingsData {
     /// 返回清洗后的数据，将空字符串转换为 None
     pub fn cleaned(mut self) -> Self {
-        self.bgm_token = clean_double_option_string(self.bgm_token);
+        self.bgm_auth = self.bgm_auth.map(|inner| inner.and_then(clean_bgm_auth));
         self.vndb_token = clean_double_option_string(self.vndb_token);
         self.save_root_path = clean_double_option_string(self.save_root_path);
         self.db_backup_path = clean_double_option_string(self.db_backup_path);
