@@ -1,3 +1,34 @@
+## [0.20.2](https://github.com/huoshen80/ReinaManager/compare/v0.20.1...v0.20.2) (2026-05-08)
+
+<details>
+<summary>查看中文版本</summary>
+
+### 🐛 Bug 修复
+- *(collections)* 移除收藏夹页面的 NSFW 过滤器 ([7c681e3](https://github.com/huoshen80/ReinaManager/commit/7c681e31fd4c4d3a9070e778fc4762b1697b2fa3))
+
+### 🚀 性能优化
+- *(Cards)* 为游戏仓库页面添加虚拟化网格 ([7030310](https://github.com/huoshen80/ReinaManager/commit/7030310da76b6c901def1cf38a2eeb307f54ace7))
+
+### 🚜 重构
+- *(cards)* 用懒加载替换全量加载 ([5d3ba5e](https://github.com/huoshen80/ReinaManager/commit/5d3ba5e2222ddd8d72605259e0d1397478513db1))
+- *(cards)* 使用仅传递 ID 的 IPC 和缓存字典进行卡片渲染 ([d98b5eb](https://github.com/huoshen80/ReinaManager/commit/d98b5eb99b923f7109993d28f1e676b440ed5025))
+
+</details>
+
+### 🐛 Bug Fixes
+
+- *(collections)* Remove NSFW filter from collection pages ([7c681e3](https://github.com/huoshen80/ReinaManager/commit/7c681e31fd4c4d3a9070e778fc4762b1697b2fa3))
+
+### 🚀 Performance
+
+- *(Cards)* Add virtualized grid for libraries page ([7030310](https://github.com/huoshen80/ReinaManager/commit/7030310da76b6c901def1cf38a2eeb307f54ace7))
+
+### 🚜 Refactor
+
+- *(cards)* Replace load all with lazy load ([5d3ba5e](https://github.com/huoshen80/ReinaManager/commit/5d3ba5e2222ddd8d72605259e0d1397478513db1))
+- *(cards)* Use ID-only IPC and cache dictionary for card rendering ([d98b5eb](https://github.com/huoshen80/ReinaManager/commit/d98b5eb99b923f7109993d28f1e676b440ed5025))
+
+
 ## [0.20.1](https://github.com/huoshen80/ReinaManager/compare/v0.20.0...v0.20.1) (2026-05-06)
 
 <details>
