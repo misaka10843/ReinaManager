@@ -152,9 +152,6 @@ export function useUpdateSettings() {
 				queryClient.invalidateQueries({
 					queryKey: settingsKeys.bgmCurrentUserProfile(),
 				});
-				queryClient.invalidateQueries({
-					queryKey: settingsKeys.all,
-				});
 			}
 
 			if (updates.vndbToken !== undefined) {

@@ -2,6 +2,7 @@
 //!
 //! 仅放需要 `BGM_APP_SECRET` 的流程：授权 URL、code 换 token、refresh。
 
+use std::fmt::Write as _;
 use std::io::{BufRead, BufReader, Write};
 use std::net::TcpListener;
 use std::time::Duration;
@@ -30,7 +31,7 @@ struct BgmTokenResponse {
 
 #[tauri::command]
 pub async fn bgm_oauth_start_login(app: AppHandle) -> Result<String, String> {
-    let state = format!("{}-{}", Utc::now().timestamp_millis(), std::process::id());
+    let state = generate_oauth_state()?;
 
     let listener = TcpListener::bind(("127.0.0.1", BGM_CALLBACK_PORT)).map_err(|e| {
         format!(
@@ -44,11 +45,16 @@ pub async fn bgm_oauth_start_login(app: AppHandle) -> Result<String, String> {
         .map_err(|e| format!("设置 OAuth 回调监听失败: {}", e))?;
 
     let expected_state = state.clone();
-    std::thread::spawn(move || {
-        if let Some(code) = wait_for_callback(&listener, &expected_state) {
-            let _ = app.emit("bgm-oauth-code", &code);
-        }
-    });
+    std::thread::spawn(
+        move || match wait_for_callback(&listener, &expected_state) {
+            Ok(code) => {
+                let _ = app.emit("bgm-oauth-code", &code);
+            }
+            Err(message) => {
+                let _ = app.emit("bgm-oauth-error", &message);
+            }
+        },
+    );
 
     let mut url = url::Url::parse("https://bgm.tv/oauth/authorize")
         .map_err(|e| format!("构造 BGM 授权地址失败: {}", e))?;
@@ -59,6 +65,18 @@ pub async fn bgm_oauth_start_login(app: AppHandle) -> Result<String, String> {
         .append_pair("state", &state);
 
     Ok(url.to_string())
+}
+
+fn generate_oauth_state() -> Result<String, String> {
+    let mut bytes = [0u8; 32];
+    getrandom::fill(&mut bytes).map_err(|e| format!("生成 OAuth state 失败: {}", e))?;
+
+    let mut state = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        write!(&mut state, "{byte:02x}").map_err(|e| format!("生成 OAuth state 失败: {}", e))?;
+    }
+
+    Ok(state)
 }
 
 #[tauri::command]
@@ -142,7 +160,7 @@ fn read_bgm_app_secret() -> Result<String, String> {
         .ok_or_else(|| "缺少环境变量 BGM_APP_SECRET".to_string())
 }
 
-fn wait_for_callback(listener: &TcpListener, expected_state: &str) -> Option<String> {
+fn wait_for_callback(listener: &TcpListener, expected_state: &str) -> Result<String, String> {
     let deadline = std::time::Instant::now() + BGM_CALLBACK_TIMEOUT;
 
     let mut stream = loop {
@@ -150,23 +168,25 @@ fn wait_for_callback(listener: &TcpListener, expected_state: &str) -> Option<Str
             Ok((stream, _)) => break stream,
             Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                 if std::time::Instant::now() >= deadline {
-                    return None;
+                    return Err("OAuth 回调等待超时，请重新登录".to_string());
                 }
                 std::thread::sleep(Duration::from_millis(200));
             }
-            Err(_) => return None,
+            Err(e) => return Err(format!("OAuth 回调监听失败: {}", e)),
         }
     };
 
-    let result = parse_callback(&stream).and_then(|(code, state)| {
-        if state.as_deref() == Some(expected_state) {
-            Some(code)
-        } else {
-            None
-        }
-    });
+    let result = parse_callback(&stream)
+        .ok_or_else(|| "OAuth 回调参数无效".to_string())
+        .and_then(|(code, state)| {
+            if state.as_deref() == Some(expected_state) {
+                Ok(code)
+            } else {
+                Err("OAuth state 校验失败，请重新登录".to_string())
+            }
+        });
 
-    let body = if result.is_some() {
+    let body = if result.is_ok() {
         "<html><body><h1>授权成功</h1><p>你可以关闭此页面。</p></body></html>"
     } else {
         "<html><body><h1>授权失败</h1><p>请返回应用重试。</p></body></html>"
