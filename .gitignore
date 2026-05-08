@@ -15,5 +15,6 @@ others
 .prettierignore
 
 *.local
+.env
 
 AGENTS.md

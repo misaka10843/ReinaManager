@@ -129,6 +129,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }},
+          BGM_APP_SECRET: ${{ secrets.BGM_APP_SECRET }}
           CARGO_INCREMENTAL: 0
         with:
           # 不在这里创建 GitHub release，仅构建
