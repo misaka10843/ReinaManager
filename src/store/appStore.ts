@@ -131,6 +131,10 @@ export interface AppState {
 		categoryId: number | null,
 		categoryName?: string,
 	) => void; // 设置当前选中的分类
+
+	// 游戏仓库虚拟滚动位置
+	librariesScrollTop: number;
+	setLibrariesScrollTop: (scrollTop: number) => void;
 }
 
 const REQUIRED_MIXED_SOURCES: readonly SourceType[] = ["bgm", "vndb"];
@@ -344,6 +348,12 @@ export const useStore = create<AppState>()(
 					selectedCategoryId: categoryId,
 					selectedCategoryName: categoryName || null,
 				});
+			},
+
+			// 游戏仓库虚拟滚动位置
+			librariesScrollTop: 0,
+			setLibrariesScrollTop: (scrollTop: number) => {
+				set({ librariesScrollTop: scrollTop });
 			},
 
 			// 初始化方法

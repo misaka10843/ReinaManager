@@ -1,9 +1,7 @@
-import { CardsGrid } from "@/components/Cards";
-import { useScrollRestore } from "@/hooks/common/useScrollRestore";
+import { VirtualCardsGrid } from "@/components/Cards";
 import { useGameListFacade } from "@/hooks/features/games/useGameListFacade";
 
 export const Libraries: React.FC = () => {
-	const { gameIds, isLoading } = useGameListFacade();
-	useScrollRestore("/libraries", { isLoading });
-	return <CardsGrid gameIds={gameIds} />;
+	const { gameIds } = useGameListFacade();
+	return <VirtualCardsGrid gameIds={gameIds} />;
 };
