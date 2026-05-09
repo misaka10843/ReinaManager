@@ -111,9 +111,18 @@ export async function getValidBgmAuth() {
 	return refreshBgmAuthSingleFlight(auth);
 }
 
+export function getValidBgmAccessToken(options: {
+	required: true;
+}): Promise<string>;
+export function getValidBgmAccessToken(options?: {
+	required?: false;
+}): Promise<string | null>;
+export function getValidBgmAccessToken(options?: {
+	required?: boolean;
+}): Promise<string | null>;
 export async function getValidBgmAccessToken(options?: { required?: boolean }) {
 	const auth = await getValidBgmAuth();
-	const token = auth?.access_token ?? "";
+	const token = auth?.access_token ?? null;
 
 	if (options?.required && !token) {
 		throw new AppError({
@@ -129,13 +138,25 @@ export function isBgmAuthExpiredError(error: unknown) {
 	return error instanceof Error && error.name === "BgmAuthExpiredError";
 }
 
-export async function withBgmAuth<T>(
+export function withBgmAuth<T>(
 	fn: (token: string) => Promise<T>,
+	options: { required: true },
+): Promise<T>;
+export function withBgmAuth<T>(
+	fn: (token: string | null) => Promise<T>,
+	options?: { required?: false },
+): Promise<T>;
+export function withBgmAuth<T>(
+	fn: (token: string | null) => Promise<T>,
+	options: { required: boolean },
+): Promise<T>;
+export async function withBgmAuth<T>(
+	fn: ((token: string) => Promise<T>) | ((token: string | null) => Promise<T>),
 	options?: { required?: boolean },
 ) {
 	try {
 		const token = await getValidBgmAccessToken(options);
-		return await fn(token);
+		return await (fn as (token: string | null) => Promise<T>)(token);
 	} catch (error) {
 		if (isHttpStatus(error, 401)) {
 			await logoutBgmAuth({ notify: true });

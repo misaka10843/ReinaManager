@@ -51,7 +51,7 @@
 			"gameExists": "游戏已存在",
 			"gameIDTips": "游戏ID",
 			"gameName": "游戏名称",
-			"noBgmToken": "缺少 BGM_TOKEN，无法获取数据",
+			"noBgmToken": "缺少 BGM Token，无法获取数据",
 			"noExecutableSelected": "未选择可执行程序",
 			"noResults": "没有找到结果",
 			"noResultsBgm": "未在 Bangumi 找到该游戏，请尝试其他名称或检查 ID",

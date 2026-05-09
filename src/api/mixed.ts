@@ -40,17 +40,17 @@ function isSourceEnabled(
 // 辅助函数：安全获取 BGM 数据
 async function getBangumiDataSafely(
 	name: string,
-	BGM_TOKEN: string,
+	bgmToken: string,
 	bgm_id?: string,
 ): Promise<SafeFetchResult> {
 	try {
 		if (bgm_id) {
 			return {
-				data: [await fetchBgmById(bgm_id, BGM_TOKEN)],
+				data: [await fetchBgmById(bgm_id, bgmToken)],
 				failed: false,
 			};
 		}
-		const result = await fetchBgmByName(name, BGM_TOKEN);
+		const result = await fetchBgmByName(name, bgmToken);
 		return { data: result, failed: false };
 	} catch (error) {
 		if (isHttpStatus(error, 401)) throw error;
@@ -138,7 +138,7 @@ function extractNameFromApi(
  * @param options.ymgal_id YMGal 游戏 ID（可选）
  * @param options.kun_id Kungal 游戏 ID（可选，仅用于更新等非 mixed ID 输入场景）
  * @param options.name 游戏名称（可选）
- * @param options.BGM_TOKEN Bangumi API 访问令牌（可选）
+ * @param options.bgmToken Bangumi API 访问令牌（可选）
  * @returns 返回 { bgm_data, vndb_data, ymgal_data, kun_data } 列表对象
  */
 export async function fetchMixedData(options: {
@@ -147,10 +147,10 @@ export async function fetchMixedData(options: {
 	ymgal_id?: string;
 	kun_id?: string;
 	name?: string;
-	BGM_TOKEN?: string;
+	bgmToken?: string;
 	enabledSources?: readonly SourceType[];
 }) {
-	const { bgm_id, vndb_id, ymgal_id, kun_id, name, BGM_TOKEN, enabledSources } =
+	const { bgm_id, vndb_id, ymgal_id, kun_id, name, bgmToken, enabledSources } =
 		options;
 	const enableBgm = isSourceEnabled(enabledSources, "bgm");
 	const enableVndb = isSourceEnabled(enabledSources, "vndb");
@@ -171,8 +171,8 @@ export async function fetchMixedData(options: {
 		let ymgalResult: SafeFetchResult = { data: [], failed: false };
 		let kunResult: SafeFetchResult = { data: [], failed: false };
 
-		if (enableBgm && bgm_id && BGM_TOKEN) {
-			bgmResult = await getBangumiDataSafely("", BGM_TOKEN, bgm_id);
+		if (enableBgm && bgm_id && bgmToken) {
+			bgmResult = await getBangumiDataSafely("", bgmToken, bgm_id);
 			searchName = extractNameFromApi(bgmResult.data[0]);
 		} else if (enableVndb && vndb_id) {
 			vndbResult = await getVNDBDataSafely("", vndb_id);
@@ -188,8 +188,8 @@ export async function fetchMixedData(options: {
 		if (searchName) {
 			const [nextBgmResult, nextVndbResult, nextYmgalResult, nextKunResult] =
 				await Promise.all([
-					enableBgm && bgmResult.data.length === 0 && BGM_TOKEN
-						? getBangumiDataSafely(searchName, BGM_TOKEN)
+					enableBgm && bgmResult.data.length === 0 && bgmToken
+						? getBangumiDataSafely(searchName, bgmToken)
 						: Promise.resolve(bgmResult),
 					enableVndb && vndbResult.data.length === 0
 						? getVNDBDataSafely(searchName)
@@ -231,8 +231,8 @@ export async function fetchMixedData(options: {
 	if (name?.trim()) {
 		const searchName = name.trim();
 		const [bgmResult, vndbResult, ymgalResult, kunResult] = await Promise.all([
-			enableBgm && BGM_TOKEN
-				? getBangumiDataSafely(searchName, BGM_TOKEN)
+			enableBgm && bgmToken
+				? getBangumiDataSafely(searchName, bgmToken)
 				: Promise.resolve({ data: [], failed: false }),
 			enableVndb
 				? getVNDBDataSafely(searchName)

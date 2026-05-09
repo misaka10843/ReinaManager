@@ -126,7 +126,7 @@ export function useMetadataSearchFlow({
 							const candidatesPromise =
 								gameMetadataService.searchMixedSourceCandidates({
 									query,
-									bgmToken: token,
+									bgmToken: token ?? undefined,
 									mixedEnabledSources,
 									defaults,
 								});

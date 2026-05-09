@@ -199,7 +199,7 @@ class GameMetadataService {
 		try {
 			const result = await fetchMixedData({
 				name: query,
-				BGM_TOKEN: bgmToken,
+				bgmToken,
 				enabledSources: mixedEnabledSources,
 			});
 
@@ -380,6 +380,12 @@ class GameMetadataService {
 		try {
 			switch (source) {
 				case "bgm":
+					if (!bgmToken) {
+						throw createStableError(
+							"bgm_token_required",
+							"Bangumi token is required for Bangumi lookup",
+						);
+					}
 					return await fetchBgmByName(name, bgmToken);
 				case "vndb":
 					return await fetchVndbByName(name);
@@ -410,7 +416,7 @@ class GameMetadataService {
 		try {
 			const result = await fetchMixedData({
 				name,
-				BGM_TOKEN: bgmToken,
+				bgmToken,
 				enabledSources,
 			});
 
@@ -479,7 +485,7 @@ class GameMetadataService {
 					vndb_id: vndbId,
 					ymgal_id: ymgalId,
 					kun_id: kunId,
-					BGM_TOKEN: bgmToken,
+					bgmToken,
 				});
 
 				return this.applyDefaults(

@@ -86,7 +86,7 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 						vndbId,
 						ymgalId,
 						kunId,
-						bgmToken: shouldUseBgmToken ? token : undefined,
+						bgmToken: shouldUseBgmToken ? (token ?? undefined) : undefined,
 					}),
 				{ required: idType === "bgm" },
 			);

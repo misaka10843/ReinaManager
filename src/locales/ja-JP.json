@@ -51,7 +51,7 @@
 			"gameExists": "ゲームはすでに存在します",
 			"gameIDTips": "ゲームID",
 			"gameName": "ゲーム名",
-			"noBgmToken": "BGM_TOKENが設定されていません、データを取得できません",
+			"noBgmToken": "BGM Tokenが設定されていません、データを取得できません",
 			"noExecutableSelected": "実行ファイルが選択されていません",
 			"noResults": "結果が見つかりませんでした",
 			"noResultsBgm": "Bangumiでゲームが見つかりません、別の名前を試すかIDを確認してください",

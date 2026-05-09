@@ -46,11 +46,11 @@ export interface BgmTokenStatus {
 	scope: string | null;
 }
 
-function buildBgmAuthHeaders(token?: string) {
+function buildBgmAuthHeaders(token: string) {
 	return {
 		headers: {
 			...BGM_JSON_HEADERS,
-			...(token ? { Authorization: `Bearer ${token}` } : {}),
+			Authorization: `Bearer ${token}`,
 		},
 	};
 }
@@ -136,17 +136,17 @@ const transformBgmData = (BGMdata: any): GameCandidateData => {
  * 根据 Bangumi ID 获取游戏详细信息
  *
  * @param id Bangumi 条目 ID
- * @param BGM_TOKEN Bangumi API 访问令牌
+ * @param token Bangumi API 访问令牌
  * @returns 返回游戏详细信息对象
  */
 export async function fetchBgmById(
 	id: string,
-	BGM_TOKEN?: string,
+	token: string,
 ): Promise<GameCandidateData> {
 	const BGMdata = (
 		await http.get<BgmSubjectResponse>(
 			`https://api.bgm.tv/v0/subjects/${id}`,
-			buildBgmAuthHeaders(BGM_TOKEN),
+			buildBgmAuthHeaders(token),
 		)
 	).data;
 
@@ -164,13 +164,13 @@ export async function fetchBgmById(
  * 根据游戏名称搜索获取游戏详细信息（返回全部结果）
  *
  * @param name 游戏名称
- * @param BGM_TOKEN Bangumi API 访问令牌
+ * @param token Bangumi API 访问令牌
  * @param limit 最多返回结果数量，默认 25
  * @returns 返回游戏详细信息数组
  */
 export async function fetchBgmByName(
 	name: string,
-	BGM_TOKEN?: string,
+	token: string,
 	limit = 25,
 ): Promise<GameCandidateData[]> {
 	const keyword = name.trim();
@@ -184,7 +184,7 @@ export async function fetchBgmByName(
 				},
 				limit: limit,
 			},
-			buildBgmAuthHeaders(BGM_TOKEN),
+			buildBgmAuthHeaders(token),
 		)
 	).data;
 
@@ -201,7 +201,7 @@ export async function fetchBgmByName(
  * 为了避免触发 Bangumi API 频率限制，使用延迟处理。
  *
  * @param ids BGM 游戏 ID 数组（如 ["123", "456", "789", ...]，支持任意数量）
- * @param BGM_TOKEN Bangumi API 访问令牌
+ * @param token Bangumi API 访问令牌
  * @returns 包含游戏详细信息的对象数组
  *
  * @example
@@ -211,16 +211,10 @@ export async function fetchBgmByName(
  */
 export async function fetchBgmByIds(
 	ids: string[],
-	BGM_TOKEN?: string,
+	token: string,
 ): Promise<GameCandidateData[]> {
 	if (ids.length === 0) {
 		return [];
-	}
-	if (!BGM_TOKEN) {
-		throw new AppError({
-			code: "bgm_token_required",
-			message: "Bangumi token is required for batch fetch",
-		});
 	}
 
 	const allResults: GameCandidateData[] = [];
@@ -240,7 +234,7 @@ export async function fetchBgmByIds(
 			const BGMdata = (
 				await http.get<BgmSubjectResponse>(
 					`https://api.bgm.tv/v0/subjects/${id}`,
-					buildBgmAuthHeaders(BGM_TOKEN),
+					buildBgmAuthHeaders(token),
 				)
 			).data;
 
