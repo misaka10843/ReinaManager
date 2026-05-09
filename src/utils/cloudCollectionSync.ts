@@ -1,5 +1,6 @@
 import { fetchUserCollection, updateUserCollection } from "@/api/bgm";
 import { fetchVndbUserCollection, updateVndbUserCollection } from "@/api/vndb";
+import { withBgmAuth } from "@/features/bgm-auth/bgmAuthSession";
 import {
 	fetchAllSettings,
 	fetchBgmCurrentUserProfile,
@@ -34,16 +35,6 @@ const VNDB_NORMAL_STATUS_LABEL_IDS = [
 	VNDB_STATUS_LABEL_IDS.DROPPED,
 	VNDB_STATUS_LABEL_IDS.WISH,
 ];
-
-async function getBgmToken() {
-	try {
-		const settings = await fetchAllSettings(queryClient);
-		return settings.bgm_auth?.access_token ?? "";
-	} catch (error) {
-		console.error("获取 BGM Token 失败:", error);
-		return "";
-	}
-}
 
 async function getVndbToken() {
 	try {
@@ -126,15 +117,16 @@ function mapPlayStatusToVndbLabelId(status: PlayStatus) {
 }
 
 async function resolveBgmPlayStatus(game: Pick<FullGameData, "bgm_id">) {
-	if (!game.bgm_id) return undefined;
+	const bgmId = game.bgm_id;
+	if (!bgmId) return undefined;
 
 	try {
-		const token = await getBgmToken();
-		if (!token) return undefined;
+		const collection = await withBgmAuth(async (token) => {
+			if (!token) return undefined;
 
-		const username = await getBgmUsername(token);
-
-		const collection = await fetchUserCollection(username, game.bgm_id, token);
+			const username = await getBgmUsername(token);
+			return fetchUserCollection(username, bgmId, token);
+		});
 		return mapBgmTypeToPlayStatus(collection?.type);
 	} catch (error) {
 		console.error("解析 BGM 收藏状态失败:", error);
@@ -179,13 +171,15 @@ async function syncPlayStatusToBgm(
 	game: Pick<GameData, "bgm_id">,
 	newStatus: PlayStatus,
 ) {
-	if (!game.bgm_id) return true;
+	const bgmId = game.bgm_id;
+	if (!bgmId) return true;
 
 	try {
-		const token = await getBgmToken();
-		if (!token) return true;
+		return await withBgmAuth((token) => {
+			if (!token) return Promise.resolve(true);
 
-		return updateUserCollection(game.bgm_id, newStatus, token);
+			return updateUserCollection(bgmId, newStatus, token);
+		});
 	} catch (error) {
 		console.error("同步 BGM 收藏状态失败:", error);
 		return false;

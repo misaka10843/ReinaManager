@@ -89,9 +89,21 @@ export function toError(error: unknown, fallback = "Unknown error"): Error {
 	return new Error(fallback);
 }
 
-export function isHttpStatus(error: unknown, status: number): boolean {
+export function isHttpStatus(
+	error: unknown,
+	status: number,
+	depth = 0,
+): boolean {
+	if (depth > 8) {
+		return false;
+	}
+
 	if (error instanceof HttpResponseError) {
 		return error.status === status;
+	}
+
+	if (error instanceof AppError && error.cause) {
+		return isHttpStatus(error.cause, status, depth + 1);
 	}
 
 	if (

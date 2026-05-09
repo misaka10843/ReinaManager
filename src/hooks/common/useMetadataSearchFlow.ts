@@ -1,6 +1,10 @@
 import type { TFunction } from "i18next";
 import { useCallback, useMemo, useState } from "react";
 import { gameMetadataService } from "@/api";
+import {
+	isBgmAuthExpiredError,
+	withBgmAuth,
+} from "@/features/bgm-auth/bgmAuthSession";
 import type { apiSourceType, GameCandidateData, SourceType } from "@/types";
 import { isAbortError } from "@/utils/appUtils";
 import { getUserErrorMessage } from "@/utils/errors";
@@ -29,7 +33,6 @@ interface SearchMetadataParams {
 }
 
 interface MetadataSearchFlowOptions {
-	bgmToken?: string;
 	mixedEnabledSources?: readonly SourceType[];
 	t: TFunction;
 	onResolved: (gameData: GameCandidateData) => void | Promise<void>;
@@ -68,7 +71,6 @@ function getDefaultNoResultsMessage(
 }
 
 export function useMetadataSearchFlow({
-	bgmToken,
 	mixedEnabledSources,
 	t,
 	onResolved,
@@ -119,16 +121,21 @@ export function useMetadataSearchFlow({
 
 			try {
 				if (source === "mixed") {
-					const candidatesPromise =
-						gameMetadataService.searchMixedSourceCandidates({
-							query,
-							bgmToken,
-							mixedEnabledSources,
-							defaults,
-						});
-					const candidates = await (withAbort
-						? withAbort(candidatesPromise)
-						: candidatesPromise);
+					const candidates = await withBgmAuth(
+						(token) => {
+							const candidatesPromise =
+								gameMetadataService.searchMixedSourceCandidates({
+									query,
+									bgmToken: token,
+									mixedEnabledSources,
+									defaults,
+								});
+							return withAbort
+								? withAbort(candidatesPromise)
+								: candidatesPromise;
+						},
+						{ required: false },
+					);
 
 					if (!hasAnyMixedCandidate(candidates)) {
 						throw new Error(getNoResultsText(source));
@@ -141,15 +148,33 @@ export function useMetadataSearchFlow({
 					return;
 				}
 
-				const searchPromise = gameMetadataService.searchGames({
-					query,
-					source,
-					bgmToken,
-					defaults,
-				});
-				const results = await (withAbort
-					? withAbort(searchPromise)
-					: searchPromise);
+				const results =
+					source === "bgm"
+						? await withBgmAuth(
+								(token) => {
+									const searchPromise = gameMetadataService.searchGames({
+										query,
+										source,
+										bgmToken: token,
+										defaults,
+									});
+									return withAbort ? withAbort(searchPromise) : searchPromise;
+								},
+								{ required: true },
+							)
+						: await (withAbort
+								? withAbort(
+										gameMetadataService.searchGames({
+											query,
+											source,
+											defaults,
+										}),
+									)
+								: gameMetadataService.searchGames({
+										query,
+										source,
+										defaults,
+									}));
 
 				if (results.length === 0) {
 					throw new Error(getNoResultsText(source));
@@ -169,12 +194,15 @@ export function useMetadataSearchFlow({
 				if (isAbortError(error)) {
 					return;
 				}
+				if (isBgmAuthExpiredError(error)) {
+					return;
+				}
 				onError(getUserErrorMessage(error, t));
 			} finally {
 				setIsSearching(false);
 			}
 		},
-		[bgmToken, getNoResultsText, mixedEnabledSources, onError, onResolved, t],
+		[getNoResultsText, mixedEnabledSources, onError, onResolved, t],
 	);
 
 	const selectGame = useCallback(

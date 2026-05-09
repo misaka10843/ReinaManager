@@ -88,7 +88,7 @@ const AddModal: React.FC = () => {
 	const { t } = useTranslation();
 	const navigate = useNavigate();
 	const { data: settings } = useAllSettings();
-	const bgmToken = settings?.bgm_auth?.access_token ?? "";
+	const hasBgmAuth = Boolean(settings?.bgm_auth);
 	const addGameMutation = useAddGame();
 	const { addGameFromMetadata, isAddingGame } = useSingleGameAddActions();
 
@@ -165,7 +165,6 @@ const AddModal: React.FC = () => {
 	);
 
 	const metadataSearchFlow = useMetadataSearchFlow({
-		bgmToken,
 		mixedEnabledSources: enabledMixedSources,
 		t,
 		onResolved: handleAddGame,
@@ -175,7 +174,7 @@ const AddModal: React.FC = () => {
 				return t("components.AddModal.noResultsMixed");
 			}
 			if (source === "bgm") {
-				if (!bgmToken) {
+				if (!hasBgmAuth) {
 					return t("components.AddModal.noBgmToken");
 				}
 				return t("components.AddModal.noResultsBgm");

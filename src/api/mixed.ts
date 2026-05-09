@@ -18,7 +18,7 @@
  * - fetchMultiSourceData：多数据源搜索和获取的统一接口
  */
 
-import { AppError, toError } from "@/utils/errors";
+import { AppError, isHttpStatus, toError } from "@/utils/errors";
 import type { GameCandidateData, SourceType } from "../types";
 import { fetchBgmById, fetchBgmByName } from "./bgm";
 import { fetchGalgameById, searchGalgame } from "./kun";
@@ -52,7 +52,8 @@ async function getBangumiDataSafely(
 		}
 		const result = await fetchBgmByName(name, BGM_TOKEN);
 		return { data: result, failed: false };
-	} catch {
+	} catch (error) {
+		if (isHttpStatus(error, 401)) throw error;
 		return { data: [], failed: true };
 	}
 }

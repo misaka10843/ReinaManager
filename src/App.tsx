@@ -4,6 +4,7 @@ import { SnackbarProvider } from "notistack";
 import { useTranslation } from "react-i18next";
 import { Outlet } from "react-router-dom";
 import WindowsHandler from "@/components/Windows";
+import { BgmAuthRefreshBootstrap } from "@/features/bgm-auth/BgmAuthRefreshBootstrap";
 import { SnackbarUtilsConfigurator } from "@/providers/snackBar";
 import { ToolpadReactRouterAppProvider } from "@/providers/ToolpadReactRouterAppProvider";
 import { appRoutes } from "@/routes/router"; // 引入新的统一配置
@@ -28,6 +29,7 @@ const App: React.FC = () => {
 			anchorOrigin={{ vertical: "top", horizontal: "center" }}
 		>
 			<SnackbarUtilsConfigurator />
+			<BgmAuthRefreshBootstrap />
 			<ToolpadReactRouterAppProvider navigation={Navigation}>
 				<WindowsHandler />
 				<Outlet />

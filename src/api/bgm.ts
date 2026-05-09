@@ -250,7 +250,8 @@ export async function fetchBgmByIds(
 
 			// 每个请求之间延迟 200ms
 			await new Promise((resolve) => setTimeout(resolve, 200));
-		} catch {
+		} catch (error) {
+			if (isHttpStatus(error, 401)) throw error;
 			hasRequestFailure = true;
 		}
 	}

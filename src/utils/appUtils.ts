@@ -9,6 +9,7 @@ import i18next, { t } from "i18next";
 import { extname, join } from "pathe";
 import { fetchBgmByIds } from "@/api/bgm";
 import { fetchVNDBByIds } from "@/api/vndb";
+import { withBgmAuth } from "@/features/bgm-auth/bgmAuthSession";
 import { setScrollPosition } from "@/hooks/common/useScrollRestore";
 import { fetchAllSettings } from "@/hooks/queries/useSettings";
 import { queryClient } from "@/providers/queryClient";
@@ -727,20 +728,23 @@ export async function batchUpdateVndbData(): Promise<{
 
 /**
  * 批量更新 BGM 数据
- * @param bgmToken Bangumi API Token（可选）
  * @returns 返回更新结果统计
  */
-export async function batchUpdateBgmData(bgmToken?: string): Promise<{
+export async function batchUpdateBgmData(): Promise<{
 	total: number;
 	success: number;
 	failed: number;
 }> {
-	return batchUpdateCommon(
-		"bgm",
-		(ids: string[]) => fetchBgmByIds(ids, bgmToken),
-		() => gameService.getAllBgmIds(),
-		"bgm_data",
-		bgmToken,
+	return withBgmAuth(
+		(token) =>
+			batchUpdateCommon(
+				"bgm",
+				(ids: string[]) => fetchBgmByIds(ids, token),
+				() => gameService.getAllBgmIds(),
+				"bgm_data",
+				token,
+			),
+		{ required: true },
 	);
 }
 

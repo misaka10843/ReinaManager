@@ -12,13 +12,16 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import {
+	isBgmAuthExpiredError,
+	withBgmAuth,
+} from "@/features/bgm-auth/bgmAuthSession";
 import { snackbar } from "@/providers/snackBar";
 import type { GameCandidateData, GameData } from "@/types";
 import { getUserErrorMessage } from "@/utils/errors";
 import { fetchMetadataForUpdate } from "@/utils/metadata";
 
 interface DataSourceUpdateProps {
-	bgmToken: string;
 	selectedGame: GameData;
 	onDataFetched: (data: GameCandidateData) => void;
 	disabled?: boolean;
@@ -29,7 +32,6 @@ interface DataSourceUpdateProps {
  * 负责从外部数据源(BGM, VNDB, YMGal, Mixed)更新游戏信息 已知缺少重复游戏检测
  */
 export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
-	bgmToken,
 	selectedGame,
 	onDataFetched,
 	disabled = false,
@@ -73,17 +75,26 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 
 		try {
 			setIsLoading(true);
-			const result = await fetchMetadataForUpdate({
-				selectedGame,
-				idType,
-				bgmId,
-				vndbId,
-				ymgalId,
-				kunId,
-				bgmToken,
-			});
+			const shouldUseBgmToken =
+				idType === "bgm" || (idType === "mixed" && bgmId);
+			const result = await withBgmAuth(
+				(token) =>
+					fetchMetadataForUpdate({
+						selectedGame,
+						idType,
+						bgmId,
+						vndbId,
+						ymgalId,
+						kunId,
+						bgmToken: shouldUseBgmToken ? token : undefined,
+					}),
+				{ required: idType === "bgm" },
+			);
 			onDataFetched(result);
 		} catch (error) {
+			if (isBgmAuthExpiredError(error)) {
+				return;
+			}
 			snackbar.error(getUserErrorMessage(error, t));
 		} finally {
 			setIsLoading(false);

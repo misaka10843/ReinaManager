@@ -22,7 +22,7 @@ import type React from "react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
-import { useAllSettings } from "@/hooks/queries/useSettings";
+import { isBgmAuthExpiredError } from "@/features/bgm-auth/bgmAuthSession";
 import { snackbar } from "@/providers/snackBar";
 import { useStore } from "@/store/appStore";
 import { getUserErrorMessage } from "@/utils/errors";
@@ -198,8 +198,6 @@ export const DevSettings: React.FC = () => {
 
 const BatchUpdateSettings: React.FC = () => {
 	const { t } = useTranslation();
-	const { data: settings } = useAllSettings();
-	const bgmToken = settings?.bgm_auth?.access_token ?? "";
 	const [isUpdatingVndb, setIsUpdatingVndb] = useState(false);
 	const [isUpdatingBgm, setIsUpdatingBgm] = useState(false);
 	const [updateStatus, setUpdateStatus] = useState<string>("");
@@ -275,18 +273,7 @@ const BatchUpdateSettings: React.FC = () => {
 				t("pages.Settings.batchUpdate.updatingBgm", "正在批量更新 BGM 数据..."),
 			);
 
-			if (bgmToken.trim() === "") {
-				const errorMessage = t(
-					"pages.Settings.batchUpdate.noBgmToken",
-					"更新失败：未设置 BGM Token",
-				);
-				setUpdateStatus(errorMessage);
-				snackbar.error(
-					t("pages.Settings.batchUpdate.errorBgm", { message: errorMessage }),
-				);
-				return;
-			}
-			const result = await batchUpdateBgmData(bgmToken);
+			const result = await batchUpdateBgmData();
 
 			if (result.success > 0) {
 				const message = t(
@@ -319,6 +306,9 @@ const BatchUpdateSettings: React.FC = () => {
 				snackbar.info(noGamesMessage);
 			}
 		} catch (error) {
+			if (isBgmAuthExpiredError(error)) {
+				return;
+			}
 			const errorMessage = getUserErrorMessage(
 				error,
 				t,

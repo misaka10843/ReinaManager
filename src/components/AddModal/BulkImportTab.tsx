@@ -30,6 +30,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { gameMetadataService } from "@/api";
+import {
+	isBgmAuthExpiredError,
+	withBgmAuth,
+} from "@/features/bgm-auth/bgmAuthSession";
 import { useMetadataSearchFlow } from "@/hooks/common/useMetadataSearchFlow";
 import { useBulkGameAddActions } from "@/hooks/features/games/useGameMetadataFacade";
 import { useAllSettings } from "@/hooks/queries/useSettings";
@@ -85,7 +89,7 @@ function getMatchedGameName(
 const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 	const { t, i18n } = useTranslation();
 	const { data: settings } = useAllSettings();
-	const bgmToken = settings?.bgm_auth?.access_token ?? "";
+	const hasBgmAuth = Boolean(settings?.bgm_auth);
 	const { mixedEnableYmgal, mixedEnableKun } = useStore(
 		useShallow((s) => ({
 			mixedEnableYmgal: s.mixedEnableYmgal,
@@ -93,7 +97,7 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 		})),
 	);
 	const { addGamesFromBulkImport, isAddingGames } = useBulkGameAddActions();
-	const preferredApiSource = bgmToken ? "bgm" : "vndb";
+	const preferredApiSource = hasBgmAuth ? "bgm" : "vndb";
 	const enabledMixedSources = getEnabledMixedSources({
 		mixedEnableYmgal,
 		mixedEnableKun,
@@ -132,7 +136,6 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 	);
 
 	const metadataSearchFlow = useMetadataSearchFlow({
-		bgmToken,
 		mixedEnabledSources: enabledMixedSources,
 		t,
 		onResolved: handleResolvedEditMetadata,
@@ -231,13 +234,25 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 				if (nextItems[index].status !== "pending") continue;
 
 				try {
-					const searchResults = await withAbort(
-						gameMetadataService.searchGames({
-							query: nextItems[index].name,
-							source: preferredApiSource,
-							bgmToken,
-						}),
-					);
+					const searchResults =
+						preferredApiSource === "bgm"
+							? await withBgmAuth(
+									(token) =>
+										withAbort(
+											gameMetadataService.searchGames({
+												query: nextItems[index].name,
+												source: preferredApiSource,
+												bgmToken: token,
+											}),
+										),
+									{ required: true },
+								)
+							: await withAbort(
+									gameMetadataService.searchGames({
+										query: nextItems[index].name,
+										source: preferredApiSource,
+									}),
+								);
 
 					if (searchResults.length > 0) {
 						nextItems[index].matchedData = searchResults[0];
@@ -247,6 +262,9 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 					}
 				} catch (error) {
 					if (isAbortError(error)) {
+						break;
+					}
+					if (isBgmAuthExpiredError(error)) {
 						break;
 					}
 

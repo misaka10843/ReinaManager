@@ -521,7 +521,6 @@
 				"errorBgm": "批量更新 BGM 數據失敗: {{message}}",
 				"failed": "批量更新失敗",
 				"noBgmGames": "沒有找到包含 BGM ID 的遊戲",
-				"noBgmToken": "更新失敗：未設置 BGM Token",
 				"noGames": "沒有找到包含 VNDB ID 的遊戲",
 				"partialFailed": "{{failed}} 個遊戲更新失敗",
 				"success": "成功更新 {{success}}/{{total}} 個遊戲",
@@ -534,7 +533,6 @@
 			"bgmToken": "BGM 令牌",
 			"bgmTokenSettings": {
 				"clearToken": "清除令牌",
-				"loadingProfile": "正在取得目前 Bangumi 帳號資訊...",
 				"loginMethods": "登入方式",
 				"loginMethodsHint": "請任選一種登入方式，推薦 OAuth 快捷登入。",
 				"logout": "登出",
@@ -548,6 +546,7 @@
 				"profileUnavailable": "暫無使用者資訊，請嘗試下方按鈕以取得使用者資訊。",
 				"queryingTokenStatus": "正在查詢 Token 狀態...",
 				"queryTokenStatus": "查詢 Token 狀態",
+				"reloginRequired": "Bangumi 登入已失效，請重新登入。",
 				"saveErrorWithDetail": "BGM Token 儲存失敗: {{error}}",
 				"saveSuccess": "BGM Token 儲存成功",
 				"saveToken": "儲存",

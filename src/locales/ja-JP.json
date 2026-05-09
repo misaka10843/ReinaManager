@@ -521,7 +521,6 @@
 				"errorBgm": "BGMデータの一括更新に失敗しました: {{message}}",
 				"failed": "バッチ更新に失敗しました",
 				"noBgmGames": "BGM IDを含むゲームが見つかりません",
-				"noBgmToken": "更新失敗: BGM Tokenが設定されていません",
 				"noGames": "VNDB IDを含むゲームが見つかりません",
 				"partialFailed": "{{failed}} 個のゲームの更新に失敗しました",
 				"success": "{{success}}/{{total}} 個のゲームを正常に更新しました",
@@ -534,7 +533,6 @@
 			"bgmToken": "BGM トークン",
 			"bgmTokenSettings": {
 				"clearToken": "トークンをクリア",
-				"loadingProfile": "現在の Bangumi アカウント情報を取得中...",
 				"loginMethods": "ログイン方法",
 				"loginMethodsHint": "いずれかのログイン方法を選択してください。OAuth クイックログインを推奨します。",
 				"logout": "ログアウト",
@@ -548,6 +546,7 @@
 				"profileUnavailable": "ユーザー情報はまだありません。下のボタンでユーザー情報を取得してください。",
 				"queryingTokenStatus": "Token 状態を照会中...",
 				"queryTokenStatus": "Token 状態を照会",
+				"reloginRequired": "Bangumi のログインが無効になりました。再度ログインしてください。",
 				"saveErrorWithDetail": "BGM Token の保存に失敗しました: {{error}}",
 				"saveSuccess": "BGM Token の保存が成功しました",
 				"saveToken": "保存",

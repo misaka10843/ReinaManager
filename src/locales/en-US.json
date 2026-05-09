@@ -524,7 +524,6 @@
 				"errorBgm": "Failed to batch update BGM data: {{message}}",
 				"failed": "Batch update failed",
 				"noBgmGames": "No games with BGM ID found",
-				"noBgmToken": "Update failed: BGM Token is not set",
 				"noGames": "No games with VNDB ID found",
 				"partialFailed": "{{failed}} games failed to update",
 				"success": "Successfully updated {{success}}/{{total}} games",
@@ -537,7 +536,6 @@
 			"bgmToken": "BGM Token",
 			"bgmTokenSettings": {
 				"clearToken": "Clear token",
-				"loadingProfile": "Loading current Bangumi account info...",
 				"loginMethods": "Login methods",
 				"loginMethodsHint": "Choose either login method. OAuth quick login is recommended.",
 				"logout": "Log out",
@@ -551,6 +549,7 @@
 				"profileUnavailable": "No user info yet. Try the button below to fetch user info.",
 				"queryingTokenStatus": "Querying token status...",
 				"queryTokenStatus": "Query token status",
+				"reloginRequired": "Bangumi login has expired. Please log in again.",
 				"saveErrorWithDetail": "Failed to save BGM Token: {{error}}",
 				"saveSuccess": "BGM Token saved successfully",
 				"saveToken": "Save",

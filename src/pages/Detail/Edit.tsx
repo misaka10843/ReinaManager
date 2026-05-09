@@ -14,7 +14,6 @@ import { useTranslation } from "react-i18next";
 import { ViewGameBox } from "@/components/AlertBox";
 import { SelectedGameGuard } from "@/components/SelectedGameGuard";
 import { useUpdateGame } from "@/hooks/queries/useGames";
-import { useAllSettings } from "@/hooks/queries/useSettings";
 import { snackbar } from "@/providers/snackBar";
 import { fileService } from "@/services/invoke";
 import type { GameCandidateData, GameData, UpdateGameParams } from "@/types";
@@ -39,8 +38,6 @@ export const Edit: React.FC = () => {
 };
 
 function EditContent({ selectedGame }: { selectedGame: GameData }) {
-	const { data: settings } = useAllSettings();
-	const bgmToken = settings?.bgm_auth?.access_token ?? "";
 	const updateGameMutation = useUpdateGame();
 	const { t } = useTranslation();
 	const id = selectedGame.id;
@@ -109,7 +106,6 @@ function EditContent({ selectedGame }: { selectedGame: GameData }) {
 					</AccordionSummary>
 					<AccordionDetails>
 						<DataSourceUpdate
-							bgmToken={bgmToken}
 							selectedGame={selectedGame}
 							onDataFetched={handleDataSourceFetched}
 						/>
