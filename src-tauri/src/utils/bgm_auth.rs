@@ -16,7 +16,11 @@ use tauri_plugin_http::reqwest;
 use crate::database::repository::settings_repository::SettingsRepository;
 use crate::entity::user::BgmAuth;
 
-const USER_AGENT: &str = "huoshen80/ReinaManager (https://github.com/huoshen80/ReinaManager)";
+const USER_AGENT: &str = concat!(
+    "huoshen80/ReinaManager/",
+    env!("CARGO_PKG_VERSION"),
+    " (https://github.com/huoshen80/ReinaManager)"
+);
 const BGM_APP_ID: &str = "bgm606669f8b19c14e6e";
 const BGM_REDIRECT_URI: &str = "http://127.0.0.1:23380/callback";
 const BGM_CALLBACK_PORT: u16 = 23380;

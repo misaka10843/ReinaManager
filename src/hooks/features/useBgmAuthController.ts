@@ -3,10 +3,10 @@ import { open as openurl } from "@tauri-apps/plugin-shell";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { buildManualBgmAuth, completeBgmAuth } from "@/api/bgm";
-import { logoutBgmAuth } from "@/features/bgm-auth/bgmAuthSession";
 import { useAllSettings, useUpdateSettings } from "@/hooks/queries/useSettings";
 import { snackbar } from "@/providers/snackBar";
 import { settingsService } from "@/services/invoke";
+import { logoutBgmAuth } from "@/utils/bgmAuthSession";
 import { toError } from "@/utils/errors";
 
 export function useBgmAuthController() {

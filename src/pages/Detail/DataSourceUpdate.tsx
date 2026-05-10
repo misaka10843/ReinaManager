@@ -12,12 +12,9 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-	isBgmAuthExpiredError,
-	withBgmAuth,
-} from "@/features/bgm-auth/bgmAuthSession";
 import { snackbar } from "@/providers/snackBar";
 import type { GameCandidateData, GameData } from "@/types";
+import { isBgmAuthExpiredError, withBgmAuth } from "@/utils/bgmAuthSession";
 import { getUserErrorMessage } from "@/utils/errors";
 import { fetchMetadataForUpdate } from "@/utils/metadata";
 

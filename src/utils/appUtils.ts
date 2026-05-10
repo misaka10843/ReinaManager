@@ -9,7 +9,6 @@ import i18next, { t } from "i18next";
 import { extname, join } from "pathe";
 import { fetchBgmByIds } from "@/api/bgm";
 import { fetchVNDBByIds } from "@/api/vndb";
-import { withBgmAuth } from "@/features/bgm-auth/bgmAuthSession";
 import { setScrollPosition } from "@/hooks/common/useScrollRestore";
 import { fetchAllSettings } from "@/hooks/queries/useSettings";
 import { queryClient } from "@/providers/queryClient";
@@ -21,6 +20,7 @@ import {
 	statsService,
 } from "@/services/invoke";
 import type { BgmData, GameData, StopGameResult, VndbData } from "@/types";
+import { withBgmAuth } from "@/utils/bgmAuthSession";
 import { toError } from "./errors";
 
 // ==================== 路径管理缓存 ====================

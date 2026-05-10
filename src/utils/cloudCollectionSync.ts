@@ -1,6 +1,5 @@
 import { fetchUserCollection, updateUserCollection } from "@/api/bgm";
 import { fetchVndbUserCollection, updateVndbUserCollection } from "@/api/vndb";
-import { withBgmAuth } from "@/features/bgm-auth/bgmAuthSession";
 import {
 	fetchAllSettings,
 	fetchBgmCurrentUserProfile,
@@ -9,6 +8,7 @@ import { queryClient } from "@/providers/queryClient";
 import { useStore } from "@/store/appStore";
 import type { FullGameData, GameData } from "@/types";
 import { PlayStatus } from "@/types/collection";
+import { withBgmAuth } from "@/utils/bgmAuthSession";
 
 type CollectionSyncSource = "bgm" | "vndb";
 

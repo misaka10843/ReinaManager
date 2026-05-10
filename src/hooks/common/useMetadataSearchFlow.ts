@@ -1,12 +1,9 @@
 import type { TFunction } from "i18next";
 import { useCallback, useMemo, useState } from "react";
 import { gameMetadataService } from "@/api";
-import {
-	isBgmAuthExpiredError,
-	withBgmAuth,
-} from "@/features/bgm-auth/bgmAuthSession";
 import type { apiSourceType, GameCandidateData, SourceType } from "@/types";
 import { isAbortError } from "@/utils/appUtils";
+import { isBgmAuthExpiredError, withBgmAuth } from "@/utils/bgmAuthSession";
 import { getUserErrorMessage } from "@/utils/errors";
 import type {
 	MixedSourceCandidates,

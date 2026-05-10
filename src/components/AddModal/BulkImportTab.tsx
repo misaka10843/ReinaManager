@@ -30,10 +30,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { gameMetadataService } from "@/api";
-import {
-	isBgmAuthExpiredError,
-	withBgmAuth,
-} from "@/features/bgm-auth/bgmAuthSession";
 import { useMetadataSearchFlow } from "@/hooks/common/useMetadataSearchFlow";
 import { useBulkGameAddActions } from "@/hooks/features/games/useGameMetadataFacade";
 import { useAllSettings } from "@/hooks/queries/useSettings";
@@ -46,6 +42,7 @@ import {
 	handleGetFolder,
 	isAbortError,
 } from "@/utils/appUtils";
+import { isBgmAuthExpiredError, withBgmAuth } from "@/utils/bgmAuthSession";
 import { getUserErrorMessage } from "@/utils/errors";
 import GameSelectDialog from "./GameSelectDialog";
 import MixedSourceConfirmDialog from "./MixedSourceConfirmDialog";

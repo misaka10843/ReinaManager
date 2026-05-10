@@ -22,9 +22,9 @@ import type React from "react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
-import { isBgmAuthExpiredError } from "@/features/bgm-auth/bgmAuthSession";
 import { snackbar } from "@/providers/snackBar";
 import { useStore } from "@/store/appStore";
+import { isBgmAuthExpiredError } from "@/utils/bgmAuthSession";
 import { getUserErrorMessage } from "@/utils/errors";
 
 export const MixedSearchSourceSettings = () => {
