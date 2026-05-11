@@ -1,3 +1,53 @@
+## [0.20.3](https://github.com/huoshen80/ReinaManager/compare/v0.20.2...v0.20.3) (2026-05-11)
+
+<details>
+<summary>查看中文版本</summary>
+
+### ⚙️ 杂类任务
+
+- *(build)* 传递 Bangumi OAuth 密钥 ([5c2a2d8](https://github.com/huoshen80/ReinaManager/commit/5c2a2d8aee460eeb49e2c09340286369b2dc15c9))
+
+### ✨ 新功能
+
+- *(bgm)* 添加 Bangumi OAuth 认证存储 ([ac961c4](https://github.com/huoshen80/ReinaManager/commit/ac961c4b3c400d1bc3783ee086f2ec278db08435))
+- *(bgm-auth)* 添加 OAuth 令牌自动刷新 ([0062b8d](https://github.com/huoshen80/ReinaManager/commit/0062b8d4ada88b9bedfb093e78e12f9cb6b1ea9a))
+- *(detail)* 添加无需重新获取数据的显示源切换 ([9cfc2cd](https://github.com/huoshen80/ReinaManager/commit/9cfc2cddf90ac2eba077b0c7083fa77c69cb533d))
+
+### 🐛 Bug 修复
+
+- *(bgm)* 加固 OAuth 回调流程 ([9dba210](https://github.com/huoshen80/ReinaManager/commit/9dba210633aca843c0fdd78ba74e915367623806))
+
+### 🚜 重构
+
+- *(bgm-auth)* 收紧令牌类型并将 BGM_TOKEN 重命名为 bgmToken ([6999077](https://github.com/huoshen80/ReinaManager/commit/6999077626c17e2b2fa7aadfa3f679f1173cd33e))
+- *(bgm-auth)* 合并工具函数并内联组件 ([913ccab](https://github.com/huoshen80/ReinaManager/commit/913ccab95a4266169a9c0f9db22e1d75ed61a549))
+- 拆分游戏列表门面 hook 并添加加载/错误状态 ([f90bad5](https://github.com/huoshen80/ReinaManager/commit/f90bad5cac94e615cefcc14d508699ddac17973b))
+- *(bgm-auth)* 防止跨钩子实例重复 BGM OAuth 登录 ([8768916](https://github.com/huoshen80/ReinaManager/commit/8768916d9ba1ed0f21127ef8e25e832903b6c4d6))
+
+</details>
+
+### ⚙️ Miscellaneous Tasks
+
+- *(build)* Pass Bangumi OAuth secret ([5c2a2d8](https://github.com/huoshen80/ReinaManager/commit/5c2a2d8aee460eeb49e2c09340286369b2dc15c9))
+
+### ✨ Features
+
+- *(bgm)* Add Bangumi OAuth auth storage ([ac961c4](https://github.com/huoshen80/ReinaManager/commit/ac961c4b3c400d1bc3783ee086f2ec278db08435))
+- *(bgm-auth)* Add automatic OAuth token refresh ([0062b8d](https://github.com/huoshen80/ReinaManager/commit/0062b8d4ada88b9bedfb093e78e12f9cb6b1ea9a))
+- *(detail)* Add display source switch without re-fetching ([9cfc2cd](https://github.com/huoshen80/ReinaManager/commit/9cfc2cddf90ac2eba077b0c7083fa77c69cb533d))
+
+### 🐛 Bug Fixes
+
+- *(bgm)* Harden OAuth callback flow ([9dba210](https://github.com/huoshen80/ReinaManager/commit/9dba210633aca843c0fdd78ba74e915367623806))
+
+### 🚜 Refactor
+
+- *(bgm-auth)* Tighten token types and rename BGM_TOKEN to bgmToken ([6999077](https://github.com/huoshen80/ReinaManager/commit/6999077626c17e2b2fa7aadfa3f679f1173cd33e))
+- *(bgm-auth)* Consolidate utilities and inline components ([913ccab](https://github.com/huoshen80/ReinaManager/commit/913ccab95a4266169a9c0f9db22e1d75ed61a549))
+- Split game list facade and add loading/error states ([f90bad5](https://github.com/huoshen80/ReinaManager/commit/f90bad5cac94e615cefcc14d508699ddac17973b))
+- *(bgm-auth)* Prevent duplicate BGM OAuth login across hook instances ([8768916](https://github.com/huoshen80/ReinaManager/commit/8768916d9ba1ed0f21127ef8e25e832903b6c4d6))
+
+
 ## [0.20.2](https://github.com/huoshen80/ReinaManager/compare/v0.20.1...v0.20.2) (2026-05-08)
 
 <details>
