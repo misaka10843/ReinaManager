@@ -1,6 +1,6 @@
 import { listen } from "@tauri-apps/api/event";
 import { open as openurl } from "@tauri-apps/plugin-shell";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { buildManualBgmAuth, completeBgmAuth } from "@/api/bgm";
 import { useAllSettings, useUpdateSettings } from "@/hooks/queries/useSettings";
@@ -9,6 +9,23 @@ import { settingsService } from "@/services/invoke";
 import { logoutBgmAuth } from "@/utils/bgmAuthSession";
 import { toError } from "@/utils/errors";
 
+let isBgmOAuthRunning = false;
+let bgmOAuthUnlisteners: Array<() => void> = [];
+const bgmOAuthStatusListeners = new Set<(isLoading: boolean) => void>();
+
+function clearBgmOAuthListeners() {
+	for (const unlisten of bgmOAuthUnlisteners) {
+		unlisten();
+	}
+	bgmOAuthUnlisteners = [];
+}
+
+function notifyBgmOAuthStatus() {
+	for (const listener of bgmOAuthStatusListeners) {
+		listener(isBgmOAuthRunning);
+	}
+}
+
 export function useBgmAuthController() {
 	const { t } = useTranslation();
 	const { data: settings } = useAllSettings();
@@ -16,27 +33,21 @@ export function useBgmAuthController() {
 	const bgmToken = bgmAuth?.access_token ?? "";
 	const updateSettingsMutation = useUpdateSettings();
 	const [inputToken, setInputToken] = useState("");
-	const [isOAuthLoading, setIsOAuthLoading] = useState(false);
+	const [isOAuthLoading, setIsOAuthLoading] = useState(isBgmOAuthRunning);
 	const [isCompletingAuth, setIsCompletingAuth] = useState(false);
 	const [isSavingToken, setIsSavingToken] = useState(false);
-	const oauthUnlistenersRef = useRef<Array<() => void>>([]);
-
-	const clearOAuthListeners = useCallback(() => {
-		for (const unlisten of oauthUnlistenersRef.current) {
-			unlisten();
-		}
-		oauthUnlistenersRef.current = [];
-	}, []);
 
 	useEffect(() => {
 		setInputToken(bgmToken);
 	}, [bgmToken]);
 
 	useEffect(() => {
+		bgmOAuthStatusListeners.add(setIsOAuthLoading);
+		setIsOAuthLoading(isBgmOAuthRunning);
 		return () => {
-			clearOAuthListeners();
+			bgmOAuthStatusListeners.delete(setIsOAuthLoading);
 		};
-	}, [clearOAuthListeners]);
+	}, []);
 
 	const handleOpenTokenPage = () => {
 		openurl("https://next.bgm.tv/demo/access-token/create");
@@ -73,14 +84,25 @@ export function useBgmAuthController() {
 	};
 
 	const handleOAuthLogin = useCallback(async () => {
+		if (isBgmOAuthRunning) {
+			snackbar.info(
+				t(
+					"pages.Settings.bgmTokenSettings.oauthWaiting",
+					"请在浏览器中完成授权...",
+				),
+			);
+			return;
+		}
+
 		try {
-			setIsOAuthLoading(true);
+			isBgmOAuthRunning = true;
+			notifyBgmOAuthStatus();
 			const authorizeUrl = await settingsService.bgmOAuthStartLogin();
-			clearOAuthListeners();
+			clearBgmOAuthListeners();
 			const codeUnlisten = await listen<string>(
 				"bgm-oauth-code",
 				async (event) => {
-					clearOAuthListeners();
+					clearBgmOAuthListeners();
 					try {
 						const auth = await settingsService.bgmOAuthExchangeCode(
 							event.payload,
@@ -104,13 +126,15 @@ export function useBgmAuthController() {
 							),
 						);
 					} finally {
-						setIsOAuthLoading(false);
+						isBgmOAuthRunning = false;
+						notifyBgmOAuthStatus();
 					}
 				},
 			);
 			const errorUnlisten = await listen<string>("bgm-oauth-error", (event) => {
-				clearOAuthListeners();
-				setIsOAuthLoading(false);
+				clearBgmOAuthListeners();
+				isBgmOAuthRunning = false;
+				notifyBgmOAuthStatus();
 				snackbar.error(
 					t(
 						"pages.Settings.bgmTokenSettings.oauthError",
@@ -119,8 +143,20 @@ export function useBgmAuthController() {
 					),
 				);
 			});
-			oauthUnlistenersRef.current = [codeUnlisten, errorUnlisten];
-			await openurl(authorizeUrl);
+			bgmOAuthUnlisteners = [codeUnlisten, errorUnlisten];
+			void openurl(authorizeUrl).catch((error) => {
+				console.error(error);
+				clearBgmOAuthListeners();
+				isBgmOAuthRunning = false;
+				notifyBgmOAuthStatus();
+				snackbar.error(
+					t(
+						"pages.Settings.bgmTokenSettings.oauthStartError",
+						"启动 OAuth 登录失败: {{error}}",
+						{ error: toError(error).message },
+					),
+				);
+			});
 			snackbar.info(
 				t(
 					"pages.Settings.bgmTokenSettings.oauthWaiting",
@@ -129,8 +165,9 @@ export function useBgmAuthController() {
 			);
 		} catch (error) {
 			console.error(error);
-			clearOAuthListeners();
-			setIsOAuthLoading(false);
+			clearBgmOAuthListeners();
+			isBgmOAuthRunning = false;
+			notifyBgmOAuthStatus();
 			snackbar.error(
 				t(
 					"pages.Settings.bgmTokenSettings.oauthStartError",
@@ -139,7 +176,7 @@ export function useBgmAuthController() {
 				),
 			);
 		}
-	}, [clearOAuthListeners, t, updateSettingsMutation]);
+	}, [t, updateSettingsMutation]);
 
 	const handleCompleteAuth = useCallback(async () => {
 		if (!bgmAuth?.access_token) return;
