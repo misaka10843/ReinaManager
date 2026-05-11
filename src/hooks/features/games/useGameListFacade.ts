@@ -8,6 +8,9 @@ import { PlayStatus } from "@/types/collection";
 import { applyNsfwFilter, getDisplayGameDataList } from "@/utils/appUtils";
 import { createSearchIndex, searchWithIndex } from "@/utils/enhancedSearch";
 
+const EMPTY_IDS: number[] = [];
+const EMPTY_GAMES: GameData[] = [];
+
 /**
  * 将全量 FullGameData 转换为 GameData 并写入 React Query 缓存字典
  *
@@ -33,22 +36,23 @@ export function useHydrateGameCache(
 }
 
 /**
- * 游戏列表门面 Hook（用于 LibrariesPage）
+ * 基础游戏筛选门面 Hook
  *
  * 数据流：
  * 1. useAllGames → FullGameData[] → 转换 → 写入缓存字典 + 构建 Map（一次性）
  * 2. useGameIdList → number[]（排序/筛选后的 ID，IPC 仅传输几 KB）
- * 3. 从 Map 读取 GameData → 前端过滤（游玩状态/NSFW/搜索）
- * 4. 返回 number[]（最终 ID 列表）
+ * 3. 从 Map 读取 GameData → 前端过滤（游玩状态/NSFW）
+ *
+ * 不处理搜索关键词，供 SearchBox 复用基础筛选结果生成建议，
+ * 避免搜索框为建议列表重复执行完整搜索。
  */
-export function useGameListFacade() {
+export function useFilteredGamesFacade() {
 	const {
 		gameFilterType,
 		playStatusFilter,
 		sortOption,
 		sortOrder,
 		nsfwFilter,
-		searchKeyword,
 	} = useStore(
 		useShallow((s) => ({
 			gameFilterType: s.gameFilterType,
@@ -56,7 +60,6 @@ export function useGameListFacade() {
 			sortOption: s.sortOption,
 			sortOrder: s.sortOrder,
 			nsfwFilter: s.nsfwFilter,
-			searchKeyword: s.searchKeyword,
 		})),
 	);
 
@@ -73,11 +76,11 @@ export function useGameListFacade() {
 
 	// 2. 排序/筛选后的 ID 列表（轻量 IPC，切换排序时仅传输几 KB）
 	const gameIdListQuery = useGameIdList(gameFilterType, sortOption, sortOrder);
-	const sortedIds = gameIdListQuery.data ?? [];
+	const sortedIds = gameIdListQuery.data ?? EMPTY_IDS;
 
 	// 3. 从 Map 读取 GameData，应用前端过滤
 	const filteredGames = useMemo(() => {
-		if (sortedIds.length === 0 || gameMap.size === 0) return [];
+		if (sortedIds.length === 0 || gameMap.size === 0) return EMPTY_GAMES;
 
 		// 从 Map 读取（比 getQueryData 快）
 		const games: GameData[] = [];
@@ -99,6 +102,24 @@ export function useGameListFacade() {
 
 		return result;
 	}, [sortedIds, gameMap, playStatusFilter, nsfwFilter]);
+
+	return {
+		filteredGames,
+		isLoading: allGamesQuery.isLoading || gameIdListQuery.isLoading,
+		isError: allGamesQuery.isError || gameIdListQuery.isError,
+		error: allGamesQuery.error ?? gameIdListQuery.error,
+	};
+}
+
+/**
+ * 游戏列表门面 Hook（用于 LibrariesPage）
+ *
+ * 在基础筛选结果上应用搜索关键词，返回最终卡片 ID 列表。
+ * 只有实际展示游戏列表的页面才应使用这个 Hook。
+ */
+export function useGameListFacade() {
+	const searchKeyword = useStore((s) => s.searchKeyword);
+	const { filteredGames, isLoading, isError, error } = useFilteredGamesFacade();
 
 	// 搜索过滤（搜索索引依赖过滤后的列表）
 	const searchIndex = useMemo(
@@ -124,7 +145,9 @@ export function useGameListFacade() {
 	return {
 		filteredGames,
 		gameIds,
-		isLoading: gameIdListQuery.isLoading,
+		isLoading,
+		isError,
+		error,
 	};
 }
 

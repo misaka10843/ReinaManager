@@ -19,7 +19,7 @@ import { Autocomplete, Box, TextField } from "@mui/material";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useDebouncedValue } from "@/hooks/common/useDebouncedValue";
-import { useGameListFacade } from "@/hooks/features/games/useGameListFacade";
+import { useFilteredGamesFacade } from "@/hooks/features/games/useGameListFacade";
 import { useStore } from "@/store/appStore";
 import {
 	getSearchSuggestionsFromData,
@@ -51,9 +51,8 @@ export const SearchBox = () => {
 	const searchInput = useStore((state) => state.searchInput);
 	const setSearchInput = useStore((state) => state.setSearchInput);
 	const setSearchKeyword = useStore((state) => state.setSearchKeyword);
-	const { filteredGames } = useGameListFacade();
+	const { filteredGames } = useFilteredGamesFacade();
 
-	const [suggestions, setSuggestions] = useState<string[]>([]);
 	const [isOpen, setIsOpen] = useState(false);
 
 	// 根据语言动态调整搜索框宽度（使用 useMemo 缓存）
@@ -76,14 +75,14 @@ export const SearchBox = () => {
 		setSearchKeyword(debouncedKeyword);
 	}, [debouncedKeyword, setSearchKeyword]);
 
-	// 拼音预处理只依赖游戏列表，输入变化时复用
+	// 搜索建议只需要基础筛选结果，不订阅全局搜索关键词，避免重复执行列表搜索
 	const suggestionEntries = useMemo(
 		() => preprocessSuggestionData(filteredGames),
 		[filteredGames],
 	);
 
-	// 生成搜索建议（只做字符串匹配，不再调用 pinyin）
-	const currentSuggestions = useMemo(() => {
+	// 生成搜索建议（只做字符串匹配）
+	const suggestions = useMemo(() => {
 		if (
 			!debouncedSuggestions?.trim() ||
 			debouncedSuggestions.length < MIN_SEARCH_LENGTH
@@ -102,11 +101,6 @@ export const SearchBox = () => {
 			return [];
 		}
 	}, [debouncedSuggestions, suggestionEntries]);
-
-	// 同步建议到状态
-	useEffect(() => {
-		setSuggestions(currentSuggestions);
-	}, [currentSuggestions]);
 
 	// 处理选择
 	const handleSelect = useCallback(
@@ -129,7 +123,6 @@ export const SearchBox = () => {
 			} else if (reason === "clear") {
 				setSearchInput("");
 				setSearchKeyword("");
-				setSuggestions([]);
 				setIsOpen(false);
 			}
 		},
