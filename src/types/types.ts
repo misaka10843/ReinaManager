@@ -162,7 +162,6 @@ export type SourceDataKey =
 export type apiSourceType = SourceType | "mixed";
 
 export const SOURCE_KEYS = ["bgm", "vndb", "ymgal", "kun"] as const;
-export const MIXED_SOURCE_KEYS = ["bgm", "vndb", "ymgal", "kun"] as const;
 
 export const SOURCE_FIELD_KEYS = {
 	bgm: { id: "bgm_id", data: "bgm_data" },
@@ -348,6 +347,12 @@ export interface GameData {
 	custom_data?: CustomData;
 	created_at?: number;
 	updated_at?: number;
+
+	// 原始数据源字段，用于编辑页判断本地是否已有对应数据源
+	bgm_data?: Nullable<BgmData>;
+	vndb_data?: Nullable<VndbData>;
+	ymgal_data?: Nullable<YmgalData>;
+	kun_data?: Nullable<KunData>;
 
 	// 展平的元数据字段
 	image?: string;

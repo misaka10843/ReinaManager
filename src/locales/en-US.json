@@ -446,12 +446,15 @@
 				"loading": "Loading...",
 				"noDataFetched": "No data fetched or data source invalid.",
 				"noGameSelected": "No game selected",
+				"sourceSwitchUnavailable": "This game has no local data for that source, so only the display source cannot be switched.",
+				"switchDisplaySource": "Switch display source",
+				"switchingSource": "Switching...",
 				"updateFromSource": "Update from data source",
 				"vndbId": "VNDB ID",
 				"ymgalId": "Ymgal ID"
 			},
 			"Edit": {
-				"dataSourceUpdate": "Data Source Update",
+				"dataSourceEditAndUpdate": "Data Source Edit and Update",
 				"gameInfoEdit": "Game Info Edit",
 				"updateSuccess": "Game information updated successfully"
 			},

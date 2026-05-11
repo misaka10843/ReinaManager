@@ -7,12 +7,7 @@ import type {
 	SourceType,
 	UpdateGameParams,
 } from "@/types";
-import {
-	isSourceType,
-	MIXED_SOURCE_KEYS,
-	SOURCE_FIELD_KEYS,
-	SOURCE_KEYS,
-} from "@/types";
+import { isSourceType, SOURCE_FIELD_KEYS, SOURCE_KEYS } from "@/types";
 import {
 	getArrayDiff,
 	getBoolDiff,
@@ -366,7 +361,6 @@ export function buildMetadataUpdatePayload(
 	gameData: GameCandidateData,
 ): UpdateGameParams {
 	const updateData: UpdateGameParams = { ...gameData };
-	const mixedSources = new Set<SourceType>(MIXED_SOURCE_KEYS);
 
 	if (gameData.id_type !== "mixed") {
 		for (const source of SOURCE_KEYS) {
@@ -375,14 +369,9 @@ export function buildMetadataUpdatePayload(
 			}
 		}
 	} else {
-		for (const source of MIXED_SOURCE_KEYS) {
+		for (const source of SOURCE_KEYS) {
 			const { id } = SOURCE_FIELD_KEYS[source];
 			if (!gameData[id]) {
-				clearMetadataSource(updateData, source);
-			}
-		}
-		for (const source of SOURCE_KEYS) {
-			if (!mixedSources.has(source)) {
 				clearMetadataSource(updateData, source);
 			}
 		}

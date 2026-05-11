@@ -443,12 +443,15 @@
 				"loading": "正在獲取...",
 				"noDataFetched": "未獲取到數據或數據源無效。",
 				"noGameSelected": "未選擇遊戲",
+				"sourceSwitchUnavailable": "目前遊戲沒有該數據源的本地數據，無法僅切換顯示源。",
+				"switchDisplaySource": "切換顯示源",
+				"switchingSource": "正在切換...",
 				"updateFromSource": "從數據源更新數據",
 				"vndbId": "VNDB ID",
 				"ymgalId": "Ymgal ID"
 			},
 			"Edit": {
-				"dataSourceUpdate": "數據源更新",
+				"dataSourceEditAndUpdate": "數據源編輯與更新",
 				"gameInfoEdit": "遊戲資料編輯",
 				"updateSuccess": "遊戲資訊已成功更新"
 			},

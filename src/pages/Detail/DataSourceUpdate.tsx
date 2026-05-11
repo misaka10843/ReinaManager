@@ -1,3 +1,4 @@
+import SwapHorizIcon from "@mui/icons-material/SwapHoriz";
 import UpdateIcon from "@mui/icons-material/Update";
 import {
 	Box,
@@ -14,6 +15,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { snackbar } from "@/providers/snackBar";
 import type { GameCandidateData, GameData } from "@/types";
+import { isSourceType, SOURCE_FIELD_KEYS, SOURCE_KEYS } from "@/types";
 import { isBgmAuthExpiredError, withBgmAuth } from "@/utils/bgmAuthSession";
 import { getUserErrorMessage } from "@/utils/errors";
 import { fetchMetadataForUpdate } from "@/utils/metadata";
@@ -21,6 +23,7 @@ import { fetchMetadataForUpdate } from "@/utils/metadata";
 interface DataSourceUpdateProps {
 	selectedGame: GameData;
 	onDataFetched: (data: GameCandidateData) => void;
+	onSourceSwitch: (idType: string) => Promise<void>;
 	disabled?: boolean;
 }
 
@@ -31,6 +34,7 @@ interface DataSourceUpdateProps {
 export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 	selectedGame,
 	onDataFetched,
+	onSourceSwitch,
 	disabled = false,
 }) => {
 	const { t } = useTranslation();
@@ -42,7 +46,32 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 	const [kunId, setKunId] = useState<string>(selectedGame.kun_id || "");
 	const [idType, setIdType] = useState<string>(selectedGame.id_type || "");
 	const [isLoading, setIsLoading] = useState(false);
+	const [isSwitching, setIsSwitching] = useState(false);
 	const showMixedInputs = idType === "mixed";
+	const isBusy = isLoading || isSwitching || disabled;
+
+	const hasSelectedSourceData = (source: (typeof SOURCE_KEYS)[number]) => {
+		const { id, data } = SOURCE_FIELD_KEYS[source];
+		return Boolean(selectedGame[id] && selectedGame[data]);
+	};
+
+	const canSwitchSource = () => {
+		if (
+			!idType ||
+			idType === selectedGame.id_type ||
+			idType === "custom" ||
+			idType === "Whitecloud"
+		) {
+			return false;
+		}
+		if (idType === "mixed") {
+			return SOURCE_KEYS.some((source) => hasSelectedSourceData(source));
+		}
+		if (isSourceType(idType)) {
+			return hasSelectedSourceData(idType);
+		}
+		return false;
+	};
 
 	useEffect(() => {
 		setBgmId(selectedGame.bgm_id || "");
@@ -103,10 +132,31 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 		setIdType(event.target.value);
 	};
 
+	const handleSwitchSource = async () => {
+		if (!canSwitchSource()) {
+			snackbar.error(
+				t(
+					"pages.Detail.DataSourceUpdate.sourceSwitchUnavailable",
+					"当前游戏没有该数据源的本地数据，无法仅切换显示源。",
+				),
+			);
+			return;
+		}
+
+		try {
+			setIsSwitching(true);
+			await onSourceSwitch(idType);
+		} catch (error) {
+			snackbar.error(getUserErrorMessage(error, t));
+		} finally {
+			setIsSwitching(false);
+		}
+	};
+
 	return (
-		<Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+		<Box className="flex flex-col gap-5">
 			{/* ID 类型选择框 */}
-			<FormControl fullWidth disabled={isLoading || disabled}>
+			<FormControl fullWidth disabled={isBusy}>
 				<InputLabel id="id-type-label">
 					{t("pages.Detail.DataSourceUpdate.dataSource", "数据源")}
 				</InputLabel>
@@ -121,7 +171,9 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 					<MenuItem value="ymgal">YMGal</MenuItem>
 					<MenuItem value="kun">Kungal</MenuItem>
 					<MenuItem value="mixed">Mixed</MenuItem>
-					<MenuItem value="custom">Custom</MenuItem>
+					<MenuItem value="custom" disabled>
+						Custom
+					</MenuItem>
 					<MenuItem value="Whitecloud" disabled>
 						Whitecloud
 					</MenuItem>
@@ -136,7 +188,7 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 					fullWidth
 					value={bgmId}
 					onChange={(e) => setBgmId(e.target.value)}
-					disabled={isLoading || disabled}
+					disabled={isBusy}
 					required={idType === "bgm"}
 				/>
 			)}
@@ -149,7 +201,7 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 					fullWidth
 					value={vndbId}
 					onChange={(e) => setVndbId(e.target.value)}
-					disabled={isLoading || disabled}
+					disabled={isBusy}
 					required={idType === "vndb"}
 				/>
 			)}
@@ -162,7 +214,7 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 					fullWidth
 					value={ymgalId}
 					onChange={(e) => setYmgalId(e.target.value)}
-					disabled={isLoading || disabled}
+					disabled={isBusy}
 					required={idType === "ymgal"}
 				/>
 			)}
@@ -175,43 +227,67 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 					fullWidth
 					value={kunId}
 					onChange={(e) => setKunId(e.target.value)}
-					disabled={isLoading || disabled}
+					disabled={isBusy}
 					required={idType === "kun"}
 				/>
 			)}
 
-			{/* 更新按钮 */}
-			<Button
-				variant="contained"
-				color="primary"
-				size="large"
-				fullWidth
-				disabled={
-					idType === "custom" ||
-					isLoading ||
-					disabled ||
-					(idType === "bgm" && !bgmId) ||
-					(idType === "vndb" && !vndbId) ||
-					(idType === "ymgal" && !ymgalId) ||
-					(idType === "kun" && !kunId) ||
-					(idType === "mixed" && !(bgmId || vndbId || ymgalId || kunId))
-				}
-				onClick={handleFetchAndPreview}
-				startIcon={
-					isLoading ? (
-						<CircularProgress size={20} color="inherit" />
-					) : (
-						<UpdateIcon />
-					)
-				}
-			>
-				{isLoading
-					? t("pages.Detail.DataSourceUpdate.loading", "正在获取...")
-					: t(
-							"pages.Detail.DataSourceUpdate.updateFromSource",
-							"从数据源更新数据",
-						)}
-			</Button>
+			{/* 操作按钮 */}
+			<Box className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+				<Button
+					variant="outlined"
+					color="primary"
+					size="large"
+					fullWidth
+					disabled={!canSwitchSource() || isBusy}
+					onClick={handleSwitchSource}
+					startIcon={
+						isSwitching ? (
+							<CircularProgress size={20} color="inherit" />
+						) : (
+							<SwapHorizIcon />
+						)
+					}
+				>
+					{isSwitching
+						? t("pages.Detail.DataSourceUpdate.switchingSource", "正在切换...")
+						: t(
+								"pages.Detail.DataSourceUpdate.switchDisplaySource",
+								"切换显示源",
+							)}
+				</Button>
+
+				<Button
+					variant="contained"
+					color="primary"
+					size="large"
+					fullWidth
+					disabled={
+						idType === "custom" ||
+						isBusy ||
+						(idType === "bgm" && !bgmId) ||
+						(idType === "vndb" && !vndbId) ||
+						(idType === "ymgal" && !ymgalId) ||
+						(idType === "kun" && !kunId) ||
+						(idType === "mixed" && !(bgmId || vndbId || ymgalId || kunId))
+					}
+					onClick={handleFetchAndPreview}
+					startIcon={
+						isLoading ? (
+							<CircularProgress size={20} color="inherit" />
+						) : (
+							<UpdateIcon />
+						)
+					}
+				>
+					{isLoading
+						? t("pages.Detail.DataSourceUpdate.loading", "正在获取...")
+						: t(
+								"pages.Detail.DataSourceUpdate.updateFromSource",
+								"从数据源更新数据",
+							)}
+				</Button>
+			</Box>
 		</Box>
 	);
 };

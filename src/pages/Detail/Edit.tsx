@@ -63,6 +63,18 @@ function EditContent({ selectedGame }: { selectedGame: GameData }) {
 		setOpenViewBox(true);
 	};
 
+	// 只切换当前展示/合并使用的数据源，不重新拉取元数据
+	const handleSourceSwitch = async (idType: string) => {
+		await fileService.deleteCloudCoverCache(id);
+		await updateGameMutation.mutateAsync({
+			gameId: id,
+			updates: { id_type: idType },
+		});
+		snackbar.success(
+			t("pages.Detail.Edit.updateSuccess", "游戏信息已成功更新"),
+		);
+	};
+
 	// 处理游戏信息保存
 	const handleGameInfoSave = async (data: UpdateGameParams) => {
 		try {
@@ -101,13 +113,17 @@ function EditContent({ selectedGame }: { selectedGame: GameData }) {
 						id="data-source-update-header"
 					>
 						<Typography variant="h6" component="span">
-							{t("pages.Detail.Edit.dataSourceUpdate", "数据源更新")}
+							{t(
+								"pages.Detail.Edit.dataSourceEditAndUpdate",
+								"数据源编辑与更新",
+							)}
 						</Typography>
 					</AccordionSummary>
 					<AccordionDetails>
 						<DataSourceUpdate
 							selectedGame={selectedGame}
 							onDataFetched={handleDataSourceFetched}
+							onSourceSwitch={handleSourceSwitch}
 						/>
 					</AccordionDetails>
 				</Accordion>
