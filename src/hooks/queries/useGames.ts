@@ -14,11 +14,10 @@ import type { GameType, SortOption, SortOrder } from "@/services/invoke";
 import { gameService } from "@/services/invoke";
 import type {
 	BatchOperationResult,
-	GameData,
+	FullGameData,
 	InsertGameParams,
 	UpdateGameParams,
 } from "@/types";
-import { getDisplayGameData } from "@/utils/dataTransform";
 
 const listRelevantUpdateFields = new Set<keyof UpdateGameParams>([
 	"bgm_id",
@@ -50,8 +49,6 @@ export const gameKeys = {
 		sortOption: SortOption;
 		sortOrder: SortOrder;
 	}) => [...gameKeys.idLists(), params] as const,
-	details: () => [...gameKeys.all, "detail"] as const,
-	detail: (id: number) => [...gameKeys.details(), id] as const,
 	vndbIds: () => [...gameKeys.all, "vndbIds"] as const,
 	bgmIds: () => [...gameKeys.all, "bgmIds"] as const,
 };
@@ -60,25 +57,6 @@ function useAllGames() {
 	return useQuery({
 		queryKey: gameKeys.all,
 		queryFn: () => gameService.getAllGames("all"),
-	});
-}
-
-/**
- * 查询单个游戏详情，返回展平后的 GameData
- *
- * 内部自动执行 FullGameData → GameData 转换，
- * 缓存中存储 GameData，避免下游重复转换。
- */
-function useGameDetail(gameId: number | null) {
-	return useQuery({
-		queryKey: gameKeys.detail(gameId ?? 0),
-		queryFn: async () => {
-			if (gameId === null) return null;
-			const fullData = await gameService.getGameById(gameId);
-			return fullData ? getDisplayGameData(fullData) : null;
-		},
-		enabled: gameId !== null,
-		placeholderData: keepPreviousData,
 	});
 }
 
@@ -160,11 +138,11 @@ function useDeleteGame() {
 		mutationFn: (gameId: number) => gameService.deleteGame(gameId),
 		onSuccess: (_, gameId) => {
 			// 乐观更新：立即从缓存中移除已删除的游戏
-			queryClient.removeQueries({
-				queryKey: gameKeys.detail(gameId),
-				exact: true,
-			});
-			queryClient.invalidateQueries({ queryKey: gameKeys.all, exact: true });
+			queryClient.setQueryData<FullGameData[]>(
+				gameKeys.all,
+				(currentGames) =>
+					currentGames?.filter((game) => game.id !== gameId) ?? currentGames,
+			);
 			queryClient.invalidateQueries({ queryKey: gameKeys.idLists() });
 			queryClient.invalidateQueries({ queryKey: ["collections"] });
 			queryClient.invalidateQueries({ queryKey: ["stats"] });
@@ -179,13 +157,13 @@ function useDeleteGames() {
 		mutationFn: (gameIds: number[]) => gameService.deleteGames(gameIds),
 		onSuccess: (_, gameIds) => {
 			// 乐观更新：立即从缓存中移除已删除的游戏
-			for (const gameId of gameIds) {
-				queryClient.removeQueries({
-					queryKey: gameKeys.detail(gameId),
-					exact: true,
-				});
-			}
-			queryClient.invalidateQueries({ queryKey: gameKeys.all, exact: true });
+			const deletedGameIds = new Set(gameIds);
+			queryClient.setQueryData<FullGameData[]>(
+				gameKeys.all,
+				(currentGames) =>
+					currentGames?.filter((game) => !deletedGameIds.has(game.id)) ??
+					currentGames,
+			);
 			queryClient.invalidateQueries({ queryKey: gameKeys.idLists() });
 			queryClient.invalidateQueries({ queryKey: ["collections"] });
 			queryClient.invalidateQueries({ queryKey: ["stats"] });
@@ -205,18 +183,15 @@ function useUpdateGame() {
 			updates: UpdateGameParams;
 		}) => gameService.updateGame(gameId, updates),
 		onSuccess: (updatedFullGame, { gameId, updates }) => {
-			// 更新 detail 缓存（存储 GameData）
-			queryClient.setQueryData(
-				gameKeys.detail(gameId),
-				getDisplayGameData(updatedFullGame),
-			);
+			queryClient.setQueryData<FullGameData[]>(gameKeys.all, (currentGames) => {
+				if (!currentGames) return currentGames;
+				return currentGames.map((game) =>
+					game.id === gameId ? updatedFullGame : game,
+				);
+			});
 
 			if (shouldInvalidateGameLists(updates)) {
 				queryClient.invalidateQueries({ queryKey: gameKeys.idLists() });
-				queryClient.invalidateQueries({
-					queryKey: gameKeys.all,
-					exact: true,
-				});
 			}
 		},
 	});
@@ -237,17 +212,6 @@ function useBatchUpdateGames() {
 	});
 }
 
-/**
- * 从 React Query 缓存中读取单个游戏的 GameData
- *
- * 与 useGameDetail 不同：不创建 useQuery 订阅，以 O(1) 直接从缓存读取。
- * 适用于回调、事件处理等非渲染场景。
- */
-function useGameByIdFromCache(gameId: number): GameData | undefined {
-	const queryClient = useQueryClient();
-	return queryClient.getQueryData<GameData>(gameKeys.detail(gameId));
-}
-
 export {
 	useAddGame,
 	useAllBgmIds,
@@ -257,8 +221,6 @@ export {
 	useBatchUpdateGames,
 	useDeleteGame,
 	useDeleteGames,
-	useGameByIdFromCache,
-	useGameDetail,
 	useGameIdList,
 	useUpdateGame,
 };

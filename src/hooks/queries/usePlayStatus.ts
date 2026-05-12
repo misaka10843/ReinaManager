@@ -11,9 +11,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { gameKeys } from "@/hooks/queries/useGames";
 import { gameService } from "@/services/invoke";
-import type { GameData } from "@/types";
+import type { FullGameData } from "@/types";
 import type { PlayStatus } from "@/types/collection";
-import { getDisplayGameData } from "@/utils/dataTransform";
 
 // ============================================================================
 // Key Factory - 统一的 Query Key 前缀
@@ -37,21 +36,10 @@ export interface UpdatePlayStatusParams {
 async function updatePlayStatus({
 	gameId,
 	newStatus,
-}: UpdatePlayStatusParams): Promise<GameData> {
-	const fullGame = await gameService.getGameById(gameId);
-	if (!fullGame) {
-		throw new Error("游戏数据未找到");
-	}
-
-	await gameService.updateGame(gameId, {
+}: UpdatePlayStatusParams): Promise<FullGameData> {
+	return gameService.updateGame(gameId, {
 		clear: newStatus,
 	});
-
-	const game = getDisplayGameData(fullGame);
-	return {
-		...game,
-		clear: newStatus,
-	};
 }
 
 /**
@@ -69,17 +57,16 @@ async function updatePlayStatus({
 export function useUpdatePlayStatus() {
 	const queryClient = useQueryClient();
 
-	return useMutation<GameData, Error, UpdatePlayStatusParams>({
+	return useMutation<FullGameData, Error, UpdatePlayStatusParams>({
 		mutationFn: updatePlayStatus,
-		onSuccess: (_, { gameId, invalidateScope = "game" }) => {
-			queryClient.invalidateQueries({
-				queryKey: gameKeys.detail(gameId),
-				exact: true,
+		onSuccess: (updatedFullGame, { gameId, invalidateScope = "game" }) => {
+			queryClient.setQueryData<FullGameData[]>(gameKeys.all, (currentGames) => {
+				if (!currentGames) return currentGames;
+				return currentGames.map((game) =>
+					game.id === gameId ? updatedFullGame : game,
+				);
 			});
-			queryClient.invalidateQueries({
-				queryKey: gameKeys.all,
-				exact: true,
-			});
+			queryClient.invalidateQueries({ queryKey: gameKeys.idLists() });
 
 			if (invalidateScope === "all") {
 				queryClient.invalidateQueries({

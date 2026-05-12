@@ -6,8 +6,9 @@ import {
 	useUpdatePlayStatus,
 } from "@/hooks/queries/usePlayStatus";
 import { snackbar } from "@/providers/snackBar";
-import type { GameData } from "@/types";
+import type { FullGameData, GameData } from "@/types";
 import { syncPlayStatusToCloud } from "@/utils/cloudCollectionSync";
+import { getDisplayGameData } from "@/utils/dataTransform";
 import { getUserErrorMessage } from "@/utils/errors";
 
 interface UpdatePlayStatusOptions {
@@ -45,28 +46,25 @@ export function useGameStatusActions() {
 
 		// 无论 invalidateScope 是什么，都统一进行乐观更新
 		// 确保依赖数据缓存的组件能第一时间获得更新反馈，从而彻底消除派生状态（Derived State）
-		const previousGame = queryClient.getQueryData<GameData | null>(
-			gameKeys.detail(params.gameId),
+		const previousGames = queryClient.getQueryData<FullGameData[]>(
+			gameKeys.all,
 		);
 
-		queryClient.setQueryData<GameData | null>(
-			gameKeys.detail(params.gameId),
-			(currentGame) => {
-				if (!currentGame) {
-					return currentGame;
-				}
-
-				return {
-					...currentGame,
-					clear: params.newStatus,
-				};
-			},
+		queryClient.setQueryData<FullGameData[]>(
+			gameKeys.all,
+			(currentGames) =>
+				currentGames?.map((game) =>
+					game.id === params.gameId
+						? { ...game, clear: params.newStatus }
+						: game,
+				) ?? currentGames,
 		);
 
 		updateMutation.mutate(
 			{ ...params, invalidateScope },
 			{
-				onSuccess: async (updatedGame, variables) => {
+				onSuccess: async (updatedFullGame, variables) => {
+					const updatedGame = getDisplayGameData(updatedFullGame);
 					const failedSources = await syncPlayStatusToCloud(
 						updatedGame,
 						variables.newStatus,
@@ -89,17 +87,18 @@ export function useGameStatusActions() {
 				},
 				onError: (error, variables) => {
 					// 恢复回退乐观更新
-					queryClient.setQueryData<GameData | null>(
-						gameKeys.detail(variables.gameId),
-						previousGame,
-					);
+					queryClient.setQueryData(gameKeys.all, previousGames);
 					snackbar.error(
 						`${t("errors.updatePlayStatusFailed", "更新游戏状态失败")}: ${getUserErrorMessage(error, t)}`,
 					);
 					options?.onError?.(error, variables);
 				},
-				onSettled: (updatedGame, error, variables) => {
-					options?.onSettled?.(updatedGame, error, variables);
+				onSettled: (updatedFullGame, error, variables) => {
+					options?.onSettled?.(
+						updatedFullGame ? getDisplayGameData(updatedFullGame) : undefined,
+						error,
+						variables,
+					);
 				},
 			},
 		);

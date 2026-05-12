@@ -61,12 +61,21 @@ const assignBasicFields = (
  * @returns 展平的 GameData
  */
 export function getDisplayGameData(fullData: FullGameData): GameData {
+	const {
+		bgm_data,
+		vndb_data,
+		ymgal_data,
+		kun_data,
+		custom_data,
+		...gameData
+	} = fullData;
+
 	// 基础数据 - 直接从 fullData 中获取根节点字段
 	const baseData: GameData = {
-		...fullData,
-		localpath: nullToUndefined(fullData.localpath),
-		savepath: nullToUndefined(fullData.savepath),
-		custom_data: nullToUndefined(fullData.custom_data),
+		...gameData,
+		localpath: nullToUndefined(gameData.localpath),
+		savepath: nullToUndefined(gameData.savepath),
+		custom_data: nullToUndefined(custom_data),
 		// 初始化展平字段
 		image: undefined,
 		name: undefined,
@@ -83,8 +92,6 @@ export function getDisplayGameData(fullData: FullGameData): GameData {
 	};
 
 	// 根据 id_type 决定数据来源
-	const { bgm_data, vndb_data, ymgal_data, kun_data, custom_data } = fullData;
-
 	if (fullData.id_type && isSourceType(fullData.id_type)) {
 		const sourceData = fullData[SOURCE_FIELD_KEYS[fullData.id_type].data];
 		if (sourceData) {
