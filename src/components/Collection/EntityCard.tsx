@@ -59,6 +59,7 @@ export const EntityCard = memo<EntityCardProps>(
 		deleteMessage,
 		countLabel,
 	}) => {
+		const canDelete = Boolean(showDelete && onDelete);
 		const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 		const [isDeleting, setIsDeleting] = useState(false);
 
@@ -99,7 +100,7 @@ export const EntityCard = memo<EntityCardProps>(
 							</Typography>
 						</CardContent>
 					</CardActionArea>
-					{showDelete && onDelete && (
+					{canDelete && (
 						<IconButton
 							sx={{
 								position: "absolute",
@@ -119,14 +120,16 @@ export const EntityCard = memo<EntityCardProps>(
 						</IconButton>
 					)}
 				</Card>
-				<AlertConfirmBox
-					open={deleteDialogOpen}
-					setOpen={setDeleteDialogOpen}
-					onConfirm={handleConfirmDelete}
-					isLoading={isDeleting}
-					title={deleteTitle}
-					message={deleteMessage}
-				/>
+				{canDelete && (
+					<AlertConfirmBox
+						open={deleteDialogOpen}
+						setOpen={setDeleteDialogOpen}
+						onConfirm={handleConfirmDelete}
+						isLoading={isDeleting}
+						title={deleteTitle}
+						message={deleteMessage}
+					/>
+				)}
 			</Box>
 		);
 	},
