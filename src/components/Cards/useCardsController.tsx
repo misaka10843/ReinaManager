@@ -1,10 +1,8 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
 import { useRemoveGamesFromCategory } from "@/hooks/queries/useCollections";
-import { gameKeys } from "@/hooks/queries/useGames";
 import { snackbar } from "@/providers/snackBar";
 import { useStore } from "@/store/appStore";
 import { useGamePlayStore } from "@/store/gamePlayStore";
@@ -20,24 +18,11 @@ interface UseCardsControllerOptions {
 	categoryId?: number;
 }
 
-/**
- * 从缓存字典中读取游戏展示数据（非 hook，可在回调中使用）
- */
-function getGameFromCache(
-	queryClient: ReturnType<typeof useQueryClient>,
-	gameId: number,
-): GameData | undefined {
-	return (
-		queryClient.getQueryData<GameData>(gameKeys.detail(gameId)) ?? undefined
-	);
-}
-
 export function useCardsController({
 	gameIds,
 	categoryId,
 }: UseCardsControllerOptions) {
 	const { i18n, t } = useTranslation();
-	const queryClient = useQueryClient();
 	const navigate = useNavigate();
 	const path = useLocation().pathname;
 	const isLibraries = path === "/libraries";
@@ -103,16 +88,15 @@ export function useCardsController({
 	);
 
 	const handleCardDoubleClick = useCallback(
-		async (cardId: number) => {
+		async (game: GameData) => {
 			if (showBatchControls) return;
 
 			if (doubleClickLaunch) {
-				const cached = getGameFromCache(queryClient, cardId);
-				if (!cached?.localpath) return;
+				if (!game.localpath) return;
 
-				setSelectedGameId(cardId);
+				setSelectedGameId(game.id);
 				try {
-					const result = await launchGame(cardId);
+					const result = await launchGame(game.id);
 					if (!result.success) {
 						snackbar.error(result.message);
 					}
@@ -121,27 +105,19 @@ export function useCardsController({
 				}
 			}
 		},
-		[
-			doubleClickLaunch,
-			launchGame,
-			queryClient,
-			setSelectedGameId,
-			showBatchControls,
-			i18n,
-		],
+		[doubleClickLaunch, launchGame, setSelectedGameId, showBatchControls, i18n],
 	);
 
 	const handleCardLongPress = useCallback(
-		async (cardId: number) => {
+		async (game: GameData) => {
 			if (showBatchControls) return;
 
 			if (longPressLaunch) {
-				const cached = getGameFromCache(queryClient, cardId);
-				if (!cached?.localpath) return;
+				if (!game.localpath) return;
 
-				setSelectedGameId(cardId);
+				setSelectedGameId(game.id);
 				try {
-					const result = await launchGame(cardId);
+					const result = await launchGame(game.id);
 					if (!result.success) {
 						snackbar.error(result.message);
 					}
@@ -150,14 +126,7 @@ export function useCardsController({
 				}
 			}
 		},
-		[
-			longPressLaunch,
-			launchGame,
-			queryClient,
-			setSelectedGameId,
-			showBatchControls,
-			i18n,
-		],
+		[longPressLaunch, launchGame, setSelectedGameId, showBatchControls, i18n],
 	);
 
 	const handleContextMenu = useCallback(
@@ -212,11 +181,11 @@ export function useCardsController({
 	);
 
 	const getCardProps = useCallback(
-		(gameId: number): SortableCardItemProps => {
-			const game = getGameFromCache(queryClient, gameId);
+		(game: GameData): SortableCardItemProps => {
+			const gameId = game.id;
 			return {
-				gameId,
-				displayName: game ? getGameDisplayName(game) : "",
+				game,
+				displayName: getGameDisplayName(game),
 				batch: showBatchControls
 					? { selected: selectedBatchGameIdSet.has(gameId) }
 					: undefined,
@@ -234,8 +203,8 @@ export function useCardsController({
 						doubleClickLaunch,
 					onContextMenu: (e: React.MouseEvent) => handleContextMenu(e, gameId),
 					onClick: () => handleCardClick(gameId),
-					onDoubleClick: () => handleCardDoubleClick(gameId),
-					onLongPress: () => handleCardLongPress(gameId),
+					onDoubleClick: () => handleCardDoubleClick(game),
+					onLongPress: () => handleCardLongPress(game),
 				},
 			};
 		},
@@ -248,7 +217,6 @@ export function useCardsController({
 			handleCardLongPress,
 			handleRemoveSingleFromCategory,
 			isCollectionCategory,
-			queryClient,
 			selectedBatchGameIdSet,
 			showBatchControls,
 			t,

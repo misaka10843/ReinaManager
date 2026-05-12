@@ -6,6 +6,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { memo, useMemo } from "react";
+import type { GameData } from "@/types";
 import { CardItem } from "./CardItem";
 import type { SortableCardItemProps } from "./types";
 import { useCardsController } from "./useCardsController";
@@ -13,11 +14,12 @@ import { useDragSort } from "./useDragSort";
 
 interface SortableCardsGridProps {
 	gameIds: number[];
+	displayById: Map<number, GameData>;
 	categoryId: number;
 }
 
 const SortableCardItem = memo((props: SortableCardItemProps) => {
-	const { gameId, disabledSortable, ...restProps } = props;
+	const { game, disabledSortable, ...restProps } = props;
 
 	const {
 		attributes,
@@ -26,7 +28,7 @@ const SortableCardItem = memo((props: SortableCardItemProps) => {
 		transform,
 		transition,
 		isDragging,
-	} = useSortable({ id: gameId, disabled: disabledSortable });
+	} = useSortable({ id: game.id, disabled: disabledSortable });
 
 	const style = useMemo(
 		() => ({
@@ -42,7 +44,7 @@ const SortableCardItem = memo((props: SortableCardItemProps) => {
 		<CardItem
 			ref={setNodeRef}
 			style={style}
-			gameId={gameId}
+			game={game}
 			{...restProps}
 			{...(!disabledSortable ? attributes : {})}
 			{...(!disabledSortable ? listeners : {})}
@@ -55,10 +57,10 @@ SortableCardItem.displayName = "SortableCardItem";
 /**
  * SortableCardsGrid - 拖拽卡片布局。
  *
- * 接收纯 ID 数组，子组件 CardItem 通过缓存字典按需获取完整数据。
+ * 接收 ID 数组和展示索引，渲染时按 ID 取 GameData。
  */
 export const SortableCardsGrid = memo(
-	({ gameIds, categoryId }: SortableCardsGridProps) => {
+	({ gameIds, displayById, categoryId }: SortableCardsGridProps) => {
 		const {
 			ids,
 			activeId,
@@ -95,7 +97,9 @@ export const SortableCardsGrid = memo(
 							}
 						>
 							{ids.map((gameId) => {
-								const props = getCardProps(gameId);
+								const game = displayById.get(gameId);
+								if (!game) return null;
+								const props = getCardProps(game);
 								return (
 									<SortableCardItem
 										key={gameId}
@@ -108,13 +112,12 @@ export const SortableCardsGrid = memo(
 					</div>
 				</SortableContext>
 				<DragOverlay>
-					{activeId && (
-						<CardItem
-							gameId={activeId}
-							isOverlay
-							displayName={getCardProps(activeId).displayName}
-						/>
-					)}
+					{activeId &&
+						(() => {
+							const activeGame = displayById.get(activeId);
+							if (!activeGame) return null;
+							return <CardItem {...getCardProps(activeGame)} isOverlay />;
+						})()}
 				</DragOverlay>
 			</DndContext>
 		);

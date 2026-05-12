@@ -1,47 +1,38 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { gameKeys, useAllGames, useGameIdList } from "@/hooks/queries/useGames";
+import { useAllGames, useGameIdList } from "@/hooks/queries/useGames";
 import { useStore } from "@/store/appStore";
-import type { FullGameData, GameData } from "@/types";
+import type { GameData } from "@/types";
 import { PlayStatus } from "@/types/collection";
-import { applyNsfwFilter, getDisplayGameDataList } from "@/utils/appUtils";
+import { applyNsfwFilter } from "@/utils/appUtils";
 import { createSearchIndex, searchWithIndex } from "@/utils/enhancedSearch";
+import { getGameIndex } from "@/utils/gameIndex";
 
 const EMPTY_IDS: number[] = [];
 const EMPTY_GAMES: GameData[] = [];
 
-/**
- * 将全量 FullGameData 转换为 GameData 并写入 React Query 缓存字典
- *
- * 供 CardItem 等组件通过 gameKeys.detail(id) 以 O(1) 读取。
- *
- * ⚠️ 缓存写入必须在 useMemo 中同步完成（而非 useEffect）：
- * CardItem 在同一 render 周期内通过 getQueryData 读取缓存，
- * getQueryData 不响应式，若异步写入则缓存未命中导致卡片永久渲染 null。
- */
-export function useHydrateGameCache(
-	fullData: FullGameData[] | undefined,
-): GameData[] {
-	const queryClient = useQueryClient();
+export function useGameIndex() {
+	const allGamesQuery = useAllGames();
+	const index = useMemo(
+		() => getGameIndex(allGamesQuery.data),
+		[allGamesQuery.data],
+	);
 
-	return useMemo(() => {
-		if (!fullData || fullData.length === 0) return [];
-		const transformed = getDisplayGameDataList(fullData);
-		for (const game of transformed) {
-			queryClient.setQueryData(gameKeys.detail(game.id), game);
-		}
-		return transformed;
-	}, [fullData, queryClient]);
+	return {
+		index,
+		isLoading: allGamesQuery.isLoading,
+		isError: allGamesQuery.isError,
+		error: allGamesQuery.error,
+	};
 }
 
 /**
  * 基础游戏筛选门面 Hook
  *
  * 数据流：
- * 1. useAllGames → FullGameData[] → 转换 → 写入缓存字典 + 构建 Map（一次性）
+ * 1. useAllGames → FullGameData[] → GameIndex（一次性派生）
  * 2. useGameIdList → number[]（排序/筛选后的 ID，IPC 仅传输几 KB）
- * 3. 从 Map 读取 GameData → 前端过滤（游玩状态/NSFW）
+ * 3. 从 GameIndex.displayById 读取 GameData → 前端过滤（游玩状态/NSFW）
  *
  * 不处理搜索关键词，供 SearchBox 复用基础筛选结果生成建议，
  * 避免搜索框为建议列表重复执行完整搜索。
@@ -63,16 +54,8 @@ export function useFilteredGamesFacade() {
 		})),
 	);
 
-	// 1. 全量数据 → 写入缓存字典 + 构建 Map（staleTime: Infinity，仅首次加载时 IPC）
-	const allGamesQuery = useAllGames();
-	const transformedGames = useHydrateGameCache(allGamesQuery.data);
-	const gameMap = useMemo(() => {
-		const map = new Map<number, GameData>();
-		for (const game of transformedGames) {
-			map.set(game.id, game);
-		}
-		return map;
-	}, [transformedGames]);
+	const gameIndexQuery = useGameIndex();
+	const { index } = gameIndexQuery;
 
 	// 2. 排序/筛选后的 ID 列表（轻量 IPC，切换排序时仅传输几 KB）
 	const gameIdListQuery = useGameIdList(gameFilterType, sortOption, sortOrder);
@@ -80,12 +63,13 @@ export function useFilteredGamesFacade() {
 
 	// 3. 从 Map 读取 GameData，应用前端过滤
 	const filteredGames = useMemo(() => {
-		if (sortedIds.length === 0 || gameMap.size === 0) return EMPTY_GAMES;
+		if (sortedIds.length === 0 || index.displayById.size === 0) {
+			return EMPTY_GAMES;
+		}
 
-		// 从 Map 读取（比 getQueryData 快）
 		const games: GameData[] = [];
 		for (const id of sortedIds) {
-			const game = gameMap.get(id);
+			const game = index.displayById.get(id);
 			if (game) games.push(game);
 		}
 
@@ -101,13 +85,14 @@ export function useFilteredGamesFacade() {
 		result = applyNsfwFilter(result, nsfwFilter);
 
 		return result;
-	}, [sortedIds, gameMap, playStatusFilter, nsfwFilter]);
+	}, [sortedIds, index.displayById, playStatusFilter, nsfwFilter]);
 
 	return {
+		index,
 		filteredGames,
-		isLoading: allGamesQuery.isLoading || gameIdListQuery.isLoading,
-		isError: allGamesQuery.isError || gameIdListQuery.isError,
-		error: allGamesQuery.error ?? gameIdListQuery.error,
+		isLoading: gameIndexQuery.isLoading || gameIdListQuery.isLoading,
+		isError: gameIndexQuery.isError || gameIdListQuery.isError,
+		error: gameIndexQuery.error ?? gameIdListQuery.error,
 	};
 }
 
@@ -119,22 +104,24 @@ export function useFilteredGamesFacade() {
  */
 export function useGameListFacade() {
 	const searchKeyword = useStore((s) => s.searchKeyword);
-	const { filteredGames, isLoading, isError, error } = useFilteredGamesFacade();
+	const { index, filteredGames, isLoading, isError, error } =
+		useFilteredGamesFacade();
+	const trimmedSearchKeyword = searchKeyword.trim();
+	const shouldBuildSearchIndex = trimmedSearchKeyword.length > 0;
 
-	// 搜索过滤（搜索索引依赖过滤后的列表）
-	const searchIndex = useMemo(
-		() => createSearchIndex(filteredGames),
-		[filteredGames],
-	);
+	const searchIndex = useMemo(() => {
+		if (!shouldBuildSearchIndex) return null;
+		return createSearchIndex(filteredGames);
+	}, [filteredGames, shouldBuildSearchIndex]);
 
 	const searchedGames = useMemo(() => {
-		if (!searchKeyword.trim()) {
+		if (!trimmedSearchKeyword || !searchIndex) {
 			return filteredGames;
 		}
-		return searchWithIndex(searchIndex, searchKeyword).map(
+		return searchWithIndex(searchIndex, trimmedSearchKeyword).map(
 			(result) => result.item,
 		);
-	}, [searchIndex, searchKeyword, filteredGames]);
+	}, [searchIndex, trimmedSearchKeyword, filteredGames]);
 
 	// 4. 返回 ID 数组
 	const gameIds = useMemo(
@@ -143,6 +130,7 @@ export function useGameListFacade() {
 	);
 
 	return {
+		displayById: index.displayById,
 		filteredGames,
 		gameIds,
 		isLoading,
@@ -152,12 +140,8 @@ export function useGameListFacade() {
 }
 
 /**
- * 获取全量游戏数据（展平后）
- *
- * 用于 HomePage / CollectionPage / DetailPage 等需要遍历完整数据的场景。
- * 同时将数据写入缓存字典，供 CardItem 等组件按需读取。
+ * 获取全量展示游戏数据。
  */
 export function useAllGameListFacade() {
-	const allGamesQuery = useAllGames();
-	return useHydrateGameCache(allGamesQuery.data);
+	return useGameIndex().index.displayList;
 }

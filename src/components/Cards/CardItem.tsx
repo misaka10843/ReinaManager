@@ -7,7 +7,6 @@ import CardMedia from "@mui/material/CardMedia";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import { forwardRef, memo } from "react";
-import { useGameByIdFromCache } from "@/hooks/queries/useGames";
 import { useStore } from "@/store/appStore";
 import { getGameCover, getGameNsfwStatus } from "@/utils/appUtils";
 import type { CardItemProps } from "./types";
@@ -18,14 +17,13 @@ const noop = () => {};
 /**
  * CardItem - 游戏卡片组件
  *
- * 通过 queryClient.getQueryData 直接读取缓存字典（O(1)），
- * 不创建 useQuery 订阅，避免 1000+ 卡片的订阅/取消订阅开销。
+ * 由父级传入展示数据，避免卡片内部读取 React Query 缓存。
  */
 export const CardItem = memo(
 	forwardRef<HTMLDivElement, CardItemProps>(
 		(
 			{
-				gameId,
+				game,
 				displayName,
 				interaction,
 				batch,
@@ -35,9 +33,8 @@ export const CardItem = memo(
 			},
 			ref,
 		) => {
-			const game = useGameByIdFromCache(gameId);
 			const nsfwCoverReplace = useStore((s) => s.nsfwCoverReplace);
-			const isActive = useStore((s) => s.selectedGameId === gameId);
+			const isActive = useStore((s) => s.selectedGameId === game.id);
 
 			const { isLongPressing, handlers } = useCardInteraction({
 				onClick: interaction?.onClick ?? noop,
@@ -45,8 +42,6 @@ export const CardItem = memo(
 				onLongPress: interaction?.onLongPress ?? noop,
 				useDelayedClick: interaction?.useDelayedClick ?? false,
 			});
-
-			if (!game) return null;
 
 			const isNsfw = getGameNsfwStatus(game);
 			const coverImage =
