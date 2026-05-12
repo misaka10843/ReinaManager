@@ -4,7 +4,7 @@ import { useAllGames, useGameIdList } from "@/hooks/queries/useGames";
 import { useStore } from "@/store/appStore";
 import type { GameData } from "@/types";
 import { PlayStatus } from "@/types/collection";
-import { applyNsfwFilter } from "@/utils/appUtils";
+import { getGameNsfwStatus } from "@/utils/appUtils";
 import { createSearchIndex, searchWithIndex } from "@/utils/enhancedSearch";
 import { getGameIndex } from "@/utils/gameIndex";
 
@@ -70,21 +70,23 @@ export function useFilteredGamesFacade() {
 		const games: GameData[] = [];
 		for (const id of sortedIds) {
 			const game = index.displayById.get(id);
-			if (game) games.push(game);
+			if (!game) continue;
+
+			if (
+				playStatusFilter !== "all" &&
+				(game.clear ?? PlayStatus.WISH) !== playStatusFilter
+			) {
+				continue;
+			}
+
+			if (nsfwFilter && getGameNsfwStatus(game)) {
+				continue;
+			}
+
+			games.push(game);
 		}
 
-		// 游玩状态过滤
-		let result = games;
-		if (playStatusFilter !== "all") {
-			result = result.filter(
-				(game) => (game.clear ?? PlayStatus.WISH) === playStatusFilter,
-			);
-		}
-
-		// NSFW 过滤
-		result = applyNsfwFilter(result, nsfwFilter);
-
-		return result;
+		return games;
 	}, [sortedIds, index.displayById, playStatusFilter, nsfwFilter]);
 
 	return {
