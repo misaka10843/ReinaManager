@@ -24,7 +24,7 @@ import { InputDialog } from "@/components/InputDialog";
 import { CollectionRightMenu } from "@/components/RightMenu";
 import { useScrollRestore } from "@/hooks/common/useScrollRestore";
 import { useVirtualCategories } from "@/hooks/common/useVirtualCollections";
-import { useAllGameListFacade } from "@/hooks/features/games/useGameListFacade";
+import { useGameIndex } from "@/hooks/features/games/useGameListFacade";
 import {
 	useCategories,
 	useCategoryGames,
@@ -91,16 +91,13 @@ export const Collection: React.FC = () => {
 			selectedCategoryName: s.selectedCategoryName,
 		})),
 	);
-	const displayAllGames = useAllGameListFacade();
+	const { index: gameIndex } = useGameIndex();
+	const displayAllGames = gameIndex.displayList;
 	const groupsQuery = useGroups();
 	const groups = groupsQuery.data ?? [];
 	const categoriesQuery = useCategories(currentGroupId);
 	const currentCategories = categoriesQuery.data ?? [];
-	const categoryGamesQuery = useCategoryGames(
-		selectedCategoryId,
-		selectedCategoryName,
-		displayAllGames,
-	);
+	const categoryGamesQuery = useCategoryGames(selectedCategoryId, gameIndex);
 	const categoryGames = categoryGamesQuery.data;
 	const groupIds = groups.map((group) => group.id);
 	const groupGameCountsQuery = useGroupGameCounts(groupIds);
@@ -110,7 +107,7 @@ export const Collection: React.FC = () => {
 	const renameCategoryMutation = useRenameCategory();
 
 	// 使用统一的虚拟分类 Hook
-	const virtualCategories = useVirtualCategories(displayAllGames);
+	const virtualCategories = useVirtualCategories(gameIndex);
 
 	// 存储每个分组的游戏数量
 	const [groupGameCounts, setGroupGameCounts] = useState<Map<string, number>>(
@@ -655,10 +652,14 @@ export const Collection: React.FC = () => {
 					{selectedCategoryId !== null && selectedCategoryId > 0 ? (
 						<SortableCardsGrid
 							gameIds={categoryGames}
+							displayById={gameIndex.displayById}
 							categoryId={selectedCategoryId}
 						/>
 					) : (
-						<CardsGrid gameIds={categoryGames} />
+						<CardsGrid
+							gameIds={categoryGames}
+							displayById={gameIndex.displayById}
+						/>
 					)}
 				</GameListStateView>
 			)}

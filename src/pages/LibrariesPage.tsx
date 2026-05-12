@@ -5,7 +5,8 @@ import { useGameListFacade } from "@/hooks/features/games/useGameListFacade";
 
 export const Libraries: React.FC = () => {
 	const { t } = useTranslation();
-	const { gameIds, isLoading, isError, error } = useGameListFacade();
+	const { gameIds, displayById, isLoading, isError, error } =
+		useGameListFacade();
 
 	return (
 		<GameListStateView
@@ -14,7 +15,7 @@ export const Libraries: React.FC = () => {
 			empty={gameIds.length === 0}
 			emptyMessage={t("pages.Libraries.empty", "没有找到符合条件的游戏")}
 		>
-			<VirtualCardsGrid gameIds={gameIds} />
+			<VirtualCardsGrid gameIds={gameIds} displayById={displayById} />
 		</GameListStateView>
 	);
 };

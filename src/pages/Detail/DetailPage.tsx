@@ -40,7 +40,7 @@ import {
 	useVirtualCategories,
 } from "@/hooks/common/useVirtualCollections";
 import { useGameById } from "@/hooks/features/games/useGameFacade";
-import { useAllGameListFacade } from "@/hooks/features/games/useGameListFacade";
+import { useGameIndex } from "@/hooks/features/games/useGameListFacade";
 import { useStore } from "@/store/appStore";
 import { DefaultGroup } from "@/types/collection";
 import { getGameCover, getGameDisplayName } from "@/utils/appUtils";
@@ -98,8 +98,8 @@ export const Detail: React.FC = () => {
 		})),
 	);
 	const { selectedGame, isLoadingSelectedGame } = useGameById(id);
-	const displayAllGames = useAllGameListFacade();
-	const virtualCategories = useVirtualCategories(displayAllGames);
+	const { index: gameIndex } = useGameIndex();
+	const virtualCategories = useVirtualCategories(gameIndex);
 	const [tabIndex, setTabIndex] = useState(0);
 	const [collectionDialogOpen, setCollectionDialogOpen] = useState(false);
 	const [showAllTags, setShowAllTags] = useState(false); // 控制标签折叠状态

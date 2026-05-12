@@ -14,7 +14,7 @@ import {
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { snackbar } from "@/providers/snackBar";
-import type { GameCandidateData, GameData } from "@/types";
+import type { GameCandidateData, GameData, SourceType } from "@/types";
 import { isSourceType, SOURCE_FIELD_KEYS, SOURCE_KEYS } from "@/types";
 import { isBgmAuthExpiredError, withBgmAuth } from "@/utils/bgmAuthSession";
 import { getUserErrorMessage } from "@/utils/errors";
@@ -22,6 +22,7 @@ import { fetchMetadataForUpdate } from "@/utils/metadata";
 
 interface DataSourceUpdateProps {
 	selectedGame: GameData;
+	sourceAvailability: Record<SourceType, boolean>;
 	onDataFetched: (data: GameCandidateData) => void;
 	onSourceSwitch: (idType: string) => Promise<void>;
 	disabled?: boolean;
@@ -33,6 +34,7 @@ interface DataSourceUpdateProps {
  */
 export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 	selectedGame,
+	sourceAvailability,
 	onDataFetched,
 	onSourceSwitch,
 	disabled = false,
@@ -51,8 +53,8 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 	const isBusy = isLoading || isSwitching || disabled;
 
 	const hasSelectedSourceData = (source: (typeof SOURCE_KEYS)[number]) => {
-		const { id, data } = SOURCE_FIELD_KEYS[source];
-		return Boolean(selectedGame[id] && selectedGame[data]);
+		const { id } = SOURCE_FIELD_KEYS[source];
+		return Boolean(selectedGame[id] && sourceAvailability[source]);
 	};
 
 	const canSwitchSource = () => {

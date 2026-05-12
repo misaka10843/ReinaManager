@@ -1,9 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { useTranslation } from "react-i18next";
-import { getVirtualCategoryGames } from "@/hooks/common/useVirtualCollections";
+import { getVirtualCategoryGameIds } from "@/hooks/common/useVirtualCollections";
 import { collectionService } from "@/services/invoke";
-import type { GameData } from "@/types";
+import type { GameIndex } from "@/utils/gameIndex";
 
 export const collectionKeys = {
 	all: ["collections"] as const,
@@ -90,10 +89,8 @@ function useGameCategoryIds(gameId: number | null) {
  */
 function useCategoryGames(
 	categoryId: number | null,
-	categoryName: string | null,
-	allGames: GameData[],
+	gameIndex: Pick<GameIndex, "developerGameIdsByCategoryId">,
 ) {
-	const { t } = useTranslation();
 	const categoryGameIdsQuery = useCategoryGameIds(categoryId);
 
 	const data = useMemo((): number[] => {
@@ -102,19 +99,13 @@ function useCategoryGames(
 		}
 
 		if (categoryId < 0) {
-			// 虚拟分类：从全量数据中按规则筛选，返回 ID 列表
-			const virtualGames = getVirtualCategoryGames(
-				categoryId,
-				categoryName,
-				allGames,
-				t,
-			);
-			return virtualGames.map((g) => g.id);
+			// 虚拟分类：直接从 GameIndex 中读取预构建 ID 列表
+			return getVirtualCategoryGameIds(categoryId, gameIndex);
 		}
 
 		// 真实分类：直接返回 ID 列表
 		return categoryGameIdsQuery.data ?? [];
-	}, [allGames, categoryGameIdsQuery.data, categoryId, categoryName, t]);
+	}, [categoryGameIdsQuery.data, categoryId, gameIndex]);
 
 	return {
 		data,

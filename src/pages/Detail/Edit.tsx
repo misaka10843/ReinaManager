@@ -13,11 +13,13 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ViewGameBox } from "@/components/AlertBox";
 import { SelectedGameGuard } from "@/components/SelectedGameGuard";
+import { useGameIndex } from "@/hooks/features/games/useGameListFacade";
 import { useUpdateGame } from "@/hooks/queries/useGames";
 import { snackbar } from "@/providers/snackBar";
 import { fileService } from "@/services/invoke";
 import type { GameCandidateData, GameData, UpdateGameParams } from "@/types";
 import { getUserErrorMessage } from "@/utils/errors";
+import { EMPTY_SOURCE_AVAILABILITY } from "@/utils/gameIndex";
 import { buildMetadataUpdatePayload } from "@/utils/metadata";
 import { DataSourceUpdate } from "./DataSourceUpdate";
 import { GameInfoEdit } from "./GameInfoEdit";
@@ -41,10 +43,13 @@ function EditContent({ selectedGame }: { selectedGame: GameData }) {
 	const updateGameMutation = useUpdateGame();
 	const { t } = useTranslation();
 	const id = selectedGame.id;
+	const { index: gameIndex, isLoading: isGameIndexLoading } = useGameIndex();
 
 	// UI 状态
 	const [gameData, setGameData] = useState<GameCandidateData | null>(null);
 	const [openViewBox, setOpenViewBox] = useState(false);
+	const sourceAvailability =
+		gameIndex.sourceAvailabilityById.get(id) ?? EMPTY_SOURCE_AVAILABILITY;
 
 	// 确认更新游戏数据（从数据源）
 	const handleConfirmGameUpdate = async () => {
@@ -122,8 +127,10 @@ function EditContent({ selectedGame }: { selectedGame: GameData }) {
 					<AccordionDetails>
 						<DataSourceUpdate
 							selectedGame={selectedGame}
+							sourceAvailability={sourceAvailability}
 							onDataFetched={handleDataSourceFetched}
 							onSourceSwitch={handleSourceSwitch}
+							disabled={isGameIndexLoading}
 						/>
 					</AccordionDetails>
 				</Accordion>

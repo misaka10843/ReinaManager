@@ -129,7 +129,7 @@ export const CollectionToolbar: React.FC = () => {
 	}
 
 	// 层级2: 分类列表页 - 显示"添加分类"和"删除分组"按钮
-	if (currentGroupId && selectedCategoryId === null) {
+	if (selectedCategoryId === null && !isDefaultGroup) {
 		return (
 			<>
 				<Button
