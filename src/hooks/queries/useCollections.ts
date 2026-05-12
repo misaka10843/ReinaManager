@@ -120,6 +120,9 @@ function useCategoryGames(
 		data,
 		isLoading:
 			categoryId !== null && categoryId > 0 && categoryGameIdsQuery.isLoading,
+		isError:
+			categoryId !== null && categoryId > 0 && categoryGameIdsQuery.isError,
+		error: categoryGameIdsQuery.error,
 	};
 }
 

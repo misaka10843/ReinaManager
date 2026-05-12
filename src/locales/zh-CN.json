@@ -114,6 +114,9 @@
 			"vndbData": "VNDB 数据",
 			"ymgalData": "YMGal 数据"
 		},
+		"GameListStateView": {
+			"empty": "没有找到符合条件的游戏"
+		},
 		"Collection": {
 			"errors": {
 				"cannotModifyVirtualCategory": "无法修改虚拟分类",
@@ -382,10 +385,14 @@
 			},
 			"gamesCount": "个游戏",
 			"noCategoriesHint": "当前分组下没有分类",
+			"noGamesInCategory": "当前分类下暂无游戏",
 			"success": {
 				"categoryDeleted": "已删除分类",
 				"groupDeleted": "已删除分组"
 			}
+		},
+		"Libraries": {
+			"empty": "没有找到符合条件的游戏"
 		},
 		"Detail": {
 			"addTime": "添加时间",

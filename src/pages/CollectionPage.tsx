@@ -19,6 +19,7 @@ import { useShallow } from "zustand/react/shallow";
 import { CardsGrid, SortableCardsGrid } from "@/components/Cards";
 import { ManageGamesDialog } from "@/components/Collection";
 import { EntityCard } from "@/components/Collection/EntityCard";
+import { GameListStateView } from "@/components/GameListStateView";
 import { InputDialog } from "@/components/InputDialog";
 import { CollectionRightMenu } from "@/components/RightMenu";
 import { useScrollRestore } from "@/hooks/common/useScrollRestore";
@@ -641,15 +642,26 @@ export const Collection: React.FC = () => {
 					</Box>
 				))}
 
-			{showLevel === "games" &&
-				(selectedCategoryId !== null && selectedCategoryId > 0 ? (
-					<SortableCardsGrid
-						gameIds={categoryGames}
-						categoryId={selectedCategoryId}
-					/>
-				) : (
-					<CardsGrid gameIds={categoryGames} />
-				))}
+			{showLevel === "games" && (
+				<GameListStateView
+					loading={categoryGamesQuery.isLoading}
+					error={categoryGamesQuery.isError ? categoryGamesQuery.error : null}
+					empty={categoryGames.length === 0}
+					emptyMessage={t(
+						"pages.Collection.noGamesInCategory",
+						"当前分类下暂无游戏",
+					)}
+				>
+					{selectedCategoryId !== null && selectedCategoryId > 0 ? (
+						<SortableCardsGrid
+							gameIds={categoryGames}
+							categoryId={selectedCategoryId}
+						/>
+					) : (
+						<CardsGrid gameIds={categoryGames} />
+					)}
+				</GameListStateView>
+			)}
 
 			{/* 统一的右键菜单 */}
 			{menuPosition && (

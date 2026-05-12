@@ -116,6 +116,9 @@
 			"vndbData": "VNDB Data",
 			"ymgalData": "Ymgal Data"
 		},
+		"GameListStateView": {
+			"empty": "No matching games found"
+		},
 		"Collection": {
 			"errors": {
 				"cannotModifyVirtualCategory": "Cannot modify virtual category",
@@ -388,10 +391,14 @@
 			},
 			"gamesCount": "games",
 			"noCategoriesHint": "No categories in current group",
+			"noGamesInCategory": "No games in current category",
 			"success": {
 				"categoryDeleted": "Category deleted",
 				"groupDeleted": "Group deleted"
 			}
+		},
+		"Libraries": {
+			"empty": "No matching games found"
 		},
 		"Detail": {
 			"addTime": "Added Time",

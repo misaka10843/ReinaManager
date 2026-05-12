@@ -115,6 +115,9 @@
 			"vndbData": "VNDB データ",
 			"ymgalData": "Ymgal データ"
 		},
+		"GameListStateView": {
+			"empty": "条件に一致するゲームが見つかりません"
+		},
 		"Collection": {
 			"errors": {
 				"cannotModifyVirtualCategory": "仮想カテゴリは変更できません",
@@ -385,10 +388,14 @@
 			},
 			"gamesCount": "ゲーム",
 			"noCategoriesHint": "現在のグループにカテゴリがありません",
+			"noGamesInCategory": "現在のカテゴリにゲームがありません",
 			"success": {
 				"categoryDeleted": "カテゴリを削除しました",
 				"groupDeleted": "グループを削除しました"
 			}
+		},
+		"Libraries": {
+			"empty": "条件に一致するゲームが見つかりません"
 		},
 		"Detail": {
 			"addTime": "追加時間",
