@@ -148,10 +148,3 @@ export function useGameListFacade() {
 		error,
 	};
 }
-
-/**
- * 获取全量展示游戏数据。
- */
-export function useAllGameListFacade() {
-	return useGameIndex().index.displayList;
-}

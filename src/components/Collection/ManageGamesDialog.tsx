@@ -27,7 +27,7 @@ import Typography from "@mui/material/Typography";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useDebouncedValue } from "@/hooks/common/useDebouncedValue";
-import { useAllGameListFacade } from "@/hooks/features/games/useGameListFacade";
+import { useGameIndex } from "@/hooks/features/games/useGameListFacade";
 import {
 	useCategoryGameIds,
 	useUpdateCategoryGames,
@@ -56,7 +56,8 @@ export const ManageGamesDialog: React.FC<ManageGamesDialogProps> = ({
 	categoryName,
 }) => {
 	const { t } = useTranslation();
-	const displayAllGames = useAllGameListFacade();
+	const { index } = useGameIndex();
+	const displayAllGames = index.displayList;
 	const categoryGameIdsQuery = useCategoryGameIds(categoryId);
 	const updateCategoryGamesMutation = useUpdateCategoryGames();
 

@@ -48,7 +48,8 @@ import {
 import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { useAllGameListFacade } from "@/hooks/features/games/useGameListFacade";
+import { Virtuoso } from "react-virtuoso";
+import { useGameIndex } from "@/hooks/features/games/useGameListFacade";
 import { usePlayTimeSummary } from "@/hooks/queries/useStats";
 import type { GameData } from "@/types";
 import { PlayStatus } from "@/types/collection";
@@ -185,14 +186,15 @@ async function getGameActivities(games: GameData[]): Promise<{
 	);
 
 	return {
-		sessions: sortedSessions.slice(0, 6),
-		added: sortedAdded.slice(0, 6),
-		activities: allActivities.slice(0, 10),
+		sessions: sortedSessions.slice(0, 10),
+		added: sortedAdded.slice(0, 10),
+		activities: allActivities.slice(0, 15),
 	};
 }
 
 export const Home: React.FC = () => {
-	const displayAllGames = useAllGameListFacade();
+	const { index } = useGameIndex();
+	const displayAllGames = index.displayList;
 	const { totalPlayTime, weekPlayTime, todayPlayTime, isLoading } =
 		usePlayTimeSummary();
 
@@ -222,7 +224,6 @@ export const Home: React.FC = () => {
 			})),
 		[displayAllGames],
 	);
-
 	const gamesLocalCount = useMemo(
 		() => gamesList.filter((game) => game.isLocal).length,
 		[gamesList],
@@ -307,7 +308,7 @@ export const Home: React.FC = () => {
 	}, [displayAllGames]);
 
 	return (
-		<Box className="p-6 pt-4 flex flex-col gap-4">
+		<Box className="min-h-[calc(100dvh-64px)] p-6 pt-4 flex flex-col gap-4">
 			<Typography variant="h4">{t("home.title", "主页")}</Typography>
 
 			{/* 数据统计卡片 */}
@@ -342,11 +343,11 @@ export const Home: React.FC = () => {
 			</Box>
 
 			{/* 详细信息卡片 */}
-			<Box className="grid grid-cols-12 gap-6">
+			<Box className="grid grid-cols-12 gap-6 flex-1 min-h-0 auto-rows-fr">
 				{/* 游戏仓库 */}
-				<Box className="col-span-12 md:col-span-6 lg:col-span-3">
+				<Box className="col-span-12 md:col-span-6 lg:col-span-3 min-h-0">
 					<Card className="h-full shadow-md">
-						<CardContent>
+						<CardContent className="h-full min-h-0 flex flex-col">
 							<Box
 								component={Link}
 								to="/libraries"
@@ -357,36 +358,32 @@ export const Home: React.FC = () => {
 									{t("home.repository", "游戏仓库")}
 								</Typography>
 							</Box>
-							<Box className="grid grid-cols-1 gap-2 max-h-44vh overflow-y-auto pr-1">
-								{gamesList.map((category) => (
-									<Card
-										key={category.id}
-										variant="outlined"
-										component={Link}
-										to={`/libraries/${category.id}`}
-										sx={{
-											p: 1,
-											textAlign: "center",
-											cursor: "pointer",
-											textDecoration: "none",
-											"&:hover": {
-												transform: "translateY(-2px)",
-												boxShadow: 2,
-											},
-										}}
-									>
-										<Typography variant="body2">{category.title}</Typography>
-									</Card>
-								))}
-							</Box>
+							<Virtuoso
+								className="min-h-0 flex-1 pr-1"
+								style={{ height: "100%" }}
+								data={gamesList}
+								computeItemKey={(_, category) => category.id}
+								itemContent={(_, category) => (
+									<Box className="pb-2">
+										<Card
+											variant="outlined"
+											component={Link}
+											to={`/libraries/${category.id}`}
+											className="block p-2 text-center text-inherit decoration-none cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md"
+										>
+											<Typography variant="body2">{category.title}</Typography>
+										</Card>
+									</Box>
+								)}
+							/>
 						</CardContent>
 					</Card>
 				</Box>
 
 				{/* 动态 */}
-				<Box className="col-span-12 md:col-span-6 lg:col-span-3">
+				<Box className="col-span-12 md:col-span-6 lg:col-span-3 min-h-0">
 					<Card className="h-full shadow-md">
-						<CardContent>
+						<CardContent className="h-full min-h-0 flex flex-col">
 							<Box className="flex items-center mb-3">
 								<ActivityIcon className="mr-2 text-purple-500" />
 								<Typography variant="h6" className="font-bold">
@@ -394,7 +391,7 @@ export const Home: React.FC = () => {
 								</Typography>
 							</Box>
 							{activityData.loading ? (
-								<Box className="max-h-44vh overflow-y-auto pr-1">
+								<Box className="min-h-0 flex-1 overflow-y-auto pr-1">
 									{[1, 2, 3, 4].map((index) => (
 										<Box key={index} className="flex items-center mb-3">
 											<Skeleton
@@ -411,7 +408,7 @@ export const Home: React.FC = () => {
 									))}
 								</Box>
 							) : (
-								<List className="max-h-44vh overflow-y-auto pr-1">
+								<List className="min-h-0 flex-1 overflow-y-auto pr-1">
 									{activityData.activities.map((activity, idx) => (
 										<React.Fragment key={activity.id}>
 											<ListItem
@@ -468,9 +465,9 @@ export const Home: React.FC = () => {
 				</Box>
 
 				{/* 最近游玩 */}
-				<Box className="col-span-12 md:col-span-6 lg:col-span-3">
+				<Box className="col-span-12 md:col-span-6 lg:col-span-3 min-h-0">
 					<Card className="h-full shadow-md">
-						<CardContent>
+						<CardContent className="h-full min-h-0 flex flex-col">
 							<Box className="flex items-center mb-3">
 								<RecentlyPlayedIcon className="mr-2 text-blue-500" />
 								<Typography variant="h6" className="font-bold">
@@ -478,7 +475,7 @@ export const Home: React.FC = () => {
 								</Typography>
 							</Box>
 							{activityData.loading ? (
-								<Box className="max-h-44vh overflow-y-auto pr-1">
+								<Box className="min-h-0 flex-1 overflow-y-auto pr-1">
 									{[1, 2, 3, 4].map((index) => (
 										<Box key={index} className="flex items-center mb-3">
 											<Skeleton
@@ -495,7 +492,7 @@ export const Home: React.FC = () => {
 									))}
 								</Box>
 							) : (
-								<List className="max-h-44vh overflow-y-auto pr-1">
+								<List className="min-h-0 flex-1 overflow-y-auto pr-1">
 									{activityData.sessions.map((session, idx) => (
 										<React.Fragment key={session.session_id}>
 											<ListItem
@@ -523,9 +520,9 @@ export const Home: React.FC = () => {
 				</Box>
 
 				{/* 最近添加 */}
-				<Box className="col-span-12 md:col-span-6 lg:col-span-3">
+				<Box className="col-span-12 md:col-span-6 lg:col-span-3 min-h-0">
 					<Card className="h-full shadow-md">
-						<CardContent>
+						<CardContent className="h-full min-h-0 flex flex-col">
 							<Box className="flex items-center mb-3">
 								<RecentlyAddedIcon className="mr-2 text-green-500" />
 								<Typography variant="h6" className="font-bold">
@@ -533,7 +530,7 @@ export const Home: React.FC = () => {
 								</Typography>
 							</Box>
 							{activityData.loading ? (
-								<Box className="max-h-44vh overflow-y-auto pr-1">
+								<Box className="min-h-0 flex-1 overflow-y-auto pr-1">
 									{[1, 2, 3, 4].map((index) => (
 										<Box key={index} className="flex items-center mb-3">
 											<Skeleton
@@ -550,7 +547,7 @@ export const Home: React.FC = () => {
 									))}
 								</Box>
 							) : (
-								<List className="max-h-44vh overflow-y-auto pr-1">
+								<List className="min-h-0 flex-1 overflow-y-auto pr-1">
 									{activityData.added.map((game, idx) => (
 										<React.Fragment key={game.id}>
 											<ListItem
