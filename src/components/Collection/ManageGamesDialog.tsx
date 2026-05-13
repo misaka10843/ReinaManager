@@ -35,7 +35,7 @@ import {
 import { snackbar } from "@/providers/snackBar";
 import type { GameData } from "@/types";
 import { getGameDisplayName } from "@/utils/appUtils";
-import { enhancedSearch } from "@/utils/enhancedSearch";
+import { createSearchIndex, searchWithIndex } from "@/utils/enhancedSearch";
 
 interface ManageGamesDialogProps {
 	open: boolean;
@@ -100,37 +100,49 @@ export const ManageGamesDialog: React.FC<ManageGamesDialogProps> = ({
 	const availableGames = useMemo(() => {
 		return displayAllGames.filter((game) => !gamesInCategory.has(game.id));
 	}, [displayAllGames, gamesInCategory]);
+	const availableSearchIndex = useMemo(
+		() => createSearchIndex(availableGames),
+		[availableGames],
+	);
 
 	// 右栏：已在分类中的游戏
 	const categoryGamesList = useMemo(() => {
 		return displayAllGames.filter((game) => gamesInCategory.has(game.id));
 	}, [displayAllGames, gamesInCategory]);
+	const categorySearchIndex = useMemo(
+		() => createSearchIndex(categoryGamesList),
+		[categoryGamesList],
+	);
 
 	// 左栏搜索过滤
 	const filteredAvailableGames = useMemo(() => {
 		if (!leftSearchText) return availableGames;
 
-		const searchResults = enhancedSearch(availableGames, leftSearchText, {
-			limit: 1000,
-			threshold: 0.4,
-			enablePinyin: true,
-		});
+		const searchResults = searchWithIndex(
+			availableSearchIndex,
+			leftSearchText,
+			{
+				limit: availableGames.length,
+			},
+		);
 
 		return searchResults.map((result) => result.item);
-	}, [availableGames, leftSearchText]);
+	}, [availableGames, availableSearchIndex, leftSearchText]);
 
 	// 右栏搜索过滤
 	const filteredCategoryGames = useMemo(() => {
 		if (!rightSearchText) return categoryGamesList;
 
-		const searchResults = enhancedSearch(categoryGamesList, rightSearchText, {
-			limit: 1000,
-			threshold: 0.4,
-			enablePinyin: true,
-		});
+		const searchResults = searchWithIndex(
+			categorySearchIndex,
+			rightSearchText,
+			{
+				limit: categoryGamesList.length,
+			},
+		);
 
 		return searchResults.map((result) => result.item);
-	}, [categoryGamesList, rightSearchText]);
+	}, [categoryGamesList, categorySearchIndex, rightSearchText]);
 
 	// 左栏分页数据
 	const paginatedAvailableGames = useMemo(() => {

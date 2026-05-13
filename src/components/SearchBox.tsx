@@ -27,7 +27,7 @@ import {
 } from "@/utils/enhancedSearch";
 
 // 配置常量
-const DEBOUNCE_SEARCH = 300;
+const DEBOUNCE_SEARCH = 250;
 const DEBOUNCE_SUGGESTIONS = 150;
 const MAX_SUGGESTIONS = 8;
 const MIN_SEARCH_LENGTH = 2;
@@ -63,27 +63,41 @@ export const SearchBox = () => {
 		return SEARCH_BOX_WIDTH_CONFIG.default;
 	}, [i18n.language]);
 
-	// 对输入值应用防抖，防抖后再同步到全局 store 的 searchKeyword 触发搜索
-	const debouncedKeyword = useDebouncedValue(searchInput, DEBOUNCE_SEARCH);
 	const debouncedSuggestions = useDebouncedValue(
 		searchInput,
 		DEBOUNCE_SUGGESTIONS,
 	);
+	const debouncedKeyword = useDebouncedValue(searchInput, DEBOUNCE_SEARCH);
 
-	// 防抖后同步到全局 store 的 searchKeyword（触发游戏列表搜索过滤）
 	useEffect(() => {
-		setSearchKeyword(debouncedKeyword);
+		setSearchKeyword(debouncedKeyword.trim());
 	}, [debouncedKeyword, setSearchKeyword]);
 
-	// 搜索建议只需要基础筛选结果，不订阅全局搜索关键词，避免重复执行列表搜索
-	const suggestionEntries = useMemo(
-		() => preprocessSuggestionData(filteredGames),
-		[filteredGames],
+	const suggestionEntries = useMemo(() => {
+		if (!isOpen) return [];
+		return preprocessSuggestionData(filteredGames);
+	}, [filteredGames, isOpen]);
+
+	const commitSearch = useCallback(
+		(value: string) => {
+			setSearchKeyword(value.trim());
+		},
+		[setSearchKeyword],
+	);
+
+	const commitSuggestion = useCallback(
+		(value: string) => {
+			setSearchInput(value);
+			commitSearch(value);
+			setIsOpen(false);
+		},
+		[commitSearch, setSearchInput],
 	);
 
 	// 生成搜索建议（只做字符串匹配）
 	const suggestions = useMemo(() => {
 		if (
+			!isOpen ||
 			!debouncedSuggestions?.trim() ||
 			debouncedSuggestions.length < MIN_SEARCH_LENGTH
 		) {
@@ -100,18 +114,16 @@ export const SearchBox = () => {
 			console.error("生成搜索建议失败:", error);
 			return [];
 		}
-	}, [debouncedSuggestions, suggestionEntries]);
+	}, [debouncedSuggestions, isOpen, suggestionEntries]);
 
 	// 处理选择
 	const handleSelect = useCallback(
 		(_: React.SyntheticEvent, value: string | null) => {
 			if (value) {
-				setSearchInput(value);
-				setSearchKeyword(value);
-				setIsOpen(false);
+				commitSuggestion(value);
 			}
 		},
-		[setSearchInput, setSearchKeyword],
+		[commitSuggestion],
 	);
 
 	// 处理输入变化——即时更新 searchInput，防抖后才同步到 searchKeyword
@@ -122,11 +134,11 @@ export const SearchBox = () => {
 				setIsOpen(true);
 			} else if (reason === "clear") {
 				setSearchInput("");
-				setSearchKeyword("");
+				commitSearch("");
 				setIsOpen(false);
 			}
 		},
-		[setSearchInput, setSearchKeyword],
+		[commitSearch, setSearchInput],
 	);
 
 	// 处理键盘事件
@@ -137,21 +149,24 @@ export const SearchBox = () => {
 			if (event.key === "Escape") {
 				setIsOpen(false);
 				event.stopPropagation();
-			} else if (event.key === "Enter" && !isOpen) {
+			} else if (event.key === "Enter") {
+				commitSearch(searchInput);
 				setIsOpen(false);
 				event.stopPropagation();
 			}
 		},
-		[isOpen],
+		[commitSearch, searchInput],
 	);
 
 	return (
 		<Box sx={{ width: searchBoxWidth }}>
 			<Autocomplete
 				freeSolo
+				value={null}
 				onOpen={() => setIsOpen(true)}
 				onClose={() => setIsOpen(false)}
 				options={suggestions}
+				filterOptions={(options) => options}
 				inputValue={searchInput}
 				selectOnFocus={false}
 				clearOnBlur={false}
@@ -197,6 +212,11 @@ export const SearchBox = () => {
 							component="li"
 							key={key}
 							{...optionProps}
+							onMouseDown={(event) => {
+								event.preventDefault();
+								event.stopPropagation();
+								commitSuggestion(option);
+							}}
 							className="flex items-center gap-2 px-3 py-2 cursor-pointer"
 							sx={{ "&:hover": { bgcolor: "action.hover" } }}
 						>

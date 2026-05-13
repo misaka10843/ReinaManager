@@ -1,348 +1,365 @@
 /**
- * @file 增强搜索功能模块
- * @description 基于 pinyin-pro 和 fuse.js 的高级搜索功能，支持拼音搜索、模糊搜索、权重排序
+ * @file 游戏搜索工具
+ * @description 提供游戏列表搜索和搜索建议。搜索字段保持显式配置，避免搜索链路继续膨胀。
  * @module src/utils/enhancedSearch
- * @author Pysio<qq593277393@outlook.com>
- * @copyright AGPL-3.0
  */
 
 import Fuse, { type FuseResult, type IFuseOptions } from "fuse.js";
 import { pinyin } from "pinyin-pro";
 import type { GameData } from "@/types";
-import { getGameDisplayName } from "./appUtils";
 
-/**
- * 搜索结果接口
- */
-export interface SearchResult {
-	item: GameData;
-	score: number;
-	matches?: FuseResult<GameDataWithSearchFields>["matches"];
+interface SearchDocument {
+	id: number;
+	game: GameData;
+	values: string[];
+	normalizedValues: string[];
+	pinyinValues: string[];
+	pinyinInitials: string[];
 }
 
-/**
- * 为游戏数据添加搜索字段
- */
-interface GameDataWithSearchFields extends GameData {
-	searchKeywords: string;
-	pinyinFull: string;
-	pinyinFirst: string;
-	displayName: string;
-	allTitlesString: string;
-	aliasesString: string;
-}
-
-/**
- * 搜索索引，包含预处理后的数据和 Fuse.js 实例。
- * 只依赖游戏列表，与搜索词无关，可以安全缓存。
- */
-export interface SearchIndex {
-	fuse: Fuse<GameDataWithSearchFields>;
-}
-
-/**
- * 搜索建议的预处理条目。
- * 每个条目对应一个游戏的一个可搜索名称，拼音在预处理阶段计算完成。
- */
-export interface SuggestionEntry {
-	name: string;
-	lower: string;
+interface SuggestionEntry {
+	value: string;
+	normalized: string;
 	pinyinFull: string;
 	pinyinSpaced: string;
 	pinyinFirst: string;
 }
 
-const DEFAULT_SEARCH_THRESHOLD = 0.4;
+export interface SearchResult {
+	item: GameData;
+	score: number;
+	matches?: FuseResult<SearchDocument>["matches"];
+}
 
-/**
- * 预处理游戏数据，添加搜索相关字段
- * @param games 原始游戏数据数组
- * @returns 带搜索字段的游戏数据数组
- */
-function preprocessGameData(games: GameData[]): GameDataWithSearchFields[] {
-	return games.map((game) => {
-		// 使用统一的显示名称获取函数
-		const displayName = getGameDisplayName(game);
+export interface SearchIndex {
+	documents: SearchDocument[];
+	fuse: Fuse<SearchDocument>;
+}
 
-		// 处理字符串数组字段
-		const allTitles = Array.isArray(game.all_titles) ? game.all_titles : [];
-		const aliases = Array.isArray(game.aliases) ? game.aliases : [];
+const DEFAULT_FUZZY_THRESHOLD = 0.35;
+const DEFAULT_MAX_FUZZY_KEYWORD_LENGTH = 40;
+const MIN_FUZZY_KEYWORD_LENGTH = 2;
 
-		// 转换为字符串用于搜索
-		const allTitlesString = allTitles.join(" ");
-		const aliasesString = aliases.join(" ");
+function normalizeSearchText(value: string): string {
+	return value.trim().toLowerCase();
+}
 
-		// 生成搜索关键词和拼音源文本（复用同一基础数组）
-		const baseTexts = [
-			displayName,
-			game.developer || "",
-			...allTitles,
-			...aliases,
-		];
-		const keywords = baseTexts.filter(Boolean);
-		const searchKeywords = keywords.join(" ").toLowerCase();
+function normalizePinyinText(value: string): string {
+	return value.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
 
-		// 生成拼音 - 只处理包含中文的文本
-		const chineseTexts = keywords.filter((text) =>
-			/[\u4e00-\u9fff]/.test(text),
-		);
+function hasChineseText(value: string): boolean {
+	return /[\u4e00-\u9fff]/.test(value);
+}
 
-		// 完整拼音 (带空格分隔)
-		const pinyinFull = chineseTexts
-			.map((text) =>
-				pinyin(text, {
-					toneType: "none",
-					type: "string",
-					separator: " ",
-				}).toLowerCase(),
-			)
-			.join(" ");
+function addValue(values: string[], value: unknown): void {
+	if (typeof value !== "string") return;
+	const trimmed = value.trim();
+	if (trimmed) {
+		values.push(trimmed);
+	}
+}
 
-		// 拼音首字母 (连续)
-		const pinyinFirst = chineseTexts
-			.map((text) =>
-				pinyin(text, {
-					pattern: "first",
-					toneType: "none",
-					type: "string",
-					separator: "",
-				}).toLowerCase(),
-			)
-			.join("");
+function addValues(values: string[], source: unknown): void {
+	if (!Array.isArray(source)) return;
+	for (const value of source) {
+		addValue(values, value);
+	}
+}
+
+function getGameSearchValues(game: GameData): string[] {
+	const values: string[] = [];
+
+	addValue(values, game.name);
+	addValue(values, game.name_cn);
+	addValue(values, game.custom_data?.name);
+	addValues(values, game.all_titles);
+	addValues(values, game.aliases);
+
+	return Array.from(new Set(values));
+}
+
+function getSuggestionPinyin(
+	value: string,
+): Pick<SuggestionEntry, "pinyinFull" | "pinyinSpaced" | "pinyinFirst"> {
+	if (!hasChineseText(value)) {
+		return {
+			pinyinFull: "",
+			pinyinSpaced: "",
+			pinyinFirst: "",
+		};
+	}
+
+	try {
+		const pinyinSpaced = pinyin(value, {
+			toneType: "none",
+			type: "string",
+			separator: " ",
+		}).toLowerCase();
+		const pinyinFirst = pinyin(value, {
+			pattern: "first",
+			toneType: "none",
+			type: "string",
+			separator: "",
+		}).toLowerCase();
 
 		return {
-			...game,
-			searchKeywords,
-			pinyinFull,
+			pinyinFull: pinyinSpaced.replaceAll(" ", ""),
+			pinyinSpaced,
 			pinyinFirst,
-			displayName,
-			allTitlesString,
-			aliasesString,
 		};
-	});
+	} catch {
+		return {
+			pinyinFull: "",
+			pinyinSpaced: "",
+			pinyinFirst: "",
+		};
+	}
 }
 
-/**
- * 创建 Fuse.js 搜索实例
- * @param processedGames 预处理后的游戏数据
- * @returns Fuse 搜索实例
- */
+function getSearchPinyinValues(
+	values: string[],
+): Pick<SearchDocument, "pinyinValues" | "pinyinInitials"> {
+	const pinyinValues: string[] = [];
+	const pinyinInitials: string[] = [];
+
+	for (const value of values) {
+		const pinyinValue = getSuggestionPinyin(value);
+		if (pinyinValue.pinyinFull) {
+			pinyinValues.push(pinyinValue.pinyinFull);
+		}
+		if (pinyinValue.pinyinFirst) {
+			pinyinInitials.push(pinyinValue.pinyinFirst);
+		}
+	}
+
+	return {
+		pinyinValues: Array.from(new Set(pinyinValues)),
+		pinyinInitials: Array.from(new Set(pinyinInitials)),
+	};
+}
+
 function createFuseInstance(
-	processedGames: GameDataWithSearchFields[],
-	threshold: number = DEFAULT_SEARCH_THRESHOLD,
-): Fuse<GameDataWithSearchFields> {
-	const fuseOptions: IFuseOptions<GameDataWithSearchFields> = {
-		// 搜索阈值：使用传入的阈值
+	documents: SearchDocument[],
+	threshold: number,
+): Fuse<SearchDocument> {
+	const options: IFuseOptions<SearchDocument> = {
 		threshold,
-
-		// 搜索位置权重 - 匹配开始位置越靠前权重越高
 		location: 0,
-		distance: 200,
-
-		// 最小匹配字符长度
-		minMatchCharLength: 1,
-
-		// 是否按分数排序
+		distance: 120,
+		minMatchCharLength: 2,
 		shouldSort: true,
-
-		// 是否包含匹配信息
 		includeMatches: true,
 		includeScore: true,
-
-		// 忽略大小写和位置
 		isCaseSensitive: false,
 		findAllMatches: false,
-
-		// 搜索的字段及其权重
-		keys: [
-			{
-				name: "displayName",
-				weight: 0.35, // 显示名称权重最高
-			},
-			{
-				name: "allTitlesString",
-				weight: 0.3, // 所有标题权重较高
-			},
-			{
-				name: "aliasesString",
-				weight: 0.3, // 别名权重较高
-			},
-			{
-				name: "pinyinFull",
-				weight: 0.25, // 完整拼音权重
-			},
-			{
-				name: "pinyinFirst",
-				weight: 0.2, // 拼音首字母权重
-			},
-			{
-				name: "developer",
-				weight: 0.15, // 开发商权重较低
-			},
-			{
-				name: "searchKeywords",
-				weight: 0.1, // 综合关键词权重最低（避免重复计分）
-			},
-		],
+		keys: ["values"],
 	};
 
-	return new Fuse(processedGames, fuseOptions);
+	return new Fuse(documents, options);
+}
+
+function createSearchDocument(game: GameData): SearchDocument {
+	const values = getGameSearchValues(game);
+	const pinyinValues = getSearchPinyinValues(values);
+	return {
+		id: game.id,
+		game,
+		values,
+		normalizedValues: values.map(normalizeSearchText),
+		...pinyinValues,
+	};
+}
+
+function getDirectMatchScore(
+	normalizedValues: string[],
+	query: string,
+): number {
+	let score = 0;
+
+	for (const value of normalizedValues) {
+		if (value === query) {
+			score = Math.max(score, 100);
+		} else if (value.startsWith(query)) {
+			score = Math.max(score, 80);
+		} else if (value.includes(query)) {
+			score = Math.max(score, 60);
+		}
+	}
+
+	return score;
+}
+
+function searchDirect(
+	documents: SearchDocument[],
+	query: string,
+): SearchResult[] {
+	const results: SearchResult[] = [];
+
+	for (const document of documents) {
+		const score = getDirectMatchScore(document.normalizedValues, query);
+		if (score > 0) {
+			results.push({
+				item: document.game,
+				score,
+			});
+		}
+	}
+
+	return results.toSorted((a, b) => b.score - a.score || a.item.id - b.item.id);
+}
+
+function searchPinyinDirect(
+	documents: SearchDocument[],
+	pinyinQuery: string,
+	existingIds: Set<number>,
+): SearchResult[] {
+	if (!pinyinQuery || pinyinQuery.length < MIN_FUZZY_KEYWORD_LENGTH) return [];
+
+	const results: SearchResult[] = [];
+	for (const document of documents) {
+		if (existingIds.has(document.id)) continue;
+
+		const valueScore = getDirectMatchScore(document.pinyinValues, pinyinQuery);
+		const initialScore = getDirectMatchScore(
+			document.pinyinInitials,
+			pinyinQuery,
+		);
+		const score = Math.max(valueScore, initialScore);
+
+		if (score > 0) {
+			results.push({
+				item: document.game,
+				score: score - 5,
+			});
+			existingIds.add(document.id);
+		}
+	}
+
+	return results.toSorted((a, b) => b.score - a.score || a.item.id - b.item.id);
+}
+
+function shouldRunFuzzySearch(
+	query: string,
+	directResults: SearchResult[],
+	maxFuzzyKeywordLength: number,
+): boolean {
+	return (
+		query.length >= MIN_FUZZY_KEYWORD_LENGTH &&
+		query.length <= maxFuzzyKeywordLength &&
+		directResults.length < 5
+	);
+}
+
+function mergeFuzzyResults(
+	directResults: SearchResult[],
+	fuseResults: FuseResult<SearchDocument>[],
+	limit?: number,
+): SearchResult[] {
+	const seenIds = new Set(directResults.map((result) => result.item.id));
+	const results = [...directResults];
+
+	for (const result of fuseResults) {
+		if (seenIds.has(result.item.id)) continue;
+		seenIds.add(result.item.id);
+		results.push({
+			item: result.item.game,
+			score: 50 - (result.score ?? 0),
+			matches: result.matches,
+		});
+	}
+
+	return typeof limit === "number" ? results.slice(0, limit) : results;
 }
 
 /**
- * 创建搜索索引（预处理层）。
- * 只依赖游戏列表，与搜索词无关。调用方应基于游戏列表变化缓存此结果。
- * @param games 游戏数据数组
- * @param threshold Fuse.js 搜索阈值 (0-1)
- * @returns 搜索索引
+ * 创建游戏列表搜索索引。索引只依赖游戏列表，与搜索词无关。
  */
 export function createSearchIndex(
 	games: GameData[],
-	threshold = DEFAULT_SEARCH_THRESHOLD,
+	threshold = DEFAULT_FUZZY_THRESHOLD,
 ): SearchIndex {
-	const processedGames = preprocessGameData(games);
-	const fuse = createFuseInstance(processedGames, threshold);
-	return { fuse };
+	const documents = games.map(createSearchDocument);
+	return {
+		documents,
+		fuse: createFuseInstance(documents, threshold),
+	};
 }
 
 /**
- * 使用预构建的索引执行搜索（搜索层）。
- * 调用方应先通过 createSearchIndex 创建索引并缓存，然后每次搜索词变化时调用此函数。
- * @param index 预构建的搜索索引
- * @param keyword 搜索关键词（必须非空）
- * @param options 搜索选项
- * @returns 搜索结果数组，按相关性排序
+ * 使用预构建索引搜索游戏列表。
+ *
+ * 搜索策略：
+ * 1. 普通文本先走 exact / startsWith / includes。
+ * 2. 只有关键词较短且直接结果较少时才走 Fuse fallback。
  */
 export function searchWithIndex(
 	index: SearchIndex,
 	keyword: string,
 	options: {
 		limit?: number;
-		enablePinyin?: boolean;
+		enableFuzzy?: boolean;
+		maxFuzzyKeywordLength?: number;
 	} = {},
 ): SearchResult[] {
-	const { limit = 50, enablePinyin = true } = options;
-
-	// 执行搜索
-	const searchTerm = keyword.trim().toLowerCase();
-	let fuseResults = index.fuse.search(searchTerm, { limit });
-
-	// 如果启用拼音搜索且结果较少，尝试拼音搜索
-	if (enablePinyin && fuseResults.length < 5) {
-		// 将搜索词转换为拼音进行二次搜索
-		const keywordPinyin = pinyin(searchTerm, {
-			toneType: "none",
-			type: "string",
-			separator: "",
-		}).toLowerCase();
-
-		if (keywordPinyin !== searchTerm) {
-			const pinyinResults = index.fuse.search(keywordPinyin, { limit });
-
-			// 合并结果并去重
-			const existingIds = new Set(fuseResults.map((r) => r.item.id));
-			const newResults = pinyinResults.filter(
-				(r) => !existingIds.has(r.item.id),
-			);
-			fuseResults = [...fuseResults, ...newResults];
-		}
-	}
-
-	// 转换为统一的搜索结果格式
-	return fuseResults
-		.map((result) => ({
-			item: result.item,
-			score: 1 - (result.score || 0), // Fuse.js 的 score 越小越好，转换为越大越好
-			matches: result.matches,
-		}))
-		.slice(0, limit);
-}
-
-/**
- * 增强搜索函数（便捷 wrapper）。
- * 内部调用 createSearchIndex + searchWithIndex。
- * 适用于无缓存需求的场景；热路径建议分别使用 createSearchIndex 和 searchWithIndex。
- * @param games 游戏数据数组
- * @param keyword 搜索关键词
- * @param options 搜索选项
- * @returns 搜索结果数组，按相关性排序
- */
-export function enhancedSearch(
-	games: GameData[],
-	keyword: string,
-	options: {
-		limit?: number;
-		threshold?: number;
-		enablePinyin?: boolean;
-	} = {},
-): SearchResult[] {
-	// 如果没有关键词，返回所有游戏
-	if (!keyword || keyword.trim() === "") {
-		return games.map((game) => ({
-			item: game,
-			score: 1,
+	const searchTerm = normalizeSearchText(keyword);
+	if (!searchTerm) {
+		return index.documents.map((document) => ({
+			item: document.game,
+			score: 100,
 		}));
 	}
 
 	const {
-		limit = 50,
-		threshold = DEFAULT_SEARCH_THRESHOLD,
-		enablePinyin = true,
+		limit,
+		enableFuzzy = true,
+		maxFuzzyKeywordLength = DEFAULT_MAX_FUZZY_KEYWORD_LENGTH,
 	} = options;
-	const index = createSearchIndex(games, threshold);
-	return searchWithIndex(index, keyword, { limit, enablePinyin });
+	const directResults = searchDirect(index.documents, searchTerm);
+	const pinyinResults = searchPinyinDirect(
+		index.documents,
+		normalizePinyinText(searchTerm),
+		new Set(directResults.map((result) => result.item.id)),
+	);
+	const directAndPinyinResults = [...directResults, ...pinyinResults];
+
+	if (
+		!enableFuzzy ||
+		!shouldRunFuzzySearch(
+			searchTerm,
+			directAndPinyinResults,
+			maxFuzzyKeywordLength,
+		)
+	) {
+		return typeof limit === "number"
+			? directAndPinyinResults.slice(0, limit)
+			: directAndPinyinResults;
+	}
+
+	const fuseResults = index.fuse.search(searchTerm, {
+		limit: limit ?? index.documents.length,
+	});
+
+	return mergeFuzzyResults(directAndPinyinResults, fuseResults, limit);
 }
 
 /**
- * 预处理搜索建议数据（拼音预计算层）。
- * 对每个游戏的每个可搜索名称生成拼音变体，只在游戏列表变化时调用。
- * @param games 游戏数据数组
- * @returns 预处理后的建议条目数组
+ * 预处理搜索建议。建议只围绕名称、中文名、自定义名、全标题和别名。
  */
 export function preprocessSuggestionData(games: GameData[]): SuggestionEntry[] {
 	const entries: SuggestionEntry[] = [];
+	const seen = new Set<string>();
 
 	for (const game of games) {
-		const displayName = getGameDisplayName(game);
-		const allTitles = Array.isArray(game.all_titles) ? game.all_titles : [];
-		const aliases = Array.isArray(game.aliases) ? game.aliases : [];
-
-		const names = [
-			displayName,
-			game.developer,
-			...allTitles,
-			...aliases,
-		].filter(Boolean) as string[];
-
-		for (const name of names) {
-			const lower = name.toLowerCase();
-			let pinyinFull = "";
-			let pinyinSpaced = "";
-			let pinyinFirst = "";
-
-			if (/[\u4e00-\u9fff]/.test(name)) {
-				try {
-					pinyinSpaced = pinyin(name, {
-						toneType: "none",
-						type: "string",
-						separator: " ",
-					}).toLowerCase();
-
-					// 从带空格拼音派生无空格拼音，避免重复调用 pinyin()
-					pinyinFull = pinyinSpaced.replaceAll(" ", "");
-
-					pinyinFirst = pinyin(name, {
-						pattern: "first",
-						toneType: "none",
-						type: "string",
-						separator: "",
-					}).toLowerCase();
-				} catch {
-					// 拼音转换失败时保持空字符串
-				}
-			}
-
-			entries.push({ name, lower, pinyinFull, pinyinSpaced, pinyinFirst });
+		for (const value of getGameSearchValues(game)) {
+			const normalized = normalizeSearchText(value);
+			if (!normalized || seen.has(normalized)) continue;
+			seen.add(normalized);
+			entries.push({
+				value,
+				normalized,
+				...getSuggestionPinyin(value),
+			});
 		}
 	}
 
@@ -350,87 +367,66 @@ export function preprocessSuggestionData(games: GameData[]): SuggestionEntry[] {
 }
 
 /**
- * 从预处理数据中获取搜索建议（搜索层）。
- * 只做字符串匹配，不调用 pinyin()，适合高频调用。
- * @param entries 预处理后的建议条目
- * @param input 输入的部分关键词
- * @param limit 返回建议数量限制
- * @returns 搜索建议数组
+ * 从预处理数据中获取搜索建议。只做轻量字符串匹配，不走 Fuse。
  */
 export function getSearchSuggestionsFromData(
 	entries: SuggestionEntry[],
 	input: string,
 	limit: number = 8,
 ): string[] {
-	if (!input || input.trim() === "") {
-		return [];
-	}
+	const inputLower = normalizeSearchText(input);
+	if (!inputLower) return [];
+	const pinyinInput = normalizePinyinText(inputLower);
 
-	const inputLower = input.toLowerCase().trim();
-
-	// 同名建议只保留最高优先级，减少后续排序数量
-	const suggestionPriority = new Map<string, number>();
-
-	const addSuggestion = (name: string, priority: number) => {
-		const currentPriority = suggestionPriority.get(name) ?? 0;
-		if (priority > currentPriority) {
-			suggestionPriority.set(name, priority);
-		}
-	};
+	const suggestions: Array<{ value: string; score: number }> = [];
 
 	for (const entry of entries) {
-		// 直接名称匹配
-		if (entry.lower.includes(inputLower)) {
-			let priority = 1;
-			if (entry.lower === inputLower) {
-				priority = 4; // 精确匹配优先级最高
-			} else if (entry.lower.startsWith(inputLower)) {
-				priority = 3; // 开头匹配优先级高
-			}
-			addSuggestion(entry.name, priority);
-		}
-
-		// 拼音匹配
-		if (entry.pinyinFull) {
+		let score = 0;
+		if (entry.normalized === inputLower) {
+			score = 100;
+		} else if (entry.normalized.startsWith(inputLower)) {
+			score = 80;
+		} else if (entry.normalized.includes(inputLower)) {
+			score = 60;
+		} else if (
+			pinyinInput &&
+			(entry.pinyinFull || entry.pinyinSpaced || entry.pinyinFirst)
+		) {
 			if (
-				entry.pinyinFull.includes(inputLower) ||
-				entry.pinyinSpaced.includes(inputLower)
+				entry.pinyinFull.startsWith(pinyinInput) ||
+				normalizePinyinText(entry.pinyinSpaced).startsWith(pinyinInput)
 			) {
-				addSuggestion(entry.name, 2);
+				score = 50;
 			} else if (
-				entry.pinyinFirst.includes(inputLower) &&
-				inputLower.length >= 2
+				entry.pinyinFull.includes(pinyinInput) ||
+				normalizePinyinText(entry.pinyinSpaced).includes(pinyinInput)
 			) {
-				addSuggestion(entry.name, 1);
+				score = 40;
+			} else if (
+				pinyinInput.length >= 2 &&
+				entry.pinyinFirst.startsWith(pinyinInput)
+			) {
+				score = 35;
+			} else if (
+				pinyinInput.length >= 2 &&
+				entry.pinyinFirst.includes(pinyinInput)
+			) {
+				score = 30;
 			}
+		}
+
+		if (score > 0) {
+			suggestions.push({ value: entry.value, score });
 		}
 	}
 
-	// 按优先级排序并限制数量
-	return Array.from(suggestionPriority.entries())
-		.toSorted((a, b) => b[1] - a[1])
-		.map(([name]) => name)
+	return suggestions
+		.toSorted(
+			(a, b) =>
+				b.score - a.score ||
+				a.value.length - b.value.length ||
+				a.value.localeCompare(b.value),
+		)
+		.map((suggestion) => suggestion.value)
 		.slice(0, limit);
-}
-
-/**
- * 获取搜索建议（便捷 wrapper）。
- * 内部调用 preprocessSuggestionData + getSearchSuggestionsFromData。
- * 适用于无缓存需求的场景；热路径建议分别使用预处理和搜索函数。
- * @param games 游戏数据数组
- * @param input 输入的部分关键词
- * @param limit 返回建议数量限制
- * @returns 搜索建议数组
- */
-export function getSearchSuggestions(
-	games: GameData[],
-	input: string,
-	limit: number = 8,
-): string[] {
-	if (!input || input.trim() === "") {
-		return [];
-	}
-
-	const entries = preprocessSuggestionData(games);
-	return getSearchSuggestionsFromData(entries, input, limit);
 }

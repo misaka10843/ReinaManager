@@ -128,9 +128,9 @@ export function useGameListFacade() {
 		if (!trimmedSearchKeyword || !searchIndex) {
 			return filteredGames;
 		}
-		return searchWithIndex(searchIndex, trimmedSearchKeyword).map(
-			(result) => result.item,
-		);
+		return searchWithIndex(searchIndex, trimmedSearchKeyword, {
+			limit: filteredGames.length,
+		}).map((result) => result.item);
 	}, [searchIndex, trimmedSearchKeyword, filteredGames]);
 
 	// 4. 返回 ID 数组
