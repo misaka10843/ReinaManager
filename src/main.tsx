@@ -11,7 +11,6 @@
  */
 
 import { QueryClientProvider } from "@tanstack/react-query";
-import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
 import { routers } from "@/routes/router";
@@ -62,13 +61,11 @@ initializeStores().then(async () => {
 	}
 
 	createRoot(document.getElementById("root") as HTMLElement).render(
-		<StrictMode>
-			<CacheProvider value={emotionCache}>
-				<QueryClientProvider client={queryClient}>
-					<ReactQueryDevtools initialIsOpen={false} />
-					<RouterProvider router={routers} />
-				</QueryClientProvider>
-			</CacheProvider>
-		</StrictMode>,
+		<CacheProvider value={emotionCache}>
+			<QueryClientProvider client={queryClient}>
+				<ReactQueryDevtools initialIsOpen={false} />
+				<RouterProvider router={routers} />
+			</QueryClientProvider>
+		</CacheProvider>,
 	);
 });

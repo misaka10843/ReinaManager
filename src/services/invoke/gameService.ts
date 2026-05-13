@@ -24,8 +24,8 @@ class GameService extends BaseService {
 	 * 插入游戏数据（单表架构）
 	 * @param game 插入参数（不含 id 和时间戳）
 	 */
-	async insertGame(game: InsertGameParams): Promise<number> {
-		return this.invoke<number>("insert_game", { game });
+	async insertGame(game: InsertGameParams): Promise<FullGameData> {
+		return this.invoke<FullGameData>("insert_game", { game });
 	}
 
 	/**
@@ -160,12 +160,12 @@ class GameService extends BaseService {
 	 * 使用单个事务处理所有更新操作，性能远优于逐个更新
 	 *
 	 * @param updates 更新列表 [[gameId, updates], ...]
-	 * @returns 返回成功更新的游戏数量
+	 * @returns 返回更新后的完整游戏数据
 	 */
 	async updateBatch(
 		updates: Array<[number, UpdateGameParams]>,
-	): Promise<number> {
-		return this.invoke<number>("update_games_batch", { updates });
+	): Promise<FullGameData[]> {
+		return this.invoke<FullGameData[]>("update_games_batch", { updates });
 	}
 }
 

@@ -9,6 +9,7 @@
  */
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { patchGameCaches } from "@/hooks/queries/gameCachePatch";
 import { gameKeys } from "@/hooks/queries/useGames";
 import { gameService } from "@/services/invoke";
 import type { FullGameData } from "@/types";
@@ -60,12 +61,7 @@ export function useUpdatePlayStatus() {
 	return useMutation<FullGameData, Error, UpdatePlayStatusParams>({
 		mutationFn: updatePlayStatus,
 		onSuccess: (updatedFullGame, { gameId, invalidateScope = "game" }) => {
-			queryClient.setQueryData<FullGameData[]>(gameKeys.all, (currentGames) => {
-				if (!currentGames) return currentGames;
-				return currentGames.map((game) =>
-					game.id === gameId ? updatedFullGame : game,
-				);
-			});
+			patchGameCaches(queryClient, gameKeys, updatedFullGame);
 			queryClient.invalidateQueries({ queryKey: gameKeys.idLists() });
 
 			if (invalidateScope === "all") {

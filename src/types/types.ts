@@ -37,6 +37,7 @@ export interface BatchOperationResult {
 	success: number;
 	failed: number;
 	ids?: number[];
+	games?: FullGameData[];
 	errors: BatchOperationError[];
 }
 

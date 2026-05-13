@@ -5,16 +5,22 @@
 
 import {
 	keepPreviousData,
+	type QueryClient,
 	useMutation,
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
 import i18next from "i18next";
+import {
+	appendGamesToCaches,
+	patchGameCaches,
+	patchManyGameCaches,
+	removeGamesFromCaches,
+} from "@/hooks/queries/gameCachePatch";
 import type { GameType, SortOption, SortOrder } from "@/services/invoke";
 import { gameService } from "@/services/invoke";
 import type {
 	BatchOperationResult,
-	FullGameData,
 	InsertGameParams,
 	UpdateGameParams,
 } from "@/types";
@@ -41,8 +47,18 @@ function shouldInvalidateGameLists(updates: UpdateGameParams): boolean {
 	);
 }
 
+function shouldInvalidateSourceIdCaches(updates: UpdateGameParams): boolean {
+	return "bgm_id" in updates || "vndb_id" in updates;
+}
+
+function invalidateSourceIdCaches(queryClient: QueryClient) {
+	queryClient.invalidateQueries({ queryKey: gameKeys.bgmIds() });
+	queryClient.invalidateQueries({ queryKey: gameKeys.vndbIds() });
+}
+
 export const gameKeys = {
 	all: ["games"] as const,
+	index: () => [...gameKeys.all, "index"] as const,
 	idLists: () => [...gameKeys.all, "idList"] as const,
 	idList: (params: {
 		gameType: GameType;
@@ -100,12 +116,18 @@ function useAddGame() {
 	return useMutation({
 		mutationFn: (gameParams: InsertGameParams) =>
 			gameService.insertGame(gameParams),
-		onSuccess: async () => {
-			await queryClient.invalidateQueries({
-				queryKey: gameKeys.all,
-				exact: true,
-			});
+		onSuccess: async (insertedGame) => {
+			const patched = appendGamesToCaches(queryClient, gameKeys, [
+				insertedGame,
+			]);
+			if (!patched) {
+				await queryClient.invalidateQueries({
+					queryKey: gameKeys.all,
+					exact: true,
+				});
+			}
 			await queryClient.invalidateQueries({ queryKey: gameKeys.idLists() });
+			invalidateSourceIdCaches(queryClient);
 			await queryClient.invalidateQueries({ queryKey: ["collections"] });
 		},
 	});
@@ -121,11 +143,19 @@ function useBatchAddGames() {
 			if (result.success === 0) {
 				return;
 			}
-			queryClient.invalidateQueries({
-				queryKey: gameKeys.all,
-				exact: true,
-			});
+			const patched = appendGamesToCaches(
+				queryClient,
+				gameKeys,
+				result.games ?? [],
+			);
+			if (!patched) {
+				queryClient.invalidateQueries({
+					queryKey: gameKeys.all,
+					exact: true,
+				});
+			}
 			queryClient.invalidateQueries({ queryKey: gameKeys.idLists() });
+			invalidateSourceIdCaches(queryClient);
 			queryClient.invalidateQueries({ queryKey: ["collections"] });
 		},
 	});
@@ -138,11 +168,7 @@ function useDeleteGame() {
 		mutationFn: (gameId: number) => gameService.deleteGame(gameId),
 		onSuccess: (_, gameId) => {
 			// 乐观更新：立即从缓存中移除已删除的游戏
-			queryClient.setQueryData<FullGameData[]>(
-				gameKeys.all,
-				(currentGames) =>
-					currentGames?.filter((game) => game.id !== gameId) ?? currentGames,
-			);
+			removeGamesFromCaches(queryClient, gameKeys, [gameId]);
 			queryClient.invalidateQueries({ queryKey: gameKeys.idLists() });
 			queryClient.invalidateQueries({ queryKey: ["collections"] });
 			queryClient.invalidateQueries({ queryKey: ["stats"] });
@@ -157,13 +183,7 @@ function useDeleteGames() {
 		mutationFn: (gameIds: number[]) => gameService.deleteGames(gameIds),
 		onSuccess: (_, gameIds) => {
 			// 乐观更新：立即从缓存中移除已删除的游戏
-			const deletedGameIds = new Set(gameIds);
-			queryClient.setQueryData<FullGameData[]>(
-				gameKeys.all,
-				(currentGames) =>
-					currentGames?.filter((game) => !deletedGameIds.has(game.id)) ??
-					currentGames,
-			);
+			removeGamesFromCaches(queryClient, gameKeys, gameIds);
 			queryClient.invalidateQueries({ queryKey: gameKeys.idLists() });
 			queryClient.invalidateQueries({ queryKey: ["collections"] });
 			queryClient.invalidateQueries({ queryKey: ["stats"] });
@@ -182,16 +202,14 @@ function useUpdateGame() {
 			gameId: number;
 			updates: UpdateGameParams;
 		}) => gameService.updateGame(gameId, updates),
-		onSuccess: (updatedFullGame, { gameId, updates }) => {
-			queryClient.setQueryData<FullGameData[]>(gameKeys.all, (currentGames) => {
-				if (!currentGames) return currentGames;
-				return currentGames.map((game) =>
-					game.id === gameId ? updatedFullGame : game,
-				);
-			});
+		onSuccess: (updatedFullGame, { updates }) => {
+			patchGameCaches(queryClient, gameKeys, updatedFullGame);
 
 			if (shouldInvalidateGameLists(updates)) {
 				queryClient.invalidateQueries({ queryKey: gameKeys.idLists() });
+			}
+			if (shouldInvalidateSourceIdCaches(updates)) {
+				invalidateSourceIdCaches(queryClient);
 			}
 		},
 	});
@@ -203,11 +221,17 @@ function useBatchUpdateGames() {
 	return useMutation({
 		mutationFn: (updates: Array<[number, UpdateGameParams]>) =>
 			gameService.updateBatch(updates),
-		onSuccess: () => {
-			queryClient.invalidateQueries({
-				queryKey: gameKeys.all,
-				exact: true,
-			});
+		onSuccess: (updatedFullGames, updates) => {
+			if (updatedFullGames.length === 0) {
+				return;
+			}
+			patchManyGameCaches(queryClient, gameKeys, updatedFullGames);
+			queryClient.invalidateQueries({ queryKey: gameKeys.idLists() });
+			if (
+				updates.some(([, update]) => shouldInvalidateSourceIdCaches(update))
+			) {
+				invalidateSourceIdCaches(queryClient);
+			}
 		},
 	});
 }

@@ -22,7 +22,7 @@ use crate::utils::game_cover::DownloadState;
 pub async fn insert_game(
     db: State<'_, DatabaseConnection>,
     game: InsertGameData,
-) -> Result<i32, String> {
+) -> Result<games::Model, String> {
     GamesRepository::insert(&db, game)
         .await
         .map_err(|e| format!("插入游戏数据失败: {}", e))
@@ -203,7 +203,7 @@ pub async fn get_all_vndb_ids(
 pub async fn update_games_batch(
     db: State<'_, DatabaseConnection>,
     updates: Vec<(i32, UpdateGameData)>,
-) -> Result<u64, String> {
+) -> Result<Vec<games::Model>, String> {
     GamesRepository::update_batch(&db, updates)
         .await
         .map_err(|e| format!("批量更新数据失败: {}", e))

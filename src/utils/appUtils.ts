@@ -10,6 +10,8 @@ import { extname, join } from "pathe";
 import { fetchBgmByIds } from "@/api/bgm";
 import { fetchVNDBByIds } from "@/api/vndb";
 import { setScrollPosition } from "@/hooks/common/useScrollRestore";
+import { patchManyGameCaches } from "@/hooks/queries/gameCachePatch";
+import { gameKeys } from "@/hooks/queries/useGames";
 import { fetchAllSettings } from "@/hooks/queries/useSettings";
 import { queryClient } from "@/providers/queryClient";
 import { snackbar } from "@/providers/snackBar";
@@ -695,7 +697,9 @@ async function batchUpdateCommon(
 
 		// 5. 批量更新数据库
 		if (updates.length > 0) {
-			await gameService.updateBatch(updates);
+			const updatedGames = await gameService.updateBatch(updates);
+			patchManyGameCaches(queryClient, gameKeys, updatedGames);
+			queryClient.invalidateQueries({ queryKey: gameKeys.idLists() });
 		}
 
 		return {
@@ -905,9 +909,3 @@ export function trimDirnameToSearchName(dirName: string): string {
 	// 如果全被清空了（比如全都是括号），就返回原始名称的 trim 结果
 	return trimmed || dirName.trim();
 }
-
-// 导出数据转换工具
-export {
-	getDisplayGameData,
-	getDisplayGameDataList,
-} from "./dataTransform";

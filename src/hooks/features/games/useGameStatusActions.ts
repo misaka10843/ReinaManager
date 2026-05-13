@@ -1,5 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
+import { patchGameCaches } from "@/hooks/queries/gameCachePatch";
 import { gameKeys } from "@/hooks/queries/useGames";
 import {
 	type UpdatePlayStatusParams,
@@ -10,6 +11,7 @@ import type { FullGameData, GameData } from "@/types";
 import { syncPlayStatusToCloud } from "@/utils/cloudCollectionSync";
 import { getDisplayGameData } from "@/utils/dataTransform";
 import { getUserErrorMessage } from "@/utils/errors";
+import type { GameIndex } from "@/utils/gameIndex";
 
 interface UpdatePlayStatusOptions {
 	invalidateScope?: "game" | "all";
@@ -49,16 +51,17 @@ export function useGameStatusActions() {
 		const previousGames = queryClient.getQueryData<FullGameData[]>(
 			gameKeys.all,
 		);
-
-		queryClient.setQueryData<FullGameData[]>(
-			gameKeys.all,
-			(currentGames) =>
-				currentGames?.map((game) =>
-					game.id === params.gameId
-						? { ...game, clear: params.newStatus }
-						: game,
-				) ?? currentGames,
+		const previousIndex = queryClient.getQueryData<GameIndex>(gameKeys.index());
+		const currentGame = previousGames?.find(
+			(game) => game.id === params.gameId,
 		);
+
+		if (currentGame) {
+			patchGameCaches(queryClient, gameKeys, {
+				...currentGame,
+				clear: params.newStatus,
+			});
+		}
 
 		updateMutation.mutate(
 			{ ...params, invalidateScope },
@@ -88,6 +91,7 @@ export function useGameStatusActions() {
 				onError: (error, variables) => {
 					// 恢复回退乐观更新
 					queryClient.setQueryData(gameKeys.all, previousGames);
+					queryClient.setQueryData(gameKeys.index(), previousIndex);
 					snackbar.error(
 						`${t("errors.updatePlayStatusFailed", "更新游戏状态失败")}: ${getUserErrorMessage(error, t)}`,
 					);

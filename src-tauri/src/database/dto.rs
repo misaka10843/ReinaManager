@@ -5,6 +5,7 @@
 
 use crate::entity::bgm_data::BgmData;
 use crate::entity::custom_data::CustomData;
+use crate::entity::games;
 use crate::entity::kun_data::KunData;
 use crate::entity::user::BgmAuth;
 use crate::entity::vndb_data::VndbData;
@@ -196,6 +197,7 @@ pub struct BatchOperationResult {
     pub success: usize,
     pub failed: usize,
     pub ids: Vec<i32>,
+    pub games: Vec<games::Model>,
     pub errors: Vec<BatchOperationError>,
 }
 

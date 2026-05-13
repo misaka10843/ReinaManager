@@ -1,22 +1,30 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { useAllGames, useGameIdList } from "@/hooks/queries/useGames";
+import { gameKeys, useAllGames, useGameIdList } from "@/hooks/queries/useGames";
 import { useStore } from "@/store/appStore";
 import type { GameData } from "@/types";
 import { PlayStatus } from "@/types/collection";
 import { getGameNsfwStatus } from "@/utils/appUtils";
 import { createSearchIndex, searchWithIndex } from "@/utils/enhancedSearch";
-import { getGameIndex } from "@/utils/gameIndex";
+import { type GameIndex, getGameIndex } from "@/utils/gameIndex";
 
 const EMPTY_IDS: number[] = [];
 const EMPTY_GAMES: GameData[] = [];
 
 export function useGameIndex() {
+	const queryClient = useQueryClient();
 	const allGamesQuery = useAllGames();
-	const index = useMemo(
-		() => getGameIndex(allGamesQuery.data),
-		[allGamesQuery.data],
-	);
+	const index = useMemo(() => {
+		const cachedIndex = queryClient.getQueryData<GameIndex>(gameKeys.index());
+		if (cachedIndex && cachedIndex.rawList === allGamesQuery.data) {
+			return cachedIndex;
+		}
+
+		const nextIndex = getGameIndex(allGamesQuery.data);
+		queryClient.setQueryData(gameKeys.index(), nextIndex);
+		return nextIndex;
+	}, [allGamesQuery.data, queryClient]);
 
 	return {
 		index,

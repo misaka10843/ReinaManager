@@ -157,9 +157,9 @@ const AddModal: React.FC = () => {
 
 	const handleAddGame = useCallback(
 		async (gameData: GameCandidateData) => {
-			const gameId = await addGameFromMetadata(gameData);
+			const game = await addGameFromMetadata(gameData);
 			closeAddModal();
-			showGameAddedSuccess({ gameId, navigate, t });
+			showGameAddedSuccess({ gameId: game.id, navigate, t });
 		},
 		[addGameFromMetadata, closeAddModal, navigate, t],
 	);
@@ -260,9 +260,9 @@ const AddModal: React.FC = () => {
 						name: formText,
 					},
 				};
-				const gameId = await addGameMutation.mutateAsync(customGameData);
+				const game = await addGameMutation.mutateAsync(customGameData);
 				closeAddModal();
-				showGameAddedSuccess({ gameId, navigate, t });
+				showGameAddedSuccess({ gameId: game.id, navigate, t });
 				return;
 			}
 

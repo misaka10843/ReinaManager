@@ -80,15 +80,17 @@ impl GamesRepository {
     /// 插入游戏数据（单表操作）
     ///
     /// 所有元数据通过 JSON 列直接存储，无需多表事务
-    pub async fn insert(db: &DatabaseConnection, game: InsertGameData) -> Result<i32, DbErr> {
+    pub async fn insert(
+        db: &DatabaseConnection,
+        game: InsertGameData,
+    ) -> Result<games::Model, DbErr> {
         let game = game.cleaned(); // 清洗空字符串为 NULL
 
         let now = chrono::Utc::now().timestamp() as i32;
 
         let game_active = Self::build_insert_active_model(game, now);
 
-        let result = game_active.insert(db).await?;
-        Ok(result.id)
+        game_active.insert(db).await
     }
 
     pub async fn insert_batch(
@@ -98,13 +100,17 @@ impl GamesRepository {
         let total = games.len();
         let now = chrono::Utc::now().timestamp() as i32;
         let mut ids = Vec::with_capacity(total);
+        let mut inserted_games = Vec::with_capacity(total);
         let mut errors = Vec::new();
 
         for (index, game) in games.into_iter().enumerate() {
             let game_active = Self::build_insert_active_model(game.cleaned(), now);
 
             match game_active.insert(db).await {
-                Ok(result) => ids.push(result.id),
+                Ok(result) => {
+                    ids.push(result.id);
+                    inserted_games.push(result);
+                }
                 Err(error) => errors.push(BatchOperationError {
                     index,
                     message: error.to_string(),
@@ -117,6 +123,7 @@ impl GamesRepository {
             success: ids.len(),
             failed: errors.len(),
             ids,
+            games: inserted_games,
             errors,
         }
     }
@@ -165,14 +172,14 @@ impl GamesRepository {
     pub async fn update_batch(
         db: &DatabaseConnection,
         updates: Vec<(i32, UpdateGameData)>,
-    ) -> Result<u64, DbErr> {
+    ) -> Result<Vec<games::Model>, DbErr> {
         if updates.is_empty() {
-            return Ok(0);
+            return Ok(Vec::new());
         }
 
         let txn = db.begin().await?;
         let now = chrono::Utc::now().timestamp() as i32;
-        let mut count = 0u64;
+        let mut updated_games = Vec::with_capacity(updates.len());
 
         for (game_id, update) in updates {
             let update = update.cleaned(); // 清洗空字符串为 NULL
@@ -202,13 +209,11 @@ impl GamesRepository {
             };
 
             let result = game_active.update(&txn).await?;
-            if result.id > 0 {
-                count += 1;
-            }
+            updated_games.push(result);
         }
 
         txn.commit().await?;
-        Ok(count)
+        Ok(updated_games)
     }
 
     // ==================== 查询操作 ====================

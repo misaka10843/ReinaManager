@@ -303,12 +303,3 @@ function applyCustomDataOverride(target: GameData, customData: CustomData) {
 		);
 	}
 }
-
-/**
- * 批量转换 FullGameData 数组
- */
-export function getDisplayGameDataList(
-	fullDataList: FullGameData[],
-): GameData[] {
-	return fullDataList.map((fullData) => getDisplayGameData(fullData));
-}
