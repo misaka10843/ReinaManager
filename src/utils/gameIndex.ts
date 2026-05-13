@@ -73,14 +73,27 @@ export function getDeveloperNames(
 	return developers.length > 0 ? developers : [unknownDeveloper];
 }
 
-function getDeveloperCategoryId(name: string): number {
-	let hash = 2166136261;
+function hashDeveloperCategoryName(name: string): number {
+	let h1 = 0xdeadbeef ^ name.length;
+	let h2 = 0x41c6ce57 ^ name.length;
 	for (let i = 0; i < name.length; i++) {
-		hash ^= name.charCodeAt(i);
-		hash = Math.imul(hash, 16777619);
+		const charCode = name.charCodeAt(i);
+		h1 = Math.imul(h1 ^ charCode, 2654435761);
+		h2 = Math.imul(h2 ^ charCode, 1597334677);
 	}
 
-	return -(DEVELOPER_CATEGORY_ID_OFFSET + (hash >>> 0));
+	h1 =
+		Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^
+		Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+	h2 =
+		Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^
+		Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+
+	return 4294967296 * (1048575 & h2) + (h1 >>> 0);
+}
+
+function getDeveloperCategoryId(name: string): number {
+	return -(DEVELOPER_CATEGORY_ID_OFFSET + hashDeveloperCategoryName(name));
 }
 
 function buildDeveloperIndex(
