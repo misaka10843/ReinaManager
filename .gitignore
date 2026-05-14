@@ -15,3 +15,5 @@ others
 
 *.local
 .env
+
+AGENTS.md
