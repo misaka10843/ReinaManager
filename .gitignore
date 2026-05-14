@@ -5,7 +5,6 @@ target
 .ai_cli
 .rust-skills
 docs-local
-scripts
 others
 
 # Editor directories
@@ -16,5 +15,3 @@ others
 
 *.local
 .env
-
-AGENTS.md
