@@ -273,7 +273,7 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ open, onClose, update }) => {
 					startIcon={isDownloading ? <DownloadIcon /> : <UpdateIcon />}
 				>
 					{isDownloading
-						? t("components.Window.UpdateModal.downloading", "下载中...")
+						? t("components.Window.UpdateModal.downloading", "正在下载更新...")
 						: t("components.Window.UpdateModal.update", "立即更新")}
 				</Button>
 				<Button
@@ -408,10 +408,15 @@ const WindowsHandler: React.FC = () => {
 	return (
 		<>
 			<Dialog open={open} onClose={handleCancel}>
-				<DialogTitle>{t("components.Window.closeDialog.title")}</DialogTitle>
+				<DialogTitle>
+					{t("components.Window.closeDialog.title", "关闭应用")}
+				</DialogTitle>
 				<DialogContent>
 					<Typography variant="body1" sx={{ mb: 2 }}>
-						{t("components.Window.closeDialog.message")}
+						{t(
+							"components.Window.closeDialog.message",
+							"请选择操作：直接退出 或 最小化到托盘？",
+						)}
 					</Typography>
 					<FormControlLabel
 						control={
@@ -423,15 +428,15 @@ const WindowsHandler: React.FC = () => {
 								color="primary"
 							/>
 						}
-						label={t("components.Window.closeDialog.dontRemind")}
+						label={t("components.Window.closeDialog.dontRemind", "不再提醒")}
 					/>
 				</DialogContent>
 				<DialogActions>
 					<Button onClick={handleHide}>
-						{t("components.Window.closeDialog.minimizeToTray")}
+						{t("components.Window.closeDialog.minimizeToTray", "最小化到托盘")}
 					</Button>
 					<Button onClick={() => handleClose()} color="primary">
-						{t("components.Window.closeDialog.exitApp")}
+						{t("components.Window.closeDialog.exitApp", "退出应用")}
 					</Button>
 				</DialogActions>
 			</Dialog>

@@ -235,7 +235,10 @@ const BgmTokenLoginPanel = ({
 				<Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
 					<TextField
 						autoComplete="off"
-						placeholder={t("pages.Settings.tokenPlaceholder")}
+						placeholder={t(
+							"pages.Settings.tokenPlaceholder",
+							"请填写你的BGM TOKEN",
+						)}
 						value={inputToken}
 						onChange={(e) => onInputTokenChange(e.target.value)}
 						variant="outlined"
@@ -287,7 +290,7 @@ const BgmTokenLoginPanel = ({
 						onClick={onOpenTokenPage}
 						className="px-6 py-2"
 					>
-						{t("pages.Settings.getToken")}
+						{t("pages.Settings.getToken", "获取令牌")}
 					</Button>
 				</Stack>
 			</AccordionDetails>
@@ -315,7 +318,7 @@ export const BgmTokenSettings = () => {
 	return (
 		<Box className="mb-8">
 			<InputLabel className="font-semibold mb-4">
-				{t("pages.Settings.bgmToken")}
+				{t("pages.Settings.bgmToken", "BGM 令牌")}
 			</InputLabel>
 			<Box className="pl-2 space-y-6">
 				<Box>
@@ -413,7 +416,7 @@ export const VndbTokenSettings = () => {
 	return (
 		<Box className="mb-8">
 			<InputLabel className="font-semibold mb-4">
-				{t("pages.Settings.vndbToken", "VNDB Token")}
+				{t("pages.Settings.vndbToken", "VNDB 令牌")}
 			</InputLabel>
 			{vndbToken && (
 				<Box className="mb-4">
@@ -506,7 +509,7 @@ export const VndbTokenSettings = () => {
 					disabled={updateSettingsMutation.isPending}
 					className="px-6 py-2"
 				>
-					{t("pages.Settings.saveBtn")}
+					{t("pages.Settings.saveBtn", "保存")}
 				</Button>
 				<Button
 					variant="outlined"
@@ -514,7 +517,7 @@ export const VndbTokenSettings = () => {
 					onClick={handleOpen}
 					className="px-6 py-2"
 				>
-					{t("pages.Settings.getToken")}
+					{t("pages.Settings.getToken", "获取令牌")}
 				</Button>
 			</Stack>
 		</Box>

@@ -11,14 +11,21 @@ const confirmTrayExitIfNeeded = async (): Promise<boolean> => {
 	}
 
 	return ask(
-		i18n.t("components.Window.runningExitDialog.message", {
-			count: runningGameCount,
-		}),
+		i18n.t(
+			"components.Window.runningExitDialog.message",
+			"当前仍有 {{count}} 个游戏正在运行。退出应用后不会关闭这些游戏，但会丢失游戏时长记录。确定要退出应用吗？",
+			{
+				count: runningGameCount,
+			},
+		),
 		{
-			title: i18n.t("components.Window.runningExitDialog.title"),
+			title: i18n.t("components.Window.runningExitDialog.title", "退出提醒"),
 			kind: "warning",
-			okLabel: i18n.t("components.Window.runningExitDialog.exitApp"),
-			cancelLabel: i18n.t("common.cancel"),
+			okLabel: i18n.t(
+				"components.Window.runningExitDialog.exitApp",
+				"仍然退出",
+			),
+			cancelLabel: i18n.t("common.cancel", "取消"),
 		},
 	);
 };

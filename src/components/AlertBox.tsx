@@ -146,7 +146,7 @@ export function AlertBox({
 			)}
 			<DialogActions>
 				<Button onClick={handleClose} disabled={isLoading}>
-					{cancelText || t("components.AlertBox.cancel")}
+					{cancelText || t("components.AlertBox.cancel", "取消")}
 				</Button>
 				{showExtraButton && extraButtonText && onExtraButtonClick && (
 					<Button
@@ -171,8 +171,8 @@ export function AlertBox({
 					}
 				>
 					{isLoading
-						? t("components.AlertBox.processing")
-						: confirmText || t("components.AlertBox.confirm")}
+						? t("components.AlertBox.processing", "处理中...")
+						: confirmText || t("components.AlertBox.confirm", "确认")}
 				</Button>
 			</DialogActions>
 		</Dialog>
@@ -201,11 +201,16 @@ export const AlertConfirmBox: React.FC<AlertConfirmBoxProps> = ({
 		<AlertBox
 			open={open}
 			setOpen={setOpen}
-			title={title || t("components.AlertBox.deleteGameTitle")}
-			message={message || t("components.AlertBox.deleteGameMessage")}
+			title={title || t("components.AlertBox.deleteGameTitle", "删除游戏")}
+			message={
+				message ||
+				t("components.AlertBox.deleteGameMessage", "确定要删除该游戏吗？")
+			}
 			onConfirm={onConfirm}
-			confirmText={confirmText || t("components.AlertBox.confirmDelete")}
-			cancelText={t("components.AlertBox.cancel")}
+			confirmText={
+				confirmText || t("components.AlertBox.confirmDelete", "确认删除")
+			}
+			cancelText={t("components.AlertBox.cancel", "取消")}
 			confirmColor={confirmColor}
 			confirmVariant="contained"
 			autoCloseOnConfirm={false} // 不自动关闭，由父组件控制
@@ -291,7 +296,7 @@ export const ViewGameBox: React.FC<ViewGameBoxProps> = ({
 								{source.label}
 							</Typography>
 							<Typography variant="body2" className="mb-1">
-								{t("components.AlertBox.gameName")}: {source.name}
+								{t("components.AlertBox.gameName", "游戏名称")}: {source.name}
 							</Typography>
 							{source.image && (
 								<img
@@ -305,8 +310,8 @@ export const ViewGameBox: React.FC<ViewGameBoxProps> = ({
 				</Box>
 			}
 			onConfirm={onConfirm}
-			confirmText={t("components.AlertBox.confirm")}
-			cancelText={t("components.AlertBox.cancel")}
+			confirmText={t("components.AlertBox.confirm", "确认")}
+			cancelText={t("components.AlertBox.cancel", "取消")}
 			confirmColor="primary"
 			confirmVariant="contained"
 			isLoading={isLoading}

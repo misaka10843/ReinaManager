@@ -106,7 +106,9 @@ const RightMenu: React.FC<RightMenuProps> = ({
 	const handleStartGame = async () => {
 		try {
 			if (!selectedGame?.localpath) {
-				snackbar.error(t("components.LaunchModal.gamePathNotFound"));
+				snackbar.error(
+					t("components.LaunchModal.gamePathNotFound", "游戏路径未找到"),
+				);
 				return;
 			}
 			const result = await launchGame(id);
@@ -115,7 +117,7 @@ const RightMenu: React.FC<RightMenuProps> = ({
 			}
 		} catch (error) {
 			snackbar.error(
-				`${t("components.LaunchModal.launchFailed")}: ${getUserErrorMessage(error, t)}`,
+				`${t("components.LaunchModal.launchFailed", "游戏启动失败:")}: ${getUserErrorMessage(error, t)}`,
 			);
 		}
 	};
@@ -137,7 +139,7 @@ const RightMenu: React.FC<RightMenuProps> = ({
 			isopen
 			anchorPosition={anchorPosition}
 			onClose={onClose}
-			ariaLabel={t("components.RightMenu.label")}
+			ariaLabel={t("components.RightMenu.label", "右键菜单")}
 		>
 			{/* 删除确认弹窗 */}
 			<AlertConfirmBox
@@ -159,7 +161,9 @@ const RightMenu: React.FC<RightMenuProps> = ({
 					<ListItemIcon>
 						<PlayCircleOutlineIcon />
 					</ListItemIcon>
-					<ListItemText primary={t("components.RightMenu.startGame")} />
+					<ListItemText
+						primary={t("components.RightMenu.startGame", "启动游戏")}
+					/>
 				</MenuItem>
 
 				{/* 进入详情 */}
@@ -171,7 +175,9 @@ const RightMenu: React.FC<RightMenuProps> = ({
 						<ListItemIcon>
 							<ArticleIcon />
 						</ListItemIcon>
-						<ListItemText primary={t("components.RightMenu.enterDetails")} />
+						<ListItemText
+							primary={t("components.RightMenu.enterDetails", "进入详情页")}
+						/>
 					</MenuItem>
 				</LinkWithScrollSave>
 
@@ -180,7 +186,9 @@ const RightMenu: React.FC<RightMenuProps> = ({
 					<ListItemIcon>
 						<DeleteIcon />
 					</ListItemIcon>
-					<ListItemText primary={t("components.RightMenu.deleteGame")} />
+					<ListItemText
+						primary={t("components.RightMenu.deleteGame", "删除游戏")}
+					/>
 				</MenuItem>
 
 				<Divider />
@@ -198,7 +206,9 @@ const RightMenu: React.FC<RightMenuProps> = ({
 					<ListItemIcon>
 						<FolderOpenIcon />
 					</ListItemIcon>
-					<ListItemText primary={t("components.RightMenu.openGameFolder")} />
+					<ListItemText
+						primary={t("components.RightMenu.openGameFolder", "打开游戏目录")}
+					/>
 				</MenuItem>
 
 				{/* 游戏状态切换 - 二级菜单 */}

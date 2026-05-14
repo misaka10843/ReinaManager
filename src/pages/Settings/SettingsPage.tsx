@@ -80,10 +80,10 @@ export const Settings: React.FC = () => {
 	useScrollRestore("/settings");
 	const [pathSettingsModalOpen, setPathSettingsModalOpen] = useState(false);
 	const [activeSectionId, setActiveSectionId] = useState("account");
-	const pageTitle = t("app.NAVIGATION.settings", "Settings");
+	const pageTitle = t("app.NAVIGATION.settings", "设置");
 	const breadcrumbs = useMemo(
 		() => [
-			{ title: t("app.NAVIGATION.home", "Home"), path: "/" },
+			{ title: t("app.NAVIGATION.home", "主页"), path: "/" },
 			{ title: pageTitle, path: "/settings" },
 		],
 		[t, pageTitle],

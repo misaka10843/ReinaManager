@@ -166,7 +166,12 @@ export const handleOpenFolder = async (
 			await fileService.openDirectory(folder);
 		}
 	} catch (error) {
-		snackbar.error(i18next.t("components.Snackbar.failedOpenGameFolder"));
+		snackbar.error(
+			i18next.t(
+				"components.Snackbar.failedOpenGameFolder",
+				"打开游戏文件夹失败",
+			),
+		);
 		console.error("打开文件夹失败:", error);
 	}
 };
@@ -208,18 +213,24 @@ export function formatRelativeTime(time: string | number | Date): string {
 
 	const diff = (now.getTime() - target.getTime()) / 1000; // 秒
 
-	if (diff < 60) return i18next.t("utils.relativetime.justNow"); // 刚刚
+	if (diff < 60) return i18next.t("utils.relativetime.justNow", "刚刚"); // 刚刚
 	if (diff < 3600) {
 		const minutes = Math.floor(diff / 60);
-		return i18next.t("utils.relativetime.minutesAgo", { count: minutes });
+		return i18next.t("utils.relativetime.minutesAgo", "{{count}}分钟前", {
+			count: minutes,
+		});
 	}
 	if (diff < 86400) {
 		const hours = Math.floor(diff / 3600);
-		return i18next.t("utils.relativetime.hoursAgo", { count: hours });
+		return i18next.t("utils.relativetime.hoursAgo", "{{count}}小时前", {
+			count: hours,
+		});
 	}
 	if (diff < 7 * 86400) {
 		const days = Math.floor(diff / 86400);
-		return i18next.t("utils.relativetime.daysAgo", { count: days });
+		return i18next.t("utils.relativetime.daysAgo", "{{count}}天前", {
+			count: days,
+		});
 	}
 
 	// 判断是否为上周
@@ -229,7 +240,7 @@ export function formatRelativeTime(time: string | number | Date): string {
 		now.getFullYear() === target.getFullYear() &&
 		nowWeek - targetWeek === 1
 	) {
-		return i18next.t("utils.relativetime.lastWeek");
+		return i18next.t("utils.relativetime.lastWeek", "上周");
 	}
 
 	// 超过一周，返回日期
@@ -244,7 +255,10 @@ function getWeekNumber(date: Date): number {
 
 // 格式化游戏时间
 export function formatPlayTime(minutes: number): string {
-	if (!minutes) return i18next.t("utils.formatPlayTime.minutes", { count: 0 });
+	if (!minutes)
+		return i18next.t("utils.formatPlayTime.minutes", "{{count}}分钟", {
+			count: 0,
+		});
 
 	const hours = Math.floor(minutes / 60);
 	const mins = minutes % 60;
@@ -254,22 +268,30 @@ export function formatPlayTime(minutes: number): string {
 		// 将总分钟数换算成带一位小数的小时
 		const totalHoursAsFloat = Math.floor((minutes / 60) * 10) / 10;
 		// 使用一个新的 i18next key 来格式化这个带小数的小时数
-		return i18next.t("utils.formatPlayTime.hours", {
+		return i18next.t("utils.formatPlayTime.hours", "{{count}}小时", {
 			count: totalHoursAsFloat,
 		});
 	}
 
 	if (hours === 0) {
-		return i18next.t("utils.formatPlayTime.minutes", { count: mins });
+		return i18next.t("utils.formatPlayTime.minutes", "{{count}}分钟", {
+			count: mins,
+		});
 	}
 
 	if (mins > 0) {
-		return i18next.t("utils.formatPlayTime.hoursAndMinutes", {
-			hours,
-			minutes: mins,
-		});
+		return i18next.t(
+			"utils.formatPlayTime.hoursAndMinutes",
+			"{{hours}}小时{{minutes}}分钟",
+			{
+				hours,
+				minutes: mins,
+			},
+		);
 	}
-	return i18next.t("utils.formatPlayTime.hours", { count: hours });
+	return i18next.t("utils.formatPlayTime.hours", "{{count}}小时", {
+		count: hours,
+	});
 }
 
 export const handleFolder = async () => {
@@ -278,7 +300,7 @@ export const handleFolder = async () => {
 		directory: true,
 		filters: [
 			{
-				name: t("utils.handleDirectory.folder"),
+				name: t("utils.handleDirectory.folder", "文件夹"),
 				extensions: ["*"],
 			},
 		],
@@ -294,11 +316,11 @@ export const handleExeFile = async (defaultPath: string = "") => {
 		defaultPath: defaultPath,
 		filters: [
 			{
-				name: t("utils.handleDirectory.executable"),
+				name: t("utils.handleDirectory.executable", "可执行文件"),
 				extensions: ["exe", "bat", "cmd"],
 			},
 			{
-				name: t("utils.handleDirectory.allFiles"),
+				name: t("utils.handleDirectory.allFiles", "所有文件"),
 				extensions: ["*"],
 			},
 		],
@@ -366,7 +388,9 @@ export const handleDroppedPath = async (
 
 			if (executables.length === 0) {
 				// 没有可执行文件
-				snackbar.error(t("components.AddModal.emptyFolder"));
+				snackbar.error(
+					t("components.AddModal.emptyFolder", "该文件夹中没有找到可执行文件"),
+				);
 				return null;
 			}
 
@@ -376,7 +400,12 @@ export const handleDroppedPath = async (
 			}
 
 			// 多个可执行文件，弹出系统对话框让用户选择
-			snackbar.info(t("components.AddModal.selectFromFolder"));
+			snackbar.info(
+				t(
+					"components.AddModal.selectFromFolder",
+					"文件夹中有多个可执行文件，请选择一个",
+				),
+			);
 			const selected = await handleExeFile(droppedPath);
 
 			return selected;
@@ -386,11 +415,21 @@ export const handleDroppedPath = async (
 			return droppedPath;
 		}
 		// 不是可执行文件
-		snackbar.error(t("components.AddModal.invalidFile"));
+		snackbar.error(
+			t(
+				"components.AddModal.invalidFile",
+				"请拖入有效的可执行文件（.exe/.bat/.cmd）或文件夹",
+			),
+		);
 		return null;
 	} catch (error) {
 		console.error("处理拖拽路径失败:", error);
-		snackbar.error(t("components.AddModal.invalidFile"));
+		snackbar.error(
+			t(
+				"components.AddModal.invalidFile",
+				"请拖入有效的可执行文件（.exe/.bat/.cmd）或文件夹",
+			),
+		);
 		return null;
 	}
 };
@@ -521,7 +560,10 @@ export async function openDatabaseBackupFolder(): Promise<void> {
 		await fileService.openDirectory(backupPath);
 	} catch (error) {
 		snackbar.error(
-			i18next.t("components.Snackbar.failedOpenDatabaseBackupFolder"),
+			i18next.t(
+				"components.Snackbar.failedOpenDatabaseBackupFolder",
+				"打开数据库备份文件夹失败",
+			),
 		);
 		console.error("打开数据库备份文件夹失败:", error);
 		throw error;

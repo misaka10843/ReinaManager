@@ -137,25 +137,25 @@ export const InfoBox: React.FC<InfoBoxProps> = ({ gameID }: InfoBoxProps) => {
 			{
 				color: "primary",
 				icon: <SportsEsportsIcon fontSize="small" />,
-				title: t("pages.Detail.playCount"),
+				title: t("pages.Detail.playCount", "累计游戏次数"),
 				value: stats ? `${stats.sessionCount}` : "0",
 			},
 			{
 				color: "primary",
 				icon: <TodayIcon fontSize="small" />,
-				title: t("pages.Detail.todayPlayTime"),
+				title: t("pages.Detail.todayPlayTime", "今日游戏时长"),
 				value: stats ? `${stats.todayPlayTime}` : "0分钟",
 			},
 			{
 				color: "primary",
 				icon: <AccessTimeIcon fontSize="small" />,
-				title: t("pages.Detail.totalPlayTime"),
+				title: t("pages.Detail.totalPlayTime", "累计总时长"),
 				value: stats ? `${stats.totalPlayTime}` : "0分钟",
 			},
 			{
 				color: "primary",
 				icon: <BackupIcon fontSize="small" />,
-				title: t("pages.Detail.backupCount"),
+				title: t("pages.Detail.backupCount", "存档备份数"),
 				value: backupCountQuery.data ?? 0,
 			},
 		],
@@ -310,7 +310,7 @@ export const InfoBox: React.FC<InfoBoxProps> = ({ gameID }: InfoBoxProps) => {
 			{/* 统计信息卡片 */}
 			<Box className="mb-4">
 				<Typography variant="h6" fontWeight="bold" gutterBottom component="div">
-					{t("pages.Detail.gameStats")}
+					{t("pages.Detail.gameStats", "游戏统计")}
 				</Typography>
 				<div className="grid grid-cols-4 gap-4">
 					{statItems.map((item) => (

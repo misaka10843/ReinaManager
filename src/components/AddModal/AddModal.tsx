@@ -171,24 +171,42 @@ const AddModal: React.FC = () => {
 		onError: showError,
 		getNoResultsMessage: (source) => {
 			if (source === "mixed") {
-				return t("components.AddModal.noResultsMixed");
+				return t(
+					"components.AddModal.noResultsMixed",
+					"所有数据源均未找到该游戏",
+				);
 			}
 			if (source === "bgm") {
 				if (!hasBgmAuth) {
-					return t("components.AddModal.noBgmToken");
+					return t(
+						"components.AddModal.noBgmToken",
+						"缺少 BGM Token，无法获取数据",
+					);
 				}
-				return t("components.AddModal.noResultsBgm");
+				return t(
+					"components.AddModal.noResultsBgm",
+					"未在 Bangumi 找到该游戏，请尝试其他名称或检查 ID",
+				);
 			}
 			if (source === "vndb") {
-				return t("components.AddModal.noResultsVndb");
+				return t(
+					"components.AddModal.noResultsVndb",
+					"未在 VNDB 找到该游戏，请尝试其他名称或检查 ID",
+				);
 			}
 			if (source === "ymgal") {
-				return t("components.AddModal.noResultsYmgal");
+				return t(
+					"components.AddModal.noResultsYmgal",
+					"未在 YMGal 找到该游戏，请尝试其他名称或检查 ID",
+				);
 			}
 			if (source === "kun") {
-				return t("components.AddModal.noResultsKun", "Kungal 未找到相关结果");
+				return t(
+					"components.AddModal.noResultsKun",
+					"未在 Kungal 找到该游戏，请尝试其他名称或检查 ID",
+				);
 			}
-			return t("components.AddModal.noResults");
+			return t("components.AddModal.noResults", "没有找到结果");
 		},
 	});
 	const isBusy =
@@ -249,7 +267,9 @@ const AddModal: React.FC = () => {
 			// 场景1: 自定义模式
 			if (customMode) {
 				if (!addModalPath) {
-					showError(t("components.AddModal.noExecutableSelected"));
+					showError(
+						t("components.AddModal.noExecutableSelected", "未选择可执行程序"),
+					);
 					return;
 				}
 				setCustomLoading(true);
@@ -295,7 +315,7 @@ const AddModal: React.FC = () => {
 						variant="h5"
 						className="text-2xl font-semibold text-[#1976d2] text-center opacity-90"
 					>
-						{t("components.AddModal.dragDropHere")}
+						{t("components.AddModal.dragDropHere", "拖拽文件到这里")}
 					</Typography>
 				</Box>
 			)}
@@ -329,7 +349,9 @@ const AddModal: React.FC = () => {
 			>
 				{/* 错误提示 */}
 				{error && <Alert severity="error">{error}</Alert>}
-				<DialogTitle>{t("components.AddModal.addGame")}</DialogTitle>
+				<DialogTitle>
+					{t("components.AddModal.addGame", "添加游戏")}
+				</DialogTitle>
 				<Tabs
 					value={activeTab}
 					onChange={(_, value: AddModalTab) => setActiveTab(value)}
@@ -375,13 +397,16 @@ const AddModal: React.FC = () => {
 							startIcon={<FileOpenIcon />}
 							disabled={isBusy}
 						>
-							{t("components.AddModal.selectLauncher")}
+							{t("components.AddModal.selectLauncher", "选择启动程序")}
 						</Button>
 						<TextField
 							fullWidth
 							size="small"
 							value={addModalPath}
-							placeholder={t("components.AddModal.dragHint")}
+							placeholder={t(
+								"components.AddModal.dragHint",
+								"请选择或拖拽可执行文件或文件夹",
+							)}
 							InputProps={{ readOnly: true }}
 						/>
 						{/* 自定义模式和 API 来源切换 */}
@@ -396,7 +421,10 @@ const AddModal: React.FC = () => {
 										disabled={isBusy}
 									/>
 								}
-								label={t("components.AddModal.enableCustomMode")}
+								label={t(
+									"components.AddModal.enableCustomMode",
+									"启用自定义模式",
+								)}
 							/>
 							<RadioGroup
 								row
@@ -444,9 +472,10 @@ const AddModal: React.FC = () => {
 							name="game-name"
 							label={
 								apiSource === "mixed"
-									? t("components.AddModal.gameName")
-									: `${t("components.AddModal.gameName")} / ${t(
+									? t("components.AddModal.gameName", "游戏名称")
+									: `${t("components.AddModal.gameName", "游戏名称")} / ${t(
 											"components.AddModal.gameIDTips",
+											"游戏ID",
 										)}`
 							}
 							type="text"
@@ -475,7 +504,7 @@ const AddModal: React.FC = () => {
 							}
 							disabled={isAddingGame}
 						>
-							{t("components.AddModal.cancel")}
+							{t("components.AddModal.cancel", "取消")}
 						</Button>
 						{/* 确认按钮 */}
 						<Button
@@ -485,8 +514,8 @@ const AddModal: React.FC = () => {
 							startIcon={isBusy ? <CircularProgress size={20} /> : null}
 						>
 							{isBusy
-								? t("components.AddModal.processing")
-								: t("components.AddModal.confirm")}
+								? t("components.AddModal.processing", "处理中...")
+								: t("components.AddModal.confirm", "确认")}
 						</Button>
 					</DialogActions>
 				)}

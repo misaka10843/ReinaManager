@@ -425,7 +425,7 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 										>
 											{t(
 												"pages.Detail.GameInfoEdit.removeCustomCover",
-												"移除封面",
+												"移除自定义封面",
 											)}
 										</Button>
 									)}

@@ -252,7 +252,7 @@ const MixedSourceConfirmDialog: React.FC<MixedSourceConfirmDialogProps> = ({
 						}
 					>
 						{loading
-							? t("components.AlertBox.processing", "处理中")
+							? t("components.AlertBox.processing", "处理中...")
 							: t("components.AlertBox.confirm", "确认")}
 					</Button>
 				</DialogActions>

@@ -145,7 +145,7 @@ export const Detail: React.FC = () => {
 		if (!selectedGame) return [];
 		const developers = getDeveloperNames(
 			selectedGame.developer,
-			t("category.unknownDeveloper"),
+			t("category.unknownDeveloper", "未知开发商"),
 		);
 		return developers.map((developer) => (
 			<Chip
@@ -163,7 +163,7 @@ export const Detail: React.FC = () => {
 	const activePage = useActivePage();
 	const title = selectedGame
 		? getGameDisplayName(selectedGame)
-		: t("pages.Detail.loading");
+		: t("pages.Detail.loading", "加载中...");
 	const breadcrumbs = useMemo(() => {
 		const base = activePage?.breadcrumbs ?? [];
 		// 使用当前路径，避免手动拼接出重复斜杠或错误段
@@ -189,7 +189,9 @@ export const Detail: React.FC = () => {
 					minHeight="50vh"
 				>
 					<CircularProgress />
-					<Typography sx={{ ml: 2 }}>{t("pages.Detail.loading")}</Typography>
+					<Typography sx={{ ml: 2 }}>
+						{t("pages.Detail.loading", "加载中...")}
+					</Typography>
 				</Box>
 			</PageContainer>
 		);
@@ -206,7 +208,9 @@ export const Detail: React.FC = () => {
 					alignItems="center"
 					minHeight="50vh"
 				>
-					<Typography>{t("pages.Detail.notFound")}</Typography>
+					<Typography>
+						{t("pages.Detail.notFound", "未找到游戏数据")}
+					</Typography>
 				</Box>
 			</PageContainer>
 		);
@@ -245,7 +249,7 @@ export const Detail: React.FC = () => {
 										fontWeight="bold"
 										component="div"
 									>
-										{t("pages.Detail.gameDatafrom")}
+										{t("pages.Detail.gameDatafrom", "数据来源")}
 									</Typography>
 									<Typography component="div">Custom</Typography>
 								</Box>
@@ -256,7 +260,7 @@ export const Detail: React.FC = () => {
 										fontWeight="bold"
 										component="div"
 									>
-										{t("pages.Detail.gameDatafrom")}
+										{t("pages.Detail.gameDatafrom", "数据来源")}
 									</Typography>
 									<Typography component="div">
 										{selectedGame.id_type}
@@ -269,7 +273,7 @@ export const Detail: React.FC = () => {
 									fontWeight="bold"
 									component="div"
 								>
-									{t("pages.Detail.gameDeveloper")}
+									{t("pages.Detail.gameDeveloper", "开发")}
 								</Typography>
 								<Box className="flex flex-wrap items-center">
 									{developerChips.length > 0 ? (
@@ -285,7 +289,7 @@ export const Detail: React.FC = () => {
 									fontWeight="bold"
 									component="div"
 								>
-									{t("pages.Detail.releaseDate")}
+									{t("pages.Detail.releaseDate", "发布时间")}
 								</Typography>
 								<Typography component="div">
 									{selectedGame.date || "-"}
@@ -297,7 +301,7 @@ export const Detail: React.FC = () => {
 									fontWeight="bold"
 									component="div"
 								>
-									{t("pages.Detail.addTime")}
+									{t("pages.Detail.addTime", "添加时间")}
 								</Typography>
 								<Typography component="div">
 									{selectedGame.created_at
@@ -314,7 +318,7 @@ export const Detail: React.FC = () => {
 										fontWeight="bold"
 										component="div"
 									>
-										{t("pages.Detail.gameRanking")}
+										{t("pages.Detail.gameRanking", "游戏排行")}
 									</Typography>
 									<Typography component="div">
 										{selectedGame.rank || "-"}
@@ -329,7 +333,7 @@ export const Detail: React.FC = () => {
 											fontWeight="bold"
 											component="div"
 										>
-											{t("pages.Detail.expected_hours")}
+											{t("pages.Detail.expected_hours", "预计时长")}
 										</Typography>
 										<Typography component="div">
 											{selectedGame.average_hours || "-"}h
@@ -342,7 +346,7 @@ export const Detail: React.FC = () => {
 									fontWeight="bold"
 									component="div"
 								>
-									{t("pages.Detail.gameScore")}
+									{t("pages.Detail.gameScore", "游戏评分")}
 								</Typography>
 								<Typography component="div">
 									{selectedGame.score || "-"}
@@ -357,7 +361,7 @@ export const Detail: React.FC = () => {
 								gutterBottom
 								component="div"
 							>
-								{t("pages.Detail.gameTags")}
+								{t("pages.Detail.gameTags", "游戏标签")}
 							</Typography>
 							<Stack direction="row" className="flex-wrap gap-1">
 								{translateTags(selectedGame.tags || [], tagTranslation)
@@ -401,22 +405,22 @@ export const Detail: React.FC = () => {
 							className="flex-1 min-w-0"
 						>
 							<Tab
-								label={t("pages.Detail.gameStats")}
+								label={t("pages.Detail.gameStats", "游戏统计")}
 								id="game-tab-0"
 								aria-controls="game-tabpanel-0"
 							/>
 							<Tab
-								label={t("pages.Detail.introduction")}
+								label={t("pages.Detail.introduction", "简介")}
 								id="game-tab-1"
 								aria-controls="game-tabpanel-1"
 							/>
 							<Tab
-								label={t("pages.Detail.editPart")}
+								label={t("pages.Detail.editPart", "编辑")}
 								id="game-tab-2"
 								aria-controls="game-tabpanel-2"
 							/>
 							<Tab
-								label={t("pages.Detail.backup")}
+								label={t("pages.Detail.backup", "备份")}
 								id="game-tab-3"
 								aria-controls="game-tabpanel-3"
 							/>
@@ -439,7 +443,7 @@ export const Detail: React.FC = () => {
 							/* 游戏简介 */
 							<Box>
 								<Typography variant="h6" fontWeight="bold" component="div">
-									{t("pages.Detail.introduction")}
+									{t("pages.Detail.introduction", "简介")}
 								</Typography>
 								<Typography
 									className="mt-1 whitespace-pre-line"

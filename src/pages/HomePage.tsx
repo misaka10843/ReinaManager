@@ -422,22 +422,26 @@ export const Home: React.FC = () => {
 												<Box>
 													<Typography variant="body1">
 														{activity.type === "add"
-															? t("home.activity.added", {
+															? t("home.activity.added", "添加了 {{title}}", {
 																	title: activity.gameTitle,
 																})
-															: t("home.activity.played", {
+															: t("home.activity.played", "游玩了 {{title}}", {
 																	title: activity.gameTitle,
 																})}
 													</Typography>
 
 													<Typography variant="body2" color="text.secondary">
 														{activity.type === "add"
-															? t("home.activity.addedAt", {
+															? t("home.activity.addedAt", "添加于 {{time}}", {
 																	time: formatRelativeTime(activity.time),
 																})
-															: t("home.activity.playedAtTime", {
-																	time: formatRelativeTime(activity.time),
-																})}
+															: t(
+																	"home.activity.playedAtTime",
+																	"游玩于 {{time}}",
+																	{
+																		time: formatRelativeTime(activity.time),
+																	},
+																)}
 													</Typography>
 
 													{activity.type === "play" &&
@@ -446,9 +450,13 @@ export const Home: React.FC = () => {
 																variant="body2"
 																color="text.secondary"
 															>
-																{t("home.activity.duration", {
-																	duration: formatPlayTime(activity.duration),
-																})}
+																{t(
+																	"home.activity.duration",
+																	"游戏时长: {{duration}}",
+																	{
+																		duration: formatPlayTime(activity.duration),
+																	},
+																)}
 															</Typography>
 														)}
 												</Box>
@@ -505,9 +513,13 @@ export const Home: React.FC = () => {
 												</ListItemAvatar>
 												<ListItemText
 													primary={session.gameTitle}
-													secondary={t("home.lastPlayed", {
-														time: formatRelativeTime(session.end_time),
-													})}
+													secondary={t(
+														"home.lastPlayed",
+														"最后游玩: {{time}}",
+														{
+															time: formatRelativeTime(session.end_time),
+														},
+													)}
 												/>
 											</ListItem>
 											{idx !== activityData.sessions.length - 1 && <Divider />}
@@ -560,7 +572,7 @@ export const Home: React.FC = () => {
 												</ListItemAvatar>
 												<ListItemText
 													primary={game.title}
-													secondary={t("home.addedAt", {
+													secondary={t("home.addedAt", "添加时间: {{time}}", {
 														time: game.time
 															? formatRelativeTime(game.time)
 															: "",

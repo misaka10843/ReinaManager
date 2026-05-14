@@ -32,15 +32,23 @@ export const DatabaseBackupSettings = () => {
 			const result = await backupDatabase();
 			if (result.success) {
 				snackbar.success(
-					t("pages.Settings.databaseBackup.backupSuccess", {
-						path: result.path,
-					}),
+					t(
+						"pages.Settings.databaseBackup.backupSuccess",
+						"数据库备份成功: {{path}}",
+						{
+							path: result.path,
+						},
+					),
 				);
 			} else {
 				snackbar.error(
-					t("pages.Settings.databaseBackup.backupError", {
-						error: result.message,
-					}),
+					t(
+						"pages.Settings.databaseBackup.backupError",
+						"数据库备份失败: {{error}}",
+						{
+							error: result.message,
+						},
+					),
 				);
 			}
 		} catch (error) {
@@ -50,7 +58,11 @@ export const DatabaseBackupSettings = () => {
 				t("pages.Settings.databaseBackup.backupFailed", "备份失败"),
 			);
 			snackbar.error(
-				t("pages.Settings.databaseBackup.backupError", { error: errorMessage }),
+				t(
+					"pages.Settings.databaseBackup.backupError",
+					"数据库备份失败: {{error}}",
+					{ error: errorMessage },
+				),
 			);
 		} finally {
 			setIsBackingUp(false);
@@ -65,9 +77,13 @@ export const DatabaseBackupSettings = () => {
 			if (result.success) {
 				snackbar.success(
 					result.path
-						? t("pages.Settings.databaseBackup.coverBackupSuccess", {
-								path: result.path,
-							})
+						? t(
+								"pages.Settings.databaseBackup.coverBackupSuccess",
+								"自定义封面备份成功: {{path}}",
+								{
+									path: result.path,
+								},
+							)
 						: t(
 								"pages.Settings.databaseBackup.noCoversToBackup",
 								"没有自定义封面需要备份",
@@ -75,9 +91,13 @@ export const DatabaseBackupSettings = () => {
 				);
 			} else {
 				snackbar.error(
-					t("pages.Settings.databaseBackup.coverBackupError", {
-						error: result.message,
-					}),
+					t(
+						"pages.Settings.databaseBackup.coverBackupError",
+						"自定义封面备份失败: {{error}}",
+						{
+							error: result.message,
+						},
+					),
 				);
 			}
 		} catch (error) {
@@ -90,9 +110,13 @@ export const DatabaseBackupSettings = () => {
 				),
 			);
 			snackbar.error(
-				t("pages.Settings.databaseBackup.coverBackupError", {
-					error: errorMessage,
-				}),
+				t(
+					"pages.Settings.databaseBackup.coverBackupError",
+					"自定义封面备份失败: {{error}}",
+					{
+						error: errorMessage,
+					},
+				),
 			);
 		} finally {
 			setIsBackingCovers(false);
@@ -109,9 +133,13 @@ export const DatabaseBackupSettings = () => {
 				t("pages.Settings.databaseBackup.openFolderFailed", "打开文件夹失败"),
 			);
 			snackbar.error(
-				t("pages.Settings.databaseBackup.openFolderError", {
-					error: errorMessage,
-				}),
+				t(
+					"pages.Settings.databaseBackup.openFolderError",
+					"打开备份文件夹失败: {{error}}",
+					{
+						error: errorMessage,
+					},
+				),
 			);
 		}
 	};
@@ -134,9 +162,13 @@ export const DatabaseBackupSettings = () => {
 					}, 2000);
 				} else {
 					snackbar.error(
-						t("pages.Settings.databaseBackup.importError", {
-							error: result.message,
-						}),
+						t(
+							"pages.Settings.databaseBackup.importError",
+							"数据库导入失败: {{error}}",
+							{
+								error: result.message,
+							},
+						),
 					);
 				}
 			}
@@ -147,7 +179,11 @@ export const DatabaseBackupSettings = () => {
 				t("pages.Settings.databaseBackup.importFailed", "导入失败"),
 			);
 			snackbar.error(
-				t("pages.Settings.databaseBackup.importError", { error: errorMessage }),
+				t(
+					"pages.Settings.databaseBackup.importError",
+					"数据库导入失败: {{error}}",
+					{ error: errorMessage },
+				),
 			);
 		} finally {
 			setIsImporting(false);

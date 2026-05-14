@@ -24,7 +24,7 @@ const createTrayMenu = async () => {
 	// 1. 创建“打开”菜单项
 	const openItem = await MenuItem.new({
 		id: "open",
-		text: i18n.t("components.Tray.open"),
+		text: i18n.t("components.Tray.open", "打开主窗口"),
 		action: async () => {
 			await showUI();
 		},
@@ -33,7 +33,7 @@ const createTrayMenu = async () => {
 	// 2. 创建“退出”菜单项
 	const quitItem = await MenuItem.new({
 		id: "exit",
-		text: i18n.t("components.Tray.exit"),
+		text: i18n.t("components.Tray.exit", "退出"),
 		action: async () => {
 			console.log("Exiting application...");
 			await exitCurrentWindowFromTray();

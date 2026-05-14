@@ -301,7 +301,7 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 		if (!result.batchResult && !result.mutationError) {
 			setItems([...nextItems]);
 			snackbar.info(
-				t("components.BulkImportModal.noGamesFound", "未找到可导入项目"),
+				t("components.BulkImportModal.noGamesFound", "未找到可导入的游戏"),
 			);
 			return;
 		}
@@ -443,9 +443,13 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 								alignSelf: { xs: "flex-start", sm: "auto" },
 							}}
 						>
-							{t("components.BulkImportModal.gamesCount", {
-								count: items.length,
-							})}
+							{t(
+								"components.BulkImportModal.gamesCount",
+								"共 {{count}} 个游戏",
+								{
+									count: items.length,
+								},
+							)}
 						</Typography>
 					)}
 				</Stack>
@@ -482,7 +486,10 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 							{items.length === 0 ? (
 								<TableRow>
 									<TableCell colSpan={5} align="center">
-										{t("components.BulkImportModal.noGamesFound", "未找到游戏")}
+										{t(
+											"components.BulkImportModal.noGamesFound",
+											"未找到可导入的游戏",
+										)}
 									</TableCell>
 								</TableRow>
 							) : (
@@ -675,8 +682,9 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 							label={
 								editApiSource === "mixed"
 									? t("components.AddModal.gameName", "游戏名称")
-									: `${t("components.AddModal.gameName")} / ${t(
+									: `${t("components.AddModal.gameName", "游戏名称")} / ${t(
 											"components.AddModal.gameIDTips",
+											"游戏ID",
 										)}`
 							}
 							value={editName}
@@ -755,7 +763,7 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 						disabled={!editName || searchResultLoading}
 					>
 						{searchResultLoading
-							? t("components.AddModal.processing", "处理中")
+							? t("components.AddModal.processing", "处理中...")
 							: t("components.BulkImportModal.search", "搜索")}
 					</Button>
 				</DialogActions>

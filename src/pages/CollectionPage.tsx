@@ -393,7 +393,7 @@ export const Collection: React.FC = () => {
 
 		switch (currentGroupId) {
 			case DefaultGroup.DEVELOPER:
-				return t("pages.Collection.defaultGroups.developer");
+				return t("pages.Collection.defaultGroups.developer", "开发商");
 			default: {
 				// 自定义分组，从 groups 中查找
 				const group = groups.find((g) => g.id.toString() === currentGroupId);
@@ -418,7 +418,10 @@ export const Collection: React.FC = () => {
 
 		// 真实分类，从 currentCategories 中查找
 		const category = currentCategories.find((c) => c.id === selectedCategoryId);
-		return category?.name || t("pages.Collection.breadcrumb.unknownCategory");
+		return (
+			category?.name ||
+			t("pages.Collection.breadcrumb.unknownCategory", "未知分类")
+		);
 	};
 
 	/**
@@ -449,7 +452,7 @@ export const Collection: React.FC = () => {
 	const defaultGroups = [
 		{
 			id: DefaultGroup.DEVELOPER,
-			name: t("pages.Collection.defaultGroups.developer"),
+			name: t("pages.Collection.defaultGroups.developer", "开发商"),
 		},
 	];
 
@@ -469,7 +472,7 @@ export const Collection: React.FC = () => {
 			>
 				{showLevel === "groups" ? (
 					<Typography variant="h4">
-						{t("pages.Collection.breadcrumb.group")}
+						{t("pages.Collection.breadcrumb.group", "分组")}
 					</Typography>
 				) : showLevel === "categories" ? (
 					<Breadcrumbs
@@ -486,7 +489,7 @@ export const Collection: React.FC = () => {
 							onClick={() => handleBreadcrumbClick("root")}
 						>
 							<HomeIcon className="mr-1" sx={{ fontSize: "inherit" }} />
-							{t("pages.Collection.breadcrumb.group")}
+							{t("pages.Collection.breadcrumb.group", "分组")}
 						</Link>
 						<Typography
 							className="flex items-center font-600"
@@ -511,7 +514,7 @@ export const Collection: React.FC = () => {
 							onClick={() => handleBreadcrumbClick("root")}
 						>
 							<HomeIcon className="mr-1" sx={{ fontSize: "inherit" }} />
-							{t("pages.Collection.breadcrumb.group")}
+							{t("pages.Collection.breadcrumb.group", "分组")}
 						</Link>
 						<Link
 							underline="hover"
@@ -569,11 +572,15 @@ export const Collection: React.FC = () => {
 									if (!isDefault) handleGroupContextMenu(e, id as string, name);
 								}}
 								showDelete={!isDefault}
-								deleteTitle={t("pages.Collection.deleteGroupTitle")}
-								deleteMessage={t("pages.Collection.deleteGroupMessage", {
-									name: group.name,
-								})}
-								countLabel={t("pages.Collection.gamesCount")}
+								deleteTitle={t("pages.Collection.deleteGroupTitle", "删除分组")}
+								deleteMessage={t(
+									"pages.Collection.deleteGroupMessage",
+									'确定要删除分组 "{{name}}" 吗？此操作将同时删除该分组下的所有分类，且无法恢复。',
+									{
+										name: group.name,
+									},
+								)}
+								countLabel={t("pages.Collection.gamesCount", "个游戏")}
 							/>
 						);
 					})}
@@ -591,7 +598,7 @@ export const Collection: React.FC = () => {
 						}}
 					>
 						<Typography variant="h6" color="text.secondary">
-							{t("pages.Collection.noCategoriesHint")}
+							{t("pages.Collection.noCategoriesHint", "当前分组下没有分类")}
 						</Typography>
 					</Box>
 				) : (
@@ -628,11 +635,18 @@ export const Collection: React.FC = () => {
 											handleCategoryContextMenu(e, id as number, name);
 									}}
 									showDelete={!isVirtual}
-									deleteTitle={t("pages.Collection.deleteCategoryTitle")}
-									deleteMessage={t("pages.Collection.deleteCategoryMessage", {
-										name: category.name,
-									})}
-									countLabel={t("pages.Collection.gamesCount")}
+									deleteTitle={t(
+										"pages.Collection.deleteCategoryTitle",
+										"删除分类",
+									)}
+									deleteMessage={t(
+										"pages.Collection.deleteCategoryMessage",
+										'确定要删除分类 "{{name}}" 吗？此操作将移除该分类与所有游戏的关联，但不会删除游戏本身。',
+										{
+											name: category.name,
+										},
+									)}
+									countLabel={t("pages.Collection.gamesCount", "个游戏")}
 								/>
 							);
 						})}
@@ -690,13 +704,22 @@ export const Collection: React.FC = () => {
 					onConfirm={handleRenameConfirm}
 					title={
 						selectedItem.type === "group"
-							? t("components.RightMenu.Collection.renameGroupTitle")
-							: t("components.RightMenu.Collection.renameCategoryTitle")
+							? t(
+									"components.RightMenu.Collection.renameGroupTitle",
+									"重命名分组",
+								)
+							: t(
+									"components.RightMenu.Collection.renameCategoryTitle",
+									"重命名分类",
+								)
 					}
 					label={
 						selectedItem.type === "group"
-							? t("components.RightMenu.Collection.newGroupName")
-							: t("components.RightMenu.Collection.newCategoryName")
+							? t("components.RightMenu.Collection.newGroupName", "新分组名称")
+							: t(
+									"components.RightMenu.Collection.newCategoryName",
+									"新分类名称",
+								)
 					}
 					placeholder={selectedItem.name}
 				/>

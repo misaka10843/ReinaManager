@@ -113,16 +113,22 @@ export const CollectionToolbar: React.FC = () => {
 					startIcon={<AddIcon />}
 					onClick={() => setAddGroupDialogOpen(true)}
 				>
-					{t("components.Toolbar.Collection.Group.addGroup")}
+					{t("components.Toolbar.Collection.Group.addGroup", "添加分组")}
 				</Button>
 
 				<InputDialog
 					open={addGroupDialogOpen}
 					onClose={() => setAddGroupDialogOpen(false)}
 					onConfirm={handleCreateGroup}
-					title={t("components.Toolbar.Collection.Group.addGroup")}
-					label={t("components.Toolbar.Collection.Group.enterGroupName")}
-					placeholder={t("components.Toolbar.Collection.Group.enterGroupName")}
+					title={t("components.Toolbar.Collection.Group.addGroup", "添加分组")}
+					label={t(
+						"components.Toolbar.Collection.Group.enterGroupName",
+						"请输入分组名称",
+					)}
+					placeholder={t(
+						"components.Toolbar.Collection.Group.enterGroupName",
+						"请输入分组名称",
+					)}
 				/>
 			</>
 		);
@@ -137,7 +143,7 @@ export const CollectionToolbar: React.FC = () => {
 					onClick={() => setAddCategoryDialogOpen(true)}
 					disabled={isDefaultGroup}
 				>
-					{t("components.Toolbar.Collection.Group.addCategory")}
+					{t("components.Toolbar.Collection.Group.addCategory", "添加分类")}
 				</Button>
 
 				<Button
@@ -146,17 +152,24 @@ export const CollectionToolbar: React.FC = () => {
 					onClick={() => setDeleteGroupDialogOpen(true)}
 					disabled={isDefaultGroup}
 				>
-					{t("components.Toolbar.Collection.Group.deleteGroup")}
+					{t("components.Toolbar.Collection.Group.deleteGroup", "删除分组")}
 				</Button>
 
 				<InputDialog
 					open={addCategoryDialogOpen}
 					onClose={() => setAddCategoryDialogOpen(false)}
 					onConfirm={handleCreateCategory}
-					title={t("components.Toolbar.Collection.Group.addCategory")}
-					label={t("components.Toolbar.Collection.Group.enterCategoryName")}
+					title={t(
+						"components.Toolbar.Collection.Group.addCategory",
+						"添加分类",
+					)}
+					label={t(
+						"components.Toolbar.Collection.Group.enterCategoryName",
+						"请输入分类名称",
+					)}
 					placeholder={t(
 						"components.Toolbar.Collection.Group.enterCategoryName",
+						"请输入分类名称",
 					)}
 				/>
 
@@ -165,8 +178,14 @@ export const CollectionToolbar: React.FC = () => {
 					setOpen={setDeleteGroupDialogOpen}
 					onConfirm={handleDeleteGroup}
 					isLoading={isDeleting}
-					title={t("components.Toolbar.Collection.Group.deleteGroupTitle")}
-					message={t("components.Toolbar.Collection.Group.deleteGroupMessage")}
+					title={t(
+						"components.Toolbar.Collection.Group.deleteGroupTitle",
+						"删除分组",
+					)}
+					message={t(
+						"components.Toolbar.Collection.Group.deleteGroupMessage",
+						"确定要删除此分组吗？此操作将同时删除分组下的所有分类，且无法恢复。",
+					)}
 				/>
 			</>
 		);
@@ -181,7 +200,7 @@ export const CollectionToolbar: React.FC = () => {
 					startIcon={<EditIcon />}
 					onClick={() => setManageGamesDialogOpen(true)}
 				>
-					{t("components.Toolbar.Collection.Category.manageGames")}
+					{t("components.Toolbar.Collection.Category.manageGames", "管理游戏")}
 				</Button>
 
 				<ManageGamesDialog

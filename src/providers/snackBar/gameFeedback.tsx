@@ -18,14 +18,14 @@ export function showGameAddedSuccess({
 		return;
 	}
 
-	snackbar.success(t("components.Snackbar.gameAddedSuccess"), {
+	snackbar.success(t("components.Snackbar.gameAddedSuccess", "游戏添加成功"), {
 		action: (
 			<Button
 				color="inherit"
 				size="small"
 				onClick={() => navigate(`/libraries/${gameId}`)}
 			>
-				{t("components.Snackbar.viewDetails")}
+				{t("components.Snackbar.viewDetails", "查看详情")}
 			</Button>
 		),
 	});

@@ -48,7 +48,7 @@ export const AutoStartSettings = () => {
 			<Stack direction="row" alignItems="center" className="min-w-60">
 				<Box>
 					<InputLabel className="font-semibold mb-1">
-						{t("pages.Settings.autoStart")}
+						{t("pages.Settings.autoStart", "开机自启")}
 					</InputLabel>
 				</Box>
 				<Switch
@@ -97,7 +97,11 @@ export const LogLevelSettings = () => {
 				t("pages.Settings.logLevel.openFolderFailed", "打开文件夹失败"),
 			);
 			snackbar.error(
-				t("pages.Settings.logLevel.openFolderError", { error: errorMessage }),
+				t(
+					"pages.Settings.logLevel.openFolderError",
+					"打开日志文件夹失败: {{error}}",
+					{ error: errorMessage },
+				),
 			);
 		}
 	};
@@ -168,7 +172,7 @@ export const CloseBtnSettings = () => {
 	return (
 		<Box className="mb-6">
 			<InputLabel className="font-semibold mb-4">
-				{t("pages.Settings.closeSettings")}
+				{t("pages.Settings.closeSettings", "关闭设置")}
 			</InputLabel>
 			<Box className="pl-2">
 				<FormControlLabel
@@ -179,7 +183,7 @@ export const CloseBtnSettings = () => {
 							color="primary"
 						/>
 					}
-					label={t("pages.Settings.skipCloseRemind")}
+					label={t("pages.Settings.skipCloseRemind", "不再提醒")}
 					className="mb-2"
 				/>
 				<RadioGroup
@@ -192,7 +196,7 @@ export const CloseBtnSettings = () => {
 					<FormControlLabel
 						value="hide"
 						control={<Radio color="primary" />}
-						label={t("pages.Settings.closeToTray")}
+						label={t("pages.Settings.closeToTray", "最小化到托盘")}
 						disabled={!skipCloseRemind}
 						className={
 							!skipCloseRemind
@@ -203,7 +207,7 @@ export const CloseBtnSettings = () => {
 					<FormControlLabel
 						value="close"
 						control={<Radio color="primary" />}
-						label={t("pages.Settings.closeApp")}
+						label={t("pages.Settings.closeApp", "直接退出应用")}
 						disabled={!skipCloseRemind}
 						className={
 							!skipCloseRemind

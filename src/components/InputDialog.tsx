@@ -98,14 +98,16 @@ export const InputDialog: React.FC<InputDialogProps> = ({
 			</DialogContent>
 			<DialogActions>
 				<Button onClick={handleClose} disabled={isProcessing}>
-					{t("common.cancel")}
+					{t("common.cancel", "取消")}
 				</Button>
 				<Button
 					onClick={handleConfirm}
 					variant="contained"
 					disabled={!value.trim() || isProcessing}
 				>
-					{isProcessing ? t("common.saving") : t("common.confirm")}
+					{isProcessing
+						? t("common.saving", "保存中...")
+						: t("common.confirm", "确认")}
 				</Button>
 			</DialogActions>
 		</Dialog>

@@ -80,7 +80,7 @@ export function useSingleGameAddActions() {
 			const insertData = await buildInsertGameData(gameData);
 
 			if (checkGameExists(insertData)) {
-				throw new Error(i18n.t("components.AddModal.gameExists"));
+				throw new Error(i18n.t("components.AddModal.gameExists", "游戏已存在"));
 			}
 
 			return addGameMutation.mutateAsync(insertData);

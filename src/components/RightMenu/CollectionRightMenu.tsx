@@ -51,8 +51,8 @@ export const CollectionRightMenu: React.FC<CollectionRightMenuProps> = ({
 			onClose={onClose}
 			ariaLabel={
 				target.type === "group"
-					? t("components.RightMenu.Collection.groupMenu")
-					: t("components.RightMenu.Collection.categoryMenu")
+					? t("components.RightMenu.Collection.groupMenu", "分组菜单")
+					: t("components.RightMenu.Collection.categoryMenu", "分类菜单")
 			}
 		>
 			<MenuList sx={{ py: 1 }}>
@@ -63,7 +63,10 @@ export const CollectionRightMenu: React.FC<CollectionRightMenuProps> = ({
 							<EditIcon />
 						</ListItemIcon>
 						<ListItemText
-							primary={t("components.RightMenu.Collection.manageGames")}
+							primary={t(
+								"components.RightMenu.Collection.manageGames",
+								"管理游戏",
+							)}
 						/>
 					</MenuItem>
 				)}
@@ -76,8 +79,11 @@ export const CollectionRightMenu: React.FC<CollectionRightMenuProps> = ({
 					<ListItemText
 						primary={
 							target.type === "group"
-								? t("components.RightMenu.Collection.renameGroup")
-								: t("components.RightMenu.Collection.renameCategory")
+								? t("components.RightMenu.Collection.renameGroup", "重命名分组")
+								: t(
+										"components.RightMenu.Collection.renameCategory",
+										"重命名分类",
+									)
 						}
 					/>
 				</MenuItem>

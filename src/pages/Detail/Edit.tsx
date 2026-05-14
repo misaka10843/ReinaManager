@@ -75,18 +75,14 @@ function EditContent({ selectedGame }: { selectedGame: GameData }) {
 			gameId: id,
 			updates: { id_type: idType },
 		});
-		snackbar.success(
-			t("pages.Detail.Edit.updateSuccess", "游戏信息已成功更新"),
-		);
+		snackbar.success(t("pages.Detail.Edit.updateSuccess", "游戏信息已更新"));
 	};
 
 	// 处理游戏信息保存
 	const handleGameInfoSave = async (data: UpdateGameParams) => {
 		try {
 			await updateGameMutation.mutateAsync({ gameId: id, updates: data });
-			snackbar.success(
-				t("pages.Detail.Edit.updateSuccess", "游戏信息已成功更新"),
-			);
+			snackbar.success(t("pages.Detail.Edit.updateSuccess", "游戏信息已更新"));
 		} catch (error) {
 			snackbar.error(getUserErrorMessage(error, t));
 			throw error; // 重新抛出错误，让子组件知道操作失败

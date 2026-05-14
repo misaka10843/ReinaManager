@@ -192,7 +192,7 @@ export const SearchBox = () => {
 						{...params}
 						variant="outlined"
 						size="small"
-						placeholder={t("components.SearchBox.search")}
+						placeholder={t("components.SearchBox.search", "搜索")}
 						onKeyDown={handleKeyDown}
 						slotProps={{
 							input: {

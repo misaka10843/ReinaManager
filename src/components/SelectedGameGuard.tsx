@@ -24,7 +24,9 @@ const DefaultLoadingFallback = () => {
 	return (
 		<Box sx={{ p: 3, display: "flex", alignItems: "center", gap: 1 }}>
 			<CircularProgress size={20} />
-			<Typography color="textSecondary">{t("pages.Detail.loading")}</Typography>
+			<Typography color="textSecondary">
+				{t("pages.Detail.loading", "加载中...")}
+			</Typography>
 		</Box>
 	);
 };

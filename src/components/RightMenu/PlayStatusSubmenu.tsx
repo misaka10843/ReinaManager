@@ -282,7 +282,7 @@ export const PlayStatusSubmenu: React.FC<PlayStatusSubmenuProps> = ({
 						<EmojiEventsOutlinedIcon fontSize={iconSize} />
 					)}
 				</ListItemIcon>
-				<ListItemText primary={t("common.changePlayStatus")} />
+				<ListItemText primary={t("common.changePlayStatus", "修改游戏状态")} />
 				{getArrowIcon()}
 			</MenuItem>
 

@@ -45,7 +45,7 @@ export function useDeveloperCategories(
 	gameIndex: Pick<GameIndex, "developerCategories">,
 ): Category[] {
 	const { t } = useTranslation();
-	const unknownDeveloper = t("category.unknownDeveloper");
+	const unknownDeveloper = t("category.unknownDeveloper", "未知开发商");
 
 	return useMemo(
 		() =>

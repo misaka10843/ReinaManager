@@ -36,7 +36,7 @@ export const LanguageSelect = () => {
 	return (
 		<Box className="min-w-30 mb-6">
 			<InputLabel id="language-select-label" className="mb-2 font-semibold">
-				{t("pages.Settings.language")}
+				{t("pages.Settings.language", "语言")}
 			</InputLabel>
 			<Select
 				labelId="language-select-label"
@@ -72,7 +72,7 @@ export const NsfwSettings = () => {
 	return (
 		<Box className="mb-6">
 			<InputLabel className="font-semibold mb-4">
-				{t("pages.Settings.nsfw.title")}
+				{t("pages.Settings.nsfw.title", "NSFW 设置")}
 			</InputLabel>
 
 			<Box className="pl-2">
@@ -84,7 +84,7 @@ export const NsfwSettings = () => {
 							color="primary"
 						/>
 					}
-					label={t("pages.Settings.nsfw.filter")}
+					label={t("pages.Settings.nsfw.filter", "过滤 NSFW 内容")}
 				/>
 
 				<FormControlLabel
@@ -95,7 +95,7 @@ export const NsfwSettings = () => {
 							color="primary"
 						/>
 					}
-					label={t("pages.Settings.nsfw.coverReplace")}
+					label={t("pages.Settings.nsfw.coverReplace", "NSFW 封面替换")}
 				/>
 			</Box>
 		</Box>
@@ -125,7 +125,7 @@ export const CardClickModeSettings = () => {
 	return (
 		<Box className="mb-6">
 			<InputLabel className="font-semibold mb-4">
-				{t("pages.Settings.cardClickMode.title")}
+				{t("pages.Settings.cardClickMode.title", "卡片点击模式")}
 			</InputLabel>
 			<Box className="pl-2">
 				<RadioGroup
@@ -138,13 +138,19 @@ export const CardClickModeSettings = () => {
 					<FormControlLabel
 						value="navigate"
 						control={<Radio color="primary" />}
-						label={t("pages.Settings.cardClickMode.navigate")}
+						label={t(
+							"pages.Settings.cardClickMode.navigate",
+							"导航模式（单击跳转详情页）",
+						)}
 						className="mb-1"
 					/>
 					<FormControlLabel
 						value="select"
 						control={<Radio color="primary" />}
-						label={t("pages.Settings.cardClickMode.select")}
+						label={t(
+							"pages.Settings.cardClickMode.select",
+							"选择模式（单击选择游戏）",
+						)}
 						className="mb-1"
 					/>
 				</RadioGroup>
@@ -159,7 +165,10 @@ export const CardClickModeSettings = () => {
 								color="primary"
 							/>
 						}
-						label={t("pages.Settings.cardClickMode.doubleClickLaunch")}
+						label={t(
+							"pages.Settings.cardClickMode.doubleClickLaunch",
+							"双击启动游戏",
+						)}
 						className="mb-1"
 					/>
 					{doubleClickLaunch && cardClickMode === "navigate" && (
@@ -168,7 +177,10 @@ export const CardClickModeSettings = () => {
 							color="text.secondary"
 							className="block ml-8"
 						>
-							{t("pages.Settings.cardClickMode.doubleClickLaunchNote")}
+							{t(
+								"pages.Settings.cardClickMode.doubleClickLaunchNote",
+								"开启后会导致左键单击延迟200ms（仅导航模式）",
+							)}
 						</Typography>
 					)}
 				</Box>
@@ -183,7 +195,10 @@ export const CardClickModeSettings = () => {
 								color="primary"
 							/>
 						}
-						label={t("pages.Settings.cardClickMode.longPressLaunch")}
+						label={t(
+							"pages.Settings.cardClickMode.longPressLaunch",
+							"长按启动游戏",
+						)}
 						className="mb-1"
 					/>
 					{longPressLaunch && (
@@ -192,7 +207,10 @@ export const CardClickModeSettings = () => {
 							color="text.secondary"
 							className="block ml-8"
 						>
-							{t("pages.Settings.cardClickMode.longPressLaunchNote")}
+							{t(
+								"pages.Settings.cardClickMode.longPressLaunchNote",
+								"长按卡片800ms后启动游戏，开启后收藏夹拖拽排序功能将被禁用",
+							)}
 						</Typography>
 					)}
 				</Box>

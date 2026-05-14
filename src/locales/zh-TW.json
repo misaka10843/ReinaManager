@@ -79,7 +79,7 @@
 			"status": "狀態",
 			"executable": "啟動程式",
 			"actions": "操作",
-			"noGamesFound": "未找到遊戲",
+			"noGamesFound": "未找到可匯入的遊戲",
 			"statusPending": "待處理",
 			"statusMatched": "已匹配",
 			"statusNotFound": "未找到",
@@ -259,7 +259,7 @@
 			"bgmlink": "查看Bangumi頁面",
 			"Batch": {
 				"addToCollection": "添加到收藏夾",
-				"clearSelection": "清空選擇",
+				"clearSelection": "清空",
 				"deleteFailed": "批量刪除遊戲失敗",
 				"deleteMessage_other": "確定要刪除選中的 {{count}} 個遊戲嗎？此操作無法撤銷。",
 				"deleteSelected": "刪除所選遊戲",
@@ -460,7 +460,7 @@
 			"Edit": {
 				"dataSourceEditAndUpdate": "數據源編輯與更新",
 				"gameInfoEdit": "遊戲資料編輯",
-				"updateSuccess": "遊戲資訊已成功更新"
+				"updateSuccess": "遊戲資訊已更新"
 			},
 			"editPart": "編輯",
 			"expandTags": "展開標籤",
@@ -537,8 +537,8 @@
 				"title": "批量更新數據",
 				"updateBgm": "批量更新 BGM 數據",
 				"updateVndb": "批量更新 VNDB 數據",
-				"updating": "更新中...",
-				"updatingBgm": "正在批量更新 BGM 數據..."
+				"updatingBgm": "正在批量更新 BGM 數據...",
+				"updatingVndb": "正在批量更新 VNDB 數據..."
 			},
 			"bgmToken": "BGM 令牌",
 			"bgmTokenSettings": {

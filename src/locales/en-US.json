@@ -79,7 +79,7 @@
 			"status": "Status",
 			"executable": "Executable",
 			"actions": "Actions",
-			"noGamesFound": "No games found",
+			"noGamesFound": "No importable games found",
 			"statusPending": "Pending",
 			"statusMatched": "Matched",
 			"statusNotFound": "Not Found",
@@ -263,7 +263,7 @@
 			"bgmlink": "View Bangumi Page",
 			"Batch": {
 				"addToCollection": "Add to Collection",
-				"clearSelection": "Clear Selection",
+				"clearSelection": "Clear",
 				"deleteFailed": "Failed to delete selected games",
 				"deleteMessage_one": "Delete {{count}} selected game? This cannot be undone.",
 				"deleteMessage_other": "Delete {{count}} selected games? This cannot be undone.",
@@ -469,7 +469,7 @@
 			"Edit": {
 				"dataSourceEditAndUpdate": "Data Source Edit and Update",
 				"gameInfoEdit": "Game Info Edit",
-				"updateSuccess": "Game information updated successfully"
+				"updateSuccess": "Game information updated"
 			},
 			"editPart": "Edit",
 			"expandTags": "Expand Tags",
@@ -546,8 +546,8 @@
 				"title": "Batch Update Data",
 				"updateBgm": "Batch Update BGM Data",
 				"updateVndb": "Batch Update VNDB Data",
-				"updating": "Updating...",
-				"updatingBgm": "Batch updating BGM data..."
+				"updatingBgm": "Batch updating BGM data...",
+				"updatingVndb": "Batch updating VNDB data..."
 			},
 			"bgmToken": "BGM Token",
 			"bgmTokenSettings": {

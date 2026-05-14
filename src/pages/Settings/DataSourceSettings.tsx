@@ -52,7 +52,7 @@ export const MixedSearchSourceSettings = () => {
 				<Typography variant="caption" color="text.secondary" className="block">
 					{t(
 						"pages.Settings.mixedSearchSources.description",
-						"该设置仅影响添加游戏时的 mixed 搜索请求。BGM 和 VNDB 始终启用，YMGal 与 Kungal 可按需关闭。",
+						"该设置仅影响添加游戏时的 mixed 搜索请求。BGM 和 VNDB 始终启用，YMGal 与 Kungal 可按需开启。",
 					)}
 				</Typography>
 				<Stack
@@ -115,10 +115,13 @@ const TagTranslationSettings = () => {
 			<Stack direction="row" alignItems="center" className="min-w-60">
 				<Box>
 					<InputLabel className="font-semibold mb-1">
-						{t("pages.Settings.tagTranslation.title")}
+						{t("pages.Settings.tagTranslation.title", "TAG翻译")}
 					</InputLabel>
 					<Typography variant="caption" color="text.secondary">
-						{t("pages.Settings.tagTranslation.description")}
+						{t(
+							"pages.Settings.tagTranslation.description",
+							"开启后将使用中文翻译显示游戏标签",
+						)}
 					</Typography>
 				</Box>
 				<Switch
@@ -141,10 +144,13 @@ const SpoilerLevelSettings = () => {
 			<Stack direction="row" alignItems="center" spacing={1}>
 				<Box>
 					<InputLabel className="font-semibold mb-1">
-						{t("pages.Settings.spoilerLevel.title")}
+						{t("pages.Settings.spoilerLevel.title", "TAG剧透等级")}
 					</InputLabel>
 					<Typography variant="caption" color="text.secondary">
-						{t("pages.Settings.spoilerLevel.description")}
+						{t(
+							"pages.Settings.spoilerLevel.description",
+							"选择剧透等级以获取合适的标签内容",
+						)}
 					</Typography>
 				</Box>
 				<Select
@@ -154,13 +160,13 @@ const SpoilerLevelSettings = () => {
 					size="small"
 				>
 					<MenuItem value={0}>
-						{t("pages.Settings.spoilerLevel.level0")}
+						{t("pages.Settings.spoilerLevel.level0", "0 - 无剧透")}
 					</MenuItem>
 					<MenuItem value={1}>
-						{t("pages.Settings.spoilerLevel.level1")}
+						{t("pages.Settings.spoilerLevel.level1", "1 - 轻微剧透")}
 					</MenuItem>
 					<MenuItem value={2}>
-						{t("pages.Settings.spoilerLevel.level2")}
+						{t("pages.Settings.spoilerLevel.level2", "2 - 严重剧透")}
 					</MenuItem>
 				</Select>
 			</Stack>
@@ -211,7 +217,10 @@ const BatchUpdateSettings: React.FC = () => {
 			const { batchUpdateVndbData } = await import("@/utils/appUtils");
 
 			snackbar.info(
-				t("pages.Settings.batchUpdate.updating", "正在批量更新 VNDB 数据..."),
+				t(
+					"pages.Settings.batchUpdate.updatingVndb",
+					"正在批量更新 VNDB 数据...",
+				),
 			);
 
 			const result = await batchUpdateVndbData();
@@ -254,7 +263,11 @@ const BatchUpdateSettings: React.FC = () => {
 			);
 			setUpdateStatus(errorMessage);
 			snackbar.error(
-				t("pages.Settings.batchUpdate.error", { message: errorMessage }),
+				t(
+					"pages.Settings.batchUpdate.error",
+					"批量更新 VNDB 数据失败: {{message}}",
+					{ message: errorMessage },
+				),
 			);
 		} finally {
 			setIsUpdatingVndb(false);
@@ -316,7 +329,11 @@ const BatchUpdateSettings: React.FC = () => {
 			);
 			setUpdateStatus(errorMessage);
 			snackbar.error(
-				t("pages.Settings.batchUpdate.errorBgm", { message: errorMessage }),
+				t(
+					"pages.Settings.batchUpdate.errorBgm",
+					"批量更新 BGM 数据失败: {{message}}",
+					{ message: errorMessage },
+				),
 			);
 		} finally {
 			setIsUpdatingBgm(false);
@@ -354,7 +371,10 @@ const BatchUpdateSettings: React.FC = () => {
 						className="px-6 py-2"
 					>
 						{isUpdatingBgm
-							? t("pages.Settings.batchUpdate.updating", "更新中...")
+							? t(
+									"pages.Settings.batchUpdate.updatingBgm",
+									"正在批量更新 BGM 数据...",
+								)
 							: t("pages.Settings.batchUpdate.updateBgm", "批量更新 BGM 数据")}
 					</Button>
 
@@ -373,7 +393,10 @@ const BatchUpdateSettings: React.FC = () => {
 						className="px-6 py-2"
 					>
 						{isUpdatingVndb
-							? t("pages.Settings.batchUpdate.updating", "更新中...")
+							? t(
+									"pages.Settings.batchUpdate.updatingVndb",
+									"正在批量更新 VNDB 数据...",
+								)
 							: t(
 									"pages.Settings.batchUpdate.updateVndb",
 									"批量更新 VNDB 数据",

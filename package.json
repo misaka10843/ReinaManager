@@ -17,7 +17,9 @@
 		"changelog:view": "git-cliff --latest",
 		"i18n:status": "i18next-cli status",
 		"i18n:sync": "i18next-cli sync",
-		"i18n:extract": "i18next-cli extract"
+		"i18n:extract": "i18next-cli extract",
+		"i18n:defaults": "node scripts/checkI18nDefaults.js",
+		"i18n:defaults:write": "node scripts/checkI18nDefaults.js --write-missing"
 	},
 	"dependencies": {
 		"@dnd-kit/core": "^6.3.1",

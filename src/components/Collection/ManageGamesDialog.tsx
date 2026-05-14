@@ -226,7 +226,10 @@ export const ManageGamesDialog: React.FC<ManageGamesDialogProps> = ({
 		if (categoryId < 0) {
 			console.warn("无法修改虚拟分类");
 			snackbar.warning(
-				t("components.Collection.errors.cannotModifyVirtualCategory"),
+				t(
+					"components.Collection.errors.cannotModifyVirtualCategory",
+					"无法修改虚拟分类",
+				),
 			);
 			return;
 		}
@@ -276,8 +279,11 @@ export const ManageGamesDialog: React.FC<ManageGamesDialogProps> = ({
 				<Box display="flex" alignItems="center" justifyContent="space-between">
 					<Typography variant="h6">
 						{categoryName
-							? `${t("components.Toolbar.Category.manageGamesTitle")} - ${categoryName}`
-							: t("components.Toolbar.Category.manageGamesTitle")}
+							? `${t("components.Toolbar.Category.manageGamesTitle", "管理分类游戏")} - ${categoryName}`
+							: t(
+									"components.Toolbar.Category.manageGamesTitle",
+									"管理分类游戏",
+								)}
 					</Typography>
 					<IconButton onClick={onClose} size="small">
 						<CloseIcon />
@@ -293,7 +299,7 @@ export const ManageGamesDialog: React.FC<ManageGamesDialogProps> = ({
 						sx={{ flex: 1, display: "flex", flexDirection: "column", p: 2 }}
 					>
 						<Typography variant="subtitle1" gutterBottom fontWeight="bold">
-							{t("components.Toolbar.Category.availableGames")} (
+							{t("components.Toolbar.Category.availableGames", "可用游戏")} (
 							{availableGames.length})
 						</Typography>
 
@@ -302,7 +308,10 @@ export const ManageGamesDialog: React.FC<ManageGamesDialogProps> = ({
 							autoFocus
 							fullWidth
 							size="small"
-							placeholder={t("components.Toolbar.Category.searchPlaceholder")}
+							placeholder={t(
+								"components.Toolbar.Category.searchPlaceholder",
+								"搜索游戏...",
+							)}
 							value={leftSearchInput}
 							onChange={(e) => {
 								setLeftSearchInput(e.target.value);
@@ -335,8 +344,11 @@ export const ManageGamesDialog: React.FC<ManageGamesDialogProps> = ({
 									py={3}
 								>
 									{leftSearchText
-										? t("components.Toolbar.Category.noSearchResults")
-										: t("components.Toolbar.Category.noGames")}
+										? t(
+												"components.Toolbar.Category.noSearchResults",
+												"未找到匹配的游戏",
+											)
+										: t("components.Toolbar.Category.noGames", "暂无游戏")}
 								</Typography>
 							) : (
 								<List dense>
@@ -377,15 +389,18 @@ export const ManageGamesDialog: React.FC<ManageGamesDialogProps> = ({
 						sx={{ flex: 1, display: "flex", flexDirection: "column", p: 2 }}
 					>
 						<Typography variant="subtitle1" gutterBottom fontWeight="bold">
-							{t("components.Toolbar.Category.gamesInCategory")} (
-							{categoryGamesList.length})
+							{t("components.Toolbar.Category.gamesInCategory", "分类中的游戏")}{" "}
+							({categoryGamesList.length})
 						</Typography>
 
 						{/* 右栏搜索框 */}
 						<TextField
 							fullWidth
 							size="small"
-							placeholder={t("components.Toolbar.Category.searchPlaceholder")}
+							placeholder={t(
+								"components.Toolbar.Category.searchPlaceholder",
+								"搜索游戏...",
+							)}
 							value={rightSearchInput}
 							onChange={(e) => {
 								setRightSearchInput(e.target.value);
@@ -418,8 +433,14 @@ export const ManageGamesDialog: React.FC<ManageGamesDialogProps> = ({
 									py={3}
 								>
 									{rightSearchText
-										? t("components.Toolbar.Category.noSearchResults")
-										: t("components.Toolbar.Category.noGamesInCategory")}
+										? t(
+												"components.Toolbar.Category.noSearchResults",
+												"未找到匹配的游戏",
+											)
+										: t(
+												"components.Toolbar.Category.noGamesInCategory",
+												"该分类暂无游戏",
+											)}
 								</Typography>
 							) : (
 								<List dense>
@@ -459,7 +480,7 @@ export const ManageGamesDialog: React.FC<ManageGamesDialogProps> = ({
 			{/* 底部按钮 */}
 			<DialogActions sx={{ px: 3, pb: 2 }}>
 				<Button onClick={onClose} disabled={isProcessing}>
-					{t("common.cancel")}
+					{t("common.cancel", "取消")}
 				</Button>
 				<Button
 					variant="contained"
@@ -467,8 +488,8 @@ export const ManageGamesDialog: React.FC<ManageGamesDialogProps> = ({
 					disabled={isProcessing}
 				>
 					{isProcessing
-						? t("common.saving")
-						: t("components.Toolbar.Category.save")}
+						? t("common.saving", "保存中...")
+						: t("components.Toolbar.Category.save", "保存更改")}
 				</Button>
 			</DialogActions>
 		</Dialog>

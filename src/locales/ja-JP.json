@@ -79,7 +79,7 @@
 			"status": "状態",
 			"executable": "実行ファイル",
 			"actions": "操作",
-			"noGamesFound": "ゲームが見つかりません",
+			"noGamesFound": "インポート可能なゲームが見つかりません",
 			"statusPending": "未処理",
 			"statusMatched": "一致済み",
 			"statusNotFound": "未検出",
@@ -259,7 +259,7 @@
 			"bgmlink": "Bangumiページを見る",
 			"Batch": {
 				"addToCollection": "コレクションに追加",
-				"clearSelection": "選択をクリア",
+				"clearSelection": "クリア",
 				"deleteFailed": "選択したゲームの削除に失敗しました",
 				"deleteMessage_other": "選択した {{count}} 個のゲームを削除しますか？この操作は元に戻せません。",
 				"deleteSelected": "選択したゲームを削除",
@@ -460,7 +460,7 @@
 			"Edit": {
 				"dataSourceEditAndUpdate": "データソース編集と更新",
 				"gameInfoEdit": "ゲーム情報編集",
-				"updateSuccess": "ゲーム情報が正常に更新されました"
+				"updateSuccess": "ゲーム情報を更新しました"
 			},
 			"editPart": "編集",
 			"expandTags": "タグを展開する",
@@ -537,8 +537,8 @@
 				"title": "バッチ更新データ",
 				"updateBgm": "BGMデータを一括更新",
 				"updateVndb": "VNDBデータを一括更新",
-				"updating": "更新中...",
-				"updatingBgm": "BGMデータを一括更新中..."
+				"updatingBgm": "BGMデータを一括更新中...",
+				"updatingVndb": "VNDBデータを一括更新中..."
 			},
 			"bgmToken": "BGM トークン",
 			"bgmTokenSettings": {

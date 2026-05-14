@@ -266,7 +266,7 @@ const OpenFolder = ({ selectedGame }: { selectedGame: GameData }) => {
 			disabled={isDisabled}
 			onClick={() => handleOpenFolder(selectedGame)}
 		>
-			{t("components.Toolbar.openGameFolder")}
+			{t("components.Toolbar.openGameFolder", "打开游戏目录")}
 		</Button>
 	);
 };
@@ -312,8 +312,8 @@ export const DeleteModal: React.FC<{ id: number }> = ({ id }) => {
 				onClick={() => setOpenAlert(true)}
 			>
 				{isDeleting
-					? t("components.Toolbar.deleting")
-					: t("components.Toolbar.deleteGame")}
+					? t("components.Toolbar.deleting", "删除中...")
+					: t("components.Toolbar.deleteGame", "删除游戏")}
 			</Button>
 			<AlertConfirmBox
 				open={openAlert}
@@ -436,7 +436,7 @@ const MoreButton = ({ selectedGame }: { selectedGame: GameData }) => {
 				variant="text"
 				onClick={handleClick}
 			>
-				{t("components.Toolbar.more")}
+				{t("components.Toolbar.more", "更多")}
 			</Button>
 			<Menu
 				id="more-menu"
@@ -455,7 +455,9 @@ const MoreButton = ({ selectedGame }: { selectedGame: GameData }) => {
 						<ListItemIcon>
 							<SourceLinkIcon source="bgm" />
 						</ListItemIcon>
-						<ListItemText>{t("components.Toolbar.bgmlink")}</ListItemText>
+						<ListItemText>
+							{t("components.Toolbar.bgmlink", "查看Bangumi页面")}
+						</ListItemText>
 					</MenuItem>
 				) : null}
 				{selectedGame.vndb_id ? (
@@ -468,7 +470,9 @@ const MoreButton = ({ selectedGame }: { selectedGame: GameData }) => {
 						<ListItemIcon>
 							<SourceLinkIcon source="vndb" />
 						</ListItemIcon>
-						<ListItemText>{t("components.Toolbar.vndblink")}</ListItemText>
+						<ListItemText>
+							{t("components.Toolbar.vndblink", "查看Vndb页面")}
+						</ListItemText>
 					</MenuItem>
 				) : null}
 				{selectedGame.ymgal_id ? (
@@ -505,14 +509,18 @@ const MoreButton = ({ selectedGame }: { selectedGame: GameData }) => {
 					<ListItemIcon>
 						<TurnRightIcon fontSize="small" />
 					</ListItemIcon>
-					<ListItemText>{t("components.Toolbar.leLaunch")}</ListItemText>
+					<ListItemText>
+						{t("components.Toolbar.leLaunch", "LE转区启动")}
+					</ListItemText>
 					<Switch checked={selectedGame.le_launch === 1} size="small" />
 				</MenuItem>
 				<MenuItem onClick={handleToggleMagpie}>
 					<ListItemIcon>
 						<OpenInFullIcon fontSize="small" />
 					</ListItemIcon>
-					<ListItemText>{t("components.Toolbar.magpieZoom")}</ListItemText>
+					<ListItemText>
+						{t("components.Toolbar.magpieZoom", "Magpie放大")}
+					</ListItemText>
 					<Switch checked={selectedGame.magpie === 1} size="small" />
 				</MenuItem>
 
@@ -572,7 +580,7 @@ export const Buttongroup = ({
 				<>
 					<LaunchModal />
 					<Button onClick={() => openAddModal("")} startIcon={<AddIcon />}>
-						{t("components.AddModal.addGame")}
+						{t("components.AddModal.addGame", "添加游戏")}
 					</Button>
 					<FilterSortModal />
 					<ThemeSwitcher />

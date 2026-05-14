@@ -245,10 +245,10 @@ export function CollectionPickerDialog({
 			</DialogContent>
 			<DialogActions>
 				<Button onClick={handleClose} disabled={isSaving}>
-					{t("common.cancel")}
+					{t("common.cancel", "取消")}
 				</Button>
 				<Button onClick={handleSubmit} disabled={!canSave}>
-					{isSaving ? t("common.saving") : confirmText}
+					{isSaving ? t("common.saving", "保存中...") : confirmText}
 				</Button>
 			</DialogActions>
 		</Dialog>

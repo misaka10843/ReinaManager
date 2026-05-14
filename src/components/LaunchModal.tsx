@@ -68,7 +68,7 @@ export const LaunchModal = () => {
 	const { t } = useTranslation();
 	const disabledFallback = (
 		<Button startIcon={<PlayArrowIcon />} disabled>
-			{t("components.LaunchModal.launchGame")}
+			{t("components.LaunchModal.launchGame", "启动游戏")}
 		</Button>
 	);
 
@@ -141,7 +141,9 @@ function LaunchModalContent({ selectedGame }: LaunchModalContentProps) {
 	const handleStartGame = async () => {
 		try {
 			if (!selectedGame.localpath) {
-				snackbar.error(t("components.LaunchModal.gamePathNotFound"));
+				snackbar.error(
+					t("components.LaunchModal.gamePathNotFound", "游戏路径未找到"),
+				);
 				return;
 			}
 
@@ -151,7 +153,7 @@ function LaunchModalContent({ selectedGame }: LaunchModalContentProps) {
 			}
 		} catch (error) {
 			snackbar.error(
-				`${t("components.LaunchModal.launchFailed")}: ${getUserErrorMessage(error, t)}`,
+				`${t("components.LaunchModal.launchFailed", "游戏启动失败:")}: ${getUserErrorMessage(error, t)}`,
 			);
 		}
 	};
@@ -161,11 +163,14 @@ function LaunchModalContent({ selectedGame }: LaunchModalContentProps) {
 		try {
 			const res = await stopGame(selectedGameId);
 			if (!res.success) {
-				snackbar.error(res.message || t("components.LaunchModal.stopFailed"));
+				snackbar.error(
+					res.message ||
+						t("components.LaunchModal.stopFailed", "游戏停止失败:"),
+				);
 			}
 		} catch (error) {
 			snackbar.error(
-				`${t("components.LaunchModal.stopFailed")}: ${getUserErrorMessage(error, t)}`,
+				`${t("components.LaunchModal.stopFailed", "游戏停止失败:")}: ${getUserErrorMessage(error, t)}`,
 			);
 		} finally {
 			setStopping(false);
@@ -196,14 +201,16 @@ function LaunchModalContent({ selectedGame }: LaunchModalContentProps) {
 			}
 		} catch (error) {
 			snackbar.error(
-				`${t("components.LaunchModal.selectFolder")}: ${getUserErrorMessage(error, t)}`,
+				`${t("components.LaunchModal.selectFolder", "选择文件夹")}: ${getUserErrorMessage(error, t)}`,
 			);
 		}
 	};
 
 	const handleSavePath = async () => {
 		if (!localPath.trim()) {
-			snackbar.error(t("components.LaunchModal.pathRequired"));
+			snackbar.error(
+				t("components.LaunchModal.pathRequired", "请选择或输入路径"),
+			);
 			return;
 		}
 
@@ -217,11 +224,11 @@ function LaunchModalContent({ selectedGame }: LaunchModalContentProps) {
 				gameId: selectedGameId,
 				updates: updateData,
 			});
-			snackbar.success(t("components.LaunchModal.pathSaved"));
+			snackbar.success(t("components.LaunchModal.pathSaved", "路径已保存"));
 			handleClosePathDialog();
 		} catch (error) {
 			snackbar.error(
-				`${t("components.LaunchModal.pathSaveFailed")}: ${getUserErrorMessage(error, t)}`,
+				`${t("components.LaunchModal.pathSaveFailed", "保存路径失败")}: ${getUserErrorMessage(error, t)}`,
 			);
 		} finally {
 			setIsSaving(false);
@@ -231,7 +238,7 @@ function LaunchModalContent({ selectedGame }: LaunchModalContentProps) {
 	if (stopping) {
 		return (
 			<Button startIcon={<StopIcon />} disabled>
-				{t("components.LaunchModal.stoppingGame")}
+				{t("components.LaunchModal.stoppingGame", "停止游戏中...")}
 			</Button>
 		);
 	}
@@ -278,7 +285,7 @@ function LaunchModalContent({ selectedGame }: LaunchModalContentProps) {
 	if (hasLocalPath) {
 		return (
 			<Button startIcon={<PlayArrowIcon />} onClick={handleStartGame}>
-				{t("components.LaunchModal.launchGame")}
+				{t("components.LaunchModal.launchGame", "启动游戏")}
 			</Button>
 		);
 	}
@@ -290,7 +297,7 @@ function LaunchModalContent({ selectedGame }: LaunchModalContentProps) {
 				onClick={handleOpenPathDialog}
 				variant="text"
 			>
-				{t("components.LaunchModal.syncLocalPath")}
+				{t("components.LaunchModal.syncLocalPath", "同步本地")}
 			</Button>
 
 			<Dialog
@@ -300,12 +307,15 @@ function LaunchModalContent({ selectedGame }: LaunchModalContentProps) {
 				fullWidth
 			>
 				<DialogTitle>
-					{t("components.LaunchModal.setLocalPathTitle")}
+					{t("components.LaunchModal.setLocalPathTitle", "设置本地路径")}
 				</DialogTitle>
 				<DialogContent>
 					<Box sx={{ display: "flex", gap: 1, mt: 2 }}>
 						<TextField
-							label={t("components.LaunchModal.localPathLabel")}
+							label={t(
+								"components.LaunchModal.localPathLabel",
+								"可执行文件路径",
+							)}
 							variant="outlined"
 							fullWidth
 							value={localPath}
@@ -328,14 +338,16 @@ function LaunchModalContent({ selectedGame }: LaunchModalContentProps) {
 				</DialogContent>
 				<DialogActions>
 					<Button onClick={handleClosePathDialog} disabled={isSaving}>
-						{t("common.cancel")}
+						{t("common.cancel", "取消")}
 					</Button>
 					<Button
 						onClick={handleSavePath}
 						variant="contained"
 						disabled={!localPath.trim() || isSaving}
 					>
-						{isSaving ? t("common.saving") : t("common.confirm")}
+						{isSaving
+							? t("common.saving", "保存中...")
+							: t("common.confirm", "确认")}
 					</Button>
 				</DialogActions>
 			</Dialog>
