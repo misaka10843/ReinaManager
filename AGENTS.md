@@ -80,11 +80,33 @@
 
 - 本项目使用 **Biome** 进行代码格式化与 Lint 检查，使用 pnpm 包管理器。
 - 本项目使用 **i18next-cli** 进行国际化字符串的检查和剔除无用键值对。
-- 如果涉及国际化字符串的修改或添加，必须使用以下命令进行检查和剔除：
-  ```bash
-  pnpm i18n:status en-US --hide-translated # 还有 ja-JP 和 zh-TW，不需要 zh-CN
-  pnpm i18n:sync # 剔除无用键值对
-  ```
+- 如果涉及国际化字符串的修改或添加，按以下循环检查并规范 locale 文件：
+
+1. 先运行总览 status：
+   ```bash
+   pnpm i18n:status
+   ```
+
+2. 如果某个目标语言不是 100%，按需运行对应命令查看缺失项并补全：
+   ```bash
+   pnpm i18n:status en-US --hide-translated
+   pnpm i18n:status ja-JP --hide-translated
+   pnpm i18n:status zh-TW --hide-translated
+   ```
+
+3. 翻译完整后运行：
+   ```bash
+   pnpm i18n:sync
+   pnpm i18n:extract
+   ```
+
+4. 因 status 可能漏报 `__MISSING__`，必须额外检查：
+   ```bash
+   rg "__MISSING__" src/locales
+   ```
+
+5. 若发现缺失翻译或 `__MISSING__`，修复后从第 1 步重新执行，直到全部通过。
+
 - 完成代码修改和国际化字符串检查后，按需验证代码规范和执行类型检查：
   ```bash
   pnpm check # 该指令已经包含了代码格式化、Lint 检查和类型检查
