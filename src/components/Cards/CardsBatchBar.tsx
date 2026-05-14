@@ -79,7 +79,7 @@ export const CardsBatchBar: React.FC<CardsBatchBarProps> = ({
 			snackbar.success(
 				t("components.Toolbar.Batch.deleteSuccess", {
 					count: selectedCount,
-					defaultValue: `已删除 ${selectedCount} 个游戏`,
+					defaultValue: "已删除 {{count}} 个游戏",
 				}),
 			);
 		} catch (error) {
@@ -99,7 +99,7 @@ export const CardsBatchBar: React.FC<CardsBatchBarProps> = ({
 			snackbar.success(
 				t("components.Toolbar.Batch.removeFromCategorySuccess", {
 					count: selectedCount,
-					defaultValue: `已从当前分类移除 ${selectedCount} 个游戏`,
+					defaultValue: "已从当前分类移除 {{count}} 个游戏",
 				}),
 			);
 		} catch (error) {
@@ -151,7 +151,7 @@ export const CardsBatchBar: React.FC<CardsBatchBarProps> = ({
 							<Typography variant="body2" color="text.secondary">
 								{t("components.Toolbar.Batch.selectedCount", {
 									count: selectedCount,
-									defaultValue: `已选 ${selectedCount}`,
+									defaultValue: "已选 {{count}}",
 								})}
 							</Typography>
 						</>
@@ -215,7 +215,7 @@ export const CardsBatchBar: React.FC<CardsBatchBarProps> = ({
 				title={t("components.Toolbar.Batch.deleteTitle", "批量删除游戏")}
 				message={t("components.Toolbar.Batch.deleteMessage", {
 					count: selectedCount,
-					defaultValue: `确定要删除选中的 ${selectedCount} 个游戏吗？此操作无法撤销。`,
+					defaultValue: "确定要删除选中的 {{count}} 个游戏吗？此操作无法撤销。",
 				})}
 			/>
 

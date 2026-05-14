@@ -1,20 +1,4 @@
 {
-	"errors": {
-		"authFailed": "認証に失敗しました。資格情報または権限を確認してください",
-		"badRequest": "リクエスト内容が不正です。確認して再試行してください",
-		"bgmTokenRequired": "BGM Token が必要です。先に設定してください",
-		"invalidGameId": "ゲーム ID の形式が不正です",
-		"invokeFailed": "アプリ内部コマンドの呼び出しに失敗しました。後でもう一度お試しください",
-		"metadataNotFound": "対応するメタデータが見つかりませんでした",
-		"metadataRequestFailed": "メタデータの取得に失敗しました。後でもう一度お試しください",
-		"mixedSourcesFailed": "すべてのデータソースへのリクエストに失敗しました",
-		"notFound": "対象の内容が見つかりませんでした",
-		"requestFailed": "リクエストに失敗しました。後でもう一度お試しください",
-		"responseParseFailed": "レスポンスの解析に失敗しました。後でもう一度お試しください",
-		"unknownError": "不明なエラー",
-		"unsupportedSource": "サポートされていないデータソースです",
-		"updatePlayStatusFailed": "プレイ状態の更新に失敗しました"
-	},
 	"app": {
 		"NAVIGATION": {
 			"collection": "コレクション",
@@ -47,57 +31,29 @@
 			"cancel": "キャンセル",
 			"confirm": "確認",
 			"developer": "開発者",
+			"dragDropHere": "ファイルをここにドロップ",
+			"dragHint": "実行ファイルまたはフォルダを選択またはドラッグしてください",
+			"emptyFolder": "このフォルダに実行ファイルが見つかりません",
 			"enableCustomMode": "カスタムモードを有効化",
 			"gameExists": "ゲームはすでに存在します",
 			"gameIDTips": "ゲームID",
 			"gameName": "ゲーム名",
+			"invalidFile": "有効な実行ファイル（.exe/.bat/.cmd）またはフォルダをドラッグしてください",
 			"noBgmToken": "BGM Tokenが設定されていません、データを取得できません",
 			"noExecutableSelected": "実行ファイルが選択されていません",
 			"noResults": "結果が見つかりませんでした",
 			"noResultsBgm": "Bangumiでゲームが見つかりません、別の名前を試すかIDを確認してください",
+			"noResultsKun": "Kungalでゲームが見つかりません、別の名前を試すかIDを確認してください",
 			"noResultsMixed": "いずれのデータソースでもゲームが見つかりませんでした",
 			"noResultsVndb": "VNDBでゲームが見つかりません、別の名前を試すかIDを確認してください",
 			"noResultsYmgal": "YMGalでゲームが見つかりません、別の名前を試すかIDを確認してください",
-			"noResultsKun": "Kungalでゲームが見つかりません、別の名前を試すかIDを確認してください",
 			"processing": "処理中...",
-			"dragHint": "実行ファイルまたはフォルダを選択またはドラッグしてください",
-			"dragDropHere": "ファイルをここにドロップ",
-			"invalidFile": "有効な実行ファイル（.exe/.bat/.cmd）またはフォルダをドラッグしてください",
-			"emptyFolder": "このフォルダに実行ファイルが見つかりません",
 			"selectFromFolder": "フォルダ内に複数の実行ファイルがあります、1つ選択してください",
 			"selectGame": "ゲームを選択",
 			"selectLauncher": "ランチャーを選択",
 			"singleTab": "単体追加",
 			"timeout": "タイムアウトしました。しばらくしてから再試行してください",
 			"viewMore": "もっと見る"
-		},
-		"BulkImportModal": {
-			"selectRootFolder": "ルートフォルダを選択",
-			"noFolderSelected": "フォルダが選択されていません",
-			"searchName": "検索名",
-			"matchedGame": "一致したゲーム",
-			"status": "状態",
-			"executable": "実行ファイル",
-			"actions": "操作",
-			"noGamesFound": "インポート可能なゲームが見つかりません",
-			"statusPending": "未処理",
-			"statusMatched": "一致済み",
-			"statusNotFound": "未検出",
-			"statusImported": "インポート済み",
-			"statusError": "エラー",
-			"selectExe": "起動ファイルを選択",
-			"cancel": "キャンセル",
-			"matchMetadata": "メタデータを照合",
-			"importAll": "すべてインポート",
-			"editMetadata": "ゲーム情報を編集",
-			"reset": "リセット",
-			"saveNameOnly": "名前のみ保存",
-			"search": "検索",
-			"importSummary": "{{total}} 件中 {{success}} 件のゲームをインポートしました",
-			"importPartialFailed": "{{failed}} 件のゲームのインポートに失敗しました",
-			"gamesCount_other": "全 {{count}} 件",
-			"matchCancelled": "マッチングタスクをキャンセルしました",
-			"gamesCount": "{{count}} 本のゲーム"
 		},
 		"AlertBox": {
 			"bgmData": "BGM データ",
@@ -115,8 +71,40 @@
 			"vndbData": "VNDB データ",
 			"ymgalData": "Ymgal データ"
 		},
-		"GameListStateView": {
-			"empty": "条件に一致するゲームが見つかりません"
+		"AppLayout": {
+			"back": "戻る"
+		},
+		"BulkImportModal": {
+			"actions": "操作",
+			"cancel": "キャンセル",
+			"editMetadata": "ゲーム情報を編集",
+			"executable": "実行ファイル",
+			"gamesCount_other": "全 {{count}} 件",
+			"importAll": "すべてインポート",
+			"importPartialFailed": "{{failed}} 件のゲームのインポートに失敗しました",
+			"importSummary": "{{total}} 件中 {{success}} 件のゲームをインポートしました",
+			"matchCancelled": "マッチングタスクをキャンセルしました",
+			"matchedGame": "一致したゲーム",
+			"matchMetadata": "メタデータを照合",
+			"noFolderSelected": "フォルダが選択されていません",
+			"noGamesFound": "インポート可能なゲームが見つかりません",
+			"reset": "リセット",
+			"saveNameOnly": "名前のみ保存",
+			"search": "検索",
+			"searchName": "検索名",
+			"selectExe": "起動ファイルを選択",
+			"selectRootFolder": "ルートフォルダを選択",
+			"status": "状態",
+			"statusError": "エラー",
+			"statusImported": "インポート済み",
+			"statusMatched": "一致済み",
+			"statusNotFound": "未検出",
+			"statusPending": "未処理"
+		},
+		"Cards": {
+			"removeFromCategory": "現在のカテゴリから削除",
+			"removeFromCategoryFailed": "カテゴリからの削除に失敗しました",
+			"removeFromCategorySuccess": "現在のカテゴリから削除しました"
 		},
 		"Collection": {
 			"errors": {
@@ -124,8 +112,7 @@
 				"updateCategoryGamesFailed": "カテゴリゲームの更新に失敗しました。もう一度お試しください"
 			},
 			"success": {
-				"categoryGamesUpdated_other": "カテゴリゲームを更新しました：{{count}} 個",
-				"categoryGamesUpdated": "カテゴリのゲームを更新しました"
+				"categoryGamesUpdated_other": "カテゴリゲームを更新しました：{{count}} 個"
 			}
 		},
 		"CollectionPicker": {
@@ -140,33 +127,31 @@
 			"save": "保存",
 			"saveFailed": "コレクションの更新に失敗しました"
 		},
-		"Cards": {
-			"removeFromCategory": "現在のカテゴリから削除",
-			"removeFromCategoryFailed": "カテゴリからの削除に失敗しました",
-			"removeFromCategorySuccess": "現在のカテゴリから削除しました"
-		},
 		"FilterSortModal": {
+			"addTime": "追加時間(デフォルト)",
 			"allGames": "すべてのゲーム",
+			"allStatuses": "すべて",
+			"ascending": "昇順",
+			"bgmRank": "BGMランキング",
 			"cancel": "キャンセル",
 			"confirm": "確認",
 			"customGames": "カスタムゲーム",
-			"filter": "フィルター",
-			"localGames": "ローカルゲーム",
-			"onlineGames": "クラウドゲーム",
-			"sourceFilter": "ゲームソース",
-			"playStatusFilter": "プレイ状態",
-			"allStatuses": "すべて",
-			"title": "フィルター・並べ替え",
-			"addTime": "追加時間(デフォルト)",
-			"ascending": "昇順",
-			"bgmRank": "BGMランキング",
 			"descending": "降順",
+			"filter": "フィルター",
 			"lastPlayed": "最近プレイ",
+			"localGames": "ローカルゲーム",
 			"nameSort": "名前ソート",
+			"onlineGames": "クラウドゲーム",
+			"playStatusFilter": "プレイ状態",
 			"releaseTime": "ゲーム発売時間",
 			"sortMethod": "並べ替え方法",
 			"sortOrder": "並べ替え方向",
+			"sourceFilter": "ゲームソース",
+			"title": "フィルター・並べ替え",
 			"vndbRank": "VNDBランキング"
+		},
+		"GameListStateView": {
+			"empty": "条件に一致するゲームが見つかりません"
 		},
 		"LaunchModal": {
 			"gamePathNotFound": "ゲームパスが見つかりません",
@@ -181,10 +166,6 @@
 			"stopFailed": "ゲーム停止に失敗しました:",
 			"stoppingGame": "ゲームを停止中...",
 			"syncLocalPath": "ローカル同期"
-		},
-		"SelectedGameGuard": {
-			"noSelected": "先にゲームを選択してください",
-			"notFound": "ゲームが存在しないか、削除されました"
 		},
 		"PathSettingsModal": {
 			"close": "閉じる",
@@ -211,7 +192,6 @@
 			},
 			"saveBtn": "保存",
 			"saveError": "パス設定の保存に失敗しました：{{error}}",
-			"saveSuccess": "パス設定を保存しました",
 			"savePath": {
 				"moveBackupWarning": "バックアップパスは保存されましたが、古いバックアップの移行に失敗しました：{{error}}",
 				"note": "ゲームセーブデータのバックアップルートディレクトリパスを設定します。空のままにするとデフォルトパスが使用されます",
@@ -220,9 +200,10 @@
 				"selectBtn": "ディレクトリを選択",
 				"title": "ゲームセーブバックアップパス"
 			},
+			"saveSuccess": "パス設定を保存しました",
+			"saving": "保存中...",
 			"selectFileError": "ファイルの選択に失敗しました：{{error}}",
 			"selectFolderError": "ディレクトリの選択に失敗しました：{{error}}",
-			"saving": "保存中...",
 			"title": "パス設定"
 		},
 		"RightMenu": {
@@ -246,17 +227,17 @@
 		"SearchBox": {
 			"search": "検索"
 		},
+		"SelectedGameGuard": {
+			"noSelected": "先にゲームを選択してください",
+			"notFound": "ゲームが存在しないか、削除されました"
+		},
 		"Snackbar": {
 			"failedOpenDatabaseBackupFolder": "データベースバックアップフォルダの開けに失敗しました",
 			"failedOpenGameFolder": "ゲームフォルダの開けに失敗しました",
 			"gameAddedSuccess": "ゲームが正常に追加されました",
 			"viewDetails": "詳細を表示"
 		},
-		"AppLayout": {
-			"back": "戻る"
-		},
 		"Toolbar": {
-			"bgmlink": "Bangumiページを見る",
 			"Batch": {
 				"addToCollection": "コレクションに追加",
 				"clearSelection": "クリア",
@@ -272,6 +253,7 @@
 				"selectedCount_other": "{{count}} 個選択中",
 				"start": "一括操作"
 			},
+			"bgmlink": "Bangumiページを見る",
 			"Category": {
 				"availableGames": "利用可能なゲーム",
 				"gamesInCategory": "カテゴリ内のゲーム",
@@ -298,6 +280,7 @@
 			},
 			"deleteGame": "ゲームを削除",
 			"deleting": "削除中...",
+			"kunlink": "Kungalページを見る",
 			"leLaunch": "LE地域起動",
 			"lePathNotSet": "LE地域切り替えソフトウェアのパスが設定されていません、まずパスを設定してください",
 			"magpiePathNotSet": "Magpieソフトウェアのパスが設定されていません、まずパスを設定してください",
@@ -309,8 +292,7 @@
 			"themeLight": "ライト",
 			"themeSystem": "システムに従う",
 			"vndblink": "Vndbページを見る",
-			"ymgallink": "Ymgalページを見る",
-			"kunlink": "Kungalページを見る"
+			"ymgallink": "Ymgalページを見る"
 		},
 		"Tray": {
 			"exit": "終了",
@@ -326,9 +308,8 @@
 			},
 			"runningExitDialog": {
 				"exitApp": "そのまま終了",
-				"message": "現在 {{count}} 件のゲームが実行中です。アプリを終了してもゲーム自体は閉じませんが、このセッションのプレイ時間記録は失われます。それでも終了しますか？",
-				"title": "終了の確認",
-				"message_other": "現在 {{count}} 件のゲームが実行中です。アプリを終了してもゲーム自体は閉じませんが、このセッションのプレイ時間記録は失われます。それでも終了しますか？"
+				"message_other": "現在 {{count}} 件のゲームが実行中です。アプリを終了してもゲーム自体は閉じませんが、このセッションのプレイ時間記録は失われます。それでも終了しますか？",
+				"title": "終了の確認"
 			},
 			"UpdateModal": {
 				"cancel": "キャンセル",
@@ -342,6 +323,22 @@
 				"update": "今すぐアップデート"
 			}
 		}
+	},
+	"errors": {
+		"authFailed": "認証に失敗しました。資格情報または権限を確認してください",
+		"badRequest": "リクエスト内容が不正です。確認して再試行してください",
+		"bgmTokenRequired": "BGM Token が必要です。先に設定してください",
+		"invalidGameId": "ゲーム ID の形式が不正です",
+		"invokeFailed": "アプリ内部コマンドの呼び出しに失敗しました。後でもう一度お試しください",
+		"metadataNotFound": "対応するメタデータが見つかりませんでした",
+		"metadataRequestFailed": "メタデータの取得に失敗しました。後でもう一度お試しください",
+		"mixedSourcesFailed": "すべてのデータソースへのリクエストに失敗しました",
+		"notFound": "対象の内容が見つかりませんでした",
+		"requestFailed": "リクエストに失敗しました。後でもう一度お試しください",
+		"responseParseFailed": "レスポンスの解析に失敗しました。後でもう一度お試しください",
+		"unknownError": "不明なエラー",
+		"unsupportedSource": "サポートされていないデータソースです",
+		"updatePlayStatusFailed": "プレイ状態の更新に失敗しました"
 	},
 	"home": {
 		"activity": {
@@ -394,9 +391,6 @@
 				"groupDeleted": "グループを削除しました"
 			}
 		},
-		"Libraries": {
-			"empty": "条件に一致するゲームが見つかりません"
-		},
 		"Detail": {
 			"addTime": "追加時間",
 			"backup": "バックアップ",
@@ -436,8 +430,8 @@
 				"selectSaveDataFolder": "セーブデータフォルダを選択",
 				"setPathForRestore": "バックアップを復元するには、まずセーブデータパスを設定してください",
 				"settings": "バックアップ設定",
-				"settingsSaveFailed": "バックアップ設定の保存に失敗しました",
-				"settingsSaved": "バックアップ設定が正常に保存されました"
+				"settingsSaved": "バックアップ設定が正常に保存されました",
+				"settingsSaveFailed": "バックアップ設定の保存に失敗しました"
 			},
 			"backupCount": "バックアップ数",
 			"collapseTags": "タグを折りたたむ",
@@ -502,13 +496,16 @@
 			"gameTags": "ゲームタグ",
 			"introduction": "紹介",
 			"loading": "読み込み中...",
+			"manageCollections": "コレクション管理",
 			"notFound": "ゲームデータが見つかりません",
 			"playCount": "累計プレイ回数",
 			"playTimeChart": "プレイ時間チャート",
 			"releaseDate": "公開日",
 			"todayPlayTime": "本日のプレイ時間",
-			"totalPlayTime": "累計総プレイ時間",
-			"manageCollections": "コレクション管理"
+			"totalPlayTime": "累計総プレイ時間"
+		},
+		"Libraries": {
+			"empty": "条件に一致するゲームが見つかりません"
 		},
 		"Settings": {
 			"about": {
@@ -517,10 +514,10 @@
 				"checkFailed": "アップデートの確認に失敗しました: {{error}}",
 				"checking": "確認中...",
 				"checkUpdate": "アップデートを確認",
-				"noUpdate": "現在のバージョンは最新です",
 				"docs": "ドキュメント",
 				"feedback": "問題を報告",
 				"github": "プロジェクトリポジトリ",
+				"noUpdate": "現在のバージョンは最新です",
 				"updateFound": "新しいバージョンを検出しました: {{version}}",
 				"version": "バージョン"
 			},
@@ -587,26 +584,22 @@
 				"vndbDescription": "ゲーム追加時に VNDB のコレクション状態を読み取り、ローカルで状態を変更したときに VNDB に同期します。",
 				"vndbTitle": "VNDB コレクション同期を有効化"
 			},
-			"mixedSearchSources": {
-				"description": "この設定は、ゲーム追加時の mixed 検索リクエストにのみ影響します。BGM と VNDB は常に有効で、YMGal と Kungal は必要に応じて有効化できます。",
-				"title": "Mixed 検索ソース"
-			},
 			"databaseBackup": {
 				"backing": "バックアップ中...",
+				"backingCovers": "カバーをバックアップ中...",
 				"backup": "データベースをバックアップ",
+				"backupCovers": "カスタムカバーをバックアップ",
 				"backupError": "データベースバックアップに失敗しました: {{error}}",
 				"backupFailed": "バックアップに失敗しました",
 				"backupSuccess": "データベースバックアップが成功しました: {{path}}",
-				"backingCovers": "カバーをバックアップ中...",
-				"backupCovers": "カスタムカバーをバックアップ",
 				"coverBackupError": "カスタムカバーのバックアップに失敗しました: {{error}}",
 				"coverBackupFailed": "カスタムカバーのバックアップに失敗しました",
 				"coverBackupSuccess": "カスタムカバーのバックアップが成功しました: {{path}}",
-				"noCoversToBackup": "バックアップするカスタムカバーがありません",
 				"importError": "データベースのインポートに失敗しました: {{error}}",
 				"importFailed": "インポートに失敗しました",
 				"importing": "インポート中...",
 				"importSuccess": "データベースのインポートが成功しました。アプリが自動的に再起動します",
+				"noCoversToBackup": "バックアップするカスタムカバーがありません",
 				"openFolder": "バックアップフォルダを開く",
 				"openFolderError": "バックアップフォルダを開くのに失敗しました: {{error}}",
 				"openFolderFailed": "フォルダを開くのに失敗しました",
@@ -620,6 +613,17 @@
 			},
 			"getToken": "トークンを取得",
 			"language": "言語",
+			"linuxLaunchCommand": {
+				"commandLabel": "起動コマンド",
+				"description": "Linux で Windows 実行ファイル（.exe）を起動する際に使用するコマンドを設定します。wine、proton などの互換レイヤーコマンド、または PATH 上の実行ファイル/スクリプトのフルパスを指定できます。",
+				"helperText": "例: wine, /usr/bin/wine, ~/scripts/run-game.sh",
+				"note": "注意: この設定を変更した後は、ゲームを再起動すると有効になります。",
+				"resetTooltip": "デフォルト値 (wine) にリセット",
+				"saveBtn": "保存",
+				"saveError": "保存に失敗しました",
+				"saveSuccess": "Linux 起動コマンドを保存しました",
+				"title": "Linux 起動コマンド"
+			},
 			"logLevel": {
 				"changed": "ログレベルが{{level}}に変更されました",
 				"changeFailed": "ログレベルの変更に失敗しました",
@@ -630,6 +634,11 @@
 				"openFolderFailed": "フォルダを開くのに失敗しました",
 				"title": "ログ設定"
 			},
+			"mixedSearchSources": {
+				"description": "この設定は、ゲーム追加時の mixed 検索リクエストにのみ影響します。BGM と VNDB は常に有効で、YMGal と Kungal は必要に応じて有効化できます。",
+				"title": "Mixed 検索ソース"
+			},
+			"navigation": "設定カテゴリナビゲーション",
 			"nsfw": {
 				"coverReplace": "NSFW表紙の置き換え",
 				"filter": "NSFWコンテンツのフィルタリング",
@@ -640,18 +649,21 @@
 				"openModal": "パス設定を開く",
 				"title": "パス設定"
 			},
-			"linuxLaunchCommand": {
-				"title": "Linux 起動コマンド",
-				"description": "Linux で Windows 実行ファイル（.exe）を起動する際に使用するコマンドを設定します。wine、proton などの互換レイヤーコマンド、または PATH 上の実行ファイル/スクリプトのフルパスを指定できます。",
-				"commandLabel": "起動コマンド",
-				"helperText": "例: wine, /usr/bin/wine, ~/scripts/run-game.sh",
-				"resetTooltip": "デフォルト値 (wine) にリセット",
-				"saveBtn": "保存",
-				"saveSuccess": "Linux 起動コマンドを保存しました",
-				"saveError": "保存に失敗しました",
-				"note": "注意: この設定を変更した後は、ゲームを再起動すると有効になります。"
-			},
 			"saveBtn": "保存",
+			"sections": {
+				"about": "について",
+				"aboutDescription": "バージョン、更新状態、ドキュメント、フィードバックリンクを確認します。",
+				"account": "アカウントと同期",
+				"accountDescription": "データソースのアカウントトークンとコレクション同期動作を管理します。",
+				"dataSource": "データソース",
+				"dataSourceDescription": "検索ソース、VNDB データ処理、バッチデータ保守を設定します。",
+				"display": "表示と操作",
+				"displayDescription": "言語、コンテンツフィルタ、ゲームカードの操作方法を調整します。",
+				"storage": "パスとバックアップ",
+				"storageDescription": "ローカルパスを設定し、データのバックアップと復元を実行します。",
+				"system": "システム",
+				"systemDescription": "起動、ログ、終了動作、時間計測モードを管理します。"
+			},
 			"skipCloseRemind": "再度確認しない",
 			"spoilerLevel": {
 				"description": "ネタバレレベルを選択して、適切なタグコンテンツを取得する",
@@ -673,6 +685,9 @@
 				"title": "ゲーム計時モード"
 			},
 			"tokenPlaceholder": "BGM TOKENを入力してください",
+			"vndbData": {
+				"title": "VNDBデータ設定"
+			},
 			"vndbToken": "VNDB トークン",
 			"vndbTokenPlaceholder": "VNDB Token を入力してください",
 			"vndbTokenSettings": {
@@ -683,24 +698,6 @@
 				"saveError": "VNDB Token の保存に失敗しました",
 				"saveSuccess": "VNDB Token を保存しました",
 				"userId": "ユーザー ID: {{id}}"
-			},
-			"vndbData": {
-				"title": "VNDBデータ設定"
-			},
-			"navigation": "設定カテゴリナビゲーション",
-			"sections": {
-				"account": "アカウントと同期",
-				"accountDescription": "データソースのアカウントトークンとコレクション同期動作を管理します。",
-				"dataSource": "データソース",
-				"dataSourceDescription": "検索ソース、VNDB データ処理、バッチデータ保守を設定します。",
-				"display": "表示と操作",
-				"displayDescription": "言語、コンテンツフィルタ、ゲームカードの操作方法を調整します。",
-				"system": "システム",
-				"systemDescription": "起動、ログ、終了動作、時間計測モードを管理します。",
-				"storage": "パスとバックアップ",
-				"storageDescription": "ローカルパスを設定し、データのバックアップと復元を実行します。",
-				"about": "について",
-				"aboutDescription": "バージョン、更新状態、ドキュメント、フィードバックリンクを確認します。"
 			}
 		}
 	},
@@ -708,9 +705,7 @@
 		"formatPlayTime": {
 			"hours_other": "{{count}}時間",
 			"hoursAndMinutes": "{{hours}}時間{{minutes}}分",
-			"minutes_other": "{{count}}分",
-			"hours": "{{hours}} 時間",
-			"minutes": "{{minutes}} 分"
+			"minutes_other": "{{count}}分"
 		},
 		"handleDirectory": {
 			"allFiles": "すべてのファイル",
@@ -722,10 +717,7 @@
 			"hoursAgo_other": "{{count}}時間前",
 			"justNow": "たった今",
 			"lastWeek": "先週",
-			"minutesAgo_other": "{{count}}分前",
-			"daysAgo": "{{count}} 日前",
-			"hoursAgo": "{{count}} 時間前",
-			"minutesAgo": "{{count}} 分前"
+			"minutesAgo_other": "{{count}}分前"
 		}
 	}
 }

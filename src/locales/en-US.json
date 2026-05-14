@@ -1,20 +1,4 @@
 {
-	"errors": {
-		"authFailed": "Authentication failed. Please check your credentials or permissions",
-		"badRequest": "The request parameters are invalid. Please review and try again",
-		"bgmTokenRequired": "BGM Token is required. Please configure it first",
-		"invalidGameId": "The game ID format is invalid",
-		"invokeFailed": "The application command failed. Please try again later",
-		"metadataNotFound": "No matching metadata was found",
-		"metadataRequestFailed": "Failed to fetch metadata. Please try again later",
-		"mixedSourcesFailed": "All data sources failed to respond",
-		"notFound": "The requested content was not found",
-		"requestFailed": "The request failed. Please try again later",
-		"responseParseFailed": "Failed to parse the response. Please try again later",
-		"unknownError": "Unknown error",
-		"unsupportedSource": "Unsupported data source",
-		"updatePlayStatusFailed": "Failed to update play status"
-	},
 	"app": {
 		"NAVIGATION": {
 			"collection": "Collection",
@@ -47,58 +31,29 @@
 			"cancel": "Cancel",
 			"confirm": "Confirm",
 			"developer": "Developer",
+			"dragDropHere": "Drop files here",
+			"dragHint": "Please select or drag an executable file or folder",
+			"emptyFolder": "No executable files found in this folder",
 			"enableCustomMode": "Enable Custom Mode",
 			"gameExists": "Game already exists",
 			"gameIDTips": "Game ID",
 			"gameName": "Game Name",
+			"invalidFile": "Please drag a valid executable file (.exe/.bat/.cmd) or folder",
 			"noBgmToken": "BGM Token is missing, unable to fetch data",
 			"noExecutableSelected": "No executable selected",
 			"noResults": "No results found",
 			"noResultsBgm": "Game not found on Bangumi, please try another name or check the ID",
+			"noResultsKun": "Game not found on Kungal, please try another name or check the ID",
 			"noResultsMixed": "Game not found on any data source",
 			"noResultsVndb": "Game not found on VNDB, please try another name or check the ID",
 			"noResultsYmgal": "Game not found on YMGal, please try another name or check the ID",
-			"noResultsKun": "Game not found on Kungal, please try another name or check the ID",
 			"processing": "Processing...",
-			"dragHint": "Please select or drag an executable file or folder",
-			"dragDropHere": "Drop files here",
-			"invalidFile": "Please drag a valid executable file (.exe/.bat/.cmd) or folder",
-			"emptyFolder": "No executable files found in this folder",
 			"selectFromFolder": "Multiple executables found in folder, please select one",
 			"selectGame": "Select Game",
 			"selectLauncher": "Select Launcher",
 			"singleTab": "Single Add",
 			"timeout": "Request timed out, please try again later",
 			"viewMore": "View More"
-		},
-		"BulkImportModal": {
-			"selectRootFolder": "Select Root Folder",
-			"noFolderSelected": "No folder selected",
-			"searchName": "Search Name",
-			"matchedGame": "Matched Game",
-			"status": "Status",
-			"executable": "Executable",
-			"actions": "Actions",
-			"noGamesFound": "No importable games found",
-			"statusPending": "Pending",
-			"statusMatched": "Matched",
-			"statusNotFound": "Not Found",
-			"statusImported": "Imported",
-			"statusError": "Error",
-			"selectExe": "Select Executable",
-			"cancel": "Cancel",
-			"matchMetadata": "Match Metadata",
-			"importAll": "Import All",
-			"editMetadata": "Edit Game Info",
-			"reset": "Reset",
-			"saveNameOnly": "Save Name Only",
-			"search": "Search",
-			"importSummary": "Successfully imported {{success}}/{{total}} games",
-			"importPartialFailed": "{{failed}} games failed to import",
-			"gamesCount_one": "{{count}} game",
-			"gamesCount_other": "{{count}} games",
-			"matchCancelled": "Match task cancelled",
-			"gamesCount": "{{count}} games"
 		},
 		"AlertBox": {
 			"bgmData": "BGM Data",
@@ -116,8 +71,41 @@
 			"vndbData": "VNDB Data",
 			"ymgalData": "Ymgal Data"
 		},
-		"GameListStateView": {
-			"empty": "No matching games found"
+		"AppLayout": {
+			"back": "Back"
+		},
+		"BulkImportModal": {
+			"actions": "Actions",
+			"cancel": "Cancel",
+			"editMetadata": "Edit Game Info",
+			"executable": "Executable",
+			"gamesCount_one": "{{count}} game",
+			"gamesCount_other": "{{count}} games",
+			"importAll": "Import All",
+			"importPartialFailed": "{{failed}} games failed to import",
+			"importSummary": "Successfully imported {{success}}/{{total}} games",
+			"matchCancelled": "Match task cancelled",
+			"matchedGame": "Matched Game",
+			"matchMetadata": "Match Metadata",
+			"noFolderSelected": "No folder selected",
+			"noGamesFound": "No importable games found",
+			"reset": "Reset",
+			"saveNameOnly": "Save Name Only",
+			"search": "Search",
+			"searchName": "Search Name",
+			"selectExe": "Select Executable",
+			"selectRootFolder": "Select Root Folder",
+			"status": "Status",
+			"statusError": "Error",
+			"statusImported": "Imported",
+			"statusMatched": "Matched",
+			"statusNotFound": "Not Found",
+			"statusPending": "Pending"
+		},
+		"Cards": {
+			"removeFromCategory": "Remove from Current Category",
+			"removeFromCategoryFailed": "Failed to remove from category",
+			"removeFromCategorySuccess": "Removed from current category"
 		},
 		"Collection": {
 			"errors": {
@@ -126,8 +114,7 @@
 			},
 			"success": {
 				"categoryGamesUpdated_one": "Category games updated: {{count}} game",
-				"categoryGamesUpdated_other": "Category games updated: {{count}} games",
-				"categoryGamesUpdated": "Category games updated"
+				"categoryGamesUpdated_other": "Category games updated: {{count}} games"
 			}
 		},
 		"CollectionPicker": {
@@ -144,33 +131,31 @@
 			"save": "Save",
 			"saveFailed": "Failed to update collection"
 		},
-		"Cards": {
-			"removeFromCategory": "Remove from Current Category",
-			"removeFromCategoryFailed": "Failed to remove from category",
-			"removeFromCategorySuccess": "Removed from current category"
-		},
 		"FilterSortModal": {
+			"addTime": "Add Time (Default)",
 			"allGames": "All Games",
+			"allStatuses": "All",
+			"ascending": "Ascending",
+			"bgmRank": "BGM Rank",
 			"cancel": "Cancel",
 			"confirm": "Confirm",
 			"customGames": "Custom Games",
-			"filter": "Filter",
-			"localGames": "Local Games",
-			"onlineGames": "Cloud Games",
-			"sourceFilter": "Game Source",
-			"playStatusFilter": "Play Status",
-			"allStatuses": "All",
-			"title": "Filter & Sort",
-			"addTime": "Add Time (Default)",
-			"ascending": "Ascending",
-			"bgmRank": "BGM Rank",
 			"descending": "Descending",
+			"filter": "Filter",
 			"lastPlayed": "Last Played",
+			"localGames": "Local Games",
 			"nameSort": "Name Sort",
+			"onlineGames": "Cloud Games",
+			"playStatusFilter": "Play Status",
 			"releaseTime": "Game Release Time",
 			"sortMethod": "Sort Method",
 			"sortOrder": "Sort Order",
+			"sourceFilter": "Game Source",
+			"title": "Filter & Sort",
 			"vndbRank": "VNDB Rank"
+		},
+		"GameListStateView": {
+			"empty": "No matching games found"
 		},
 		"LaunchModal": {
 			"gamePathNotFound": "Game path not found",
@@ -185,10 +170,6 @@
 			"stopFailed": "Failed to stop game:",
 			"stoppingGame": "Stopping game...",
 			"syncLocalPath": "Sync Local"
-		},
-		"SelectedGameGuard": {
-			"noSelected": "Please select a game first",
-			"notFound": "Game not found or has been deleted"
 		},
 		"PathSettingsModal": {
 			"close": "Close",
@@ -215,7 +196,6 @@
 			},
 			"saveBtn": "Save",
 			"saveError": "Failed to save path settings: {{error}}",
-			"saveSuccess": "Path settings saved",
 			"savePath": {
 				"moveBackupWarning": "Backup path saved, but failed to migrate old backups: {{error}}",
 				"note": "Set the root directory path for game save backups. Leave empty to use the default path",
@@ -224,9 +204,10 @@
 				"selectBtn": "Select Directory",
 				"title": "Game Save Backup Path"
 			},
+			"saveSuccess": "Path settings saved",
+			"saving": "Saving...",
 			"selectFileError": "Failed to select file: {{error}}",
 			"selectFolderError": "Failed to select directory: {{error}}",
-			"saving": "Saving...",
 			"title": "Path Settings"
 		},
 		"RightMenu": {
@@ -250,17 +231,17 @@
 		"SearchBox": {
 			"search": "Search"
 		},
+		"SelectedGameGuard": {
+			"noSelected": "Please select a game first",
+			"notFound": "Game not found or has been deleted"
+		},
 		"Snackbar": {
 			"failedOpenDatabaseBackupFolder": "Failed to open the database backup folder",
 			"failedOpenGameFolder": "Failed to open the game folder",
 			"gameAddedSuccess": "Game added successfully",
 			"viewDetails": "View Details"
 		},
-		"AppLayout": {
-			"back": "Back"
-		},
 		"Toolbar": {
-			"bgmlink": "View Bangumi Page",
 			"Batch": {
 				"addToCollection": "Add to Collection",
 				"clearSelection": "Clear",
@@ -280,6 +261,7 @@
 				"selectedCount_other": "{{count}} selected",
 				"start": "Batch Actions"
 			},
+			"bgmlink": "View Bangumi Page",
 			"Category": {
 				"availableGames": "Available Games",
 				"gamesInCategory": "Games in Category",
@@ -306,6 +288,7 @@
 			},
 			"deleteGame": "Delete Game",
 			"deleting": "Deleting...",
+			"kunlink": "View Kungal Page",
 			"leLaunch": "LE Region Launch",
 			"lePathNotSet": "LE region switching software path not set, please configure the path first",
 			"magpiePathNotSet": "Magpie software path not set, please configure the path first",
@@ -317,8 +300,7 @@
 			"themeLight": "Light",
 			"themeSystem": "System",
 			"vndblink": "View Vndb Page",
-			"ymgallink": "View Ymgal Page",
-			"kunlink": "View Kungal Page"
+			"ymgallink": "View Ymgal Page"
 		},
 		"Tray": {
 			"exit": "Exit",
@@ -334,10 +316,9 @@
 			},
 			"runningExitDialog": {
 				"exitApp": "Exit Anyway",
-				"message": "{{count}} game(s) are still running. Exiting the app will not close those games, but the recorded playtime for this session will be lost. Do you still want to exit?",
-				"title": "Exit Reminder",
 				"message_one": "{{count}} game is still running. Exiting the app will not close it, but the recorded playtime for this session will be lost. Do you still want to exit?",
-				"message_other": "{{count}} games are still running. Exiting the app will not close them, but the recorded playtime for this session will be lost. Do you still want to exit?"
+				"message_other": "{{count}} games are still running. Exiting the app will not close them, but the recorded playtime for this session will be lost. Do you still want to exit?",
+				"title": "Exit Reminder"
 			},
 			"UpdateModal": {
 				"cancel": "Cancel",
@@ -351,6 +332,22 @@
 				"update": "Update Now"
 			}
 		}
+	},
+	"errors": {
+		"authFailed": "Authentication failed. Please check your credentials or permissions",
+		"badRequest": "The request parameters are invalid. Please review and try again",
+		"bgmTokenRequired": "BGM Token is required. Please configure it first",
+		"invalidGameId": "The game ID format is invalid",
+		"invokeFailed": "The application command failed. Please try again later",
+		"metadataNotFound": "No matching metadata was found",
+		"metadataRequestFailed": "Failed to fetch metadata. Please try again later",
+		"mixedSourcesFailed": "All data sources failed to respond",
+		"notFound": "The requested content was not found",
+		"requestFailed": "The request failed. Please try again later",
+		"responseParseFailed": "Failed to parse the response. Please try again later",
+		"unknownError": "Unknown error",
+		"unsupportedSource": "Unsupported data source",
+		"updatePlayStatusFailed": "Failed to update play status"
 	},
 	"home": {
 		"activity": {
@@ -403,9 +400,6 @@
 				"groupDeleted": "Group deleted"
 			}
 		},
-		"Libraries": {
-			"empty": "No matching games found"
-		},
 		"Detail": {
 			"addTime": "Added Time",
 			"backup": "Backup",
@@ -445,8 +439,8 @@
 				"selectSaveDataFolder": "Select Save Data Folder",
 				"setPathForRestore": "Please set save data path first to restore backup",
 				"settings": "Backup Settings",
-				"settingsSaveFailed": "Failed to save backup settings",
-				"settingsSaved": "Backup settings saved successfully"
+				"settingsSaved": "Backup settings saved successfully",
+				"settingsSaveFailed": "Failed to save backup settings"
 			},
 			"backupCount": "Backup Count",
 			"collapseTags": "Collapse Tags",
@@ -511,13 +505,16 @@
 			"gameTags": "Game Tags",
 			"introduction": "Introduction",
 			"loading": "Loading...",
+			"manageCollections": "Manage Collections",
 			"notFound": "Game data not found",
 			"playCount": "Total Play Count",
 			"playTimeChart": "Play Time Chart",
 			"releaseDate": "Release Date",
 			"todayPlayTime": "Today's Play Time",
-			"totalPlayTime": "Total Play Time",
-			"manageCollections": "Manage Collections"
+			"totalPlayTime": "Total Play Time"
+		},
+		"Libraries": {
+			"empty": "No matching games found"
 		},
 		"Settings": {
 			"about": {
@@ -526,10 +523,10 @@
 				"checkFailed": "Failed to check for updates: {{error}}",
 				"checking": "Checking...",
 				"checkUpdate": "Check for Updates",
-				"noUpdate": "You are already on the latest version",
 				"docs": "Documentation",
 				"feedback": "Report an Issue",
 				"github": "Project Repository",
+				"noUpdate": "You are already on the latest version",
 				"updateFound": "New version found: {{version}}",
 				"version": "Version"
 			},
@@ -596,26 +593,22 @@
 				"vndbDescription": "Try to read the VNDB collection status when adding a game, and sync local status changes back to VNDB.",
 				"vndbTitle": "Enable VNDB collection sync"
 			},
-			"mixedSearchSources": {
-				"description": "This setting only affects mixed search requests when adding games. BGM and VNDB are always enabled, while YMGal and Kungal can be enabled as needed.",
-				"title": "Mixed Search Sources"
-			},
 			"databaseBackup": {
 				"backing": "Backing up...",
+				"backingCovers": "Backing up covers...",
 				"backup": "Backup Database",
+				"backupCovers": "Backup Custom Covers",
 				"backupError": "Database backup failed: {{error}}",
 				"backupFailed": "Backup failed",
 				"backupSuccess": "Database backup successful: {{path}}",
-				"backingCovers": "Backing up covers...",
-				"backupCovers": "Backup Custom Covers",
 				"coverBackupError": "Custom cover backup failed: {{error}}",
 				"coverBackupFailed": "Failed to backup custom covers",
 				"coverBackupSuccess": "Custom covers backup successful: {{path}}",
-				"noCoversToBackup": "No custom covers to backup",
 				"importError": "Failed to import database: {{error}}",
 				"importFailed": "Import failed",
 				"importing": "Importing...",
 				"importSuccess": "Database imported successfully, application will restart automatically",
+				"noCoversToBackup": "No custom covers to backup",
 				"openFolder": "Open Backup Folder",
 				"openFolderError": "Failed to open backup folder: {{error}}",
 				"openFolderFailed": "Failed to open folder",
@@ -629,6 +622,17 @@
 			},
 			"getToken": "Get Token",
 			"language": "Language",
+			"linuxLaunchCommand": {
+				"commandLabel": "Launch Command",
+				"description": "Set the command used to launch Windows executable files (.exe) on Linux. Supports wine, proton, or other compatibility-layer commands, and can also be a full path to an executable or script available in PATH.",
+				"helperText": "For example: wine, /usr/bin/wine, ~/scripts/run-game.sh",
+				"note": "Note: You need to restart the game for this setting to take effect.",
+				"resetTooltip": "Reset to default (wine)",
+				"saveBtn": "Save",
+				"saveError": "Save failed",
+				"saveSuccess": "Linux launch command saved",
+				"title": "Linux Launch Command"
+			},
 			"logLevel": {
 				"changed": "Log level changed to {{level}}",
 				"changeFailed": "Failed to change log level",
@@ -639,6 +643,11 @@
 				"openFolderFailed": "Failed to open folder",
 				"title": "Log Settings"
 			},
+			"mixedSearchSources": {
+				"description": "This setting only affects mixed search requests when adding games. BGM and VNDB are always enabled, while YMGal and Kungal can be enabled as needed.",
+				"title": "Mixed Search Sources"
+			},
+			"navigation": "Settings category navigation",
 			"nsfw": {
 				"coverReplace": "NSFW cover replace",
 				"filter": "Filter NSFW content",
@@ -649,18 +658,21 @@
 				"openModal": "Open Path Settings",
 				"title": "Path Settings"
 			},
-			"linuxLaunchCommand": {
-				"title": "Linux Launch Command",
-				"description": "Set the command used to launch Windows executable files (.exe) on Linux. Supports wine, proton, or other compatibility-layer commands, and can also be a full path to an executable or script available in PATH.",
-				"commandLabel": "Launch Command",
-				"helperText": "For example: wine, /usr/bin/wine, ~/scripts/run-game.sh",
-				"resetTooltip": "Reset to default (wine)",
-				"saveBtn": "Save",
-				"saveSuccess": "Linux launch command saved",
-				"saveError": "Save failed",
-				"note": "Note: You need to restart the game for this setting to take effect."
-			},
 			"saveBtn": "Save",
+			"sections": {
+				"about": "About",
+				"aboutDescription": "View version, update status, documentation, and feedback links.",
+				"account": "Account & Sync",
+				"accountDescription": "Manage data source account tokens and collection sync behavior.",
+				"dataSource": "Data Sources",
+				"dataSourceDescription": "Configure search sources, VNDB data handling, and batch data maintenance.",
+				"display": "Display & Interaction",
+				"displayDescription": "Adjust language, content filtering, and game card interactions.",
+				"storage": "Paths & Backup",
+				"storageDescription": "Configure local paths, and run data backup or restore.",
+				"system": "System",
+				"systemDescription": "Manage startup, logs, close behavior, and time tracking mode."
+			},
 			"skipCloseRemind": "Don't remind again",
 			"spoilerLevel": {
 				"description": "Select spoiler level to get appropriate tag content",
@@ -682,6 +694,9 @@
 				"title": "Game Time Tracking Mode"
 			},
 			"tokenPlaceholder": "Please enter your BGM TOKEN",
+			"vndbData": {
+				"title": "VNDB Data Settings"
+			},
 			"vndbToken": "VNDB Token",
 			"vndbTokenPlaceholder": "Please enter your VNDB Token",
 			"vndbTokenSettings": {
@@ -692,24 +707,6 @@
 				"saveError": "Failed to save VNDB Token",
 				"saveSuccess": "VNDB Token saved successfully",
 				"userId": "User ID: {{id}}"
-			},
-			"vndbData": {
-				"title": "VNDB Data Settings"
-			},
-			"navigation": "Settings category navigation",
-			"sections": {
-				"account": "Account & Sync",
-				"accountDescription": "Manage data source account tokens and collection sync behavior.",
-				"dataSource": "Data Sources",
-				"dataSourceDescription": "Configure search sources, VNDB data handling, and batch data maintenance.",
-				"display": "Display & Interaction",
-				"displayDescription": "Adjust language, content filtering, and game card interactions.",
-				"system": "System",
-				"systemDescription": "Manage startup, logs, close behavior, and time tracking mode.",
-				"storage": "Paths & Backup",
-				"storageDescription": "Configure local paths, and run data backup or restore.",
-				"about": "About",
-				"aboutDescription": "View version, update status, documentation, and feedback links."
 			}
 		}
 	},
@@ -719,9 +716,7 @@
 			"hours_other": "{{count}} hours",
 			"hoursAndMinutes": "{{hours}}h {{minutes}}min",
 			"minutes_one": "{{count}} minute",
-			"minutes_other": "{{count}} minutes",
-			"hours": "{{hours}}h",
-			"minutes": "{{minutes}}m"
+			"minutes_other": "{{count}} minutes"
 		},
 		"handleDirectory": {
 			"allFiles": "All Files",
@@ -736,10 +731,7 @@
 			"justNow": "Just now",
 			"lastWeek": "Last week",
 			"minutesAgo_one": "{{count}} minute ago",
-			"minutesAgo_other": "{{count}} minutes ago",
-			"daysAgo": "{{count}} days ago",
-			"hoursAgo": "{{count}} hours ago",
-			"minutesAgo": "{{count}} minutes ago"
+			"minutesAgo_other": "{{count}} minutes ago"
 		}
 	}
 }

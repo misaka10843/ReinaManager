@@ -119,7 +119,7 @@ export function CollectionPickerDialog({
 				snackbar.success(
 					t("components.CollectionPicker.addSuccess", {
 						count: gameIds.length,
-						defaultValue: `已添加 ${gameIds.length} 个游戏到收藏夹`,
+						defaultValue: "已添加 {{count}} 个游戏到收藏夹",
 					}),
 				);
 			} else if (manageGameId) {
@@ -226,7 +226,7 @@ export function CollectionPickerDialog({
 												primary={category.name}
 												secondary={t("components.CollectionPicker.gameCount", {
 													count: category.game_count,
-													defaultValue: `${category.game_count} 个游戏`,
+													defaultValue: "{{count}} 个游戏",
 												})}
 											/>
 										</ListItemButton>
