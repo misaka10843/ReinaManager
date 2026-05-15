@@ -1,3 +1,83 @@
+## [0.20.4](https://github.com/huoshen80/ReinaManager/compare/v0.20.3...v0.20.4) (2026-05-15)
+
+<details>
+<summary>查看中文版本</summary>
+
+### ⚙️ 杂类任务
+
+- *(i18n)* 添加同步脚本 ([41cfd6d](https://github.com/huoshen80/ReinaManager/commit/41cfd6d6cd002525e8582a416a88f89466bceb61))
+
+### ✨ 新功能
+
+- *(game-list)* 统一列表状态视图 ([3a373c3](https://github.com/huoshen80/ReinaManager/commit/3a373c34a933191f96b7c1aa04234d7b5e2899da))
+
+### 🐛 Bug 修复
+
+- *(collection)* 删除功能被禁用时跳过 AlertConfirmBox 渲染 ([672cf1a](https://github.com/huoshen80/ReinaManager/commit/672cf1ada9cf05e9842bd272e06e3f407c367ce9))
+- *(i18n)* 保留提取出的复数键 ([d04d0e4](https://github.com/huoshen80/ReinaManager/commit/d04d0e4310ec8d5852348cdcc98a62e9c89a80b8))
+- *(i18n)* 同步默认回退文本 ([a691bdf](https://github.com/huoshen80/ReinaManager/commit/a691bdfdba76db59da4ccd4668a8e279b23e84ef))
+- *(i18n)* 使用静态 count 默认值 ([75f3892](https://github.com/huoshen80/ReinaManager/commit/75f3892742f679707d511c02c801daf4dbdad353))
+- *(logging)* 保留轮转日志文件 ([cd74277](https://github.com/huoshen80/ReinaManager/commit/cd742772033f71f902b4bcc17db3505340cbf2d0))
+
+### 📚 文档
+
+- *(games)* 记录游戏数据缓存流程 ([be08957](https://github.com/huoshen80/ReinaManager/commit/be089575e2993ec9519c854ee6d57c03b20f0497))
+
+### 🚀 性能优化
+
+- *(game-list)* 将过滤步骤合并为单次循环 ([5d9cec3](https://github.com/huoshen80/ReinaManager/commit/5d9cec3da6c5a15400708a1db26015a5136b1493))
+- *(games)* 写入后修补游戏缓存 ([4358d30](https://github.com/huoshen80/ReinaManager/commit/4358d30e9d10a3ab5b37ab4137c55e194063b9f8))
+- *(search)* 简化游戏搜索流程 ([cf96ac4](https://github.com/huoshen80/ReinaManager/commit/cf96ac4edfa978b3c42acb6bfd4b599bf649075c))
+- *(collection)* 批量处理分类游戏计数 ([7e4100d](https://github.com/huoshen80/ReinaManager/commit/7e4100d737b0f825e5678864f999715523e1ffa4))
+
+### 🚜 重构
+
+- *(game-index)* 引入统一的 GameIndex 并移除详情缓存层 ([3a5db3b](https://github.com/huoshen80/ReinaManager/commit/3a5db3bed020a4fb350df38a230d517217884d08))
+- *(cards)* 传递 displayById 映射，而不是逐个查找游戏 ([0693184](https://github.com/huoshen80/ReinaManager/commit/0693184f251168e88f077b22b65e1cc7e6af3a90))
+- *(pages)* 在页面和虚拟分类中集成 GameIndex ([2c1b06c](https://github.com/huoshen80/ReinaManager/commit/2c1b06c20dc08a0e86edc92e2a76bce4a95c73c6))
+- *(games)* 改进开发者分类 ID 哈希函数 ([df99b78](https://github.com/huoshen80/ReinaManager/commit/df99b78b490e5289bafaca1462c52a463a8f186b))
+- *(home)* 移除包装 hook 并虚拟化游戏列表 ([f3613ee](https://github.com/huoshen80/ReinaManager/commit/f3613ee5df3420432981cfb147dce0d8f870ca12))
+- *(collection)* 收窄合集类型 ([ff9a956](https://github.com/huoshen80/ReinaManager/commit/ff9a9567fdd2dae930319f2771af8dcbe23954a5))
+
+</details>
+
+### ⚙️ Miscellaneous Tasks
+
+- *(i18n)* Add sync script ([41cfd6d](https://github.com/huoshen80/ReinaManager/commit/41cfd6d6cd002525e8582a416a88f89466bceb61))
+
+### ✨ Features
+
+- *(game-list)* Unify list state views ([3a373c3](https://github.com/huoshen80/ReinaManager/commit/3a373c34a933191f96b7c1aa04234d7b5e2899da))
+
+### 🐛 Bug Fixes
+
+- *(collection)* Skip AlertConfirmBox render when delete is disabled ([672cf1a](https://github.com/huoshen80/ReinaManager/commit/672cf1ada9cf05e9842bd272e06e3f407c367ce9))
+- *(i18n)* Preserve extracted plural keys ([d04d0e4](https://github.com/huoshen80/ReinaManager/commit/d04d0e4310ec8d5852348cdcc98a62e9c89a80b8))
+- *(i18n)* Sync default fallback text ([a691bdf](https://github.com/huoshen80/ReinaManager/commit/a691bdfdba76db59da4ccd4668a8e279b23e84ef))
+- *(i18n)* Use static count defaults ([75f3892](https://github.com/huoshen80/ReinaManager/commit/75f3892742f679707d511c02c801daf4dbdad353))
+- *(logging)* Keep rotated log files ([cd74277](https://github.com/huoshen80/ReinaManager/commit/cd742772033f71f902b4bcc17db3505340cbf2d0))
+
+### 📚 Documentation
+
+- *(games)* Document game data cache flow ([be08957](https://github.com/huoshen80/ReinaManager/commit/be089575e2993ec9519c854ee6d57c03b20f0497))
+
+### 🚀 Performance
+
+- *(game-list)* Merge filter passes into single loop ([5d9cec3](https://github.com/huoshen80/ReinaManager/commit/5d9cec3da6c5a15400708a1db26015a5136b1493))
+- *(games)* Patch game caches after writes ([4358d30](https://github.com/huoshen80/ReinaManager/commit/4358d30e9d10a3ab5b37ab4137c55e194063b9f8))
+- *(search)* Simplify game search flow ([cf96ac4](https://github.com/huoshen80/ReinaManager/commit/cf96ac4edfa978b3c42acb6bfd4b599bf649075c))
+- *(collection)* Batch category game counts ([7e4100d](https://github.com/huoshen80/ReinaManager/commit/7e4100d737b0f825e5678864f999715523e1ffa4))
+
+### 🚜 Refactor
+
+- *(game-index)* Introduce unified GameIndex and remove detail cache layer ([3a5db3b](https://github.com/huoshen80/ReinaManager/commit/3a5db3bed020a4fb350df38a230d517217884d08))
+- *(cards)* Pass displayById map instead of individual game lookups ([0693184](https://github.com/huoshen80/ReinaManager/commit/0693184f251168e88f077b22b65e1cc7e6af3a90))
+- *(pages)* Integrate GameIndex across pages and virtual categories ([2c1b06c](https://github.com/huoshen80/ReinaManager/commit/2c1b06c20dc08a0e86edc92e2a76bce4a95c73c6))
+- *(games)* Improve developer category ID hash fn ([df99b78](https://github.com/huoshen80/ReinaManager/commit/df99b78b490e5289bafaca1462c52a463a8f186b))
+- *(home)* Remove wrapper hook and virtualize game list ([f3613ee](https://github.com/huoshen80/ReinaManager/commit/f3613ee5df3420432981cfb147dce0d8f870ca12))
+- *(collection)* Narrow collection types ([ff9a956](https://github.com/huoshen80/ReinaManager/commit/ff9a9567fdd2dae930319f2771af8dcbe23954a5))
+
+
 ## [0.20.3](https://github.com/huoshen80/ReinaManager/compare/v0.20.2...v0.20.3) (2026-05-11)
 
 <details>
