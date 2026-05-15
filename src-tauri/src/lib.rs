@@ -8,7 +8,7 @@ use database::db::{backup_database, import_database};
 use database::*;
 use migration::MigratorTrait;
 use tauri::Manager;
-use tauri_plugin_log::{Target, TargetKind, TimezoneStrategy};
+use tauri_plugin_log::{RotationStrategy, Target, TargetKind, TimezoneStrategy};
 use utils::{
     bgm_auth::{bgm_oauth_exchange_code, bgm_oauth_refresh_token, bgm_oauth_start_login},
     fs::{
@@ -21,6 +21,9 @@ use utils::{
     logs::{get_reina_log_level, set_reina_log_level},
     scan::scan_directory_for_games,
 };
+
+const LOG_MAX_FILE_SIZE: u128 = 1_000_000;
+const LOG_KEEP_FILE_COUNT: usize = 5;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -132,6 +135,8 @@ pub fn run() {
                     tauri_plugin_log::Builder::default()
                         .timezone_strategy(TimezoneStrategy::UseLocal)
                         .level(log::LevelFilter::Debug) // 允许运行时动态调整到任意级别
+                        .max_file_size(LOG_MAX_FILE_SIZE)
+                        .rotation_strategy(RotationStrategy::KeepSome(LOG_KEEP_FILE_COUNT))
                         .targets([
                             Target::new(TargetKind::LogDir {
                                 // set custom log file name for debug
@@ -147,6 +152,8 @@ pub fn run() {
                     tauri_plugin_log::Builder::default()
                         .timezone_strategy(TimezoneStrategy::UseLocal)
                         .level(log::LevelFilter::Info) // 允许运行时动态调整到任意级别
+                        .max_file_size(LOG_MAX_FILE_SIZE)
+                        .rotation_strategy(RotationStrategy::KeepSome(LOG_KEEP_FILE_COUNT))
                         .build(),
                 )?;
             }
