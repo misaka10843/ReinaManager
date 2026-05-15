@@ -121,8 +121,8 @@ function useCreateGroup() {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: ({ name, icon }: { name: string; icon?: string }) =>
-			collectionService.createCollection(name, null, 0, icon ?? null),
+		mutationFn: ({ name }: { name: string }) =>
+			collectionService.createCollection(name, null, 0),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: collectionKeys.groups() });
 		},
@@ -158,15 +158,8 @@ function useCreateCategory() {
 	const queryClient = useQueryClient();
 
 	return useMutation({
-		mutationFn: ({
-			name,
-			groupId,
-			icon,
-		}: {
-			name: string;
-			groupId: number;
-			icon?: string;
-		}) => collectionService.createCollection(name, groupId, 0, icon ?? null),
+		mutationFn: ({ name, groupId }: { name: string; groupId: number }) =>
+			collectionService.createCollection(name, groupId, 0),
 		onSuccess: (_, { groupId }) => {
 			queryClient.invalidateQueries({
 				queryKey: collectionKeys.categories(groupId.toString()),

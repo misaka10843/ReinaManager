@@ -3,18 +3,8 @@
  * @description 封装所有合集相关的后端调用
  */
 
-import type { Category, Group } from "@/types/collection";
+import type { CollectionCategory, CollectionGroup } from "@/types/collection";
 import { BaseService } from "./base";
-
-export interface Collection {
-	id: number;
-	name: string;
-	parent_id?: number | null;
-	sort_order: number;
-	icon?: string | null;
-	created_at?: number;
-	updated_at?: number;
-}
 
 class CollectionService extends BaseService {
 	/**
@@ -24,13 +14,11 @@ class CollectionService extends BaseService {
 		name: string,
 		parentId: number | null = null,
 		sortOrder: number = 0,
-		icon: string | null = null,
-	): Promise<Collection> {
-		return this.invoke<Collection>("create_collection", {
+	): Promise<CollectionGroup> {
+		return this.invoke<CollectionGroup>("create_collection", {
 			name,
 			parentId,
 			sortOrder,
-			icon,
 		});
 	}
 
@@ -42,14 +30,12 @@ class CollectionService extends BaseService {
 		name?: string,
 		parentId?: number | null,
 		sortOrder?: number,
-		icon?: string | null,
-	): Promise<Collection> {
-		return this.invoke<Collection>("update_collection", {
+	): Promise<CollectionGroup> {
+		return this.invoke<CollectionGroup>("update_collection", {
 			id,
 			name: name || null,
 			parentId: parentId !== undefined ? parentId : null,
-			sortOrder: sortOrder || null,
-			icon: icon !== undefined ? icon : null,
+			sortOrder: sortOrder ?? null,
 		});
 	}
 
@@ -151,15 +137,17 @@ class CollectionService extends BaseService {
 	/**
 	 * 获取所有分组（不含分类）
 	 */
-	async getGroups(): Promise<Group[]> {
-		return this.invoke<Group[]>("find_root_collections");
+	async getGroups(): Promise<CollectionGroup[]> {
+		return this.invoke<CollectionGroup[]>("find_root_collections");
 	}
 
 	/**
 	 * 获取指定分组的分类列表（带游戏数量）
 	 */
-	async getCategoriesWithCount(groupId: number): Promise<Category[]> {
-		return this.invoke<Category[]>("get_categories_with_count", { groupId });
+	async getCategoriesWithCount(groupId: number): Promise<CollectionCategory[]> {
+		return this.invoke<CollectionCategory[]>("get_categories_with_count", {
+			groupId,
+		});
 	}
 }
 

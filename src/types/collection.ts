@@ -3,27 +3,29 @@
  */
 
 /**
- * 分组（Group）- 一级容器
+ * 合集分组（一级容器）。
+ *
+ * 只保留前端当前实际消费的字段。`collections` 表里的 `icon`、
+ * `created_at`、`updated_at` 目前没有投入使用，避免在业务类型里扩散。
  */
-export interface Group {
+export interface CollectionGroup {
 	id: number;
 	name: string;
-	icon?: string;
 	sort_order: number;
-	created_at?: number;
-	updated_at?: number;
 }
 
 /**
- * 分类（Category）- 二级容器
+ * 合集分类（二级容器，带游戏数量）。
  */
-export interface Category {
+export interface CollectionCategory {
 	id: number;
 	name: string;
-	icon?: string;
 	sort_order: number;
 	game_count: number;
 }
+
+export type Group = CollectionGroup;
+export type Category = CollectionCategory;
 
 /**
  * 默认分组类型枚举
