@@ -425,17 +425,6 @@ impl CollectionsRepository {
         Ok(())
     }
 
-    /// 获取合集中的游戏数量
-    pub async fn count_games_in_collection(
-        db: &DatabaseConnection,
-        collection_id: i32,
-    ) -> Result<u64, DbErr> {
-        GameCollectionLink::find()
-            .filter(game_collection_link::Column::CollectionId.eq(collection_id))
-            .count(db)
-            .await
-    }
-
     /// 批量更新分类中的游戏列表（差异计算优化版）
     /// 将分类中的游戏完全替换为 game_ids
     ///
@@ -559,20 +548,39 @@ impl CollectionsRepository {
         db: &DatabaseConnection,
         group_id: i32,
     ) -> Result<Vec<CategoryWithCount>, DbErr> {
-        let categories = Self::find_children(db, group_id).await?;
-        let mut result = Vec::new();
+        use std::collections::HashMap;
 
-        for category in categories {
-            let count = Self::count_games_in_collection(db, category.id).await?;
-            result.push(CategoryWithCount {
+        let categories = Self::find_children(db, group_id).await?;
+        if categories.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let category_ids = categories
+            .iter()
+            .map(|category| category.id)
+            .collect::<Vec<_>>();
+        let counts = GameCollectionLink::find()
+            .filter(game_collection_link::Column::CollectionId.is_in(category_ids))
+            .select_only()
+            .column(game_collection_link::Column::CollectionId)
+            .column_as(game_collection_link::Column::Id.count(), "game_count")
+            .group_by(game_collection_link::Column::CollectionId)
+            .into_tuple::<(i32, i64)>()
+            .all(db)
+            .await?
+            .into_iter()
+            .map(|(collection_id, count)| (collection_id, count as u64))
+            .collect::<HashMap<_, _>>();
+
+        Ok(categories
+            .into_iter()
+            .map(|category| CategoryWithCount {
                 id: category.id,
                 name: category.name,
                 icon: category.icon,
                 sort_order: category.sort_order,
-                game_count: count,
-            });
-        }
-
-        Ok(result)
+                game_count: counts.get(&category.id).copied().unwrap_or(0),
+            })
+            .collect())
     }
 }
