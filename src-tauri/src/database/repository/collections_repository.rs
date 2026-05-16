@@ -1,7 +1,7 @@
 use crate::database::dto::{InsertCollectionData, UpdateCollectionData};
 use crate::entity::prelude::*;
 use crate::entity::{collections, game_collection_link};
-use sea_orm::*;
+use sea_orm::{sea_query::Expr, *};
 use serde::{Deserialize, Serialize};
 
 /// 合集数据仓库
@@ -459,7 +459,7 @@ impl CollectionsRepository {
 
     // ==================== 前端友好的组合 API ====================
 
-    /// 批量获取多个分组的游戏数量（优化版，解决 N+1 查询问题）
+    /// 批量获取多个分组的游戏数量
     ///
     /// 返回 HashMap<group_id, game_count>
     pub async fn batch_count_games_in_groups(
@@ -472,44 +472,32 @@ impl CollectionsRepository {
             return Ok(HashMap::new());
         }
 
-        let mut result = HashMap::new();
+        let mut result = group_ids
+            .iter()
+            .copied()
+            .map(|group_id| (group_id, 0))
+            .collect::<HashMap<_, _>>();
 
-        // 1. 一次查询获取所有分组下的分类
-        let categories = Collections::find()
+        let counts = Collections::find()
             .filter(collections::Column::ParentId.is_in(group_ids.clone()))
+            .join(
+                JoinType::InnerJoin,
+                collections::Relation::GameCollectionLink.def(),
+            )
+            .select_only()
+            .column(collections::Column::ParentId)
+            .column_as(
+                Expr::col(game_collection_link::Column::GameId).count_distinct(),
+                "game_count",
+            )
+            .group_by(collections::Column::ParentId)
+            .into_tuple::<(Option<i32>, i64)>()
             .all(db)
             .await?;
 
-        // 2. 按分组分组分类
-        let mut group_category_map: HashMap<i32, Vec<i32>> = HashMap::new();
-        for category in categories {
-            if let Some(parent_id) = category.parent_id {
-                group_category_map
-                    .entry(parent_id)
-                    .or_default()
-                    .push(category.id);
-            }
-        }
-
-        // 3. 为每个分组统计游戏数（去重）
-        for group_id in group_ids {
-            if let Some(category_ids) = group_category_map.get(&group_id) {
-                if category_ids.is_empty() {
-                    result.insert(group_id, 0);
-                    continue;
-                }
-
-                let count = GameCollectionLink::find()
-                    .filter(game_collection_link::Column::CollectionId.is_in(category_ids.clone()))
-                    .select_only()
-                    .column_as(game_collection_link::Column::GameId, "game_id")
-                    .distinct()
-                    .count(db)
-                    .await?;
-
-                result.insert(group_id, count);
-            } else {
-                result.insert(group_id, 0);
+        for (group_id, count) in counts {
+            if let Some(group_id) = group_id {
+                result.insert(group_id, count as u64);
             }
         }
 

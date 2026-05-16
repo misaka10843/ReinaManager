@@ -17,6 +17,10 @@ import {
 	patchManyGameCaches,
 	removeGamesFromCaches,
 } from "@/hooks/queries/gameCachePatch";
+import {
+	LOCAL_DATA_GC_TIME,
+	LOCAL_DATA_STALE_TIME,
+} from "@/providers/queryClient";
 import type { GameType, SortOption, SortOrder } from "@/services/invoke";
 import { gameService } from "@/services/invoke";
 import type {
@@ -40,6 +44,11 @@ const listRelevantUpdateFields = new Set<keyof UpdateGameParams>([
 	"kun_data",
 	"custom_data",
 ]);
+
+const localGameQueryOptions = {
+	staleTime: LOCAL_DATA_STALE_TIME,
+	gcTime: LOCAL_DATA_GC_TIME,
+};
 
 function shouldInvalidateGameLists(updates: UpdateGameParams): boolean {
 	return Object.keys(updates).some((field) =>
@@ -74,6 +83,7 @@ function useAllGames() {
 	return useQuery({
 		queryKey: gameKeys.all,
 		queryFn: () => gameService.getAllGames("all"),
+		...localGameQueryOptions,
 	});
 }
 
@@ -97,6 +107,7 @@ function useGameIdList(
 		queryFn: () =>
 			gameService.getGameIds(gameType, sortOption, sortOrder, language),
 		placeholderData: keepPreviousData,
+		...localGameQueryOptions,
 	});
 }
 
@@ -104,6 +115,7 @@ function useAllVndbIds() {
 	return useQuery({
 		queryKey: gameKeys.vndbIds(),
 		queryFn: () => gameService.getAllVndbIds(),
+		...localGameQueryOptions,
 	});
 }
 
@@ -111,6 +123,7 @@ function useAllBgmIds() {
 	return useQuery({
 		queryKey: gameKeys.bgmIds(),
 		queryFn: () => gameService.getAllBgmIds(),
+		...localGameQueryOptions,
 	});
 }
 

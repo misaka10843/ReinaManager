@@ -51,9 +51,11 @@ document.addEventListener("keydown", (e) => {
 
 // 初始化全局状态后，挂载 React 应用
 initializeStores().then(async () => {
-	await initTray();
+	const trayReady = initTray().catch((error) => {
+		console.error("托盘初始化失败:", error);
+	});
 
-	// 初始化基础数据根目录缓存
+	// 封面路径依赖路径缓存，仍需在首屏挂载前完成
 	try {
 		await initPathCache();
 	} catch (error) {
@@ -68,4 +70,6 @@ initializeStores().then(async () => {
 			</QueryClientProvider>
 		</CacheProvider>,
 	);
+
+	void trayReady;
 });

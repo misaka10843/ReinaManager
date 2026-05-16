@@ -1,6 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { getVirtualCategoryGameIds } from "@/hooks/common/useVirtualCollections";
+import {
+	LOCAL_DATA_GC_TIME,
+	LOCAL_DATA_STALE_TIME,
+} from "@/providers/queryClient";
 import { collectionService } from "@/services/invoke";
 import type { GameIndex } from "@/utils/gameIndex";
 
@@ -17,10 +21,16 @@ export const collectionKeys = {
 		[...collectionKeys.all, "groupCounts", groupIds] as const,
 };
 
+const localCollectionQueryOptions = {
+	staleTime: LOCAL_DATA_STALE_TIME,
+	gcTime: LOCAL_DATA_GC_TIME,
+};
+
 function useGroups() {
 	return useQuery({
 		queryKey: collectionKeys.groups(),
 		queryFn: () => collectionService.getGroups(),
+		...localCollectionQueryOptions,
 	});
 }
 
@@ -29,6 +39,7 @@ function useGroupGameCounts(groupIds: number[]) {
 		queryKey: collectionKeys.groupCounts(groupIds),
 		queryFn: () => collectionService.batchCountGamesInGroups(groupIds),
 		enabled: groupIds.length > 0,
+		...localCollectionQueryOptions,
 	});
 }
 
@@ -50,6 +61,7 @@ function useCategories(groupId: string | null) {
 			return collectionService.getCategoriesWithCount(groupIdNum);
 		},
 		enabled: isEnabled,
+		...localCollectionQueryOptions,
 	});
 }
 
@@ -64,6 +76,7 @@ function useCategoryGameIds(categoryId: number | null) {
 			return collectionService.getGamesInCollection(categoryId);
 		},
 		enabled: categoryId !== null && categoryId > 0,
+		...localCollectionQueryOptions,
 	});
 }
 
@@ -78,6 +91,7 @@ function useGameCategoryIds(gameId: number | null) {
 			return collectionService.getGameCollectionIds(gameId);
 		},
 		enabled: gameId !== null && gameId > 0,
+		...localCollectionQueryOptions,
 	});
 }
 
