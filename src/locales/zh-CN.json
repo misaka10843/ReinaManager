@@ -357,6 +357,9 @@
 		"stats": {
 			"completedGames": "通关游戏数",
 			"localGames": "本地游戏数",
+			"monthPlayTime": "本月游戏时长",
+			"switchToMonth": "切换到本月",
+			"switchToWeek": "切换到本周",
 			"todayPlayTime": "今日游戏时长",
 			"totalGames": "总游戏数",
 			"totalPlayTime": "总游戏时长",

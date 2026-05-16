@@ -24,6 +24,7 @@ export const statsKeys = {
 interface PlayTimeSummary {
 	totalPlayTime: number;
 	weekPlayTime: number;
+	monthPlayTime: number;
 	todayPlayTime: number;
 }
 
@@ -31,6 +32,7 @@ async function getPlayTimeSummary(): Promise<PlayTimeSummary> {
 	const statsMap = await getAllGameStatistics();
 	let totalPlayTime = 0;
 	let weekPlayTime = 0;
+	let monthPlayTime = 0;
 	let todayPlayTime = 0;
 	const today = getLocalDateString();
 	const now = new Date();
@@ -43,6 +45,10 @@ async function getPlayTimeSummary(): Promise<PlayTimeSummary> {
 
 	const weekStartDateStr = getLocalDateString(
 		Math.floor(weekStart.getTime() / 1000),
+	);
+	const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+	const monthStartDateStr = getLocalDateString(
+		Math.floor(monthStart.getTime() / 1000),
 	);
 
 	for (const stats of statsMap.values()) {
@@ -61,6 +67,10 @@ async function getPlayTimeSummary(): Promise<PlayTimeSummary> {
 				weekPlayTime += playTime;
 			}
 
+			if (record.date && record.date >= monthStartDateStr) {
+				monthPlayTime += playTime;
+			}
+
 			if (record.date === today) {
 				todayPlayTime += playTime;
 			}
@@ -70,6 +80,7 @@ async function getPlayTimeSummary(): Promise<PlayTimeSummary> {
 	return {
 		totalPlayTime,
 		weekPlayTime,
+		monthPlayTime,
 		todayPlayTime,
 	};
 }
@@ -160,6 +171,7 @@ function usePlayTimeSummary() {
 		() => ({
 			totalPlayTime: playTimeSummaryQuery.data?.totalPlayTime ?? 0,
 			weekPlayTime: playTimeSummaryQuery.data?.weekPlayTime ?? 0,
+			monthPlayTime: playTimeSummaryQuery.data?.monthPlayTime ?? 0,
 			todayPlayTime: playTimeSummaryQuery.data?.todayPlayTime ?? 0,
 			isLoading: playTimeSummaryQuery.isLoading,
 		}),

@@ -366,6 +366,9 @@
 		"stats": {
 			"completedGames": "Completed Games",
 			"localGames": "Local Games",
+			"monthPlayTime": "Monthly Play Time",
+			"switchToMonth": "Switch to this month",
+			"switchToWeek": "Switch to this week",
 			"todayPlayTime": "Today's Play Time",
 			"totalGames": "Total Games",
 			"totalPlayTime": "Total Play Time",

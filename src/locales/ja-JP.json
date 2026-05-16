@@ -357,6 +357,9 @@
 		"stats": {
 			"completedGames": "クリアしたゲーム数",
 			"localGames": "ローカルゲーム数",
+			"monthPlayTime": "今月のプレイ時間",
+			"switchToMonth": "今月に切り替え",
+			"switchToWeek": "今週に切り替え",
 			"todayPlayTime": "今日のプレイ時間",
 			"totalGames": "総ゲーム数",
 			"totalPlayTime": "総プレイ時間",

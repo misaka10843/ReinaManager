@@ -25,9 +25,11 @@ import {
 	EmojiEvents as CompletedIcon,
 	SportsEsports as GamesIcon,
 	Storage as LocalIcon,
+	CalendarMonth as MonthIcon,
 	AddCircle as RecentlyAddedIcon,
 	Gamepad as RecentlyPlayedIcon,
 	Inventory as RepositoryIcon,
+	SwapHoriz as SwitchIcon,
 	AccessTime as TimeIcon,
 	Today as TodayIcon,
 	DateRange as WeekIcon,
@@ -38,14 +40,16 @@ import {
 	Card,
 	CardContent,
 	Divider,
+	IconButton,
 	List,
 	ListItem,
 	ListItemAvatar,
 	ListItemText,
 	Skeleton,
+	Tooltip,
 	Typography,
 } from "@mui/material";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { Virtuoso } from "react-virtuoso";
@@ -182,8 +186,16 @@ function buildGameActivities(
 export const Home: React.FC = () => {
 	const { index } = useGameIndex();
 	const displayAllGames = index.displayList;
-	const { totalPlayTime, weekPlayTime, todayPlayTime, isLoading } =
-		usePlayTimeSummary();
+	const {
+		totalPlayTime,
+		weekPlayTime,
+		monthPlayTime,
+		todayPlayTime,
+		isLoading,
+	} = usePlayTimeSummary();
+	const [playTimePeriod, setPlayTimePeriod] = useState<"week" | "month">(
+		"week",
+	);
 	const gameIds = useMemo(
 		() => displayAllGames.map((game) => game.id),
 		[displayAllGames],
@@ -217,6 +229,7 @@ export const Home: React.FC = () => {
 			displayAllGames.filter((game) => game.clear === PlayStatus.PLAYED).length,
 		[displayAllGames],
 	);
+	const isWeekPlayTime = playTimePeriod === "week";
 
 	// 统计卡片数据 - 区分同步和异步数据
 	const statsCards = useMemo(
@@ -248,10 +261,36 @@ export const Home: React.FC = () => {
 				isAsync: true,
 			},
 			{
-				title: t("home.stats.weekPlayTime", "本周游戏时长"),
-				value: formatPlayTime(weekPlayTime),
-				icon: <WeekIcon />,
+				title: isWeekPlayTime
+					? t("home.stats.weekPlayTime", "本周游戏时长")
+					: t("home.stats.monthPlayTime", "本月游戏时长"),
+				value: formatPlayTime(isWeekPlayTime ? weekPlayTime : monthPlayTime),
+				icon: isWeekPlayTime ? <WeekIcon /> : <MonthIcon />,
 				isAsync: true,
+				action: (
+					<Tooltip
+						title={
+							isWeekPlayTime
+								? t("home.stats.switchToMonth", "切换到本月")
+								: t("home.stats.switchToWeek", "切换到本周")
+						}
+					>
+						<IconButton
+							size="small"
+							aria-label={
+								isWeekPlayTime
+									? t("home.stats.switchToMonth", "切换到本月")
+									: t("home.stats.switchToWeek", "切换到本周")
+							}
+							onClick={() =>
+								setPlayTimePeriod(isWeekPlayTime ? "month" : "week")
+							}
+							className="absolute right-1 top-1"
+						>
+							<SwitchIcon fontSize="small" />
+						</IconButton>
+					</Tooltip>
+				),
 			},
 			{
 				title: t("home.stats.todayPlayTime", "今日游戏时长"),
@@ -267,7 +306,9 @@ export const Home: React.FC = () => {
 			completedGamesCount,
 			totalPlayTime,
 			weekPlayTime,
+			monthPlayTime,
 			todayPlayTime,
+			isWeekPlayTime,
 		],
 	);
 
@@ -283,7 +324,8 @@ export const Home: React.FC = () => {
 						className="col-span-12 sm:col-span-6 md:col-span-4 lg:col-span-2"
 					>
 						<Card className="h-full shadow-md hover:shadow-lg transition-shadow">
-							<CardContent className="flex flex-col items-center text-center">
+							<CardContent className="relative flex flex-col items-center text-center">
+								{"action" in card ? card.action : null}
 								{card.icon}
 								<Typography
 									title={String(card.value)}
