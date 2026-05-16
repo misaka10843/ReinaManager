@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
 	useAddGame,
 	useAllGames,
@@ -44,18 +44,23 @@ export interface BulkImportActionResult {
 
 export function useGameDuplicateChecker() {
 	const { data: allGames = [] } = useAllGames();
+	const existingGameKeys = useMemo(() => {
+		const keys = new Set<string>();
+		for (const game of allGames) {
+			for (const key of getGameIdentityKeys(game)) {
+				keys.add(key);
+			}
+		}
+		return keys;
+	}, [allGames]);
 
 	const checkGameExists = useCallback(
 		(gameData: Pick<InsertGameParams, SourceIdType>) => {
-			return allGames.some(
-				(game) =>
-					(gameData.bgm_id && game.bgm_id === gameData.bgm_id) ||
-					(gameData.vndb_id && game.vndb_id === gameData.vndb_id) ||
-					(gameData.ymgal_id && game.ymgal_id === gameData.ymgal_id) ||
-					(gameData.kun_id && game.kun_id === gameData.kun_id),
+			return getGameIdentityKeys(gameData).some((key) =>
+				existingGameKeys.has(key),
 			);
 		},
-		[allGames],
+		[existingGameKeys],
 	);
 
 	return {

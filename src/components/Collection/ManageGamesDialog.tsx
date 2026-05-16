@@ -46,6 +46,40 @@ interface ManageGamesDialogProps {
 
 const GAMES_PER_PAGE = 10;
 
+interface GameListItemProps {
+	game: GameData;
+	checked: boolean;
+	onClick: (gameId: number) => void;
+}
+
+/**
+ * 游戏列表项组件
+ */
+const GameListItem = React.memo<GameListItemProps>(
+	({ game, checked, onClick }) => {
+		const gameId = game.id;
+
+		return (
+			<ListItem disablePadding>
+				<ListItemButton onClick={() => onClick(gameId)} dense>
+					<Checkbox
+						checked={checked}
+						tabIndex={-1}
+						disableRipple
+						size="small"
+					/>
+					<ListItemText
+						primary={getGameDisplayName(game)}
+						primaryTypographyProps={{ variant: "body2" }}
+					/>
+				</ListItemButton>
+			</ListItem>
+		);
+	},
+);
+
+GameListItem.displayName = "GameListItem";
+
 /**
  * 管理游戏弹窗组件
  */
@@ -97,53 +131,66 @@ export const ManageGamesDialog: React.FC<ManageGamesDialogProps> = ({
 		}
 	}, [open, categoryGameIds]);
 
-	// 左栏：未在分类中的游戏
-	const availableGames = useMemo(() => {
-		return displayAllGames.filter((game) => !gamesInCategory.has(game.id));
-	}, [displayAllGames, gamesInCategory]);
-	const availableSearchIndex = useMemo(
-		() => createSearchIndex(availableGames),
-		[availableGames],
+	const searchIndex = useMemo(
+		() => createSearchIndex(displayAllGames),
+		[displayAllGames],
 	);
 
-	// 右栏：已在分类中的游戏
-	const categoryGamesList = useMemo(() => {
-		return displayAllGames.filter((game) => gamesInCategory.has(game.id));
+	const { availableGames, categoryGamesList } = useMemo(() => {
+		const nextAvailableGames: GameData[] = [];
+		const nextCategoryGamesList: GameData[] = [];
+
+		for (const game of displayAllGames) {
+			if (gamesInCategory.has(game.id)) {
+				nextCategoryGamesList.push(game);
+			} else {
+				nextAvailableGames.push(game);
+			}
+		}
+
+		return {
+			availableGames: nextAvailableGames,
+			categoryGamesList: nextCategoryGamesList,
+		};
 	}, [displayAllGames, gamesInCategory]);
-	const categorySearchIndex = useMemo(
-		() => createSearchIndex(categoryGamesList),
-		[categoryGamesList],
-	);
 
 	// 左栏搜索过滤
 	const filteredAvailableGames = useMemo(() => {
 		if (!leftSearchText) return availableGames;
 
-		const searchResults = searchWithIndex(
-			availableSearchIndex,
-			leftSearchText,
-			{
-				limit: availableGames.length,
-			},
-		);
+		const searchResults = searchWithIndex(searchIndex, leftSearchText, {
+			limit: displayAllGames.length,
+		});
 
-		return searchResults.map((result) => result.item);
-	}, [availableGames, availableSearchIndex, leftSearchText]);
+		return searchResults
+			.map((result) => result.item)
+			.filter((game) => !gamesInCategory.has(game.id));
+	}, [
+		availableGames,
+		displayAllGames.length,
+		gamesInCategory,
+		leftSearchText,
+		searchIndex,
+	]);
 
 	// 右栏搜索过滤
 	const filteredCategoryGames = useMemo(() => {
 		if (!rightSearchText) return categoryGamesList;
 
-		const searchResults = searchWithIndex(
-			categorySearchIndex,
-			rightSearchText,
-			{
-				limit: categoryGamesList.length,
-			},
-		);
+		const searchResults = searchWithIndex(searchIndex, rightSearchText, {
+			limit: displayAllGames.length,
+		});
 
-		return searchResults.map((result) => result.item);
-	}, [categoryGamesList, categorySearchIndex, rightSearchText]);
+		return searchResults
+			.map((result) => result.item)
+			.filter((game) => gamesInCategory.has(game.id));
+	}, [
+		categoryGamesList,
+		displayAllGames.length,
+		gamesInCategory,
+		rightSearchText,
+		searchIndex,
+	]);
 
 	// 左栏分页数据
 	const paginatedAvailableGames = useMemo(() => {
@@ -166,36 +213,6 @@ export const ManageGamesDialog: React.FC<ManageGamesDialogProps> = ({
 	const rightTotalPages = Math.ceil(
 		filteredCategoryGames.length / GAMES_PER_PAGE,
 	);
-
-	/**
-	 * 游戏列表项组件 - 使用 React.memo 优化
-	 */
-	const GameListItem = React.memo<{
-		game: GameData;
-		checked: boolean;
-		onClick: (gameId: number) => void;
-	}>(({ game, checked, onClick }) => {
-		const gameId = game.id;
-
-		return (
-			<ListItem disablePadding>
-				<ListItemButton onClick={() => onClick(gameId)} dense>
-					<Checkbox
-						checked={checked}
-						tabIndex={-1}
-						disableRipple
-						size="small"
-					/>
-					<ListItemText
-						primary={getGameDisplayName(game)}
-						primaryTypographyProps={{ variant: "body2" }}
-					/>
-				</ListItemButton>
-			</ListItem>
-		);
-	});
-
-	GameListItem.displayName = "GameListItem";
 
 	/**
 	 * 添加游戏到分类（左栏点击 → 移到右栏）
