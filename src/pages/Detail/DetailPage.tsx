@@ -43,7 +43,7 @@ import { useGameById } from "@/hooks/features/games/useGameFacade";
 import { useGameIndex } from "@/hooks/features/games/useGameListFacade";
 import { useStore } from "@/store/appStore";
 import { DefaultGroup } from "@/types/collection";
-import { getGameCover, getGameDisplayName } from "@/utils/appUtils";
+import { getGameCover, getGameDisplayName } from "@/utils/game";
 import { translateTags } from "@/utils/tagTranslation";
 import { Backup } from "./Backup";
 import { Edit } from "./Edit";

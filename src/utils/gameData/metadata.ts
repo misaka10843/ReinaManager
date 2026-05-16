@@ -9,14 +9,9 @@ import type {
 	UpdateGameParams,
 } from "@/types";
 import { isSourceType, SOURCE_FIELD_KEYS, SOURCE_KEYS } from "@/types";
-import {
-	getArrayDiff,
-	getBoolDiff,
-	getDiff,
-	getGameDisplayName,
-	getGameNsfwStatus,
-} from "@/utils/appUtils";
 import { resolveCloudPlayStatus } from "@/utils/cloudCollectionSync";
+import { getArrayDiff, getBoolDiff, getDiff } from "@/utils/diff";
+import { getGameDisplayName, getGameNsfwStatus } from "@/utils/game";
 import i18n from "@/utils/i18n";
 
 export interface GameInfoUpdateDraft {

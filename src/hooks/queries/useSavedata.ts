@@ -18,10 +18,8 @@ import {
 import { join } from "pathe";
 import { savedataService } from "@/services/invoke";
 import type { SavedataRecord } from "@/types";
-import {
-	createGameSavedataBackup,
-	getSavedataBackupPath,
-} from "@/utils/appUtils";
+import { getSavedataBackupPath } from "@/utils/fs/pathCache";
+import { createGameSavedataBackup } from "@/utils/fs/savedataBackup";
 
 // ============================================================================
 // Key Factory - 统一的 Query Key 前缀

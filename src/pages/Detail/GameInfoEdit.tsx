@@ -23,18 +23,18 @@ import { useImagePreview } from "@/hooks/common/useImagePreview";
 import { snackbar } from "@/providers/snackBar";
 import type { GameData, UpdateGameParams } from "@/types";
 import {
-	getGameCover,
-	getGameDisplayName,
-	getGameNsfwStatus,
-	handleExeFile,
-} from "@/utils/appUtils";
-import {
 	deleteGameCustomCovers,
 	selectImageFile,
 	uploadSelectedImage,
 } from "@/utils/customCover";
 import { getUserErrorMessage } from "@/utils/errors";
-import { buildGameInfoUpdatePayload } from "@/utils/metadata";
+import { handleExeFile } from "@/utils/fs/fileDialog";
+import {
+	getGameCover,
+	getGameDisplayName,
+	getGameNsfwStatus,
+} from "@/utils/game";
+import { buildGameInfoUpdatePayload } from "@/utils/gameData/metadata";
 
 // 公共样式常量
 const CHIP_INPUT_BOX_SX = {

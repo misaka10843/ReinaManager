@@ -21,7 +21,7 @@ import {
 	type MixedSourceSelection,
 	mergeMixedResult,
 	pickFirstMixedResult,
-} from "@/utils/metadata";
+} from "@/utils/gameData/metadata";
 
 const mixedIdTypePriority: readonly SourceType[] = [
 	"kun",

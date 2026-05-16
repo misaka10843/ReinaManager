@@ -8,7 +8,7 @@ import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import { forwardRef, memo } from "react";
 import { useStore } from "@/store/appStore";
-import { getGameCover, getGameNsfwStatus } from "@/utils/appUtils";
+import { getGameCover, getGameNsfwStatus } from "@/utils/game";
 import type { CardItemProps } from "./types";
 import { useCardInteraction } from "./useCardInteraction";
 

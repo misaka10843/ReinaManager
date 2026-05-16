@@ -16,7 +16,7 @@ import type {
 	MixedSourceCandidates,
 	MixedSourceEnabled,
 	MixedSourceSelection,
-} from "@/utils/metadata";
+} from "@/utils/gameData/metadata";
 import GameSelectDialog, { extractDisplayInfo } from "./GameSelectDialog";
 
 interface MixedSourceConfirmDialogProps {

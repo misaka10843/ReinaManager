@@ -11,13 +11,13 @@ import { relaunch } from "@tauri-apps/plugin-process";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { snackbar } from "@/providers/snackBar";
-import { openDatabaseBackupFolder } from "@/utils/appUtils";
+import { getUserErrorMessage } from "@/utils/errors";
 import {
 	backupCustomCovers,
 	backupDatabase,
 	importDatabase,
-} from "@/utils/database";
-import { getUserErrorMessage } from "@/utils/errors";
+} from "@/utils/fs/dataMaintenance";
+import { openDatabaseBackupFolder } from "@/utils/fs/savedataBackup";
 
 export const DatabaseBackupSettings = () => {
 	const { t } = useTranslation();

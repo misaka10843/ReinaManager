@@ -4,8 +4,8 @@ import { queryClient } from "@/providers/queryClient";
 import { gameService, statsService } from "@/services/invoke";
 import type { DailyStats } from "@/services/invoke/types";
 import { useStore } from "@/store/appStore";
-import { formatPlayTime, getLocalDateString } from "@/utils/appUtils";
-import type { GameSession, GameStatistics, GameTimeStats } from "../types";
+import type { GameSession, GameStatistics, GameTimeStats } from "@/types";
+import { formatPlayTime, getLocalDateString } from "@/utils/dateTime";
 
 // 类型定义
 export type TimeUpdateCallback = (

@@ -19,8 +19,8 @@ import { snackbar } from "@/providers/snackBar";
 import { fileService } from "@/services/invoke";
 import type { GameCandidateData, GameData, UpdateGameParams } from "@/types";
 import { getUserErrorMessage } from "@/utils/errors";
-import { EMPTY_SOURCE_AVAILABILITY } from "@/utils/gameIndex";
-import { buildMetadataUpdatePayload } from "@/utils/metadata";
+import { EMPTY_SOURCE_AVAILABILITY } from "@/utils/game/gameIndex";
+import { buildMetadataUpdatePayload } from "@/utils/gameData/metadata";
 import { DataSourceUpdate } from "./DataSourceUpdate";
 import { GameInfoEdit } from "./GameInfoEdit";
 

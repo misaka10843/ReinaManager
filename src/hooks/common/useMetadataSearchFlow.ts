@@ -2,14 +2,14 @@ import type { TFunction } from "i18next";
 import { useCallback, useMemo, useState } from "react";
 import { gameMetadataService } from "@/api";
 import type { apiSourceType, GameCandidateData, SourceType } from "@/types";
-import { isAbortError } from "@/utils/appUtils";
+import { isAbortError } from "@/utils/async";
 import { isBgmAuthExpiredError, withBgmAuth } from "@/utils/bgmAuthSession";
 import { getUserErrorMessage } from "@/utils/errors";
 import type {
 	MixedSourceCandidates,
 	MixedSourceEnabled,
 	MixedSourceSelection,
-} from "@/utils/metadata";
+} from "@/utils/gameData/metadata";
 
 interface SearchResultState {
 	open: boolean;

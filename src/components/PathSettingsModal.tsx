@@ -36,12 +36,10 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAllSettings, useUpdateSettings } from "@/hooks/queries/useSettings";
 import { snackbar } from "@/providers/snackBar";
-import {
-	getAppDataDirPath,
-	handleGetFolder,
-	moveBackupFolder,
-} from "@/utils/appUtils";
 import { getUserErrorMessage } from "@/utils/errors";
+import { handleGetFolder } from "@/utils/fs/fileDialog";
+import { getAppDataDirPath } from "@/utils/fs/pathCache";
+import { moveBackupFolder } from "@/utils/fs/savedataBackup";
 
 /**
  * 路径设置弹窗组件属性

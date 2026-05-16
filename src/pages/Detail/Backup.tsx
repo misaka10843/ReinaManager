@@ -29,12 +29,12 @@ import { useUpdateGame } from "@/hooks/queries/useGames";
 import { useSaveDataResources } from "@/hooks/queries/useSavedata";
 import { snackbar } from "@/providers/snackBar";
 import type { GameData, SavedataRecord } from "@/types";
+import { getUserErrorMessage } from "@/utils/errors";
+import { handleGetFolder } from "@/utils/fs/fileDialog";
 import {
-	handleGetFolder,
 	openGameBackupFolder,
 	openGameSaveDataFolder,
-} from "@/utils/appUtils";
-import { getUserErrorMessage } from "@/utils/errors";
+} from "@/utils/fs/savedataBackup";
 
 /** 格式化文件大小 */
 const formatFileSize = (bytes: number): string => {

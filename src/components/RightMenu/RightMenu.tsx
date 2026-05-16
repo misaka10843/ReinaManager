@@ -41,8 +41,8 @@ import { useStore } from "@/store/appStore";
 import { useGamePlayStore } from "@/store/gamePlayStore";
 
 import type { PlayStatus } from "@/types/collection";
-import { handleOpenFolder } from "@/utils/appUtils";
 import { getUserErrorMessage } from "@/utils/errors";
+import { handleOpenFolder } from "@/utils/fs/fileDialog";
 import { BaseRightMenu } from "./BaseRightMenu";
 import { PlayStatusSubmenu } from "./PlayStatusSubmenu";
 

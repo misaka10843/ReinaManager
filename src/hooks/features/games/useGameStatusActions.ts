@@ -9,9 +9,9 @@ import {
 import { snackbar } from "@/providers/snackBar";
 import type { FullGameData, GameData } from "@/types";
 import { syncPlayStatusToCloud } from "@/utils/cloudCollectionSync";
-import { getDisplayGameData } from "@/utils/dataTransform";
 import { getUserErrorMessage } from "@/utils/errors";
-import type { GameIndex } from "@/utils/gameIndex";
+import type { GameIndex } from "@/utils/game/gameIndex";
+import { getDisplayGameData } from "@/utils/gameData/dataTransform";
 
 interface UpdatePlayStatusOptions {
 	invalidateScope?: "game" | "all";

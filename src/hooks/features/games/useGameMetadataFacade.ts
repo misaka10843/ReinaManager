@@ -12,13 +12,13 @@ import type {
 	SourceIdType,
 } from "@/types";
 import { getUserErrorMessage } from "@/utils/errors";
-import i18n from "@/utils/i18n";
 import {
 	type BatchImportGameCandidate,
 	buildBulkImportGameData,
 	buildInsertGameData,
 	getGameIdentityKeys,
-} from "@/utils/metadata";
+} from "@/utils/gameData/metadata";
+import i18n from "@/utils/i18n";
 
 export interface BulkImportActionInput extends BatchImportGameCandidate {
 	status?: string;

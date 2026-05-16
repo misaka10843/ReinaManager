@@ -34,13 +34,10 @@ import { snackbar } from "@/providers/snackBar";
 import { fileService } from "@/services/invoke";
 import { getEnabledMixedSources, useStore } from "@/store/appStore";
 import type { apiSourceType, GameCandidateData, ScanResult } from "@/types";
-import {
-	createAbortableRunner,
-	handleGetFolder,
-	isAbortError,
-} from "@/utils/appUtils";
+import { createAbortableRunner, isAbortError } from "@/utils/async";
 import { isBgmAuthExpiredError, withBgmAuth } from "@/utils/bgmAuthSession";
 import { getUserErrorMessage } from "@/utils/errors";
+import { handleGetFolder } from "@/utils/fs/fileDialog";
 import { ApiSourceRadioGroup } from "./ApiSourceRadioGroup";
 import GameSelectDialog from "./GameSelectDialog";
 import MixedSourceConfirmDialog from "./MixedSourceConfirmDialog";

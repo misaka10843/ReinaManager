@@ -20,7 +20,7 @@ import { CacheProvider } from "@emotion/react";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { queryClient } from "@/providers/queryClient";
 import { initTray } from "@/services/plugins/trayService";
-import { initPathCache } from "@/utils/appUtils";
+import { initPathCache } from "@/utils/fs/pathCache";
 import { initializeStores } from "./store/appStore";
 
 // 创建 Emotion 缓存,确保样式注入顺序正确

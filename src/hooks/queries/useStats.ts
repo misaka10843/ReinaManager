@@ -1,8 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { statsService } from "@/services/invoke";
-import { getLocalDateString } from "@/utils/appUtils";
-import { getAllGameStatistics, getFormattedGameStats } from "@/utils/gameStats";
+import { getLocalDateString } from "@/utils/dateTime";
+import {
+	getAllGameStatistics,
+	getFormattedGameStats,
+} from "@/utils/game/gameStats";
 
 export const statsKeys = {
 	all: ["stats"] as const,

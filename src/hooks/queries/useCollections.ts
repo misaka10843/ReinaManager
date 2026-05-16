@@ -6,7 +6,7 @@ import {
 	LOCAL_DATA_STALE_TIME,
 } from "@/providers/queryClient";
 import { collectionService } from "@/services/invoke";
-import type { GameIndex } from "@/utils/gameIndex";
+import type { GameIndex } from "@/utils/game/gameIndex";
 
 export const collectionKeys = {
 	all: ["collections"] as const,

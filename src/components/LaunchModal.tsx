@@ -33,8 +33,8 @@ import { snackbar } from "@/providers/snackBar";
 import { useStore } from "@/store/appStore";
 import { useGamePlayStore } from "@/store/gamePlayStore";
 import type { GameData, UpdateGameParams } from "@/types";
-import { handleExeFile } from "@/utils/appUtils";
 import { getUserErrorMessage } from "@/utils/errors";
+import { handleExeFile } from "@/utils/fs/fileDialog";
 
 /**
  * 格式化游戏时长显示

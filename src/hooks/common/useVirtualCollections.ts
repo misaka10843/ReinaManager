@@ -11,7 +11,7 @@ import {
 	type GameIndex,
 	getDeveloperNames,
 	UNKNOWN_DEVELOPER_KEY,
-} from "@/utils/gameIndex";
+} from "@/utils/game/gameIndex";
 
 export { getDeveloperNames };
 

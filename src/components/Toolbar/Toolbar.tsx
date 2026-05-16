@@ -68,7 +68,7 @@ import { snackbar } from "@/providers/snackBar";
 import { useStore } from "@/store/appStore";
 import type { GameData, SourceType } from "@/types";
 import type { PlayStatus } from "@/types/collection";
-import { handleOpenFolder } from "@/utils/appUtils";
+import { handleOpenFolder } from "@/utils/fs/fileDialog";
 import { CollectionToolbar } from "./Collection";
 
 type ThemeMode = "light" | "dark" | "system";

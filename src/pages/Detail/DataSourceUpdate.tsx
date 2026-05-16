@@ -18,7 +18,7 @@ import type { GameCandidateData, GameData, SourceType } from "@/types";
 import { isSourceType, SOURCE_FIELD_KEYS, SOURCE_KEYS } from "@/types";
 import { isBgmAuthExpiredError, withBgmAuth } from "@/utils/bgmAuthSession";
 import { getUserErrorMessage } from "@/utils/errors";
-import { fetchMetadataForUpdate } from "@/utils/metadata";
+import { fetchMetadataForUpdate } from "@/utils/gameData/metadata";
 
 interface DataSourceUpdateProps {
 	selectedGame: GameData;

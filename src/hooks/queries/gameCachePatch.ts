@@ -1,13 +1,13 @@
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import type { FullGameData } from "@/types";
-import type { GameIndex } from "@/utils/gameIndex";
+import type { GameIndex } from "@/utils/game/gameIndex";
 import {
 	getGameIndex,
 	patchGameIndex,
 	patchManyGameIndex,
 	removeGamesFromIndex,
 	setGameIndexCache,
-} from "@/utils/gameIndex";
+} from "@/utils/game/gameIndex";
 
 interface GameCacheKeys {
 	all: QueryKey;

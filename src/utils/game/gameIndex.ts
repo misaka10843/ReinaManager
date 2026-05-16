@@ -1,7 +1,7 @@
 import type { FullGameData, GameData, SourceType } from "@/types";
 import { SOURCE_FIELD_KEYS, SOURCE_KEYS } from "@/types";
 import type { Category } from "@/types/collection";
-import { getDisplayGameData } from "@/utils/dataTransform";
+import { getDisplayGameData } from "@/utils/gameData/dataTransform";
 
 export type SourceAvailability = Record<SourceType, boolean>;
 

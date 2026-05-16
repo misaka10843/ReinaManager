@@ -13,7 +13,7 @@
  * - @mui/icons-material
  * - @/store
  * - @/store/gamePlayStore
- * - @/utils/gameStats
+ * - @/utils/game/gameStats
  * - @/utils
  * - @/types
  * - react-i18next
@@ -53,13 +53,9 @@ import { useGameIndex } from "@/hooks/features/games/useGameListFacade";
 import { usePlayTimeSummary } from "@/hooks/queries/useStats";
 import type { GameData } from "@/types";
 import { PlayStatus } from "@/types/collection";
-import {
-	formatPlayTime,
-	formatRelativeTime,
-	getGameCover,
-	getGameDisplayName,
-} from "@/utils/appUtils";
-import { getRecentSessionsForGames } from "@/utils/gameStats";
+import { formatPlayTime, formatRelativeTime } from "@/utils/dateTime";
+import { getGameCover, getGameDisplayName } from "@/utils/game";
+import { getRecentSessionsForGames } from "@/utils/game/gameStats";
 
 /**
  * 最近游玩会话类型

@@ -214,7 +214,9 @@ const BatchUpdateSettings: React.FC = () => {
 
 		try {
 			// 动态导入批量更新函数
-			const { batchUpdateVndbData } = await import("@/utils/appUtils");
+			const { batchUpdateVndbData } = await import(
+				"@/utils/gameData/metadataBatchUpdate"
+			);
 
 			snackbar.info(
 				t(
@@ -280,7 +282,9 @@ const BatchUpdateSettings: React.FC = () => {
 
 		try {
 			// 动态导入批量更新函数
-			const { batchUpdateBgmData } = await import("@/utils/appUtils");
+			const { batchUpdateBgmData } = await import(
+				"@/utils/gameData/metadataBatchUpdate"
+			);
 
 			snackbar.info(
 				t("pages.Settings.batchUpdate.updatingBgm", "正在批量更新 BGM 数据..."),

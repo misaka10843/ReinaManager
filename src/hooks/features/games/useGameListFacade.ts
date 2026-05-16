@@ -5,9 +5,9 @@ import { gameKeys, useAllGames, useGameIdList } from "@/hooks/queries/useGames";
 import { useStore } from "@/store/appStore";
 import type { GameData } from "@/types";
 import { PlayStatus } from "@/types/collection";
-import { getGameNsfwStatus } from "@/utils/appUtils";
 import { createSearchIndex, searchWithIndex } from "@/utils/enhancedSearch";
-import { type GameIndex, getGameIndex } from "@/utils/gameIndex";
+import { getGameNsfwStatus } from "@/utils/game";
+import { type GameIndex, getGameIndex } from "@/utils/game/gameIndex";
 
 const EMPTY_IDS: number[] = [];
 const EMPTY_GAMES: GameData[] = [];

@@ -39,12 +39,9 @@ import { useAllSettings } from "@/hooks/queries/useSettings";
 import { showGameAddedSuccess } from "@/providers/snackBar";
 import { getEnabledMixedSources, useStore } from "@/store/appStore";
 import type { GameCandidateData, InsertGameParams } from "@/types";
-import {
-	createAbortableRunner,
-	handleExeFile,
-	trimDirnameToSearchName,
-} from "@/utils/appUtils";
+import { createAbortableRunner } from "@/utils/async";
 import { getUserErrorMessage } from "@/utils/errors";
+import { handleExeFile, trimDirnameToSearchName } from "@/utils/fs/fileDialog";
 import { ApiSourceRadioGroup } from "./ApiSourceRadioGroup";
 import BulkImportTab from "./BulkImportTab";
 import GameSelectDialog from "./GameSelectDialog";
