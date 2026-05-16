@@ -45,17 +45,19 @@ import {
 	Skeleton,
 	Typography,
 } from "@mui/material";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { Virtuoso } from "react-virtuoso";
 import { useGameIndex } from "@/hooks/features/games/useGameListFacade";
-import { usePlayTimeSummary } from "@/hooks/queries/useStats";
-import type { GameData } from "@/types";
+import {
+	usePlayTimeSummary,
+	useRecentSessionsForGames,
+} from "@/hooks/queries/useStats";
+import type { GameData, GameSession } from "@/types";
 import { PlayStatus } from "@/types/collection";
 import { formatPlayTime, formatRelativeTime } from "@/utils/dateTime";
 import { getGameCover, getGameDisplayName } from "@/utils/game";
-import { getRecentSessionsForGames } from "@/utils/game/gameStats";
 
 /**
  * 最近游玩会话类型
@@ -90,28 +92,20 @@ interface ActivityItem {
 }
 
 /**
- * 获取最近游玩、最近添加、动态数据 - 优化版本
- * @param games 游戏列表
- * @param language 当前语言
- * @returns 包含 sessions、added、activities 的对象
+ * 根据游戏列表和最近会话派生活动数据。
  */
-async function getGameActivities(games: GameData[]): Promise<{
+function buildGameActivities(
+	games: GameData[],
+	recentSessions: GameSession[],
+): {
 	sessions: RecentSession[];
 	added: RecentGame[];
 	activities: ActivityItem[];
-}> {
-	// 处理游玩记录 - 使用批量查询优化
+} {
 	const playItems: ActivityItem[] = [];
 	const sessions: RecentSession[] = [];
-
-	// 提取所有有效的游戏ID
-	const validGameIds = games.map((game) => game.id);
 	const gameById = new Map(games.map((game) => [game.id, game]));
 
-	// 一次性获取全局最近会话记录，避免循环中的多次数据库查询
-	const recentSessions = await getRecentSessionsForGames(validGameIds, 10);
-
-	// 处理会话数据
 	for (const s of recentSessions) {
 		if (typeof s.end_time !== "number") continue;
 
@@ -132,7 +126,6 @@ async function getGameActivities(games: GameData[]): Promise<{
 		};
 		playItems.push(item);
 
-		// 用于最近游玩区域
 		sessions.push({
 			session_id: s.session_id,
 			game_id: game.id,
@@ -146,19 +139,18 @@ async function getGameActivities(games: GameData[]): Promise<{
 	const addItems: ActivityItem[] = [];
 	const added: RecentGame[] = [];
 
-	// 过滤有效的游戏数据(有 ID 和创建时间)
 	for (const game of games.filter((game) => game.created_at)) {
-		// created_at 是秒级时间戳
 		const timestamp = game.created_at as number;
 		const addedDate = new Date(timestamp * 1000);
 		const gameTitle = getGameDisplayName(game);
+		const imageUrl = getGameCover(game);
 
 		const item: ActivityItem = {
 			id: `add-${game.id}`,
 			type: "add",
 			gameId: game.id,
 			gameTitle,
-			imageUrl: getGameCover(game),
+			imageUrl,
 			time: timestamp,
 		};
 		addItems.push(item);
@@ -166,17 +158,15 @@ async function getGameActivities(games: GameData[]): Promise<{
 		added.push({
 			id: game.id,
 			title: gameTitle,
-			imageUrl: getGameCover(game),
+			imageUrl,
 			time: addedDate,
 		});
 	}
 
-	// 合并所有动态，按时间排序
 	const allActivities = [...playItems, ...addItems].toSorted(
 		(a, b) => b.time - a.time,
 	);
 
-	// 排序最近游玩和最近添加
 	const sortedSessions = sessions.toSorted((a, b) => b.end_time - a.end_time);
 	const sortedAdded = added.toSorted(
 		(a, b) => b.time.getTime() - a.time.getTime(),
@@ -194,19 +184,16 @@ export const Home: React.FC = () => {
 	const displayAllGames = index.displayList;
 	const { totalPlayTime, weekPlayTime, todayPlayTime, isLoading } =
 		usePlayTimeSummary();
-
-	// 分离活动数据的状态管理
-	const [activityData, setActivityData] = useState<{
-		sessions: RecentSession[];
-		added: RecentGame[];
-		activities: ActivityItem[];
-		loading: boolean;
-	}>({
-		sessions: [],
-		added: [],
-		activities: [],
-		loading: true,
-	});
+	const gameIds = useMemo(
+		() => displayAllGames.map((game) => game.id),
+		[displayAllGames],
+	);
+	const recentSessionsQuery = useRecentSessionsForGames(gameIds, 10);
+	const activityData = useMemo(
+		() => buildGameActivities(displayAllGames, recentSessionsQuery.data ?? []),
+		[displayAllGames, recentSessionsQuery.data],
+	);
+	const isActivityLoading = recentSessionsQuery.isLoading;
 
 	const { t } = useTranslation();
 
@@ -283,26 +270,6 @@ export const Home: React.FC = () => {
 			todayPlayTime,
 		],
 	);
-
-	// 异步获取活动数据
-	useEffect(() => {
-		const fetchActivityData = async () => {
-			try {
-				const result = await getGameActivities(displayAllGames);
-				setActivityData({
-					sessions: result.sessions,
-					added: result.added,
-					activities: result.activities,
-					loading: false,
-				});
-			} catch (error) {
-				console.error("获取首页活动数据失败:", error);
-				setActivityData((prev) => ({ ...prev, loading: false }));
-			}
-		};
-
-		fetchActivityData();
-	}, [displayAllGames]);
 
 	return (
 		<Box className="min-h-[calc(100dvh-64px)] p-6 pt-4 flex flex-col gap-4">
@@ -387,7 +354,7 @@ export const Home: React.FC = () => {
 									{t("home.activityTitle", "动态")}
 								</Typography>
 							</Box>
-							{activityData.loading ? (
+							{isActivityLoading ? (
 								<Box className="min-h-0 flex-1 overflow-y-auto pr-1">
 									{[1, 2, 3, 4].map((index) => (
 										<Box key={index} className="flex items-center mb-3">
@@ -479,7 +446,7 @@ export const Home: React.FC = () => {
 									{t("home.recentlyPlayed", "最近游玩")}
 								</Typography>
 							</Box>
-							{activityData.loading ? (
+							{isActivityLoading ? (
 								<Box className="min-h-0 flex-1 overflow-y-auto pr-1">
 									{[1, 2, 3, 4].map((index) => (
 										<Box key={index} className="flex items-center mb-3">
@@ -538,7 +505,7 @@ export const Home: React.FC = () => {
 									{t("home.recentlyAdded", "最近添加")}
 								</Typography>
 							</Box>
-							{activityData.loading ? (
+							{isActivityLoading ? (
 								<Box className="min-h-0 flex-1 overflow-y-auto pr-1">
 									{[1, 2, 3, 4].map((index) => (
 										<Box key={index} className="flex items-center mb-3">

@@ -27,7 +27,7 @@
 
 ### GameIndex
 
-`GameIndex` 是前端派生索引，定义在 `src/utils/gameIndex.ts`。
+`GameIndex` 是前端派生索引，定义在 `src/utils/game/gameIndex.ts`。
 
 当前结构：
 

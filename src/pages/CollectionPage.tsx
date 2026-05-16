@@ -13,7 +13,7 @@ import Box from "@mui/material/Box";
 import Breadcrumbs from "@mui/material/Breadcrumbs";
 import Link from "@mui/material/Link";
 import Typography from "@mui/material/Typography";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { CardsGrid, SortableCardsGrid } from "@/components/Cards";
@@ -99,7 +99,7 @@ export const Collection: React.FC = () => {
 	const currentCategories = categoriesQuery.data ?? [];
 	const categoryGamesQuery = useCategoryGames(selectedCategoryId, gameIndex);
 	const categoryGames = categoryGamesQuery.data;
-	const groupIds = groups.map((group) => group.id);
+	const groupIds = useMemo(() => groups.map((group) => group.id), [groups]);
 	const groupGameCountsQuery = useGroupGameCounts(groupIds);
 	const deleteCategoryMutation = useDeleteCategory();
 	const deleteGroupMutation = useDeleteGroup();
@@ -109,10 +109,18 @@ export const Collection: React.FC = () => {
 	// 使用统一的虚拟分类 Hook
 	const virtualCategories = useVirtualCategories(gameIndex);
 
-	// 存储每个分组的游戏数量
-	const [groupGameCounts, setGroupGameCounts] = useState<Map<string, number>>(
-		new Map(),
-	);
+	const groupGameCounts = useMemo(() => {
+		const counts = new Map<string, number>();
+		counts.set(DefaultGroup.DEVELOPER, displayAllGames.length);
+
+		for (const [groupId, count] of Object.entries(
+			groupGameCountsQuery.data ?? {},
+		)) {
+			counts.set(groupId, count);
+		}
+
+		return counts;
+	}, [displayAllGames.length, groupGameCountsQuery.data]);
 
 	// 统一的右键菜单状态管理
 	const [menuPosition, setMenuPosition] =
@@ -142,27 +150,6 @@ export const Collection: React.FC = () => {
 		const currentKey = getLevelKey(currentGroupId, selectedCategoryId);
 		levelScrollMapRef.current[currentKey] = container.scrollTop;
 	};
-
-	// 当在分组列表页时，计算所有分组的游戏数量
-	useEffect(() => {
-		if (!currentGroupId && !selectedCategoryId) {
-			const counts = new Map<string, number>();
-			counts.set(DefaultGroup.DEVELOPER, displayAllGames.length);
-
-			for (const [groupId, count] of Object.entries(
-				groupGameCountsQuery.data ?? {},
-			)) {
-				counts.set(groupId, count);
-			}
-
-			setGroupGameCounts(counts);
-		}
-	}, [
-		currentGroupId,
-		selectedCategoryId,
-		displayAllGames.length,
-		groupGameCountsQuery.data,
-	]);
 
 	/**
 	 * 处理分组点击事件 - 设置当前分组

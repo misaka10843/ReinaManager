@@ -5,6 +5,7 @@ import { getLocalDateString } from "@/utils/dateTime";
 import {
 	getAllGameStatistics,
 	getFormattedGameStats,
+	getRecentSessionsForGames,
 } from "@/utils/game/gameStats";
 
 export const statsKeys = {
@@ -12,6 +13,8 @@ export const statsKeys = {
 	gameStats: (gameId: number) => [...statsKeys.all, "game", gameId] as const,
 	sessions: (gameId: number, limit: number) =>
 		[...statsKeys.all, "sessions", gameId, limit] as const,
+	recentSessionsForGames: (gameIds: number[], limit: number) =>
+		[...statsKeys.all, "recentSessionsForGames", gameIds, limit] as const,
 	playTimeSummary: () => [...statsKeys.all, "playTimeSummary"] as const,
 	totalPlayTime: () => [...statsKeys.all, "totalPlayTime"] as const,
 	weekPlayTime: () => [...statsKeys.all, "weekPlayTime"] as const,
@@ -106,6 +109,14 @@ function useGameSessions(gameId: number | null, limit = 10) {
 	});
 }
 
+function useRecentSessionsForGames(gameIds: number[], limit = 10) {
+	return useQuery({
+		queryKey: statsKeys.recentSessionsForGames(gameIds, limit),
+		queryFn: () => getRecentSessionsForGames(gameIds, limit),
+		enabled: gameIds.length > 0,
+	});
+}
+
 function useTotalPlayTime() {
 	const playTimeSummaryQuery = usePlayTimeSummaryQuery();
 
@@ -162,6 +173,7 @@ export {
 	useGameSessions,
 	useGameStats,
 	usePlayTimeSummary,
+	useRecentSessionsForGames,
 	useTodayPlayTime,
 	useTotalPlayTime,
 	useWeekPlayTime,
