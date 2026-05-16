@@ -10,11 +10,8 @@ import {
 	DialogContent,
 	DialogTitle,
 	FormControl,
-	FormControlLabel,
 	IconButton,
 	MenuItem,
-	Radio,
-	RadioGroup,
 	Select,
 	Stack,
 	Table,
@@ -44,6 +41,7 @@ import {
 } from "@/utils/appUtils";
 import { isBgmAuthExpiredError, withBgmAuth } from "@/utils/bgmAuthSession";
 import { getUserErrorMessage } from "@/utils/errors";
+import { ApiSourceRadioGroup } from "./ApiSourceRadioGroup";
 import GameSelectDialog from "./GameSelectDialog";
 import MixedSourceConfirmDialog from "./MixedSourceConfirmDialog";
 
@@ -700,44 +698,11 @@ const BulkImportTab = ({ dialogOpen, hidden, onClose }: BulkImportTabProps) => {
 							}}
 						/>
 						<FormControl component="fieldset">
-							<RadioGroup
-								row
+							<ApiSourceRadioGroup
 								value={editApiSource}
-								onChange={(event) =>
-									setEditApiSource(event.target.value as apiSourceType)
-								}
-							>
-								<FormControlLabel
-									value="bgm"
-									control={<Radio />}
-									label="Bangumi"
-									disabled={searchResultLoading}
-								/>
-								<FormControlLabel
-									value="vndb"
-									control={<Radio />}
-									label="VNDB"
-									disabled={searchResultLoading}
-								/>
-								<FormControlLabel
-									value="ymgal"
-									control={<Radio />}
-									label="YMGal"
-									disabled={searchResultLoading}
-								/>
-								<FormControlLabel
-									value="kun"
-									control={<Radio />}
-									label="Kun"
-									disabled={searchResultLoading}
-								/>
-								<FormControlLabel
-									value="mixed"
-									control={<Radio />}
-									label="Mixed"
-									disabled={searchResultLoading}
-								/>
-							</RadioGroup>
+								onChange={setEditApiSource}
+								disabled={searchResultLoading}
+							/>
 						</FormControl>
 					</Stack>
 				</DialogContent>

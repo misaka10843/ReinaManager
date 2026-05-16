@@ -11,7 +11,7 @@
 
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import FileOpenIcon from "@mui/icons-material/FileOpen";
-import { FormControlLabel, Radio, RadioGroup } from "@mui/material";
+import { FormControlLabel } from "@mui/material";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -38,17 +38,14 @@ import { useAddGame } from "@/hooks/queries/useGames";
 import { useAllSettings } from "@/hooks/queries/useSettings";
 import { showGameAddedSuccess } from "@/providers/snackBar";
 import { getEnabledMixedSources, useStore } from "@/store/appStore";
-import type {
-	apiSourceType,
-	GameCandidateData,
-	InsertGameParams,
-} from "@/types";
+import type { GameCandidateData, InsertGameParams } from "@/types";
 import {
 	createAbortableRunner,
 	handleExeFile,
 	trimDirnameToSearchName,
 } from "@/utils/appUtils";
 import { getUserErrorMessage } from "@/utils/errors";
+import { ApiSourceRadioGroup } from "./ApiSourceRadioGroup";
 import BulkImportTab from "./BulkImportTab";
 import GameSelectDialog from "./GameSelectDialog";
 import MixedSourceConfirmDialog from "./MixedSourceConfirmDialog";
@@ -426,43 +423,12 @@ const AddModal: React.FC = () => {
 									"启用自定义模式",
 								)}
 							/>
-							<RadioGroup
-								row
+							<ApiSourceRadioGroup
 								value={apiSource}
 								sx={{ gap: 1 }}
-								onChange={(e) => setApiSource(e.target.value as apiSourceType)}
-							>
-								<FormControlLabel
-									value="bgm"
-									control={<Radio />}
-									label="Bangumi"
-									disabled={isBusy}
-								/>
-								<FormControlLabel
-									value="vndb"
-									control={<Radio />}
-									label="VNDB"
-									disabled={isBusy}
-								/>
-								<FormControlLabel
-									value="ymgal"
-									control={<Radio />}
-									label="YMGal"
-									disabled={isBusy}
-								/>
-								<FormControlLabel
-									value="kun"
-									control={<Radio />}
-									label="Kun"
-									disabled={isBusy}
-								/>
-								<FormControlLabel
-									value="mixed"
-									control={<Radio />}
-									label="Mixed"
-									disabled={isBusy}
-								/>
-							</RadioGroup>
+								onChange={setApiSource}
+								disabled={isBusy}
+							/>
 						</Stack>
 						{/* 游戏名称输入框 */}
 						<TextField
