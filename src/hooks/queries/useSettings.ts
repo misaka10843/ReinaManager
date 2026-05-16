@@ -13,6 +13,7 @@ import {
 } from "@tanstack/react-query";
 import { fetchCurrentUserProfile } from "@/api/bgm";
 import { fetchVndbCurrentUserProfile } from "@/api/vndb";
+import { remoteQueryOptions } from "@/providers/queryClient";
 import { settingsService } from "@/services/invoke";
 import type { LogLevel, UpdateSettingsParams } from "@/types";
 
@@ -53,6 +54,7 @@ function bgmCurrentUserProfileQueryOptions(token: string) {
 	return queryOptions({
 		queryKey: settingsKeys.bgmCurrentUserProfileByToken(token),
 		queryFn: () => fetchCurrentUserProfile(token),
+		...remoteQueryOptions,
 	});
 }
 
@@ -90,6 +92,7 @@ export function useVndbCurrentUserProfile(options?: SettingsQueryOptions) {
 		queryKey: settingsKeys.vndbCurrentUserProfileByToken(vndbToken),
 		queryFn: () => fetchVndbCurrentUserProfile(vndbToken),
 		enabled: (options?.enabled ?? true) && Boolean(vndbToken),
+		...remoteQueryOptions,
 	});
 }
 
