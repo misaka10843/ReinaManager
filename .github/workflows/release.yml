@@ -159,7 +159,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
           BGM_APP_SECRET: ${{ secrets.BGM_APP_SECRET }}
-          TAURI_UPDATER_ACTIVE: true,
+          TAURI_UPDATER_ACTIVE: true
           CARGO_INCREMENTAL: 0
         with:
           tagName: ${{ needs.prepare.outputs.release_tag }}
@@ -242,7 +242,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
           BGM_APP_SECRET: ${{ secrets.BGM_APP_SECRET }}
-          TAURI_UPDATER_ACTIVE: true,
+          TAURI_UPDATER_ACTIVE: true
           CARGO_INCREMENTAL: 0
         with:
           tagName: ${{ needs.prepare.outputs.release_tag }}

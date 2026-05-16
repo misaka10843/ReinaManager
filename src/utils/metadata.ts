@@ -1,3 +1,4 @@
+import { gameMetadataService } from "@/api/gameMetadataService";
 import type {
 	CustomData,
 	GameCandidateData,
@@ -285,7 +286,6 @@ export async function fetchMetadataForUpdate({
 	let apiData: GameCandidateData;
 
 	if (idType === "mixed") {
-		const { gameMetadataService } = await import("@/api/gameMetadataService");
 		apiData = await gameMetadataService.getGameByIds({
 			bgmId,
 			vndbId,
@@ -304,7 +304,6 @@ export async function fetchMetadataForUpdate({
 			);
 		}
 
-		const { gameMetadataService } = await import("@/api/gameMetadataService");
 		apiData = await gameMetadataService.getGameById(sourceId, idType, bgmToken);
 	} else {
 		throw new Error(

@@ -286,29 +286,25 @@ impl GamesRepository {
     /// 获取所有游戏的 BGM ID
     pub async fn get_all_bgm_ids(db: &DatabaseConnection) -> Result<Vec<(i32, String)>, DbErr> {
         Games::find()
+            .select_only()
+            .column(games::Column::Id)
+            .column(games::Column::BgmId)
             .filter(games::Column::BgmId.is_not_null())
+            .into_tuple::<(i32, String)>()
             .all(db)
             .await
-            .map(|games| {
-                games
-                    .into_iter()
-                    .filter_map(|g| g.bgm_id.map(|bgm_id| (g.id, bgm_id)))
-                    .collect()
-            })
     }
 
     /// 获取所有游戏的 VNDB ID
     pub async fn get_all_vndb_ids(db: &DatabaseConnection) -> Result<Vec<(i32, String)>, DbErr> {
         Games::find()
+            .select_only()
+            .column(games::Column::Id)
+            .column(games::Column::VndbId)
             .filter(games::Column::VndbId.is_not_null())
+            .into_tuple::<(i32, String)>()
             .all(db)
             .await
-            .map(|games| {
-                games
-                    .into_iter()
-                    .filter_map(|g| g.vndb_id.map(|vndb_id| (g.id, vndb_id)))
-                    .collect()
-            })
     }
 
     /// 检查 BGM ID 是否已存在
