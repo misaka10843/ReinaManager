@@ -261,12 +261,12 @@ export const Settings: React.FC = () => {
 			sx={{ maxWidth: "100% !important" }}
 		>
 			<Box className="w-full">
-				<Box className="grid w-full grid-cols-1 lg:grid-cols-[14rem_minmax(0,1fr)] xl:grid-cols-[16rem_minmax(0,1fr)]">
+				<Box className="grid w-full grid-cols-1 lg:grid-cols-[14rem_minmax(0,1fr)] xl:grid-cols-[15rem_minmax(0,1fr)]">
 					<nav
-						className="sticky top-4 z-10 h-fit overflow-x-auto border-0 border-b border-solid border-[var(--mui-palette-divider)] bg-[var(--mui-palette-background-default)] py-3 lg:border-b-0 lg:border-r lg:py-5 lg:pr-4"
+						className="sticky top-4 z-10 h-fit overflow-x-auto border-0 border-b border-solid border-[var(--mui-palette-divider)] bg-[var(--mui-palette-background-default)] py-3 lg:border-b-0 lg:border-r lg:py-4 lg:pr-4"
 						aria-label={t("pages.Settings.navigation", "设置分类导航")}
 					>
-						<Box className="flex min-w-max gap-2 lg:min-w-0 lg:flex-col">
+						<Box className="flex min-w-max gap-2 lg:min-w-0 lg:flex-col lg:gap-1">
 							{sections.map((section) => {
 								const isActive = section.id === activeSectionId;
 
@@ -275,7 +275,7 @@ export const Settings: React.FC = () => {
 										key={section.id}
 										type="button"
 										onClick={() => handleSectionClick(section.id)}
-										className={`rounded-md border-0 px-3 py-2 text-left text-sm transition-colors lg:w-full ${
+										className={`rounded-lg border-0 px-3 py-2 text-left text-sm transition-colors lg:w-full ${
 											isActive
 												? "bg-[var(--mui-palette-primary-main)] text-[var(--mui-palette-primary-contrastText)] font-semibold"
 												: "bg-transparent text-[var(--mui-palette-text-primary)] hover:bg-[var(--mui-palette-action-hover)]"
@@ -288,14 +288,14 @@ export const Settings: React.FC = () => {
 						</Box>
 					</nav>
 
-					<Box className="min-w-0 space-y-8 pt-5 lg:pl-6">
+					<Box className="min-w-0 w-full space-y-8 pt-5 lg:pl-6">
 						{sections.map((section) => (
 							<section
 								key={section.id}
 								id={section.id}
-								className="scroll-mt-24 lg:scroll-mt-8 border-0 border-b border-solid border-[var(--mui-palette-divider)] pb-8 last:border-b-0 last:pb-0"
+								className="scroll-mt-24 lg:scroll-mt-8"
 							>
-								<Box className="mb-6">
+								<Box className="mb-3">
 									<Typography
 										variant="h6"
 										component="h2"
@@ -311,7 +311,9 @@ export const Settings: React.FC = () => {
 										{section.description}
 									</Typography>
 								</Box>
-								{section.content}
+								<Box className="w-full rounded-xl border border-solid border-[var(--mui-palette-divider)] bg-[var(--mui-palette-background-paper)] px-5 py-5">
+									{section.content}
+								</Box>
 							</section>
 						))}
 					</Box>
