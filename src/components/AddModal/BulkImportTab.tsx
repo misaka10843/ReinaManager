@@ -54,6 +54,7 @@ interface ImportItem extends ScanResult {
 }
 
 interface BulkImportTabProps {
+	dialogOpen: boolean;
 	// 控制此 tab 是否隐藏（通过 CSS display:none 而非卸载）
 	hidden: boolean;
 	onClose: () => void;
@@ -83,7 +84,7 @@ function getMatchedGameName(
 	);
 }
 
-const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
+const BulkImportTab = ({ dialogOpen, hidden, onClose }: BulkImportTabProps) => {
 	const { t, i18n } = useTranslation();
 	const { data: settings } = useAllSettings();
 	const hasBgmAuth = Boolean(settings?.bgm_auth);
@@ -161,10 +162,10 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 	}, [metadataSearchFlow, preferredApiSource]);
 
 	useEffect(() => {
-		if (!open) {
+		if (!dialogOpen) {
 			resetState();
 		}
-	}, [resetState]);
+	}, [dialogOpen, resetState]);
 
 	const handleCloseEditDialog = useCallback(() => {
 		if (editSearchAbortControllerRef.current) {

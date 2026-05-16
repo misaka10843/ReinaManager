@@ -77,7 +77,7 @@ class StatsService extends BaseService {
 	}
 
 	/**
-	 * 获取所有游戏的最近会话
+	 * 获取指定游戏范围内的全局最近会话
 	 */
 	async getRecentSessionsForAll(
 		gameIds: number[],

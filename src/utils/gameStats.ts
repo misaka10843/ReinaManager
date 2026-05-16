@@ -257,29 +257,16 @@ export async function getAllGameStatistics(): Promise<
 	}
 }
 
-// 优化：一次性获取所有游戏的最近会话记录 - 使用后端服务
-export async function getRecentSessionsForAllGames(
+// 获取全局最近游玩会话记录
+export async function getRecentSessionsForGames(
 	gameIds: number[],
 	limit = 10,
-): Promise<Map<number, GameSession[]>> {
+): Promise<GameSession[]> {
 	if (gameIds.length === 0) {
-		return new Map();
+		return [];
 	}
 
-	const sessions = await statsService.getRecentSessionsForAll(gameIds, limit);
-
-	// 将结果按game_id分组
-	const sessionMap = new Map<number, GameSession[]>();
-
-	for (const session of sessions) {
-		const gameId = session.game_id;
-		if (!sessionMap.has(gameId)) {
-			sessionMap.set(gameId, []);
-		}
-		sessionMap.get(gameId)?.push(session);
-	}
-
-	return sessionMap;
+	return statsService.getRecentSessionsForAll(gameIds, limit);
 }
 
 export async function getFormattedGameStats(

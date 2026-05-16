@@ -54,7 +54,7 @@ impl GameStatsRepository {
             .await
     }
 
-    /// 获取所有游戏的最近会话
+    /// 获取指定游戏范围内的全局最近会话
     pub async fn get_recent_sessions_for_all(
         db: &DatabaseConnection,
         game_ids: Vec<i32>,
@@ -64,11 +64,10 @@ impl GameStatsRepository {
             return Ok(Vec::new());
         }
 
-        // 使用子查询获取每个游戏的最近会话
         let sessions = GameSessions::find()
             .filter(game_sessions::Column::GameId.is_in(game_ids))
             .order_by_desc(game_sessions::Column::StartTime)
-            .limit(limit * 10) // 预留足够数据
+            .limit(limit)
             .all(db)
             .await?;
 

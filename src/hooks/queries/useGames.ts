@@ -10,7 +10,7 @@ import {
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
-import i18next from "i18next";
+import { useTranslation } from "react-i18next";
 import {
 	appendGamesToCaches,
 	patchGameCaches,
@@ -64,6 +64,7 @@ export const gameKeys = {
 		gameType: GameType;
 		sortOption: SortOption;
 		sortOrder: SortOrder;
+		language: string;
 	}) => [...gameKeys.idLists(), params] as const,
 	vndbIds: () => [...gameKeys.all, "vndbIds"] as const,
 	bgmIds: () => [...gameKeys.all, "bgmIds"] as const,
@@ -88,10 +89,13 @@ function useGameIdList(
 	sortOption: SortOption,
 	sortOrder: SortOrder,
 ) {
+	const { i18n } = useTranslation();
+	const language = i18n.language;
+
 	return useQuery({
-		queryKey: gameKeys.idList({ gameType, sortOption, sortOrder }),
+		queryKey: gameKeys.idList({ gameType, sortOption, sortOrder, language }),
 		queryFn: () =>
-			gameService.getGameIds(gameType, sortOption, sortOrder, i18next.language),
+			gameService.getGameIds(gameType, sortOption, sortOrder, language),
 		placeholderData: keepPreviousData,
 	});
 }

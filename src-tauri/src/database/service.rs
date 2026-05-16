@@ -277,7 +277,7 @@ pub async fn get_game_sessions(
         .map_err(|e| format!("获取游戏会话历史失败: {}", e))
 }
 
-/// 获取所有游戏的最近会话
+/// 获取指定游戏范围内的全局最近会话
 #[tauri::command]
 pub async fn get_recent_sessions_for_all(
     db: State<'_, DatabaseConnection>,

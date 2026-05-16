@@ -59,7 +59,7 @@ import {
 	getGameCover,
 	getGameDisplayName,
 } from "@/utils/appUtils";
-import { getRecentSessionsForAllGames } from "@/utils/gameStats";
+import { getRecentSessionsForGames } from "@/utils/gameStats";
 
 /**
  * 最近游玩会话类型
@@ -110,39 +110,40 @@ async function getGameActivities(games: GameData[]): Promise<{
 
 	// 提取所有有效的游戏ID
 	const validGameIds = games.map((game) => game.id);
+	const gameById = new Map(games.map((game) => [game.id, game]));
 
-	// 一次性获取所有游戏的会话记录，避免循环中的多次数据库查询
-	const allSessionsMap = await getRecentSessionsForAllGames(validGameIds, 10);
+	// 一次性获取全局最近会话记录，避免循环中的多次数据库查询
+	const recentSessions = await getRecentSessionsForGames(validGameIds, 10);
 
 	// 处理会话数据
-	for (const game of games) {
-		const gameSessions = allSessionsMap.get(game.id) || [];
+	for (const s of recentSessions) {
+		if (typeof s.end_time !== "number") continue;
+
+		const game = gameById.get(s.game_id);
+		if (!game) continue;
+
 		const gameTitle = getGameDisplayName(game);
 		const imageUrl = getGameCover(game);
 
-		for (const s of gameSessions.filter(
-			(s) => typeof s.end_time === "number",
-		)) {
-			const item: ActivityItem = {
-				id: `play-${s.session_id || game.id}-${s.end_time}`,
-				type: "play",
-				gameId: game.id,
-				gameTitle,
-				imageUrl,
-				time: s.end_time as number,
-				duration: s.duration,
-			};
-			playItems.push(item);
+		const item: ActivityItem = {
+			id: `play-${s.session_id || game.id}-${s.end_time}`,
+			type: "play",
+			gameId: game.id,
+			gameTitle,
+			imageUrl,
+			time: s.end_time,
+			duration: s.duration,
+		};
+		playItems.push(item);
 
-			// 用于最近游玩区域
-			sessions.push({
-				session_id: s.session_id as number,
-				game_id: game.id,
-				end_time: s.end_time as number,
-				gameTitle,
-				imageUrl,
-			});
-		}
+		// 用于最近游玩区域
+		sessions.push({
+			session_id: s.session_id,
+			game_id: game.id,
+			end_time: s.end_time,
+			gameTitle,
+			imageUrl,
+		});
 	}
 
 	// 处理添加记录
