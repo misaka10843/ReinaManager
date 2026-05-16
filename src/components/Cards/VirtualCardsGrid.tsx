@@ -13,7 +13,8 @@ const BREAKPOINTS = [
 	{ min: 1024, cols: 6 },
 ] as const;
 
-function getColumnCount(width: number): number {
+function getColumnCount(): number {
+	const width = window.innerWidth;
 	for (const bp of BREAKPOINTS) {
 		if (width >= bp.min) return bp.cols;
 	}
@@ -50,47 +51,12 @@ export const VirtualCardsGrid = memo(
 			[],
 		);
 
-		const [columns, setColumns] = useState(() =>
-			getColumnCount(window.innerWidth),
-		);
+		const [columns, setColumns] = useState(() => getColumnCount());
 
 		useEffect(() => {
-			const element = virtuosoWrapperRef.current;
-			if (!element) return;
-
-			const updateColumns = (width: number) => {
-				const nextColumns = getColumnCount(width);
-				setColumns((prevColumns) =>
-					prevColumns === nextColumns ? prevColumns : nextColumns,
-				);
-			};
-
-			if (!window.ResizeObserver) {
-				const onResize = () => updateColumns(window.innerWidth);
-				window.addEventListener("resize", onResize);
-				return () => window.removeEventListener("resize", onResize);
-			}
-
-			let frameId = 0;
-			const resizeObserver = new ResizeObserver(([entry]) => {
-				if (frameId) {
-					cancelAnimationFrame(frameId);
-				}
-
-				frameId = requestAnimationFrame(() => {
-					updateColumns(entry.contentRect.width);
-				});
-			});
-
-			updateColumns(element.clientWidth);
-			resizeObserver.observe(element);
-
-			return () => {
-				if (frameId) {
-					cancelAnimationFrame(frameId);
-				}
-				resizeObserver.disconnect();
-			};
+			const onResize = () => setColumns(getColumnCount());
+			window.addEventListener("resize", onResize);
+			return () => window.removeEventListener("resize", onResize);
 		}, []);
 
 		const rows = useMemo(() => {
