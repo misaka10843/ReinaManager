@@ -138,12 +138,12 @@ export const FilterSortModal: React.FC = () => {
 
 	const tagOptions = useMemo(() => {
 		return filterTagSuggestions(
-			knownTags,
+			knownTagByNormalized,
 			localTagFilters,
 			tagInput,
 			MAX_TAG_SUGGESTIONS,
 		);
-	}, [knownTags, localTagFilters, tagInput]);
+	}, [knownTagByNormalized, localTagFilters, tagInput]);
 
 	const handleOpen = () => {
 		setLocalFilterType(gameFilterType);

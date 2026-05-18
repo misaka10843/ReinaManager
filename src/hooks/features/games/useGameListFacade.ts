@@ -8,13 +8,19 @@ import { PlayStatus } from "@/types/collection";
 import { createSearchIndex, searchWithIndex } from "@/utils/enhancedSearch";
 import { getGameNsfwStatus } from "@/utils/game";
 import { type GameIndex, getGameIndex } from "@/utils/game/gameIndex";
-import { matchesAllTagFilters } from "@/utils/tagFilter";
+import {
+	buildNormalizedTagSet,
+	matchesAllNormalizedTagFilters,
+} from "@/utils/tagFilter";
 
 const EMPTY_IDS: number[] = [];
 const EMPTY_GAMES: GameData[] = [];
 
-function gameMatchesTagFilters(game: GameData, tagFilters: string[]): boolean {
-	if (tagFilters.length === 0) {
+function gameMatchesTagFilters(
+	game: GameData,
+	normalizedTagFilters: ReadonlySet<string>,
+): boolean {
+	if (normalizedTagFilters.size === 0) {
 		return true;
 	}
 
@@ -23,7 +29,7 @@ function gameMatchesTagFilters(game: GameData, tagFilters: string[]): boolean {
 		return false;
 	}
 
-	return matchesAllTagFilters(gameTags, tagFilters);
+	return matchesAllNormalizedTagFilters(gameTags, normalizedTagFilters);
 }
 
 export function useGameIndex() {
@@ -113,15 +119,19 @@ export function useFilteredGamesFacade() {
 		return games;
 	}, [sortedIds, index.displayById, playStatusFilter, nsfwFilter]);
 
+	const normalizedTagFilters = useMemo(() => {
+		return buildNormalizedTagSet(tagFilters);
+	}, [tagFilters]);
+
 	const filteredGames = useMemo(() => {
-		if (tagFilters.length === 0 || baseFilteredGames.length === 0) {
+		if (normalizedTagFilters.size === 0 || baseFilteredGames.length === 0) {
 			return baseFilteredGames;
 		}
 
 		return baseFilteredGames.filter((game) =>
-			gameMatchesTagFilters(game, tagFilters),
+			gameMatchesTagFilters(game, normalizedTagFilters),
 		);
-	}, [baseFilteredGames, tagFilters]);
+	}, [baseFilteredGames, normalizedTagFilters]);
 
 	return {
 		index,

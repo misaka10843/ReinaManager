@@ -51,6 +51,22 @@ export function matchesAllTagFilters(
 	return filters.every((filter) => hasMatchingTag(normalizedTags, filter));
 }
 
+export function matchesAllNormalizedTagFilters(
+	tags: readonly string[],
+	normalizedFilters: ReadonlySet<string>,
+): boolean {
+	if (normalizedFilters.size === 0) return true;
+	if (tags.length === 0) return false;
+
+	const remainingFilters = new Set(normalizedFilters);
+	for (const tag of tags) {
+		remainingFilters.delete(normalizeTagFilterValue(tag));
+		if (remainingFilters.size === 0) return true;
+	}
+
+	return false;
+}
+
 export function findTagByInput(
 	tagMap: ReadonlyMap<string, string>,
 	input: string,
@@ -59,21 +75,24 @@ export function findTagByInput(
 }
 
 export function filterTagSuggestions(
-	tags: readonly string[],
+	tagMap: ReadonlyMap<string, string>,
 	selectedTags: readonly string[],
 	input: string,
 	limit: number,
 ): string[] {
 	const normalizedInput = normalizeTagFilterValue(input);
-	if (!normalizedInput) return [];
+	if (!normalizedInput || limit <= 0) return [];
 
 	const selectedTagSet = buildNormalizedTagSet(selectedTags);
+	const suggestions: string[] = [];
 
-	return tags
-		.filter((tag) => {
-			const normalizedTag = normalizeTagFilterValue(tag);
-			if (selectedTagSet.has(normalizedTag)) return false;
-			return normalizedTag.includes(normalizedInput);
-		})
-		.slice(0, limit);
+	for (const [normalizedTag, tag] of tagMap) {
+		if (selectedTagSet.has(normalizedTag)) continue;
+		if (!normalizedTag.includes(normalizedInput)) continue;
+
+		suggestions.push(tag);
+		if (suggestions.length >= limit) break;
+	}
+
+	return suggestions;
 }
