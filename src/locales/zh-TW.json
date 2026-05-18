@@ -141,12 +141,16 @@
 			"lastPlayed": "最近遊玩",
 			"localGames": "本地遊戲",
 			"nameSort": "名稱排序",
+			"noTagSuggestions": "沒有標籤建議",
 			"onlineGames": "雲端遊戲",
 			"playStatusFilter": "遊戲狀態",
 			"releaseTime": "遊戲發布時間",
 			"sortMethod": "排序方式",
 			"sortOrder": "排序方向",
 			"sourceFilter": "遊戲來源",
+			"tagFilter": "Tag 篩選",
+			"tagFilterPlaceholder": "輸入原始 tag 後按 Enter 添加",
+			"tagNotMatched": "未匹配到 {{tag}} tag",
 			"title": "篩選排序",
 			"vndbRank": "VNDB 排名"
 		},
@@ -437,6 +441,7 @@
 				"settingsSaveFailed": "備份設定儲存失敗"
 			},
 			"backupCount": "存檔備份數",
+			"clearSelectedTags": "清空",
 			"collapseTags": "折疊標籤",
 			"DataSourceUpdate": {
 				"bgmId": "Bangumi ID",
@@ -504,6 +509,7 @@
 			"playCount": "累計遊戲次數",
 			"playTimeChart": "統計圖表",
 			"releaseDate": "發佈時間",
+			"searchBySelectedTags_other": "搜尋 ({{count}})",
 			"todayPlayTime": "今日遊戲時長",
 			"totalPlayTime": "累計總時長"
 		},

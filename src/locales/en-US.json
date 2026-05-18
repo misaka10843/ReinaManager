@@ -145,12 +145,16 @@
 			"lastPlayed": "Last Played",
 			"localGames": "Local Games",
 			"nameSort": "Name Sort",
+			"noTagSuggestions": "No tag suggestions",
 			"onlineGames": "Cloud Games",
 			"playStatusFilter": "Play Status",
 			"releaseTime": "Game Release Time",
 			"sortMethod": "Sort Method",
 			"sortOrder": "Sort Order",
 			"sourceFilter": "Game Source",
+			"tagFilter": "Tag Filter",
+			"tagFilterPlaceholder": "Enter original tag and press Enter",
+			"tagNotMatched": "No matching tag: {{tag}}",
 			"title": "Filter & Sort",
 			"vndbRank": "VNDB Rank"
 		},
@@ -446,6 +450,7 @@
 				"settingsSaveFailed": "Failed to save backup settings"
 			},
 			"backupCount": "Backup Count",
+			"clearSelectedTags": "Clear",
 			"collapseTags": "Collapse Tags",
 			"DataSourceUpdate": {
 				"bgmId": "Bangumi ID",
@@ -513,6 +518,8 @@
 			"playCount": "Total Play Count",
 			"playTimeChart": "Play Time Chart",
 			"releaseDate": "Release Date",
+			"searchBySelectedTags_one": "Search ({{count}})",
+			"searchBySelectedTags_other": "Search ({{count}})",
 			"todayPlayTime": "Today's Play Time",
 			"totalPlayTime": "Total Play Time"
 		},

@@ -24,6 +24,7 @@ import { persist } from "zustand/middleware";
 import type { GameType, SortOption, SortOrder } from "@/services/invoke/types";
 import type { apiSourceType, SourceType } from "@/types";
 import type { PlayStatusFilter } from "@/types/collection";
+import { normalizeTagFilters } from "@/utils/tagFilter";
 import { initializeGamePlayTracking } from "./gamePlayStore";
 
 /**
@@ -70,6 +71,11 @@ export interface AppState {
 	setGameFilterType: (type: GameType) => void;
 	playStatusFilter: PlayStatusFilter;
 	setPlayStatusFilter: (status: PlayStatusFilter) => void;
+	tagFilters: string[];
+	setTagFilters: (tags: string[]) => void;
+	addTagFilter: (tag: string) => void;
+	removeTagFilter: (tag: string) => void;
+	clearTagFilters: () => void;
 
 	// 数据来源选择
 	apiSource: apiSourceType;
@@ -169,6 +175,7 @@ export const useStore = create<AppState>()(
 
 			gameFilterType: "all",
 			playStatusFilter: "all",
+			tagFilters: [],
 
 			// 排序选项默认值
 			sortOption: "addtime",
@@ -307,6 +314,31 @@ export const useStore = create<AppState>()(
 				if (prevStatus === status) return;
 
 				set({ playStatusFilter: status });
+			},
+			setTagFilters: (tags: string[]) => {
+				set({ tagFilters: normalizeTagFilters(tags) });
+			},
+			addTagFilter: (tag: string) => {
+				const trimmed = tag.trim();
+				if (!trimmed) return;
+				const current = get().tagFilters;
+				if (
+					current.some((item) => item.toLowerCase() === trimmed.toLowerCase())
+				) {
+					return;
+				}
+				set({ tagFilters: [...current, trimmed] });
+			},
+			removeTagFilter: (tag: string) => {
+				const normalized = tag.toLowerCase();
+				set({
+					tagFilters: get().tagFilters.filter(
+						(item) => item.toLowerCase() !== normalized,
+					),
+				});
+			},
+			clearTagFilters: () => {
+				set({ tagFilters: [] });
 			},
 
 			// 更新窗口状态管理

@@ -141,12 +141,16 @@
 			"lastPlayed": "最近プレイ",
 			"localGames": "ローカルゲーム",
 			"nameSort": "名前ソート",
+			"noTagSuggestions": "タグ候補がありません",
 			"onlineGames": "クラウドゲーム",
 			"playStatusFilter": "プレイ状態",
 			"releaseTime": "ゲーム発売時間",
 			"sortMethod": "並べ替え方法",
 			"sortOrder": "並べ替え方向",
 			"sourceFilter": "ゲームソース",
+			"tagFilter": "Tag フィルター",
+			"tagFilterPlaceholder": "元の tag を入力して Enter",
+			"tagNotMatched": "{{tag}} tag に一致するものがありません",
 			"title": "フィルター・並べ替え",
 			"vndbRank": "VNDBランキング"
 		},
@@ -437,6 +441,7 @@
 				"settingsSaveFailed": "バックアップ設定の保存に失敗しました"
 			},
 			"backupCount": "バックアップ数",
+			"clearSelectedTags": "クリア",
 			"collapseTags": "タグを折りたたむ",
 			"DataSourceUpdate": {
 				"bgmId": "Bangumi ID",
@@ -504,6 +509,7 @@
 			"playCount": "累計プレイ回数",
 			"playTimeChart": "プレイ時間チャート",
 			"releaseDate": "公開日",
+			"searchBySelectedTags_other": "検索 ({{count}})",
 			"todayPlayTime": "本日のプレイ時間",
 			"totalPlayTime": "累計総プレイ時間"
 		},

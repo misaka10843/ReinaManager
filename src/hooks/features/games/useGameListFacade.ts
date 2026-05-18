@@ -8,9 +8,23 @@ import { PlayStatus } from "@/types/collection";
 import { createSearchIndex, searchWithIndex } from "@/utils/enhancedSearch";
 import { getGameNsfwStatus } from "@/utils/game";
 import { type GameIndex, getGameIndex } from "@/utils/game/gameIndex";
+import { matchesAllTagFilters } from "@/utils/tagFilter";
 
 const EMPTY_IDS: number[] = [];
 const EMPTY_GAMES: GameData[] = [];
+
+function gameMatchesTagFilters(game: GameData, tagFilters: string[]): boolean {
+	if (tagFilters.length === 0) {
+		return true;
+	}
+
+	const gameTags = game.tags;
+	if (!gameTags || gameTags.length === 0) {
+		return false;
+	}
+
+	return matchesAllTagFilters(gameTags, tagFilters);
+}
 
 export function useGameIndex() {
 	const queryClient = useQueryClient();
@@ -49,6 +63,7 @@ export function useFilteredGamesFacade() {
 	const {
 		gameFilterType,
 		playStatusFilter,
+		tagFilters,
 		sortOption,
 		sortOrder,
 		nsfwFilter,
@@ -56,6 +71,7 @@ export function useFilteredGamesFacade() {
 		useShallow((s) => ({
 			gameFilterType: s.gameFilterType,
 			playStatusFilter: s.playStatusFilter,
+			tagFilters: s.tagFilters,
 			sortOption: s.sortOption,
 			sortOrder: s.sortOrder,
 			nsfwFilter: s.nsfwFilter,
@@ -70,7 +86,7 @@ export function useFilteredGamesFacade() {
 	const sortedIds = gameIdListQuery.data ?? EMPTY_IDS;
 
 	// 3. 从 Map 读取 GameData，应用前端过滤
-	const filteredGames = useMemo(() => {
+	const baseFilteredGames = useMemo(() => {
 		if (sortedIds.length === 0 || index.displayById.size === 0) {
 			return EMPTY_GAMES;
 		}
@@ -97,8 +113,19 @@ export function useFilteredGamesFacade() {
 		return games;
 	}, [sortedIds, index.displayById, playStatusFilter, nsfwFilter]);
 
+	const filteredGames = useMemo(() => {
+		if (tagFilters.length === 0 || baseFilteredGames.length === 0) {
+			return baseFilteredGames;
+		}
+
+		return baseFilteredGames.filter((game) =>
+			gameMatchesTagFilters(game, tagFilters),
+		);
+	}, [baseFilteredGames, tagFilters]);
+
 	return {
 		index,
+		baseFilteredGames,
 		filteredGames,
 		isLoading: gameIndexQuery.isLoading || gameIdListQuery.isLoading,
 		isError: gameIndexQuery.isError || gameIdListQuery.isError,

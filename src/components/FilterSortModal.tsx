@@ -2,8 +2,12 @@ import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import FilterAlt from "@mui/icons-material/FilterAlt";
 import FilterListIcon from "@mui/icons-material/FilterList";
+import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import SortIcon from "@mui/icons-material/Sort";
+import Autocomplete from "@mui/material/Autocomplete";
+import Badge from "@mui/material/Badge";
 import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
@@ -11,12 +15,15 @@ import DialogTitle from "@mui/material/DialogTitle";
 import FormControl from "@mui/material/FormControl";
 import MenuItem from "@mui/material/MenuItem";
 import Select, { type SelectChangeEvent } from "@mui/material/Select";
+import TextField from "@mui/material/TextField";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import Typography from "@mui/material/Typography";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
+import { useFilteredGamesFacade } from "@/hooks/features/games/useGameListFacade";
+import { snackbar } from "@/providers/snackBar";
 import type { GameType, SortOption, SortOrder } from "@/services/invoke/types";
 import { useStore } from "@/store/appStore";
 import {
@@ -25,6 +32,12 @@ import {
 	type PlayStatus,
 	type PlayStatusFilter,
 } from "@/types/collection";
+import {
+	buildNormalizedTagMap,
+	filterTagSuggestions,
+	findTagByInput,
+	normalizeTagFilters,
+} from "@/utils/tagFilter";
 
 const filterTypeOptions: Array<{ value: GameType; labelKey: string }> = [
 	{ value: "all", labelKey: "allGames" },
@@ -42,40 +55,98 @@ const sortOptions: Array<{ value: SortOption; labelKey: string }> = [
 	{ value: "vndbrank", labelKey: "vndbRank" },
 ];
 
+const MAX_TAG_SUGGESTIONS = 8;
+
+function getActiveFilterCount(
+	gameFilterType: GameType,
+	playStatusFilter: PlayStatusFilter,
+	tagFilters: string[],
+): number {
+	let count = 0;
+	if (gameFilterType !== "all") count += 1;
+	if (playStatusFilter !== "all") count += 1;
+	if (tagFilters.length > 0) count += 1;
+	return count;
+}
+
 export const FilterSortModal: React.FC = () => {
 	const { t } = useTranslation();
 	const {
 		gameFilterType,
 		playStatusFilter,
+		tagFilters,
 		sortOption,
 		sortOrder,
 		setGameFilterType,
 		setPlayStatusFilter,
+		setTagFilters,
 		updateSort,
 	} = useStore(
 		useShallow((s) => ({
 			gameFilterType: s.gameFilterType,
 			playStatusFilter: s.playStatusFilter,
+			tagFilters: s.tagFilters,
 			sortOption: s.sortOption,
 			sortOrder: s.sortOrder,
 			setGameFilterType: s.setGameFilterType,
 			setPlayStatusFilter: s.setPlayStatusFilter,
+			setTagFilters: s.setTagFilters,
 			updateSort: s.updateSort,
 		})),
 	);
+	const { baseFilteredGames } = useFilteredGamesFacade();
 
 	const [open, setOpen] = useState(false);
 	const [localFilterType, setLocalFilterType] =
 		useState<GameType>(gameFilterType);
 	const [localPlayStatusFilter, setLocalPlayStatusFilter] =
 		useState<PlayStatusFilter>(playStatusFilter);
+	const [localTagFilters, setLocalTagFilters] = useState<string[]>(tagFilters);
+	const [tagInput, setTagInput] = useState("");
 	const [localSortOption, setLocalSortOption] =
 		useState<SortOption>(sortOption);
 	const [localSortOrder, setLocalSortOrder] = useState<SortOrder>(sortOrder);
+	const activeFilterCount = getActiveFilterCount(
+		gameFilterType,
+		playStatusFilter,
+		tagFilters,
+	);
+
+	const knownTags = useMemo(() => {
+		if (!open) {
+			return [];
+		}
+
+		const tags = new Set<string>();
+		for (const game of baseFilteredGames) {
+			for (const tag of game.tags ?? []) {
+				const trimmed = tag.trim();
+				if (!trimmed) continue;
+				tags.add(trimmed);
+			}
+		}
+
+		return Array.from(tags).toSorted((a, b) => a.localeCompare(b));
+	}, [baseFilteredGames, open]);
+
+	const knownTagByNormalized = useMemo(() => {
+		return buildNormalizedTagMap(knownTags);
+	}, [knownTags]);
+
+	const tagOptions = useMemo(() => {
+		return filterTagSuggestions(
+			knownTags,
+			localTagFilters,
+			tagInput,
+			MAX_TAG_SUGGESTIONS,
+		);
+	}, [knownTags, localTagFilters, tagInput]);
 
 	const handleOpen = () => {
 		setLocalFilterType(gameFilterType);
 		setLocalPlayStatusFilter(playStatusFilter);
+		setLocalTagFilters(tagFilters);
+		setTagInput("");
 		setLocalSortOption(sortOption);
 		setLocalSortOrder(sortOrder);
 		setOpen(true);
@@ -87,15 +158,53 @@ export const FilterSortModal: React.FC = () => {
 		event.preventDefault();
 		setGameFilterType(localFilterType);
 		setPlayStatusFilter(localPlayStatusFilter);
+		setTagFilters(localTagFilters);
 		updateSort(localSortOption, localSortOrder);
 		handleClose();
 	};
 
+	const handleTagFiltersChange = (nextTags: string[]) => {
+		const matchedTags = nextTags
+			.map((tag) => findTagByInput(knownTagByNormalized, tag))
+			.filter((tag): tag is string => Boolean(tag));
+		const normalizedTags = normalizeTagFilters(matchedTags);
+		setLocalTagFilters(normalizedTags);
+	};
+
+	const handleTagInputKeyDown = (
+		event: React.KeyboardEvent<HTMLInputElement>,
+	) => {
+		if (event.key !== "Enter") return;
+		const trimmed = tagInput.trim();
+		if (!trimmed) return;
+
+		event.preventDefault();
+		event.stopPropagation();
+		const matchedTag = findTagByInput(knownTagByNormalized, trimmed);
+		if (matchedTag) {
+			handleTagFiltersChange([...localTagFilters, matchedTag]);
+		} else {
+			snackbar.warning(
+				t("components.FilterSortModal.tagNotMatched", {
+					tag: trimmed,
+					defaultValue: "未匹配到 {{tag}} tag",
+				}),
+			);
+		}
+		setTagInput("");
+	};
+
 	return (
 		<>
-			<Button onClick={handleOpen} startIcon={<FilterAlt />}>
-				{t("components.FilterSortModal.title", "筛选排序")}
-			</Button>
+			<Badge
+				badgeContent={activeFilterCount}
+				color="primary"
+				invisible={activeFilterCount === 0}
+			>
+				<Button onClick={handleOpen} startIcon={<FilterAlt />}>
+					{t("components.FilterSortModal.title", "筛选排序")}
+				</Button>
+			</Badge>
 			<Dialog
 				open={open}
 				onClose={handleClose}
@@ -192,6 +301,80 @@ export const FilterSortModal: React.FC = () => {
 											</ToggleButton>
 										))}
 									</fieldset>
+								</div>
+								<div className="flex flex-col gap-2">
+									<div className="flex items-center gap-2">
+										<LocalOfferIcon fontSize="small" className="text-primary" />
+										<Typography variant="caption" color="text.secondary">
+											{t("components.FilterSortModal.tagFilter", "Tag 筛选")}
+										</Typography>
+										{localTagFilters.length > 0 && (
+											<Chip
+												size="small"
+												label={localTagFilters.length}
+												color="primary"
+											/>
+										)}
+									</div>
+									<Autocomplete
+										multiple
+										freeSolo
+										options={tagOptions}
+										value={localTagFilters}
+										inputValue={tagInput}
+										filterOptions={(options) => options}
+										onInputChange={(_, value, reason) => {
+											if (reason === "input" || reason === "clear") {
+												setTagInput(value);
+											}
+										}}
+										onChange={(_, value) => {
+											handleTagFiltersChange(value);
+											setTagInput("");
+										}}
+										noOptionsText={t(
+											"components.FilterSortModal.noTagSuggestions",
+											"没有标签建议",
+										)}
+										renderTags={(value, getTagProps) =>
+											value.map((option, index) => {
+												const { key, ...tagProps } = getTagProps({ index });
+												return (
+													<Chip
+														key={key}
+														label={option}
+														size="small"
+														color="primary"
+														variant="outlined"
+														{...tagProps}
+													/>
+												);
+											})
+										}
+										renderInput={(params) => (
+											<TextField
+												{...params}
+												size="small"
+												placeholder={
+													localTagFilters.length === 0
+														? t(
+																"components.FilterSortModal.tagFilterPlaceholder",
+																"输入原始 tag 后按回车添加",
+															)
+														: ""
+												}
+												onKeyDown={handleTagInputKeyDown}
+											/>
+										)}
+										renderOption={(props, option) => {
+											const { key, ...optionProps } = props;
+											return (
+												<li key={key} {...optionProps}>
+													<span className="flex-1 truncate">{option}</span>
+												</li>
+											);
+										}}
+									/>
 								</div>
 							</div>
 						</section>
