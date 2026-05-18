@@ -1,11 +1,12 @@
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import CloseIcon from "@mui/icons-material/Close";
 import FilterAlt from "@mui/icons-material/FilterAlt";
 import FilterListIcon from "@mui/icons-material/FilterList";
 import LocalOfferIcon from "@mui/icons-material/LocalOffer";
 import SortIcon from "@mui/icons-material/Sort";
 import Autocomplete from "@mui/material/Autocomplete";
-import Badge from "@mui/material/Badge";
+import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import Dialog from "@mui/material/Dialog";
@@ -13,11 +14,13 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import FormControl from "@mui/material/FormControl";
+import IconButton from "@mui/material/IconButton";
 import MenuItem from "@mui/material/MenuItem";
 import Select, { type SelectChangeEvent } from "@mui/material/Select";
 import TextField from "@mui/material/TextField";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
+import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -154,6 +157,13 @@ export const FilterSortModal: React.FC = () => {
 
 	const handleClose = () => setOpen(false);
 
+	const handleClearFilters = (event: React.MouseEvent<HTMLButtonElement>) => {
+		event.stopPropagation();
+		setGameFilterType("all");
+		setPlayStatusFilter("all");
+		setTagFilters([]);
+	};
+
 	const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		setGameFilterType(localFilterType);
@@ -196,15 +206,36 @@ export const FilterSortModal: React.FC = () => {
 
 	return (
 		<>
-			<Badge
-				badgeContent={activeFilterCount}
-				color="primary"
-				invisible={activeFilterCount === 0}
-			>
+			<Box className="group relative inline-flex">
 				<Button onClick={handleOpen} startIcon={<FilterAlt />}>
 					{t("components.FilterSortModal.title", "筛选排序")}
 				</Button>
-			</Badge>
+				{activeFilterCount > 0 && (
+					<Box
+						component="span"
+						className="pointer-events-none absolute -right-1.5 -top-1.5 h-5 min-w-5 rounded-full bg-[var(--mui-palette-primary-main)] px-1 text-center text-12px text-[var(--mui-palette-primary-contrastText)] font-600 leading-5 transition-opacity duration-150 group-hover:opacity-0"
+					>
+						{activeFilterCount}
+					</Box>
+				)}
+				{activeFilterCount > 0 && (
+					<Tooltip
+						title={t("components.FilterSortModal.clearFilters", "清除筛选")}
+					>
+						<IconButton
+							size="small"
+							className="!absolute -right-1.5 -top-1.5 !h-5 !w-5 border border-solid border-[var(--mui-palette-divider)] !bg-[var(--mui-palette-background-paper)] !text-[var(--mui-palette-error-main)] opacity-0 transition-[opacity,background-color] duration-150 group-hover:opacity-100 hover:!bg-[var(--mui-palette-action-hover)]"
+							aria-label={t(
+								"components.FilterSortModal.clearFilters",
+								"清除筛选",
+							)}
+							onClick={handleClearFilters}
+						>
+							<CloseIcon fontSize="inherit" />
+						</IconButton>
+					</Tooltip>
+				)}
+			</Box>
 			<Dialog
 				open={open}
 				onClose={handleClose}
