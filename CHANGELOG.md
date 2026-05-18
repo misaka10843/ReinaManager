@@ -1,3 +1,77 @@
+## [0.21.0](https://github.com/huoshen80/ReinaManager/compare/v0.20.4...v0.21.0) (2026-05-18)
+
+<details>
+<summary>查看中文版本</summary>
+
+### ⚙️ 杂类任务
+
+- 应用小幅优化 ([465cd61](https://github.com/huoshen80/ReinaManager/commit/465cd611ea203fc1cdfc16b30fbbe13197a1be5c))
+
+### ✨ 新功能
+
+- *(home)* 切换周/月游戏时长 ([46a00d6](https://github.com/huoshen80/ReinaManager/commit/46a00d639f42047eedb6f141ef484c1ad02122f4))
+- *(filter)* 添加 Tag 筛选功能 ([95055ea](https://github.com/huoshen80/ReinaManager/commit/95055ea34b7a78d860488308aeddb964ba498f98))
+- *(detail)* 添加标签选择和搜索 ([cb92721](https://github.com/huoshen80/ReinaManager/commit/cb927212c515a52091d5b6fe52339ec87d576788))
+- *(filters)* 添加快速清除控件 ([17069ac](https://github.com/huoshen80/ReinaManager/commit/17069ac1f98d71c366be3fdd3182e790267bc9aa))
+
+### 🎨 样式
+
+- *(settings)* 优化设置页布局 ([bed2849](https://github.com/huoshen80/ReinaManager/commit/bed284904e6d4101cb87ba44062eb34f1f89985d))
+
+### 🐛 Bug 修复
+
+- *(games)* 使动态查询与当前状态一致 ([d673ead](https://github.com/huoshen80/ReinaManager/commit/d673ead5dae61818684f1381c0c9b50e8be6782c))
+
+### 🚀 性能优化
+
+- *(app)* 减少启动和查询缓存工作 ([b595061](https://github.com/huoshen80/ReinaManager/commit/b5950615ed588441d0b9e3baae91035f9e5529ab))
+- *(ui)* 减少重复列表处理 ([816d4d7](https://github.com/huoshen80/ReinaManager/commit/816d4d7017690d09d4321e4cef80976f84f0a462))
+- *(query)* 保持本地缓存驻留 ([7d55d92](https://github.com/huoshen80/ReinaManager/commit/7d55d9227f04cdd787387cd97e85ad774be18713))
+- *(cards)* 简化网格尺寸变化处理 ([95b44a1](https://github.com/huoshen80/ReinaManager/commit/95b44a19e150d096c23ff847156ff8d02388aae2))
+- *(home)* 从查询派生活动数据 ([76aeb8f](https://github.com/huoshen80/ReinaManager/commit/76aeb8fb0593307feb0d90d2747d7f3f0cf54776))
+- *(tags)* 减少筛选匹配工作 ([3ba9f20](https://github.com/huoshen80/ReinaManager/commit/3ba9f2055bb02420144d9a62377830d29f510ac9))
+
+### 🚜 重构
+
+- *(add-modal)* 复用 API 来源控件 ([9d91329](https://github.com/huoshen80/ReinaManager/commit/9d913294935aa65bbff08515fbbc4bc76aa918b1))
+- *(utils)* 按领域组织辅助函数 ([48debde](https://github.com/huoshen80/ReinaManager/commit/48debde28e5aa0b282f37606f3113d8d546ac122))
+
+</details>
+
+### ⚙️ Miscellaneous Tasks
+
+- Apply minor optimizations ([465cd61](https://github.com/huoshen80/ReinaManager/commit/465cd611ea203fc1cdfc16b30fbbe13197a1be5c))
+
+### ✨ Features
+
+- *(home)* Toggle weekly and monthly playtime ([46a00d6](https://github.com/huoshen80/ReinaManager/commit/46a00d639f42047eedb6f141ef484c1ad02122f4))
+- *(filter)* Add tag filter functionality ([95055ea](https://github.com/huoshen80/ReinaManager/commit/95055ea34b7a78d860488308aeddb964ba498f98))
+- *(detail)* Add tag selection and search ([cb92721](https://github.com/huoshen80/ReinaManager/commit/cb927212c515a52091d5b6fe52339ec87d576788))
+- *(filters)* Add quick clear control ([17069ac](https://github.com/huoshen80/ReinaManager/commit/17069ac1f98d71c366be3fdd3182e790267bc9aa))
+
+### 🎨 Styling
+
+- *(settings)* Refine settings page layout ([bed2849](https://github.com/huoshen80/ReinaManager/commit/bed284904e6d4101cb87ba44062eb34f1f89985d))
+
+### 🐛 Bug Fixes
+
+- *(games)* Align activity queries with current state ([d673ead](https://github.com/huoshen80/ReinaManager/commit/d673ead5dae61818684f1381c0c9b50e8be6782c))
+
+### 🚀 Performance
+
+- *(app)* Narrow startup and query cache work ([b595061](https://github.com/huoshen80/ReinaManager/commit/b5950615ed588441d0b9e3baae91035f9e5529ab))
+- *(ui)* Reduce repeated list work ([816d4d7](https://github.com/huoshen80/ReinaManager/commit/816d4d7017690d09d4321e4cef80976f84f0a462))
+- *(query)* Keep local caches resident ([7d55d92](https://github.com/huoshen80/ReinaManager/commit/7d55d9227f04cdd787387cd97e85ad774be18713))
+- *(cards)* Simplify grid resize handling ([95b44a1](https://github.com/huoshen80/ReinaManager/commit/95b44a19e150d096c23ff847156ff8d02388aae2))
+- *(home)* Derive activity data from query ([76aeb8f](https://github.com/huoshen80/ReinaManager/commit/76aeb8fb0593307feb0d90d2747d7f3f0cf54776))
+- *(tags)* Reduce filter matching work ([3ba9f20](https://github.com/huoshen80/ReinaManager/commit/3ba9f2055bb02420144d9a62377830d29f510ac9))
+
+### 🚜 Refactor
+
+- *(add-modal)* Share api source controls ([9d91329](https://github.com/huoshen80/ReinaManager/commit/9d913294935aa65bbff08515fbbc4bc76aa918b1))
+- *(utils)* Organize helpers by domain ([48debde](https://github.com/huoshen80/ReinaManager/commit/48debde28e5aa0b282f37606f3113d8d546ac122))
+
+
 ## [0.20.4](https://github.com/huoshen80/ReinaManager/compare/v0.20.3...v0.20.4) (2026-05-15)
 
 <details>

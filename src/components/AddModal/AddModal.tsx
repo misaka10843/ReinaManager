@@ -451,7 +451,6 @@ const AddModal: React.FC = () => {
 					</Stack>
 					{/* bulk tab：始终挂载，通过 hidden prop 控制显隐，保持状态在 tab 切换时不丢失 */}
 					<BulkImportTab
-						dialogOpen={addModalOpen}
 						hidden={activeTab !== "bulk"}
 						onClose={handleCloseModal}
 					/>

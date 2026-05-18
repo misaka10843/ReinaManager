@@ -49,7 +49,6 @@ interface ImportItem extends ScanResult {
 }
 
 interface BulkImportTabProps {
-	dialogOpen: boolean;
 	// 控制此 tab 是否隐藏（通过 CSS display:none 而非卸载）
 	hidden: boolean;
 	onClose: () => void;
@@ -79,7 +78,7 @@ function getMatchedGameName(
 	);
 }
 
-const BulkImportTab = ({ dialogOpen, hidden, onClose }: BulkImportTabProps) => {
+const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 	const { t, i18n } = useTranslation();
 	const { data: settings } = useAllSettings();
 	const hasBgmAuth = Boolean(settings?.bgm_auth);
@@ -106,6 +105,13 @@ const BulkImportTab = ({ dialogOpen, hidden, onClose }: BulkImportTabProps) => {
 	const editSearchAbortControllerRef = useRef<AbortController | null>(null);
 	const matchAbortControllerRef = useRef<AbortController | null>(null);
 	const loading = isMatchingMetadata || isScanningDirectories || isAddingGames;
+
+	useEffect(() => {
+		return () => {
+			editSearchAbortControllerRef.current?.abort();
+			matchAbortControllerRef.current?.abort();
+		};
+	}, []);
 
 	const handleResolvedEditMetadata = useCallback(
 		async (resolvedData: GameCandidateData) => {
@@ -155,12 +161,6 @@ const BulkImportTab = ({ dialogOpen, hidden, onClose }: BulkImportTabProps) => {
 		setEditApiSource(preferredApiSource);
 		metadataSearchFlow.reset();
 	}, [metadataSearchFlow, preferredApiSource]);
-
-	useEffect(() => {
-		if (!dialogOpen) {
-			resetState();
-		}
-	}, [dialogOpen, resetState]);
 
 	const handleCloseEditDialog = useCallback(() => {
 		if (editSearchAbortControllerRef.current) {
