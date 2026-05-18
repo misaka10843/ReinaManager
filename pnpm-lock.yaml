@@ -148,8 +148,8 @@ importers:
         specifier: ^2.13.1
         version: 2.13.1
       i18next-cli:
-        specifier: ^1.56.12
-        version: 1.56.12(@types/node@24.12.4)(i18next@26.2.0(typescript@6.0.3))(react-dom@18.3.1(react@18.3.1))(typescript@6.0.3)
+        specifier: ^1.57.0
+        version: 1.57.0(@types/node@24.12.4)(i18next@26.2.0(typescript@6.0.3))(react-dom@18.3.1(react@18.3.1))(typescript@6.0.3)
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -1755,8 +1755,8 @@ packages:
   i18next-browser-languagedetector@8.2.1:
     resolution: {integrity: sha512-bZg8+4bdmaOiApD7N7BPT9W8MLZG+nPTOFlLiJiT8uzKXFjhxw4v2ierCXOwB5sFDMtuA5G4kgYZ0AznZxQ/cw==}
 
-  i18next-cli@1.56.12:
-    resolution: {integrity: sha512-wCHRq8wBdmtUomHzh6b2wWwYeq1ExHzcHbhHbO9q50yOv00fWvMLfEv/zkQdydO/5RhXE+aNYG1sszEWxPBOOg==}
+  i18next-cli@1.57.0:
+    resolution: {integrity: sha512-+DKPFvemPBUJnnROyw1VyYDU2QyGc3mf6FEXRCKFt3I69yY2y+6fqPgVWtMC1QwGXxAS2/TPS89yGSt11ufJAA==}
     engines: {node: '>=22'}
     hasBin: true
 
@@ -3961,7 +3961,7 @@ snapshots:
     dependencies:
       '@babel/runtime': 7.29.2
 
-  i18next-cli@1.56.12(@types/node@24.12.4)(i18next@26.2.0(typescript@6.0.3))(react-dom@18.3.1(react@18.3.1))(typescript@6.0.3):
+  i18next-cli@1.57.0(@types/node@24.12.4)(i18next@26.2.0(typescript@6.0.3))(react-dom@18.3.1(react@18.3.1))(typescript@6.0.3):
     dependencies:
       '@croct/json5-parser': 0.2.2
       '@swc/core': 1.15.33
@@ -4615,7 +4615,7 @@ snapshots:
     dependencies:
       fast-json-patch: 3.1.1
       oppa: 0.4.0
-      yaml: 2.5.1
+      yaml: 2.9.0
 
   yaml@1.10.3: {}
 
