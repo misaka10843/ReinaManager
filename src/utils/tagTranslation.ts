@@ -15,15 +15,24 @@ const vndbTagTranslations = Object.fromEntries(
 	),
 ) as Record<string, string>;
 
+export function getTagDisplayName(
+	tag: string,
+	enableTranslation: boolean,
+): string {
+	if (!enableTranslation) {
+		return tag;
+	}
+
+	return vndbTagTranslations[tag] ?? tag;
+}
+
 /**
  * 翻译单个TAG
  * @param tag 原始英文TAG
  * @returns 翻译后的中文TAG，如果没有找到翻译则返回原TAG
  */
 export function translateTag(tag: string): string {
-	// 直接从翻译对象中查找翻译
-	const translation = vndbTagTranslations[tag];
-	return translation || tag;
+	return getTagDisplayName(tag, true);
 }
 
 /**
@@ -40,7 +49,7 @@ export function translateTags(
 		return tags || [];
 	}
 
-	return tags.map((tag) => translateTag(tag));
+	return tags.map((tag) => getTagDisplayName(tag, true));
 }
 
 /**

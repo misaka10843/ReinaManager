@@ -17,7 +17,9 @@
  * - react-router
  */
 
+import ClearIcon from "@mui/icons-material/Clear";
 import CollectionsBookmarkIcon from "@mui/icons-material/CollectionsBookmark";
+import SearchIcon from "@mui/icons-material/Search";
 import {
 	Box,
 	Button,
@@ -44,7 +46,7 @@ import { useGameIndex } from "@/hooks/features/games/useGameListFacade";
 import { useStore } from "@/store/appStore";
 import { DefaultGroup } from "@/types/collection";
 import { getGameCover, getGameDisplayName } from "@/utils/game";
-import { translateTags } from "@/utils/tagTranslation";
+import { getTagDisplayName } from "@/utils/tagTranslation";
 import { Backup } from "./Backup";
 import { Edit } from "./Edit";
 import { InfoBox } from "./InfoBox";
@@ -86,12 +88,14 @@ export const Detail: React.FC = () => {
 	const navigate = useNavigate();
 	const {
 		tagTranslation,
+		setTagFilters,
 		setSelectedGameId,
 		setCurrentGroup,
 		setSelectedCategory,
 	} = useStore(
 		useShallow((s) => ({
 			tagTranslation: s.tagTranslation,
+			setTagFilters: s.setTagFilters,
 			setSelectedGameId: s.setSelectedGameId,
 			setCurrentGroup: s.setCurrentGroup,
 			setSelectedCategory: s.setSelectedCategory,
@@ -103,6 +107,7 @@ export const Detail: React.FC = () => {
 	const [tabIndex, setTabIndex] = useState(0);
 	const [collectionDialogOpen, setCollectionDialogOpen] = useState(false);
 	const [showAllTags, setShowAllTags] = useState(false); // 控制标签折叠状态
+	const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
 	useLayoutEffect(() => {
 		const container = document.querySelector<HTMLElement>("main");
@@ -110,6 +115,7 @@ export const Detail: React.FC = () => {
 			container.scrollTop = 0;
 		}
 		setSelectedGameId(id);
+		setSelectedTags([]);
 	}, [id, setSelectedGameId]);
 
 	const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -119,6 +125,25 @@ export const Detail: React.FC = () => {
 	const handleToggleTags = () => {
 		setShowAllTags((prev) => !prev);
 	};
+
+	const handleTagClick = useCallback((tag: string) => {
+		setSelectedTags((current) => {
+			if (current.includes(tag)) {
+				return current.filter((item) => item !== tag);
+			}
+			return [...current, tag];
+		});
+	}, []);
+
+	const handleSearchByTags = useCallback(() => {
+		if (selectedTags.length === 0) return;
+		setTagFilters(selectedTags);
+		navigate("/libraries");
+	}, [navigate, selectedTags, setTagFilters]);
+
+	const handleClearSelectedTags = useCallback(() => {
+		setSelectedTags([]);
+	}, []);
 
 	const handleDeveloperClick = useCallback(
 		(developerName: string) => {
@@ -153,7 +178,6 @@ export const Detail: React.FC = () => {
 				label={developer}
 				size="small"
 				variant="outlined"
-				clickable
 				onClick={() => handleDeveloperClick(developer)}
 				className="mr-1"
 			/>
@@ -355,23 +379,49 @@ export const Detail: React.FC = () => {
 						</Stack>
 						{/* 标签 */}
 						<Box className="mt-2">
-							<Typography
-								variant="subtitle2"
-								fontWeight="bold"
-								gutterBottom
-								component="div"
-							>
-								{t("pages.Detail.gameTags", "游戏标签")}
-							</Typography>
+							<Box className="flex items-center gap-2 mb-1">
+								<Typography
+									variant="subtitle2"
+									fontWeight="bold"
+									component="div"
+								>
+									{t("pages.Detail.gameTags", "游戏标签")}
+								</Typography>
+								<Button
+									size="small"
+									variant="text"
+									startIcon={<SearchIcon />}
+									disabled={selectedTags.length === 0}
+									onClick={handleSearchByTags}
+								>
+									{t("pages.Detail.searchBySelectedTags", {
+										count: selectedTags.length,
+										defaultValue: "搜索",
+									})}
+								</Button>
+								<Button
+									size="small"
+									variant="text"
+									startIcon={<ClearIcon />}
+									disabled={selectedTags.length === 0}
+									onClick={handleClearSelectedTags}
+								>
+									{t("pages.Detail.clearSelectedTags", "清空")}
+								</Button>
+							</Box>
 							<Stack direction="row" className="flex-wrap gap-1">
-								{translateTags(selectedGame.tags || [], tagTranslation)
+								{(selectedGame.tags || [])
 									.slice(0, showAllTags ? undefined : 40) // 根据折叠状态显示标签数量
 									.map((tag) => (
 										<Chip
 											key={tag}
-											label={tag}
+											label={getTagDisplayName(tag, tagTranslation)}
 											size="small"
-											variant="outlined"
+											color={selectedTags.includes(tag) ? "primary" : "default"}
+											variant={
+												selectedTags.includes(tag) ? "filled" : "outlined"
+											}
+											onClick={() => handleTagClick(tag)}
 										/>
 									))}
 							</Stack>
