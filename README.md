@@ -44,16 +44,17 @@ The `Reina` in the name is the character <a href="https://vndb.org/c64303"><b>�
 ## Features
 
 - 🌐 **Multi-source Data Integration** - Seamlessly fetch and merge game metadata from VNDB, Bangumi, YmGal and Kungal APIs
-- 🔍 **Powerful Search** - Smart search game from titles, aliases, custom names, and other metadata
-- 📚 **Collection Management** - Organize games with hierarchical groups and categories for better library management, support drag and drop sorting
+- 🔍 **Powerful Search** - Quickly search games by titles, aliases, custom names, and other information
+- 🗂️ **Filter and Sort** - Filter and sort games across multiple dimensions, such as source, status, tags, and more
+- 📚 **Collection Management** - Organize your game library with groups and categories, with support for drag and drop sorting
 - 🎮 **Play Time Tracking** - Automatic gameplay session recording with detailed play time statistics and history
-- 🎨 **Customization** - Set custom metadata for games such as covers, names, tags, etc., to create a personalized game library
-- 🔄 **Batch Operations** - Bulk import, add and update game metadata from APIs 
-- 🌍 **Multi-language Support** - Complete i18n support with multiple language interfaces, including Chinese (Simplified, Traditional), English, Japanese, etc.
+- 🎨 **Customization** - Customize game covers, names, descriptions, tags, and other information to build your own game library
+- 🔄 **Batch Operations** - Support bulk import, add and update game metadata from APIs
+- 🌍 **Multi-language Support** - Complete i18n support, including Simplified Chinese, Traditional Chinese, English, Japanese, and more
 - 🔒 **NSFW Filter** - Hide or cover NSFW content with a simple toggle
-- 💾 **Auto Savedata Backup** - Configurable automatic backup to protect your game savedata
+- 💾 **Auto Savedata Backup** - Optional automatic backup to protect your game savedata
 - 🚀 **System Integration** - Auto-start on boot and minimize to system tray
-- 🎮 **Tool Integration** - Launch games with LE locale switching and Magpie upscaling integration
+- 🛠️ **Tool Integration** - Launch games with Locale Emulator locale switching and Magpie upscaling integration
 
 ## Todo
 
@@ -67,7 +68,7 @@ The `Reina` in the name is the character <a href="https://vndb.org/c64303"><b>�
 Need to migrate your data from other galgame/visual-novel managers? Check out [reina_migrator](https://github.com/huoshen80/reina_migrator) - a tool for migrating others manager data into ReinaManager.
 
 Currently supports:
-- **WhiteCloud** data migration
+- **WhiteCloud v0.4.0** data migration
 
 The migrator helps you seamlessly transfer your game library, play time records, and other data from supported managers to ReinaManager.
 
