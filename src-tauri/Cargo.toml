@@ -3,7 +3,7 @@ members = ["reina-path", "migration"]
 
 [package]
 name = "ReinaManager"
-version = "0.21.0"
+version = "0.21.1"
 description = "A lightweight visual novel manager"
 authors = ["huoshen80"]
 license = "GNU AFFERO GENERAL PUBLIC LICENSE"
@@ -18,7 +18,7 @@ name = "reina_manager_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "~2.6.1", features = [] }
+tauri-build = { version = "~2.6.2", features = [] }
 dotenvy = "0.15"
 
 [dependencies]
@@ -29,7 +29,7 @@ log = "0.4"
 dotenvy = "0.15"
 
 # Tauri core and plugins
-tauri = { version = "~2.11.1", features = ["protocol-asset", "tray-icon"] }
+tauri = { version = "~2.11.2", features = ["protocol-asset", "tray-icon"] }
 tauri-plugin-autostart = "~2.5.1"
 tauri-plugin-dialog = "~2.7.0"
 tauri-plugin-fs = "~2.5.0"

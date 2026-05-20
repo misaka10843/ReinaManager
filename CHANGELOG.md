@@ -1,3 +1,37 @@
+## [0.21.1](https://github.com/huoshen80/ReinaManager/compare/v0.21.0...v0.21.1) (2026-05-20)
+
+<details>
+<summary>查看中文版本</summary>
+
+### ✨ 新功能
+
+- *(home)* 显示空游戏库状态 ([25b2bbe](https://github.com/huoshen80/ReinaManager/commit/25b2bbeb47517b32d88660f00b5bcfd192a3ba81))
+
+### 🐛 Bug 修复
+
+- *(window)* 强制退出前保存窗口状态 ([b95be7e](https://github.com/huoshen80/ReinaManager/commit/b95be7ee98b17e5951f127c66a221b6ed3338a9a))
+- *(layout)* 预留滚动条槽位 ([74d91c0](https://github.com/huoshen80/ReinaManager/commit/74d91c0bf8df1f7c59c5807192514f174d7b92cc))
+
+### 📚 文档
+
+- *(readme)* 同步本地化功能文档 [skip ci] ([3712f36](https://github.com/huoshen80/ReinaManager/commit/3712f36f858f17dc095db738a0dacdd1cd684344))
+
+</details>
+
+### ✨ Features
+
+- *(home)* Show empty library state ([25b2bbe](https://github.com/huoshen80/ReinaManager/commit/25b2bbeb47517b32d88660f00b5bcfd192a3ba81))
+
+### 🐛 Bug Fixes
+
+- *(window)* Save state before forced exit ([b95be7e](https://github.com/huoshen80/ReinaManager/commit/b95be7ee98b17e5951f127c66a221b6ed3338a9a))
+- *(layout)* Reserve scrollbar gutter ([74d91c0](https://github.com/huoshen80/ReinaManager/commit/74d91c0bf8df1f7c59c5807192514f174d7b92cc))
+
+### 📚 Documentation
+
+- *(readme)* Sync localized feature docs [skip ci] ([3712f36](https://github.com/huoshen80/ReinaManager/commit/3712f36f858f17dc095db738a0dacdd1cd684344))
+
+
 ## [0.21.0](https://github.com/huoshen80/ReinaManager/compare/v0.20.4...v0.21.0) (2026-05-18)
 
 <details>
