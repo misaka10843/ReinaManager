@@ -37,6 +37,7 @@ import {
 import {
 	Avatar,
 	Box,
+	Button,
 	Card,
 	CardContent,
 	Divider,
@@ -58,6 +59,7 @@ import {
 	usePlayTimeSummary,
 	useRecentSessionsForGames,
 } from "@/hooks/queries/useStats";
+import { useStore } from "@/store/appStore";
 import type { GameData, GameSession } from "@/types";
 import { PlayStatus } from "@/types/collection";
 import { formatPlayTime, formatRelativeTime } from "@/utils/dateTime";
@@ -184,8 +186,9 @@ function buildGameActivities(
 }
 
 export const Home: React.FC = () => {
-	const { index } = useGameIndex();
+	const { index, isLoading: isGameIndexLoading } = useGameIndex();
 	const displayAllGames = index.displayList;
+	const openAddModal = useStore((state) => state.openAddModal);
 	const {
 		totalPlayTime,
 		weekPlayTime,
@@ -229,6 +232,7 @@ export const Home: React.FC = () => {
 			displayAllGames.filter((game) => game.clear === PlayStatus.PLAYED).length,
 		[displayAllGames],
 	);
+	const isLibraryEmpty = !isGameIndexLoading && displayAllGames.length === 0;
 	const isWeekPlayTime = playTimePeriod === "week";
 
 	// 统计卡片数据 - 区分同步和异步数据
@@ -349,251 +353,283 @@ export const Home: React.FC = () => {
 			</Box>
 
 			{/* 详细信息卡片 */}
-			<Box className="grid grid-cols-12 gap-6 flex-1 min-h-0 auto-rows-fr">
-				{/* 游戏仓库 */}
-				<Box className="col-span-12 md:col-span-6 lg:col-span-3 min-h-0">
-					<Card className="h-full shadow-md">
-						<CardContent className="h-full min-h-0 flex flex-col">
-							<Box
-								component={Link}
-								to="/libraries"
-								className="flex items-center mb-3 text-inherit decoration-none hover:scale-105 hover:shadow-lg cursor-pointer"
-							>
-								<RepositoryIcon className="mr-2 text-amber-500" />
-								<Typography variant="h6" className="font-bold">
-									{t("home.repository", "游戏仓库")}
-								</Typography>
-							</Box>
-							<Virtuoso
-								className="min-h-0 flex-1 pr-1"
-								style={{ height: "100%" }}
-								data={gamesList}
-								computeItemKey={(_, category) => category.id}
-								itemContent={(_, category) => (
-									<Box className="pb-2">
-										<Card
-											variant="outlined"
-											component={Link}
-											to={`/libraries/${category.id}`}
-											className="block p-2 text-center text-inherit decoration-none cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md"
-										>
-											<Typography variant="body2">{category.title}</Typography>
-										</Card>
-									</Box>
-								)}
-							/>
-						</CardContent>
-					</Card>
-				</Box>
-
-				{/* 动态 */}
-				<Box className="col-span-12 md:col-span-6 lg:col-span-3 min-h-0">
-					<Card className="h-full shadow-md">
-						<CardContent className="h-full min-h-0 flex flex-col">
-							<Box className="flex items-center mb-3">
-								<ActivityIcon className="mr-2 text-purple-500" />
-								<Typography variant="h6" className="font-bold">
-									{t("home.activityTitle", "动态")}
-								</Typography>
-							</Box>
-							{isActivityLoading ? (
-								<Box className="min-h-0 flex-1 overflow-y-auto pr-1">
-									{[1, 2, 3, 4].map((index) => (
-										<Box key={index} className="flex items-center mb-3">
-											<Skeleton
-												variant="rounded"
-												width={40}
-												height={40}
-												className="mr-3"
-											/>
-											<Box className="flex-1">
-												<Skeleton width="80%" height={20} />
-												<Skeleton width="60%" height={16} />
-											</Box>
-										</Box>
-									))}
+			{isLibraryEmpty ? (
+				<Card className="shadow-md">
+					<CardContent className="min-h-[220px] flex flex-col items-center justify-center gap-4 text-center">
+						<RepositoryIcon className="text-amber-500 text-5xl" />
+						<Typography variant="h6" className="font-bold">
+							{t("components.Toolbar.Category.noGames", "暂无游戏")}
+						</Typography>
+						<Button
+							variant="contained"
+							startIcon={<RecentlyAddedIcon />}
+							onClick={() => openAddModal("")}
+						>
+							{t("components.AddModal.addGame", "添加游戏")}
+						</Button>
+					</CardContent>
+				</Card>
+			) : (
+				<Box className="grid grid-cols-12 gap-6 flex-1 min-h-0 auto-rows-fr">
+					{/* 游戏仓库 */}
+					<Box className="col-span-12 md:col-span-6 lg:col-span-3 min-h-0">
+						<Card className="h-full shadow-md">
+							<CardContent className="h-full min-h-0 flex flex-col">
+								<Box
+									component={Link}
+									to="/libraries"
+									className="flex items-center mb-3 text-inherit decoration-none hover:scale-105 hover:shadow-lg cursor-pointer"
+								>
+									<RepositoryIcon className="mr-2 text-amber-500" />
+									<Typography variant="h6" className="font-bold">
+										{t("home.repository", "游戏仓库")}
+									</Typography>
 								</Box>
-							) : (
-								<List className="min-h-0 flex-1 overflow-y-auto pr-1">
-									{activityData.activities.map((activity, idx) => (
-										<React.Fragment key={activity.id}>
-											<ListItem
-												className="px-0 text-inherit"
+								<Virtuoso
+									className="min-h-0 flex-1 pr-1"
+									style={{ height: "100%" }}
+									data={gamesList}
+									computeItemKey={(_, category) => category.id}
+									itemContent={(_, category) => (
+										<Box className="pb-2">
+											<Card
+												variant="outlined"
 												component={Link}
-												to={`/libraries/${activity.gameId}`}
+												to={`/libraries/${category.id}`}
+												className="block p-2 text-center text-inherit decoration-none cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md"
 											>
-												<ListItemAvatar>
-													<Avatar variant="rounded" src={activity.imageUrl} />
-												</ListItemAvatar>
-												<Box>
-													<Typography variant="body1">
-														{activity.type === "add"
-															? t("home.activity.added", "添加了 {{title}}", {
-																	title: activity.gameTitle,
-																})
-															: t("home.activity.played", "游玩了 {{title}}", {
-																	title: activity.gameTitle,
-																})}
-													</Typography>
+												<Typography variant="body2">
+													{category.title}
+												</Typography>
+											</Card>
+										</Box>
+									)}
+								/>
+							</CardContent>
+						</Card>
+					</Box>
 
-													<Typography variant="body2" color="text.secondary">
-														{activity.type === "add"
-															? t("home.activity.addedAt", "添加于 {{time}}", {
-																	time: formatRelativeTime(activity.time),
-																})
-															: t(
-																	"home.activity.playedAtTime",
-																	"游玩于 {{time}}",
-																	{
-																		time: formatRelativeTime(activity.time),
-																	},
-																)}
-													</Typography>
-
-													{activity.type === "play" &&
-														activity.duration !== undefined && (
-															<Typography
-																variant="body2"
-																color="text.secondary"
-															>
-																{t(
-																	"home.activity.duration",
-																	"游戏时长: {{duration}}",
-																	{
-																		duration: formatPlayTime(activity.duration),
-																	},
-																)}
-															</Typography>
-														)}
+					{/* 动态 */}
+					<Box className="col-span-12 md:col-span-6 lg:col-span-3 min-h-0">
+						<Card className="h-full shadow-md">
+							<CardContent className="h-full min-h-0 flex flex-col">
+								<Box className="flex items-center mb-3">
+									<ActivityIcon className="mr-2 text-purple-500" />
+									<Typography variant="h6" className="font-bold">
+										{t("home.activityTitle", "动态")}
+									</Typography>
+								</Box>
+								{isActivityLoading ? (
+									<Box className="min-h-0 flex-1 overflow-y-auto pr-1">
+										{[1, 2, 3, 4].map((index) => (
+											<Box key={index} className="flex items-center mb-3">
+												<Skeleton
+													variant="rounded"
+													width={40}
+													height={40}
+													className="mr-3"
+												/>
+												<Box className="flex-1">
+													<Skeleton width="80%" height={20} />
+													<Skeleton width="60%" height={16} />
 												</Box>
-											</ListItem>
-											{idx !== activityData.activities.length - 1 && (
-												<Divider />
-											)}
-										</React.Fragment>
-									))}
-								</List>
-							)}
-						</CardContent>
-					</Card>
-				</Box>
-
-				{/* 最近游玩 */}
-				<Box className="col-span-12 md:col-span-6 lg:col-span-3 min-h-0">
-					<Card className="h-full shadow-md">
-						<CardContent className="h-full min-h-0 flex flex-col">
-							<Box className="flex items-center mb-3">
-								<RecentlyPlayedIcon className="mr-2 text-blue-500" />
-								<Typography variant="h6" className="font-bold">
-									{t("home.recentlyPlayed", "最近游玩")}
-								</Typography>
-							</Box>
-							{isActivityLoading ? (
-								<Box className="min-h-0 flex-1 overflow-y-auto pr-1">
-									{[1, 2, 3, 4].map((index) => (
-										<Box key={index} className="flex items-center mb-3">
-											<Skeleton
-												variant="rounded"
-												width={40}
-												height={40}
-												className="mr-3"
-											/>
-											<Box className="flex-1">
-												<Skeleton width="80%" height={20} />
-												<Skeleton width="60%" height={16} />
 											</Box>
-										</Box>
-									))}
-								</Box>
-							) : (
-								<List className="min-h-0 flex-1 overflow-y-auto pr-1">
-									{activityData.sessions.map((session, idx) => (
-										<React.Fragment key={session.session_id}>
-											<ListItem
-												className="px-0 text-inherit"
-												component={Link}
-												to={`/libraries/${session.game_id}`}
-											>
-												<ListItemAvatar>
-													<Avatar variant="rounded" src={session.imageUrl} />
-												</ListItemAvatar>
-												<ListItemText
-													primary={session.gameTitle}
-													secondary={t(
-														"home.lastPlayed",
-														"最后游玩: {{time}}",
-														{
-															time: formatRelativeTime(session.end_time),
-														},
-													)}
-												/>
-											</ListItem>
-											{idx !== activityData.sessions.length - 1 && <Divider />}
-										</React.Fragment>
-									))}
-								</List>
-							)}
-						</CardContent>
-					</Card>
-				</Box>
+										))}
+									</Box>
+								) : (
+									<List className="min-h-0 flex-1 overflow-y-auto pr-1">
+										{activityData.activities.map((activity, idx) => (
+											<React.Fragment key={activity.id}>
+												<ListItem
+													className="px-0 text-inherit"
+													component={Link}
+													to={`/libraries/${activity.gameId}`}
+												>
+													<ListItemAvatar>
+														<Avatar variant="rounded" src={activity.imageUrl} />
+													</ListItemAvatar>
+													<Box>
+														<Typography variant="body1">
+															{activity.type === "add"
+																? t("home.activity.added", "添加了 {{title}}", {
+																		title: activity.gameTitle,
+																	})
+																: t(
+																		"home.activity.played",
+																		"游玩了 {{title}}",
+																		{
+																			title: activity.gameTitle,
+																		},
+																	)}
+														</Typography>
 
-				{/* 最近添加 */}
-				<Box className="col-span-12 md:col-span-6 lg:col-span-3 min-h-0">
-					<Card className="h-full shadow-md">
-						<CardContent className="h-full min-h-0 flex flex-col">
-							<Box className="flex items-center mb-3">
-								<RecentlyAddedIcon className="mr-2 text-green-500" />
-								<Typography variant="h6" className="font-bold">
-									{t("home.recentlyAdded", "最近添加")}
-								</Typography>
-							</Box>
-							{isActivityLoading ? (
-								<Box className="min-h-0 flex-1 overflow-y-auto pr-1">
-									{[1, 2, 3, 4].map((index) => (
-										<Box key={index} className="flex items-center mb-3">
-											<Skeleton
-												variant="rounded"
-												width={40}
-												height={40}
-												className="mr-3"
-											/>
-											<Box className="flex-1">
-												<Skeleton width="80%" height={20} />
-												<Skeleton width="60%" height={16} />
-											</Box>
-										</Box>
-									))}
+														<Typography variant="body2" color="text.secondary">
+															{activity.type === "add"
+																? t(
+																		"home.activity.addedAt",
+																		"添加于 {{time}}",
+																		{
+																			time: formatRelativeTime(activity.time),
+																		},
+																	)
+																: t(
+																		"home.activity.playedAtTime",
+																		"游玩于 {{time}}",
+																		{
+																			time: formatRelativeTime(activity.time),
+																		},
+																	)}
+														</Typography>
+
+														{activity.type === "play" &&
+															activity.duration !== undefined && (
+																<Typography
+																	variant="body2"
+																	color="text.secondary"
+																>
+																	{t(
+																		"home.activity.duration",
+																		"游戏时长: {{duration}}",
+																		{
+																			duration: formatPlayTime(
+																				activity.duration,
+																			),
+																		},
+																	)}
+																</Typography>
+															)}
+													</Box>
+												</ListItem>
+												{idx !== activityData.activities.length - 1 && (
+													<Divider />
+												)}
+											</React.Fragment>
+										))}
+									</List>
+								)}
+							</CardContent>
+						</Card>
+					</Box>
+
+					{/* 最近游玩 */}
+					<Box className="col-span-12 md:col-span-6 lg:col-span-3 min-h-0">
+						<Card className="h-full shadow-md">
+							<CardContent className="h-full min-h-0 flex flex-col">
+								<Box className="flex items-center mb-3">
+									<RecentlyPlayedIcon className="mr-2 text-blue-500" />
+									<Typography variant="h6" className="font-bold">
+										{t("home.recentlyPlayed", "最近游玩")}
+									</Typography>
 								</Box>
-							) : (
-								<List className="min-h-0 flex-1 overflow-y-auto pr-1">
-									{activityData.added.map((game, idx) => (
-										<React.Fragment key={game.id}>
-											<ListItem
-												className="px-0 text-inherit"
-												component={Link}
-												to={`/libraries/${game.id}`}
-											>
-												<ListItemAvatar>
-													<Avatar variant="rounded" src={game.imageUrl} />
-												</ListItemAvatar>
-												<ListItemText
-													primary={game.title}
-													secondary={t("home.addedAt", "添加时间: {{time}}", {
-														time: game.time
-															? formatRelativeTime(game.time)
-															: "",
-													})}
+								{isActivityLoading ? (
+									<Box className="min-h-0 flex-1 overflow-y-auto pr-1">
+										{[1, 2, 3, 4].map((index) => (
+											<Box key={index} className="flex items-center mb-3">
+												<Skeleton
+													variant="rounded"
+													width={40}
+													height={40}
+													className="mr-3"
 												/>
-											</ListItem>
-											{idx !== activityData.added.length - 1 && <Divider />}
-										</React.Fragment>
-									))}
-								</List>
-							)}
-						</CardContent>
-					</Card>
+												<Box className="flex-1">
+													<Skeleton width="80%" height={20} />
+													<Skeleton width="60%" height={16} />
+												</Box>
+											</Box>
+										))}
+									</Box>
+								) : (
+									<List className="min-h-0 flex-1 overflow-y-auto pr-1">
+										{activityData.sessions.map((session, idx) => (
+											<React.Fragment key={session.session_id}>
+												<ListItem
+													className="px-0 text-inherit"
+													component={Link}
+													to={`/libraries/${session.game_id}`}
+												>
+													<ListItemAvatar>
+														<Avatar variant="rounded" src={session.imageUrl} />
+													</ListItemAvatar>
+													<ListItemText
+														primary={session.gameTitle}
+														secondary={t(
+															"home.lastPlayed",
+															"最后游玩: {{time}}",
+															{
+																time: formatRelativeTime(session.end_time),
+															},
+														)}
+													/>
+												</ListItem>
+												{idx !== activityData.sessions.length - 1 && (
+													<Divider />
+												)}
+											</React.Fragment>
+										))}
+									</List>
+								)}
+							</CardContent>
+						</Card>
+					</Box>
+
+					{/* 最近添加 */}
+					<Box className="col-span-12 md:col-span-6 lg:col-span-3 min-h-0">
+						<Card className="h-full shadow-md">
+							<CardContent className="h-full min-h-0 flex flex-col">
+								<Box className="flex items-center mb-3">
+									<RecentlyAddedIcon className="mr-2 text-green-500" />
+									<Typography variant="h6" className="font-bold">
+										{t("home.recentlyAdded", "最近添加")}
+									</Typography>
+								</Box>
+								{isActivityLoading ? (
+									<Box className="min-h-0 flex-1 overflow-y-auto pr-1">
+										{[1, 2, 3, 4].map((index) => (
+											<Box key={index} className="flex items-center mb-3">
+												<Skeleton
+													variant="rounded"
+													width={40}
+													height={40}
+													className="mr-3"
+												/>
+												<Box className="flex-1">
+													<Skeleton width="80%" height={20} />
+													<Skeleton width="60%" height={16} />
+												</Box>
+											</Box>
+										))}
+									</Box>
+								) : (
+									<List className="min-h-0 flex-1 overflow-y-auto pr-1">
+										{activityData.added.map((game, idx) => (
+											<React.Fragment key={game.id}>
+												<ListItem
+													className="px-0 text-inherit"
+													component={Link}
+													to={`/libraries/${game.id}`}
+												>
+													<ListItemAvatar>
+														<Avatar variant="rounded" src={game.imageUrl} />
+													</ListItemAvatar>
+													<ListItemText
+														primary={game.title}
+														secondary={t("home.addedAt", "添加时间: {{time}}", {
+															time: game.time
+																? formatRelativeTime(game.time)
+																: "",
+														})}
+													/>
+												</ListItem>
+												{idx !== activityData.added.length - 1 && <Divider />}
+											</React.Fragment>
+										))}
+									</List>
+								)}
+							</CardContent>
+						</Card>
+					</Box>
 				</Box>
-			</Box>
+			)}
 		</Box>
 	);
 };
