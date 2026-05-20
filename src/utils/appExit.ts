@@ -1,5 +1,6 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ask } from "@tauri-apps/plugin-dialog";
+import { StateFlags, saveWindowState } from "@tauri-apps/plugin-window-state";
 import i18n from "i18next";
 import { useGamePlayStore } from "@/store/gamePlayStore";
 
@@ -35,6 +36,13 @@ export const getRunningGameCount = (): number => {
 };
 
 export const destroyCurrentWindow = async (): Promise<void> => {
+	try {
+		// 统一在销毁前手动保存窗口状态，避免依赖 CloseRequested 的自动缓存刷新。
+		await saveWindowState(StateFlags.ALL);
+	} catch (error) {
+		console.error("Failed to save window state before exit:", error);
+	}
+
 	await getCurrentWindow().destroy();
 };
 
