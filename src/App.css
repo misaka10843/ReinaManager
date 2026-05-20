@@ -3,3 +3,7 @@ html,
 body {
 	overscroll-behavior: none;
 }
+
+main {
+	scrollbar-gutter: stable;
+}
