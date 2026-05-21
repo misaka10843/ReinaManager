@@ -538,6 +538,7 @@
 				"feedback": "Report an Issue",
 				"github": "Project Repository",
 				"noUpdate": "You are already on the latest version",
+				"sponsor": "Sponsor",
 				"updateFound": "New version found: {{version}}",
 				"version": "Version"
 			},

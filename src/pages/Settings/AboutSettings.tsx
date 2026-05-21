@@ -1,4 +1,5 @@
 import BugReportIcon from "@mui/icons-material/BugReport";
+import FavoriteIcon from "@mui/icons-material/Favorite";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import UpdateIcon from "@mui/icons-material/Update";
 import { CircularProgress, Link, Typography } from "@mui/material";
@@ -160,6 +161,15 @@ export const AboutSection: React.FC = () => {
 					size="small"
 				>
 					{t("pages.Settings.about.feedback", "问题反馈")}
+				</Button>
+				<Button
+					variant="outlined"
+					color="error"
+					startIcon={<FavoriteIcon />}
+					onClick={() => openurl("https://huoshen80.top/233.html")}
+					size="small"
+				>
+					{t("pages.Settings.about.sponsor", "赞助支持")}
 				</Button>
 			</Stack>
 		</Box>

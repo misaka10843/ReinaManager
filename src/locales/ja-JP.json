@@ -528,6 +528,7 @@
 				"feedback": "問題を報告",
 				"github": "プロジェクトリポジトリ",
 				"noUpdate": "現在のバージョンは最新です",
+				"sponsor": "スポンサー",
 				"updateFound": "新しいバージョンを検出しました: {{version}}",
 				"version": "バージョン"
 			},

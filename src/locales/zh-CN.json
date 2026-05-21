@@ -528,6 +528,7 @@
 				"feedback": "问题反馈",
 				"github": "项目地址",
 				"noUpdate": "当前已是最新版本",
+				"sponsor": "赞助支持",
 				"updateFound": "发现新版本：{{version}}",
 				"version": "版本"
 			},

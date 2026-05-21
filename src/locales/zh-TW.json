@@ -528,6 +528,7 @@
 				"feedback": "問題回饋",
 				"github": "專案倉庫",
 				"noUpdate": "目前已是最新版本",
+				"sponsor": "贊助支持",
 				"updateFound": "發現新版本：{{version}}",
 				"version": "版本"
 			},
