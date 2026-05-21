@@ -1,3 +1,27 @@
+## [0.21.2](https://github.com/huoshen80/ReinaManager/compare/v0.21.1...v0.21.2) (2026-05-21)
+
+<details>
+<summary>查看中文版本</summary>
+
+### ✨ 新功能
+
+- *(settings)* 为关于部分添加赞助链接 ([9a4d24a](https://github.com/huoshen80/ReinaManager/commit/9a4d24a2d529d79068a8603148d6c044c5c3d5c2))
+
+### 🐛 Bug 修复
+
+- *(api)* 提高 VNDB 搜索准确性 ([160086d](https://github.com/huoshen80/ReinaManager/commit/160086d7267c0ab37c71f13233d71759d1443c35))
+
+</details>
+
+### ✨ Features
+
+- *(settings)* Add sponsor link to about section ([9a4d24a](https://github.com/huoshen80/ReinaManager/commit/9a4d24a2d529d79068a8603148d6c044c5c3d5c2))
+
+### 🐛 Bug Fixes
+
+- *(api)* Improve VNDB search accuracy ([160086d](https://github.com/huoshen80/ReinaManager/commit/160086d7267c0ab37c71f13233d71759d1443c35))
+
+
 ## [0.21.1](https://github.com/huoshen80/ReinaManager/compare/v0.21.0...v0.21.1) (2026-05-20)
 
 <details>
