@@ -26,6 +26,9 @@ const VNDB_JSON_HEADERS = {
 	"User-Agent": USER_AGENT,
 } as const;
 
+const VNDB_FIELDS =
+	"id,titles{title,lang,main},aliases,image{url},released,rating,tags{name,rating,spoiler},description,developers{name},length_minutes";
+
 function buildVndbHeaders() {
 	return {
 		headers: {
@@ -59,13 +62,13 @@ interface RawVNDBData {
 	id: string;
 	titles: VNDB_title[];
 	aliases: string[];
-	image?: { url: string };
-	released: string;
-	rating: number;
-	tags: { name: string; rating: number }[];
-	description: string;
+	image: { url: string } | null;
+	released: string | null;
+	rating: number | null;
+	tags: { name: string; rating: number; spoiler: 0 | 1 | 2 }[];
+	description: string | null;
 	developers: { name: string }[];
-	length_minutes: number;
+	length_minutes: number | null;
 }
 
 export interface VndbAuthInfo {
@@ -138,8 +141,8 @@ function transformVndbData(
 		main: title.main,
 	}));
 
-	const mainTitle: string =
-		titles.find((title: VNDB_title) => title.main)?.title || "";
+	const mainTitle =
+		titles.find((title) => title.main)?.title ?? titles[0]?.title ?? "";
 	const chineseTitle =
 		titles.find(
 			(title: VNDB_title) =>
@@ -153,34 +156,39 @@ function transformVndbData(
 
 	// 根据 spoilerLevel 过滤标签
 	const filterLevel = useStore.getState().spoilerLevel;
-	const filtered_tags = (
-		VNDBdata.tags as { rating: number; name: string; spoiler: number }[]
-	)
+	const filtered_tags = VNDBdata.tags
 		.toSorted((a, b) => b.rating - a.rating)
 		.filter(({ spoiler }) => spoiler <= filterLevel)
 		.map(({ name }) => name);
+	const releasedDate = VNDBdata.released ?? undefined;
 
 	const vndb_data: VndbData = {
-		date: VNDBdata.released,
+		date: releasedDate,
 		image: VNDBdata.image?.url,
-		summary: VNDBdata.description,
+		summary: VNDBdata.description ?? undefined,
 		name: mainTitle,
 		name_cn: chineseTitle,
 		all_titles: allTitles,
 		aliases: VNDBdata.aliases || [],
 		tags: filtered_tags,
-		score: Number((VNDBdata.rating / 10).toFixed(2)),
+		score:
+			VNDBdata.rating == null
+				? null
+				: Number((VNDBdata.rating / 10).toFixed(2)),
 		developer: VNDBdata.developers
 			?.map((dev: { name: string }) => dev.name)
 			.join("/"),
-		average_hours: Number((VNDBdata.length_minutes / 60).toFixed(1)),
+		average_hours:
+			VNDBdata.length_minutes == null
+				? null
+				: Number((VNDBdata.length_minutes / 60).toFixed(1)),
 		nsfw: !filtered_tags.includes("No Sexual Content"),
 	};
 
 	return {
 		vndb_id: VNDBdata.id,
 		...(update_batch ? {} : { id_type: "vndb" }),
-		date: VNDBdata.released,
+		date: releasedDate,
 		vndb_data,
 	};
 }
@@ -207,6 +215,7 @@ export async function fetchVndbByName(
 		fields:
 			"id, titles.title, titles.lang, titles.main, aliases, image.url, released, rating, tags.name,tags.rating,tags.spoiler,description,developers.name,length_minutes",
 		results: limit,
+		...(id ? {} : { sort: "searchrank" }),
 	};
 
 	// 调用 VNDB API
@@ -256,69 +265,80 @@ export async function fetchVndbById(id: string): Promise<GameCandidateData> {
  * const results = await fetchVNDBByIds(largeIdArray);
  * // 返回: [{ game, vndb_data, ... }, { game, vndb_data, ... }, ...]
  */
-export async function fetchVNDBByIds(ids: string[]) {
+export async function fetchVNDBByIds(
+	ids: string[],
+): Promise<GameCandidateData[]> {
 	if (ids.length === 0) {
 		return [];
 	}
 
-	// 分批处理，每批最多 100 个 ID
+	// 分批处理，每批最多 100 个 ID，并限制并发以降低触发 VNDB 限流的概率
 	const batchSize = 100;
+	const batchConcurrency = 3;
 	const batches: string[][] = [];
 
 	for (let i = 0; i < ids.length; i += batchSize) {
 		batches.push(ids.slice(i, i + batchSize));
 	}
 
-	const allResults: GameCandidateData[] = [];
-	let hasRequestFailure = false;
+	const fetchBatch = async (batch: string[]): Promise<GameCandidateData[]> => {
+		// 构建 OR 过滤器：["or", ["id", "=", "v1"], ["id", "=", "v2"], ...]
+		const filters: (string | string[])[] = ["or"];
+		for (const id of batch) {
+			filters.push(["id", "=", id]);
+		}
 
-	const batchPromises = batches.map(async (batch) => {
-		try {
-			// 构建 OR 过滤器：["or", ["id", "=", "v1"], ["id", "=", "v2"], ...]
-			const filters: (string | string[])[] = ["or"];
-			for (const id of batch) {
-				filters.push(["id", "=", id]);
-			}
+		const requestBody = {
+			filters,
+			fields: VNDB_FIELDS,
+			results: Math.min(batch.length, 100),
+		};
 
-			const requestBody = {
-				filters,
-				fields:
-					"id, titles.title, titles.lang, titles.main, aliases, image.url, released, rating, tags.name,tags.rating,tags.spoiler,description,developers.name,length_minutes",
-				results: Math.min(batch.length, 100),
-			};
+		const response = await http.post<{ results: RawVNDBData[] }>(
+			`${VNDB_API_BASE}/vn`,
+			requestBody,
+			buildVndbHeaders(),
+		);
 
-			const response = await http.post<{ results: RawVNDBData[] }>(
-				`${VNDB_API_BASE}/vn`,
-				requestBody,
-				buildVndbHeaders(),
-			);
+		const results = response.data.results;
 
-			const results = response.data.results;
-
-			if (!results || results.length === 0) {
-				return [];
-			}
-
-			return results.map((vndbData: RawVNDBData) =>
-				transformVndbData(vndbData, true),
-			);
-		} catch {
-			hasRequestFailure = true;
+		if (!results || results.length === 0) {
 			return [];
 		}
-	});
 
-	const batchResults = await Promise.all(batchPromises);
+		return results.map((vndbData: RawVNDBData) =>
+			transformVndbData(vndbData, true),
+		);
+	};
 
-	for (const batch of batchResults) {
-		allResults.push(...batch);
-	}
+	const allResults: GameCandidateData[] = [];
 
-	if (allResults.length === 0 && hasRequestFailure) {
-		throw new AppError({
-			code: "metadata_request_failed",
-			message: `VNDB batch fetch failed for ${ids.length} ids`,
-		});
+	for (let i = 0; i < batches.length; i += batchConcurrency) {
+		const batchResults = await Promise.allSettled(
+			batches.slice(i, i + batchConcurrency).map((batch) => fetchBatch(batch)),
+		);
+		const failedBatches = batchResults
+			.map((result, index) =>
+				result.status === "rejected" ? i + index + 1 : null,
+			)
+			.filter((batchNumber): batchNumber is number => batchNumber !== null);
+
+		if (failedBatches.length > 0) {
+			throw new AppError({
+				code: "metadata_request_failed",
+				message: `VNDB batch fetch failed for batch(es): ${failedBatches.join(", ")}`,
+				cause: batchResults.find(
+					(result): result is PromiseRejectedResult =>
+						result.status === "rejected",
+				)?.reason,
+			});
+		}
+
+		for (const result of batchResults) {
+			if (result.status === "fulfilled") {
+				allResults.push(...result.value);
+			}
+		}
 	}
 
 	return allResults;
@@ -396,8 +416,7 @@ export async function fetchVndbUserCollection(
 			{
 				user: resolvedUserId,
 				filters: ["id", "=", vndbId],
-				fields:
-					"id, added, voted, lastmod, vote, started, finished, notes, labels.id, labels.label, releases.id, releases.list_status",
+				fields: VNDB_FIELDS,
 				results: 1,
 			},
 			buildVndbAuthHeaders(token),

@@ -166,10 +166,10 @@ function assignFromDataSource(
 			const vndbSource = source as VndbData;
 			target.image = vndbSource.image;
 			target.tags = vndbSource.tags || [];
-			target.score = vndbSource.score;
+			target.score = nullToUndefined(vndbSource.score);
 			target.all_titles = vndbSource.all_titles || [];
 			target.aliases = vndbSource.aliases || [];
-			target.average_hours = vndbSource.average_hours;
+			target.average_hours = nullToUndefined(vndbSource.average_hours);
 			break;
 		}
 
@@ -256,7 +256,7 @@ function mergeMultipleDataSources(
 	target.aliases = Array.from(new Set(allAliases));
 
 	// 评分: BGM 优先，其次 VNDB
-	target.score = bgm_data?.score ?? vndb_data?.score;
+	target.score = bgm_data?.score ?? nullToUndefined(vndb_data?.score);
 
 	// BGM 特有字段
 	target.rank = bgm_data?.rank;
@@ -269,7 +269,7 @@ function mergeMultipleDataSources(
 	target.all_titles = Array.from(new Set(allTitles));
 
 	// VNDB 特有字段
-	target.average_hours = vndb_data?.average_hours;
+	target.average_hours = nullToUndefined(vndb_data?.average_hours);
 }
 
 /**

@@ -81,7 +81,7 @@ export interface BgmData {
  * VNDB 数据结构（JSON 列嵌入 games 表）
  *
  * 重构后移除 game_id，新增 date 字段
- * 注意：所有可选字段使用 undefined（与 Rust Option::None 对应）
+ * 注意：多数可选字段使用 undefined；VNDB API 缺失评分/时长时保留 null，避免与 0 混淆
  */
 export interface VndbData {
 	image?: string;
@@ -91,9 +91,9 @@ export interface VndbData {
 	aliases?: string[];
 	summary?: string;
 	tags?: string[];
-	average_hours?: number;
+	average_hours?: number | null;
 	developer?: string;
-	score?: number;
+	score?: number | null;
 	nsfw?: boolean;
 	date?: string;
 }
