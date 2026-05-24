@@ -51,6 +51,22 @@ impl GamesRepository {
     /// 缺省游戏状态：想玩 / WISH
     const DEFAULT_PLAY_STATUS: i32 = 1;
 
+    fn build_batch_failure_result(total: usize, message: String) -> BatchOperationResult {
+        BatchOperationResult {
+            total,
+            success: 0,
+            failed: total,
+            ids: Vec::new(),
+            games: Vec::new(),
+            errors: (0..total)
+                .map(|index| BatchOperationError {
+                    index,
+                    message: message.clone(),
+                })
+                .collect(),
+        }
+    }
+
     fn build_insert_active_model(game: InsertGameData, now: i32) -> games::ActiveModel {
         games::ActiveModel {
             id: NotSet,
@@ -102,11 +118,15 @@ impl GamesRepository {
         let mut ids = Vec::with_capacity(total);
         let mut inserted_games = Vec::with_capacity(total);
         let mut errors = Vec::new();
+        let txn = match db.begin().await {
+            Ok(txn) => txn,
+            Err(error) => return Self::build_batch_failure_result(total, error.to_string()),
+        };
 
         for (index, game) in games.into_iter().enumerate() {
             let game_active = Self::build_insert_active_model(game.cleaned(), now);
 
-            match game_active.insert(db).await {
+            match game_active.insert(&txn).await {
                 Ok(result) => {
                     ids.push(result.id);
                     inserted_games.push(result);
@@ -116,6 +136,10 @@ impl GamesRepository {
                     message: error.to_string(),
                 }),
             }
+        }
+
+        if let Err(error) = txn.commit().await {
+            return Self::build_batch_failure_result(total, error.to_string());
         }
 
         BatchOperationResult {
@@ -331,10 +355,13 @@ impl GamesRepository {
     /// 使用 `HashSet` 以便调用方做 O(1) 精确匹配；前缀检查由调用方负责。
     pub async fn get_all_localpaths(db: &DatabaseConnection) -> Result<HashSet<String>, DbErr> {
         Games::find()
+            .select_only()
+            .column(games::Column::Localpath)
             .filter(games::Column::Localpath.is_not_null())
+            .into_tuple::<String>()
             .all(db)
             .await
-            .map(|rows| rows.into_iter().filter_map(|g| g.localpath).collect())
+            .map(|paths| paths.into_iter().collect())
     }
 
     // ==================== 私有方法 ====================
