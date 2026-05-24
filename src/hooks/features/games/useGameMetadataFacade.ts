@@ -11,6 +11,7 @@ import type {
 	InsertGameParams,
 	SourceIdType,
 } from "@/types";
+import { createCloudPlayStatusContext } from "@/utils/cloudPlayStatus";
 import { getUserErrorMessage } from "@/utils/errors";
 import {
 	type BatchImportGameCandidate,
@@ -121,6 +122,23 @@ export function useBulkGameAddActions() {
 				const duplicateItemIndices: number[] = [];
 				const preparationErrors: BulkImportPreparationError[] = [];
 				const pendingPayloads: BulkImportPendingPayload[] = [];
+				const bgmIds = new Set<string>();
+				const vndbIds = new Set<string>();
+				for (const item of items) {
+					if (item.status === "imported") {
+						continue;
+					}
+					if (item.matchedData?.bgm_id) {
+						bgmIds.add(item.matchedData.bgm_id);
+					}
+					if (item.matchedData?.vndb_id) {
+						vndbIds.add(item.matchedData.vndb_id);
+					}
+				}
+				const cloudStatusContext = await createCloudPlayStatusContext({
+					bgmIds,
+					vndbIds,
+				});
 
 				for (let index = 0; index < items.length; index++) {
 					if (items[index].status === "imported") {
@@ -129,7 +147,10 @@ export function useBulkGameAddActions() {
 
 					let payload: InsertGameParams;
 					try {
-						payload = await buildBulkImportGameData(items[index]);
+						payload = await buildBulkImportGameData(
+							items[index],
+							cloudStatusContext,
+						);
 					} catch (error) {
 						const message = getUserErrorMessage(
 							error,

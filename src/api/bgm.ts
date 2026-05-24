@@ -31,6 +31,25 @@ interface BgmSearchResponse {
 	data?: unknown[];
 }
 
+export interface BgmUserCollection {
+	subject_id: number;
+	type: number;
+}
+
+interface BgmUserCollectionsResponse {
+	total?: number;
+	limit?: number;
+	offset?: number;
+	data?: BgmUserCollection[];
+}
+
+export interface BgmUserCollectionsPage {
+	total: number;
+	limit: number;
+	offset: number;
+	data: BgmUserCollection[];
+}
+
 export interface BgmUserProfile {
 	id: number;
 	username: string;
@@ -355,6 +374,57 @@ export async function fetchUserCollection(
 	}
 }
 
+export async function fetchUserGameCollections(
+	username: string,
+	token: string,
+): Promise<BgmUserCollection[]> {
+	const collections: BgmUserCollection[] = [];
+	const limit = 50;
+	let page = await fetchUserGameCollectionsPage(username, token, {
+		limit,
+		offset: 0,
+	});
+	collections.push(...page.data);
+
+	while (true) {
+		const nextOffset = page.offset + page.limit;
+		if (page.data.length === 0 || nextOffset >= page.total) {
+			break;
+		}
+		page = await fetchUserGameCollectionsPage(username, token, {
+			limit,
+			offset: nextOffset,
+		});
+		collections.push(...page.data);
+	}
+
+	return collections;
+}
+
+export async function fetchUserGameCollectionsPage(
+	username: string,
+	token: string,
+	params: { limit: number; offset: number },
+): Promise<BgmUserCollectionsPage> {
+	const res = await http.get<BgmUserCollectionsResponse>(
+		`https://api.bgm.tv/v0/users/${username}/collections`,
+		{
+			...buildBgmAuthHeaders(token),
+			params: {
+				subject_type: 4,
+				limit: params.limit,
+				offset: params.offset,
+			},
+		},
+	);
+
+	return {
+		total: res.data?.total ?? 0,
+		limit: res.data?.limit ?? params.limit,
+		offset: res.data?.offset ?? params.offset,
+		data: Array.isArray(res.data?.data) ? res.data.data : [],
+	};
+}
 /**
  * 更新当前用户的条目收藏状态
  * @param subjectId Bangumi 条目 ID

@@ -28,6 +28,7 @@ const VNDB_JSON_HEADERS = {
 
 const VNDB_FIELDS =
 	"id,titles{title,lang,main},aliases,image{url},released,rating,tags{name,rating,spoiler},description,developers{name},length_minutes";
+const VNDB_USER_COLLECTION_FIELDS = "id, labels{id, label}";
 
 function buildVndbHeaders() {
 	return {
@@ -105,6 +106,18 @@ export interface VndbUserCollectionItem {
 	notes: string | null;
 	labels: VndbUserCollectionLabel[];
 	releases?: VndbUserCollectionRelease[];
+}
+
+interface VndbUserCollectionsResponse {
+	results?: VndbUserCollectionItem[];
+	more?: boolean;
+	count?: number;
+}
+
+export interface VndbUserCollectionsPage {
+	results: VndbUserCollectionItem[];
+	more: boolean;
+	count?: number;
 }
 
 export interface UpdateVndbUserCollectionPayload {
@@ -416,7 +429,7 @@ export async function fetchVndbUserCollection(
 			{
 				user: resolvedUserId,
 				filters: ["id", "=", vndbId],
-				fields: VNDB_FIELDS,
+				fields: VNDB_USER_COLLECTION_FIELDS,
 				results: 1,
 			},
 			buildVndbAuthHeaders(token),
@@ -430,6 +443,65 @@ export async function fetchVndbUserCollection(
 	} catch {
 		return null;
 	}
+}
+
+export async function fetchVndbUserCollections(
+	token: string,
+	userId?: string,
+): Promise<VndbUserCollectionItem[]> {
+	if (!token) return [];
+
+	try {
+		const resolvedUserId = await resolveVndbUserId(token, userId);
+		if (!resolvedUserId) return [];
+
+		const collections: VndbUserCollectionItem[] = [];
+		let page = 1;
+
+		while (true) {
+			const response = await fetchVndbUserCollectionsPage(token, {
+				userId: resolvedUserId,
+				page,
+			});
+			collections.push(...response.results);
+
+			if (!response.more || response.results.length === 0) {
+				break;
+			}
+			page += 1;
+		}
+
+		return collections;
+	} catch {
+		return [];
+	}
+}
+
+export async function fetchVndbUserCollectionsPage(
+	token: string,
+	params: {
+		userId: string;
+		page: number;
+		count?: boolean;
+	},
+): Promise<VndbUserCollectionsPage> {
+	const response = await http.post<VndbUserCollectionsResponse>(
+		`${VNDB_API_BASE}/ulist`,
+		{
+			user: params.userId,
+			fields: VNDB_USER_COLLECTION_FIELDS,
+			results: 100,
+			page: params.page,
+			...(params.count ? { count: true } : {}),
+		},
+		buildVndbAuthHeaders(token),
+	);
+
+	return {
+		results: Array.isArray(response.data?.results) ? response.data.results : [],
+		more: Boolean(response.data?.more),
+		count: response.data?.count,
+	};
 }
 
 /**

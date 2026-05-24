@@ -9,7 +9,10 @@ import type {
 	UpdateGameParams,
 } from "@/types";
 import { isSourceType, SOURCE_FIELD_KEYS, SOURCE_KEYS } from "@/types";
-import { resolveCloudPlayStatus } from "@/utils/cloudCollectionSync";
+import {
+	type CloudPlayStatusContext,
+	resolveCloudPlayStatus,
+} from "@/utils/cloudPlayStatus";
 import { getArrayDiff, getBoolDiff, getDiff } from "@/utils/diff";
 import { getGameDisplayName, getGameNsfwStatus } from "@/utils/game";
 import i18n from "@/utils/i18n";
@@ -320,6 +323,7 @@ export async function fetchMetadataForUpdate({
 
 export async function buildInsertGameData(
 	gameData: GameCandidateData,
+	cloudStatusContext?: CloudPlayStatusContext,
 ): Promise<InsertGameParams> {
 	const insertData: InsertGameParams = {
 		bgm_id: gameData.bgm_id,
@@ -335,7 +339,10 @@ export async function buildInsertGameData(
 		kun_data: gameData.kun_data ?? undefined,
 		custom_data: gameData.custom_data ?? undefined,
 	};
-	const cloudStatus = await resolveCloudPlayStatus(insertData);
+	const cloudStatus = await resolveCloudPlayStatus(
+		insertData,
+		cloudStatusContext,
+	);
 
 	if (cloudStatus === undefined) {
 		return insertData;
@@ -465,9 +472,13 @@ export function buildGameInfoUpdatePayload(
 
 export async function buildBulkImportGameData(
 	item: BatchImportGameCandidate,
+	cloudStatusContext?: CloudPlayStatusContext,
 ): Promise<InsertGameParams> {
 	if (item.matchedData) {
-		const insertData = await buildInsertGameData(item.matchedData);
+		const insertData = await buildInsertGameData(
+			item.matchedData,
+			cloudStatusContext,
+		);
 		return {
 			...insertData,
 			localpath: getBatchImportLocalPath(item),

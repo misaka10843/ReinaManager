@@ -8,7 +8,7 @@ import {
 } from "@/hooks/queries/usePlayStatus";
 import { snackbar } from "@/providers/snackBar";
 import type { FullGameData, GameData } from "@/types";
-import { syncPlayStatusToCloud } from "@/utils/cloudCollectionSync";
+import { syncPlayStatusToCloud } from "@/utils/cloudPlayStatus";
 import { getUserErrorMessage } from "@/utils/errors";
 import type { GameIndex } from "@/utils/game/gameIndex";
 import { getDisplayGameData } from "@/utils/gameData/dataTransform";
