@@ -1,3 +1,39 @@
+## [0.21.3](https://github.com/huoshen80/ReinaManager/compare/v0.21.2...v0.21.3) (2026-05-24)
+
+<details>
+<summary>查看中文版本</summary>
+
+### ✨ 新功能
+
+- *(add-modal)* 增强批量导入流程 ([ee3a89c](https://github.com/huoshen80/ReinaManager/commit/ee3a89c2bd3ee9595bca76aeaf1d09f0e95a7170))
+- *(layout)* 添加返回顶部按钮 ([f0ea488](https://github.com/huoshen80/ReinaManager/commit/f0ea4884086f7a37a5a5d6ff3ec0c756b747153d))
+
+### 🐛 Bug 修复
+
+- *(add-modal)* 移除已导入的批量项目 ([2d08d64](https://github.com/huoshen80/ReinaManager/commit/2d08d644490e9cf14823b20eab36a37d0822c3d6))
+
+### 🚀 性能优化
+
+- *(database)* 加速批量导入持久化 ([0c64f56](https://github.com/huoshen80/ReinaManager/commit/0c64f563b82f1ea9d101bc18b5dfa74cfe37238b))
+- *(add-modal)* 预取云端游玩状态 ([d575ff2](https://github.com/huoshen80/ReinaManager/commit/d575ff2c2591486988b0bbf2ade20f9659573768))
+
+</details>
+
+### ✨ Features
+
+- *(add-modal)* Enhance bulk import workflow ([ee3a89c](https://github.com/huoshen80/ReinaManager/commit/ee3a89c2bd3ee9595bca76aeaf1d09f0e95a7170))
+- *(layout)* Add back to top button ([f0ea488](https://github.com/huoshen80/ReinaManager/commit/f0ea4884086f7a37a5a5d6ff3ec0c756b747153d))
+
+### 🐛 Bug Fixes
+
+- *(add-modal)* Remove imported bulk items ([2d08d64](https://github.com/huoshen80/ReinaManager/commit/2d08d644490e9cf14823b20eab36a37d0822c3d6))
+
+### 🚀 Performance
+
+- *(database)* Speed up bulk import persistence ([0c64f56](https://github.com/huoshen80/ReinaManager/commit/0c64f563b82f1ea9d101bc18b5dfa74cfe37238b))
+- *(add-modal)* Prefetch cloud play statuses ([d575ff2](https://github.com/huoshen80/ReinaManager/commit/d575ff2c2591486988b0bbf2ade20f9659573768))
+
+
 ## [0.21.2](https://github.com/huoshen80/ReinaManager/compare/v0.21.1...v0.21.2) (2026-05-21)
 
 <details>
