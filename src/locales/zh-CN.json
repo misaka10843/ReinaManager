@@ -99,7 +99,6 @@
 			"selectRootFolder": "选择根文件夹",
 			"status": "状态",
 			"statusError": "错误",
-			"statusImported": "已导入",
 			"statusMatched": "已匹配",
 			"statusNotFound": "未找到",
 			"statusPending": "待处理"

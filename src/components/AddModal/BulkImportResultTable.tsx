@@ -20,11 +20,15 @@ export interface BulkImportItem extends ScanResult {
 	selectedExe?: string;
 }
 
+export type VisibleBulkImportItem = BulkImportItem & {
+	status: Exclude<BulkImportItem["status"], "imported">;
+};
+
 interface BulkImportResultTableProps {
-	items: BulkImportItem[];
+	items: VisibleBulkImportItem[];
 	loading: boolean;
 	onDeleteItem: (path: string) => void;
-	onEditItem: (item: BulkImportItem) => void;
+	onEditItem: (item: VisibleBulkImportItem) => void;
 	onExecutableChange: (path: string, executable: string) => void;
 }
 
@@ -72,22 +76,19 @@ function getMatchedGameName(
 }
 
 function getStatusLabel(
-	status: BulkImportItem["status"],
+	status: VisibleBulkImportItem["status"],
 	t: TFunction,
 ): string {
-	if (status === "pending") {
-		return t("components.BulkImportModal.statusPending", "待处理");
+	switch (status) {
+		case "pending":
+			return t("components.BulkImportModal.statusPending", "待处理");
+		case "matched":
+			return t("components.BulkImportModal.statusMatched", "已匹配");
+		case "not found":
+			return t("components.BulkImportModal.statusNotFound", "未找到");
+		case "error":
+			return t("components.BulkImportModal.statusError", "错误");
 	}
-	if (status === "matched") {
-		return t("components.BulkImportModal.statusMatched", "已匹配");
-	}
-	if (status === "not found") {
-		return t("components.BulkImportModal.statusNotFound", "未找到");
-	}
-	if (status === "imported") {
-		return t("components.BulkImportModal.statusImported", "已导入");
-	}
-	return t("components.BulkImportModal.statusError", "错误");
 }
 
 export default function BulkImportResultTable({
@@ -200,7 +201,7 @@ export default function BulkImportResultTable({
 														onExecutableChange(item.path, event.target.value)
 													}
 													displayEmpty
-													disabled={item.status === "imported" || loading}
+													disabled={loading}
 													sx={{
 														"& .MuiSelect-select": {
 															py: 0.75,
@@ -239,14 +240,14 @@ export default function BulkImportResultTable({
 										<IconButton
 											size="small"
 											onClick={() => onEditItem(item)}
-											disabled={item.status === "imported" || loading}
+											disabled={loading}
 										>
 											<EditIcon fontSize="small" />
 										</IconButton>
 										<IconButton
 											size="small"
 											onClick={() => onDeleteItem(item.path)}
-											disabled={item.status === "imported" || loading}
+											disabled={loading}
 										>
 											<DeleteIcon fontSize="small" />
 										</IconButton>

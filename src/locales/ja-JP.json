@@ -99,7 +99,6 @@
 			"selectRootFolder": "ルートフォルダを選択",
 			"status": "状態",
 			"statusError": "エラー",
-			"statusImported": "インポート済み",
 			"statusMatched": "一致済み",
 			"statusNotFound": "未検出",
 			"statusPending": "未処理"

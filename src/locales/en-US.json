@@ -100,7 +100,6 @@
 			"selectRootFolder": "Select Root Folder",
 			"status": "Status",
 			"statusError": "Error",
-			"statusImported": "Imported",
 			"statusMatched": "Matched",
 			"statusNotFound": "Not Found",
 			"statusPending": "Pending"

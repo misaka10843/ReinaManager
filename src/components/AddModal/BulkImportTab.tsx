@@ -33,6 +33,7 @@ import { handleGetFolder } from "@/utils/fs/fileDialog";
 import { ApiSourceRadioGroup } from "./ApiSourceRadioGroup";
 import BulkImportResultTable, {
 	type BulkImportItem,
+	type VisibleBulkImportItem,
 } from "./BulkImportResultTable";
 import GameSelectDialog from "./GameSelectDialog";
 import MixedSourceConfirmDialog from "./MixedSourceConfirmDialog";
@@ -51,6 +52,12 @@ const BULK_API_SOURCE_OPTIONS: { value: SourceType; label: string }[] = [
 	{ value: "ymgal", label: "YMGal" },
 	{ value: "kun", label: "Kun" },
 ];
+
+function isVisibleBulkImportItem(
+	item: BulkImportItem,
+): item is VisibleBulkImportItem {
+	return item.status !== "imported";
+}
 
 const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 	const { t } = useTranslation();
@@ -207,7 +214,13 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 					break;
 				}
 
-				if (nextItems[index].status !== "pending") continue;
+				if (
+					nextItems[index].status !== "pending" &&
+					nextItems[index].status !== "not found" &&
+					nextItems[index].status !== "error"
+				) {
+					continue;
+				}
 
 				try {
 					const searchResults =
@@ -329,7 +342,7 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 			}
 		}
 
-		setItems([...nextItems]);
+		setItems(nextItems.filter((item) => item.status !== "imported"));
 	};
 
 	const handleEditRowSearch = async () => {
@@ -378,7 +391,7 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 	);
 
 	const handleEditItem = useCallback(
-		(item: BulkImportItem) => {
+		(item: VisibleBulkImportItem) => {
 			setEditItemPath(item.path);
 			setEditName(item.name);
 			setEditApiSource(bulkApiSource);
@@ -511,7 +524,7 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 				</Stack>
 
 				<BulkImportResultTable
-					items={items}
+					items={items.filter(isVisibleBulkImportItem)}
 					loading={loading}
 					onDeleteItem={handleDeleteItem}
 					onEditItem={handleEditItem}
