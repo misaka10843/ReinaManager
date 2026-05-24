@@ -1,5 +1,6 @@
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
-import { Avatar, Link } from "@mui/material";
+import KeyboardArrowUpRoundedIcon from "@mui/icons-material/KeyboardArrowUpRounded";
+import { Avatar, Fab, Fade, Link } from "@mui/material";
 import AppBar from "@mui/material/AppBar";
 import Chip from "@mui/material/Chip";
 import IconButton from "@mui/material/IconButton";
@@ -9,12 +10,13 @@ import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import { DashboardLayout } from "@toolpad/core/DashboardLayout";
 import { PageContainer } from "@toolpad/core/PageContainer";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import AddModal from "@/components/AddModal";
 import { SearchBox } from "@/components/SearchBox";
 import { Toolbars } from "@/components/Toolbar";
-import { saveScrollPosition } from "@/utils/scroll";
+import { saveScrollPosition, scrollToTop } from "@/utils/scroll";
 
 /**
  * 侧边栏底部信息组件
@@ -122,6 +124,52 @@ const Header = () => (
 	</AppBar>
 );
 
+const BackToTopButton = () => {
+	const { t } = useTranslation();
+	const location = useLocation();
+	const [visible, setVisible] = useState(false);
+
+	useEffect(() => {
+		const container = document.querySelector<HTMLElement>("main");
+		if (!container) return;
+
+		const updateVisible = () => {
+			setVisible(container.scrollTop > 320);
+		};
+
+		updateVisible();
+		container.addEventListener("scroll", updateVisible, { passive: true });
+
+		return () => {
+			container.removeEventListener("scroll", updateVisible);
+		};
+	}, []);
+
+	const label = t("components.AppLayout.backToTop", "返回顶部");
+
+	return (
+		<Fade in={visible} unmountOnExit>
+			<Tooltip title={label} enterDelay={1000}>
+				<Fab
+					color="primary"
+					size="small"
+					aria-label={label}
+					className="print:hidden"
+					onClick={() => scrollToTop(location.pathname)}
+					sx={{
+						position: "fixed",
+						right: { xs: 16, sm: 24 },
+						bottom: { xs: 16, sm: 24 },
+						zIndex: 40,
+					}}
+				>
+					<KeyboardArrowUpRoundedIcon />
+				</Fab>
+			</Tooltip>
+		</Fade>
+	);
+};
+
 /**
  * 应用主布局组件
  * 集成侧边栏、顶部工具栏、页面容器等，支持自定义标题、国际化和响应式布局。
@@ -157,6 +205,7 @@ export const Layout: React.FC = () => {
 				) : (
 					<Outlet />
 				)}
+				<BackToTopButton />
 			</DashboardLayout>
 		</>
 	);

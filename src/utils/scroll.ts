@@ -10,3 +10,15 @@ export const saveScrollPosition = (path: string) => {
 		setScrollPosition(path, container.scrollTop);
 	}
 };
+
+export const scrollToTop = (path: string) => {
+	const SCROLL_CONTAINER_SELECTOR = "main";
+	const container = document.querySelector<HTMLElement>(
+		SCROLL_CONTAINER_SELECTOR,
+	);
+
+	if (!container) return;
+
+	setScrollPosition(path, 0);
+	container.scrollTo({ top: 0, behavior: "smooth" });
+};

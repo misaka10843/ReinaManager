@@ -72,7 +72,8 @@
 			"ymgalData": "Ymgal データ"
 		},
 		"AppLayout": {
-			"back": "戻る"
+			"back": "戻る",
+			"backToTop": "トップへ戻る"
 		},
 		"BulkImportModal": {
 			"actions": "操作",

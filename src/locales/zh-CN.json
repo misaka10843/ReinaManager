@@ -72,7 +72,8 @@
 			"ymgalData": "YMGal 数据"
 		},
 		"AppLayout": {
-			"back": "返回"
+			"back": "返回",
+			"backToTop": "返回顶部"
 		},
 		"BulkImportModal": {
 			"actions": "操作",

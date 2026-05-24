@@ -72,7 +72,8 @@
 			"ymgalData": "Ymgal Data"
 		},
 		"AppLayout": {
-			"back": "Back"
+			"back": "Back",
+			"backToTop": "Back to top"
 		},
 		"BulkImportModal": {
 			"actions": "Actions",
