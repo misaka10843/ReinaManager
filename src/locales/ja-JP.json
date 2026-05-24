@@ -76,6 +76,7 @@
 		},
 		"BulkImportModal": {
 			"actions": "操作",
+			"apiSource": "照合データソース",
 			"cancel": "キャンセル",
 			"editMetadata": "ゲーム情報を編集",
 			"executable": "実行ファイル",
@@ -90,6 +91,8 @@
 			"noGamesFound": "インポート可能なゲームが見つかりません",
 			"reset": "リセット",
 			"saveNameOnly": "名前のみ保存",
+			"scanDepth": "スキャン深度",
+			"scanDepthValue": "{{depth}} 階層",
 			"search": "検索",
 			"searchName": "検索名",
 			"selectExe": "起動ファイルを選択",

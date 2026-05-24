@@ -1,5 +1,3 @@
-import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import SearchIcon from "@mui/icons-material/Search";
 import {
@@ -10,16 +8,10 @@ import {
 	DialogContent,
 	DialogTitle,
 	FormControl,
-	IconButton,
+	InputLabel,
 	MenuItem,
 	Select,
 	Stack,
-	Table,
-	TableBody,
-	TableCell,
-	TableContainer,
-	TableHead,
-	TableRow,
 	TextField,
 	Typography,
 } from "@mui/material";
@@ -33,20 +25,17 @@ import { useAllSettings } from "@/hooks/queries/useSettings";
 import { snackbar } from "@/providers/snackBar";
 import { fileService } from "@/services/invoke";
 import { getEnabledMixedSources, useStore } from "@/store/appStore";
-import type { apiSourceType, GameCandidateData, ScanResult } from "@/types";
+import type { apiSourceType, GameCandidateData, SourceType } from "@/types";
 import { createAbortableRunner, isAbortError } from "@/utils/async";
 import { isBgmAuthExpiredError, withBgmAuth } from "@/utils/bgmAuthSession";
 import { getUserErrorMessage } from "@/utils/errors";
 import { handleGetFolder } from "@/utils/fs/fileDialog";
 import { ApiSourceRadioGroup } from "./ApiSourceRadioGroup";
+import BulkImportResultTable, {
+	type BulkImportItem,
+} from "./BulkImportResultTable";
 import GameSelectDialog from "./GameSelectDialog";
 import MixedSourceConfirmDialog from "./MixedSourceConfirmDialog";
-
-interface ImportItem extends ScanResult {
-	status: "pending" | "matched" | "imported" | "error" | "not found";
-	matchedData?: GameCandidateData;
-	selectedExe?: string;
-}
 
 interface BulkImportTabProps {
 	// 控制此 tab 是否隐藏（通过 CSS display:none 而非卸载）
@@ -54,32 +43,17 @@ interface BulkImportTabProps {
 	onClose: () => void;
 }
 
-function getMatchedGameName(
-	gameData: GameCandidateData | undefined,
-	language: string,
-): string {
-	if (!gameData) {
-		return "";
-	}
-
-	const useChineseName = language === "zh-CN";
-	return (
-		(useChineseName
-			? gameData.bgm_data?.name_cn ||
-				gameData.vndb_data?.name_cn ||
-				gameData.ymgal_data?.name_cn ||
-				gameData.kun_data?.name_cn
-			: undefined) ||
-		gameData.bgm_data?.name ||
-		gameData.vndb_data?.name ||
-		gameData.ymgal_data?.name ||
-		gameData.kun_data?.name ||
-		""
-	);
-}
+const DEFAULT_SCAN_DEPTH = 2;
+const SCAN_DEPTH_OPTIONS = [2, 3, 4, 5] as const;
+const BULK_API_SOURCE_OPTIONS: { value: SourceType; label: string }[] = [
+	{ value: "bgm", label: "Bangumi" },
+	{ value: "vndb", label: "VNDB" },
+	{ value: "ymgal", label: "YMGal" },
+	{ value: "kun", label: "Kun" },
+];
 
 const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
-	const { t, i18n } = useTranslation();
+	const { t } = useTranslation();
 	const { data: settings } = useAllSettings();
 	const hasBgmAuth = Boolean(settings?.bgm_auth);
 	const { mixedEnableYmgal, mixedEnableKun } = useStore(
@@ -89,7 +63,7 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 		})),
 	);
 	const { addGamesFromBulkImport, isAddingGames } = useBulkGameAddActions();
-	const preferredApiSource = hasBgmAuth ? "bgm" : "vndb";
+	const defaultBulkApiSource: SourceType = hasBgmAuth ? "bgm" : "vndb";
 	const enabledMixedSources = getEnabledMixedSources({
 		mixedEnableYmgal,
 		mixedEnableKun,
@@ -98,10 +72,14 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 	const [isScanningDirectories, setIsScanningDirectories] = useState(false);
 	const [isMatchingMetadata, setIsMatchingMetadata] = useState(false);
 	const [rootPath, setRootPath] = useState("");
-	const [items, setItems] = useState<ImportItem[]>([]);
+	const [items, setItems] = useState<BulkImportItem[]>([]);
+	const [bulkApiSource, setBulkApiSource] =
+		useState<SourceType>(defaultBulkApiSource);
+	const [scanMaxDepth, setScanMaxDepth] = useState(DEFAULT_SCAN_DEPTH);
 	const [editItemPath, setEditItemPath] = useState<string | null>(null);
 	const [editName, setEditName] = useState("");
-	const [editApiSource, setEditApiSource] = useState<apiSourceType>("bgm");
+	const [editApiSource, setEditApiSource] =
+		useState<apiSourceType>(defaultBulkApiSource);
 	const editSearchAbortControllerRef = useRef<AbortController | null>(null);
 	const matchAbortControllerRef = useRef<AbortController | null>(null);
 	const loading = isMatchingMetadata || isScanningDirectories || isAddingGames;
@@ -156,11 +134,13 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 		setIsMatchingMetadata(false);
 		setRootPath("");
 		setItems([]);
+		setBulkApiSource(defaultBulkApiSource);
+		setScanMaxDepth(DEFAULT_SCAN_DEPTH);
 		setEditItemPath(null);
 		setEditName("");
-		setEditApiSource(preferredApiSource);
+		setEditApiSource(defaultBulkApiSource);
 		metadataSearchFlow.reset();
-	}, [metadataSearchFlow, preferredApiSource]);
+	}, [defaultBulkApiSource, metadataSearchFlow]);
 
 	const handleCloseEditDialog = useCallback(() => {
 		if (editSearchAbortControllerRef.current) {
@@ -191,7 +171,10 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 		setRootPath(result);
 		setIsScanningDirectories(true);
 		try {
-			const subdirs = await fileService.scanDirectoryForGames(result);
+			const subdirs = await fileService.scanDirectoryForGames(
+				result,
+				scanMaxDepth,
+			);
 			setItems(
 				subdirs.map((dir) => ({
 					...dir,
@@ -228,13 +211,13 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 
 				try {
 					const searchResults =
-						preferredApiSource === "bgm"
+						bulkApiSource === "bgm"
 							? await withBgmAuth(
 									(token) =>
 										withAbort(
 											gameMetadataService.searchGames({
 												query: nextItems[index].name,
-												source: preferredApiSource,
+												source: bulkApiSource,
 												bgmToken: token,
 											}),
 										),
@@ -243,7 +226,7 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 							: await withAbort(
 									gameMetadataService.searchGames({
 										query: nextItems[index].name,
-										source: preferredApiSource,
+										source: bulkApiSource,
 									}),
 								);
 
@@ -379,9 +362,29 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 		}
 	};
 
-	const handleDeleteItem = (path: string) => {
+	const handleDeleteItem = useCallback((path: string) => {
 		setItems((prev) => prev.filter((item) => item.path !== path));
-	};
+	}, []);
+
+	const handleExecutableChange = useCallback(
+		(path: string, selectedExe: string) => {
+			setItems((prev) =>
+				prev.map((item) =>
+					item.path === path ? { ...item, selectedExe } : item,
+				),
+			);
+		},
+		[],
+	);
+
+	const handleEditItem = useCallback(
+		(item: BulkImportItem) => {
+			setEditItemPath(item.path);
+			setEditName(item.name);
+			setEditApiSource(bulkApiSource);
+		},
+		[bulkApiSource],
+	);
 
 	const handleEditRowSaveNameOnly = () => {
 		if (!editItemPath) return;
@@ -403,41 +406,98 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 		<>
 			<Stack
 				spacing={2}
-				sx={{
-					pt: 1,
-					height: "100%",
-					minHeight: 0,
-					overflow: "hidden",
-					// 通过 CSS 控制显隐而非卸载，保持状态在 tab 切换时不丢失
-					display: hidden ? "none" : undefined,
-				}}
+				className="pt-2 w-full flex-1 self-stretch h-full min-h-0 overflow-hidden"
+				sx={{ display: hidden ? "none" : undefined }}
 			>
-				<Stack
-					direction={{ xs: "column", sm: "row" }}
-					spacing={2}
-					alignItems={{ xs: "stretch", sm: "center" }}
-				>
-					<Button
-						variant="contained"
-						startIcon={<FolderOpenIcon />}
-						onClick={scanFolder}
-						disabled={loading}
-						sx={{ flexShrink: 0 }}
+				<Stack direction="row" spacing={1.5} alignItems="flex-start">
+					<Stack
+						direction="row"
+						spacing={1.5}
+						alignItems="center"
+						flexWrap="wrap"
+						useFlexGap
+						className="flex-[1_1_auto] min-w-0"
 					>
-						{t("components.BulkImportModal.selectRootFolder", "选择根文件夹")}
-					</Button>
-					<Typography variant="body2" sx={{ flexGrow: 1 }} noWrap>
-						{rootPath ||
-							t("components.BulkImportModal.noFolderSelected", "未选择文件夹")}
-					</Typography>
+						<Button
+							variant="contained"
+							startIcon={<FolderOpenIcon />}
+							onClick={scanFolder}
+							disabled={loading}
+							className="shrink-0"
+						>
+							{t("components.BulkImportModal.selectRootFolder", "选择根文件夹")}
+						</Button>
+						<Typography
+							variant="body2"
+							className="flex-[1_1_220px] min-w-40"
+							noWrap
+						>
+							{rootPath ||
+								t(
+									"components.BulkImportModal.noFolderSelected",
+									"未选择文件夹",
+								)}
+						</Typography>
+						<FormControl
+							size="small"
+							disabled={loading}
+							className="flex-[0_0_160px]"
+						>
+							<InputLabel id="bulk-import-api-source-label">
+								{t("components.BulkImportModal.apiSource", "匹配数据源")}
+							</InputLabel>
+							<Select
+								labelId="bulk-import-api-source-label"
+								value={bulkApiSource}
+								label={t("components.BulkImportModal.apiSource", "匹配数据源")}
+								onChange={(event) =>
+									setBulkApiSource(event.target.value as SourceType)
+								}
+							>
+								{BULK_API_SOURCE_OPTIONS.map((option) => (
+									<MenuItem
+										key={option.value}
+										value={option.value}
+										disabled={option.value === "bgm" && !hasBgmAuth}
+									>
+										{option.label}
+									</MenuItem>
+								))}
+							</Select>
+						</FormControl>
+						<FormControl
+							size="small"
+							disabled={loading}
+							className="flex-[0_0_140px]"
+						>
+							<InputLabel id="bulk-import-scan-depth-label">
+								{t("components.BulkImportModal.scanDepth", "扫描深度")}
+							</InputLabel>
+							<Select
+								labelId="bulk-import-scan-depth-label"
+								value={scanMaxDepth}
+								label={t("components.BulkImportModal.scanDepth", "扫描深度")}
+								onChange={(event) =>
+									setScanMaxDepth(Number(event.target.value))
+								}
+							>
+								{SCAN_DEPTH_OPTIONS.map((depth) => (
+									<MenuItem key={depth} value={depth}>
+										{t(
+											"components.BulkImportModal.scanDepthValue",
+											"{{depth}} 层",
+											{ depth },
+										)}
+									</MenuItem>
+								))}
+							</Select>
+						</FormControl>
+					</Stack>
 					{items.length > 0 && (
 						<Typography
 							variant="body2"
 							color="text.secondary"
-							sx={{
-								whiteSpace: "nowrap",
-								alignSelf: { xs: "flex-start", sm: "auto" },
-							}}
+							className="whitespace-nowrap shrink-0 pt-2"
 						>
 							{t(
 								"components.BulkImportModal.gamesCount",
@@ -450,181 +510,13 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 					)}
 				</Stack>
 
-				<TableContainer
-					sx={{
-						flex: "1 1 auto",
-						minHeight: 0,
-						overflowY: "auto",
-						overflowX: "hidden",
-					}}
-				>
-					<Table stickyHeader size="small" sx={{ tableLayout: "fixed" }}>
-						<TableHead>
-							<TableRow>
-								<TableCell sx={{ width: "25%" }}>
-									{t("components.BulkImportModal.searchName", "搜索名称")}
-								</TableCell>
-								<TableCell sx={{ width: "25%" }}>
-									{t("components.BulkImportModal.matchedGame", "匹配的游戏")}
-								</TableCell>
-								<TableCell sx={{ width: "10%" }}>
-									{t("components.BulkImportModal.status", "状态")}
-								</TableCell>
-								<TableCell sx={{ width: "30%" }}>
-									{t("components.BulkImportModal.executable", "启动程序")}
-								</TableCell>
-								<TableCell align="center" sx={{ width: "10%" }}>
-									{t("components.BulkImportModal.actions", "操作")}
-								</TableCell>
-							</TableRow>
-						</TableHead>
-						<TableBody>
-							{items.length === 0 ? (
-								<TableRow>
-									<TableCell colSpan={5} align="center">
-										{t(
-											"components.BulkImportModal.noGamesFound",
-											"未找到可导入的游戏",
-										)}
-									</TableCell>
-								</TableRow>
-							) : (
-								items.map((item) => (
-									<TableRow key={item.path}>
-										<TableCell
-											sx={{
-												whiteSpace: "nowrap",
-												overflow: "hidden",
-												textOverflow: "ellipsis",
-											}}
-											title={item.name}
-										>
-											{item.name}
-										</TableCell>
-										<TableCell
-											sx={{
-												whiteSpace: "nowrap",
-												overflow: "hidden",
-												textOverflow: "ellipsis",
-											}}
-											title={getMatchedGameName(
-												item.matchedData,
-												i18n.language,
-											)}
-										>
-											{getMatchedGameName(item.matchedData, i18n.language) ||
-												"-"}
-										</TableCell>
-										<TableCell>
-											{item.status === "pending"
-												? t(
-														"components.BulkImportModal.statusPending",
-														"待处理",
-													)
-												: item.status === "matched"
-													? t(
-															"components.BulkImportModal.statusMatched",
-															"已匹配",
-														)
-													: item.status === "not found"
-														? t(
-																"components.BulkImportModal.statusNotFound",
-																"未找到",
-															)
-														: item.status === "imported"
-															? t(
-																	"components.BulkImportModal.statusImported",
-																	"已导入",
-																)
-															: t(
-																	"components.BulkImportModal.statusError",
-																	"错误",
-																)}
-										</TableCell>
-										<TableCell>
-											{item.executables.length === 1 ? (
-												<Typography
-													variant="body2"
-													noWrap
-													title={item.executables[0]}
-												>
-													{item.executables[0]}
-												</Typography>
-											) : (
-												<FormControl size="small" fullWidth>
-													<Select
-														value={item.selectedExe || ""}
-														onChange={(event) => {
-															const nextItems = [...items];
-															const itemIndex = nextItems.findIndex(
-																(currentItem) => currentItem.path === item.path,
-															);
-															if (itemIndex !== -1) {
-																nextItems[itemIndex].selectedExe =
-																	event.target.value;
-																setItems(nextItems);
-															}
-														}}
-														displayEmpty
-														disabled={item.status === "imported" || loading}
-														renderValue={(selected) => (
-															<Typography
-																variant="body2"
-																noWrap
-																color={selected ? undefined : "text.secondary"}
-																sx={{ maxWidth: "100%" }}
-															>
-																{selected ||
-																	t(
-																		"components.BulkImportModal.selectExe",
-																		"请选择启动程序",
-																	)}
-															</Typography>
-														)}
-													>
-														<MenuItem value="" disabled>
-															{t(
-																"components.BulkImportModal.selectExe",
-																"请选择启动程序",
-															)}
-														</MenuItem>
-														{item.executables.map((exe) => (
-															<MenuItem key={exe} value={exe}>
-																{exe}
-															</MenuItem>
-														))}
-													</Select>
-												</FormControl>
-											)}
-										</TableCell>
-										<TableCell align="center">
-											<Stack direction="row" justifyContent="center">
-												<IconButton
-													size="small"
-													onClick={() => {
-														setEditItemPath(item.path);
-														setEditName(item.name);
-														setEditApiSource(preferredApiSource);
-													}}
-													disabled={item.status === "imported" || loading}
-												>
-													<EditIcon fontSize="small" />
-												</IconButton>
-												<IconButton
-													size="small"
-													onClick={() => handleDeleteItem(item.path)}
-													disabled={item.status === "imported" || loading}
-												>
-													<DeleteIcon fontSize="small" />
-												</IconButton>
-											</Stack>
-										</TableCell>
-									</TableRow>
-								))
-							)}
-						</TableBody>
-					</Table>
-				</TableContainer>
+				<BulkImportResultTable
+					items={items}
+					loading={loading}
+					onDeleteItem={handleDeleteItem}
+					onEditItem={handleEditItem}
+					onExecutableChange={handleExecutableChange}
+				/>
 
 				<Stack
 					direction={{ xs: "column", md: "row" }}
@@ -647,7 +539,11 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 						<Button
 							startIcon={<SearchIcon />}
 							onClick={handleMatchMetadata}
-							disabled={items.length === 0 || loading}
+							disabled={
+								items.length === 0 ||
+								loading ||
+								(bulkApiSource === "bgm" && !hasBgmAuth)
+							}
 						>
 							{t("components.BulkImportModal.matchMetadata", "匹配元数据")}
 						</Button>
@@ -673,7 +569,7 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 					{t("components.BulkImportModal.editMetadata", "编辑游戏信息")}
 				</DialogTitle>
 				<DialogContent>
-					<Stack spacing={2} sx={{ mt: 1 }}>
+					<Stack spacing={2} className="mt-2">
 						<TextField
 							label={
 								editApiSource === "mixed"

@@ -31,8 +31,14 @@ class FileService extends BaseService {
 	/**
 	 * 扫描目录下的游戏文件夹
 	 */
-	async scanDirectoryForGames(path: string): Promise<ScanResult[]> {
-		return this.invoke<ScanResult[]>("scan_directory_for_games", { path });
+	async scanDirectoryForGames(
+		path: string,
+		maxDepth: number,
+	): Promise<ScanResult[]> {
+		return this.invoke<ScanResult[]>("scan_directory_for_games", {
+			path,
+			maxDepth,
+		});
 	}
 
 	/**

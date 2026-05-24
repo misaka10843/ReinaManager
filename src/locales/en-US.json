@@ -76,6 +76,7 @@
 		},
 		"BulkImportModal": {
 			"actions": "Actions",
+			"apiSource": "Match Source",
 			"cancel": "Cancel",
 			"editMetadata": "Edit Game Info",
 			"executable": "Executable",
@@ -91,6 +92,8 @@
 			"noGamesFound": "No importable games found",
 			"reset": "Reset",
 			"saveNameOnly": "Save Name Only",
+			"scanDepth": "Scan Depth",
+			"scanDepthValue": "{{depth}} levels",
 			"search": "Search",
 			"searchName": "Search Name",
 			"selectExe": "Select Executable",

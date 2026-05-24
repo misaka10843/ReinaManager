@@ -76,6 +76,7 @@
 		},
 		"BulkImportModal": {
 			"actions": "操作",
+			"apiSource": "匹配数据源",
 			"cancel": "取消",
 			"editMetadata": "编辑游戏信息",
 			"executable": "启动程序",
@@ -90,6 +91,8 @@
 			"noGamesFound": "未找到可导入的游戏",
 			"reset": "重置",
 			"saveNameOnly": "仅保存名称",
+			"scanDepth": "扫描深度",
+			"scanDepthValue": "{{depth}} 层",
 			"search": "搜索",
 			"searchName": "搜索名称",
 			"selectExe": "请选择启动程序",

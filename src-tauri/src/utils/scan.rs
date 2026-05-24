@@ -17,6 +17,8 @@ pub struct ScanResult {
 }
 
 const VALID_EXE_EXTENSIONS: &[&str] = &["exe", "bat", "cmd"];
+const MIN_SCAN_MAX_DEPTH: usize = 2;
+const MAX_SCAN_MAX_DEPTH: usize = 5;
 
 /// 扫描时跳过的目录名（不区分大小写）
 const EXCLUDED_DIRS: &[&str] = &[
@@ -115,6 +117,7 @@ fn is_excluded_exe(path: &Path) -> bool {
 pub async fn scan_directory_for_games(
     db: State<'_, DatabaseConnection>,
     path: String,
+    max_depth: usize,
 ) -> Result<Vec<ScanResult>, String> {
     // 先做路径预检查（一次 syscall，可在 async 上下文进行）
     if !Path::new(&path).is_dir() {
@@ -129,9 +132,11 @@ pub async fn scan_directory_for_games(
         .filter_map(|lp| PathBuf::from(lp).parent().map(Path::to_path_buf))
         .collect();
 
+    let max_depth = max_depth.clamp(MIN_SCAN_MAX_DEPTH, MAX_SCAN_MAX_DEPTH);
+
     // WalkDir 大量文件系统 I/O 属于阻塞操作，
     // 放入 Tokio 革层阻塞线程池，避免占用异步运行时线程。
-    tokio::task::spawn_blocking(move || scan_games_blocking(path, existing_dirs))
+    tokio::task::spawn_blocking(move || scan_games_blocking(path, existing_dirs, max_depth))
         .await
         .map_err(|e| format!("扫描任务异常: {}", e))?
 }
@@ -143,6 +148,7 @@ pub async fn scan_directory_for_games(
 fn scan_games_blocking(
     path: String,
     existing_dirs: HashSet<PathBuf>,
+    max_depth: usize,
 ) -> Result<Vec<ScanResult>, String> {
     let dir_path = PathBuf::from(&path);
 
@@ -152,14 +158,12 @@ fn scan_games_blocking(
     //   - 当某目录已确认含有直属 exe 时，之后遇到其子目录立即 skip_current_dir，
     //   - 忽略直接位于扫描根目录下的文件（它们不属于任何子游戏文件夹）
     let mut exe_by_dir: HashMap<PathBuf, Vec<PathBuf>> = HashMap::new();
-    // 统计每个目录的直属文件数（不含子目录），用于过滤文件过少的误判目录
-    let mut file_count_by_dir: HashMap<PathBuf, usize> = HashMap::new();
     // 已发现直属 exe 的目录集合，用于对其子目录执行 skip_current_dir
     let mut dirs_with_exe: HashSet<PathBuf> = HashSet::new();
 
     let mut walker = WalkDir::new(&dir_path)
         .min_depth(1)
-        .max_depth(5)
+        .max_depth(max_depth)
         .follow_links(false)
         .sort_by(|a, b| {
             let a_is_dir = a.file_type().is_dir();
@@ -199,8 +203,6 @@ fn scan_games_blocking(
             if parent == dir_path.as_path() {
                 continue; // 忽略根目录直属文件
             }
-            // 统计直属文件数
-            *file_count_by_dir.entry(parent.to_path_buf()).or_insert(0) += 1;
             // 收集有效可执行文件，并标记该目录已有 exe
             if let Some(ext) = entry_path.extension()
                 && VALID_EXE_EXTENSIONS
@@ -230,16 +232,11 @@ fn scan_games_blocking(
         }
     }
 
-    // Phase 3: 构建结果，仅返回含有效 exe 且目录直属文件数大于 3 的目录
-    // 文件数过少的目录通常是安装残留、工具目录或子目录入口层，不是真实游戏目录
+    // Phase 3: 构建结果。层级已由用户控制，这里只要求目录含有效启动程序。
     let mut results: Vec<ScanResult> = selected
         .into_iter()
         .filter_map(|game_dir| {
             let exes = exe_by_dir.get(&game_dir)?;
-            // 文件数少于等于 3 则忽略
-            if file_count_by_dir.get(&game_dir).copied().unwrap_or(0) <= 3 {
-                return None;
-            }
             let raw_name = game_dir.file_name()?.to_string_lossy().to_string();
             let name = trim_dirname_to_search_name(&raw_name);
             let lower_name = name.to_lowercase();
