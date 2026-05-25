@@ -12,6 +12,7 @@ mod m20260318_000008_add_vndb_token_and_collection_sync;
 mod m20260331_000009_add_kungal_support;
 mod m20260505_000010_remove_redundant_created_at;
 mod m20260508_000011_bgm_oauth;
+mod m20260525_000012_move_custom_date_to_games;
 
 pub struct Migrator;
 
@@ -30,6 +31,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20260331_000009_add_kungal_support::Migration),
             Box::new(m20260505_000010_remove_redundant_created_at::Migration),
             Box::new(m20260508_000011_bgm_oauth::Migration),
+            Box::new(m20260525_000012_move_custom_date_to_games::Migration),
         ]
     }
 }

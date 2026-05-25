@@ -7,7 +7,9 @@ use crate::database::dto::{
     BatchOperationError, BatchOperationResult, InsertGameData, UpdateGameData,
 };
 use crate::entity::prelude::*;
-use crate::entity::{games, savedata};
+use crate::entity::{
+    bgm_data::BgmData, games, savedata, vndb_data::VndbData, ymgal_data::YmgalData,
+};
 use sea_orm::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -67,6 +69,82 @@ impl GamesRepository {
         }
     }
 
+    fn clean_source_date(date: Option<&str>) -> Option<String> {
+        date.map(str::trim)
+            .filter(|value| !value.is_empty())
+            .map(ToOwned::to_owned)
+    }
+
+    fn resolve_source_date(
+        bgm_data: Option<&BgmData>,
+        vndb_data: Option<&VndbData>,
+        ymgal_data: Option<&YmgalData>,
+    ) -> Option<String> {
+        bgm_data
+            .and_then(|data| Self::clean_source_date(data.date.as_deref()))
+            .or_else(|| vndb_data.and_then(|data| Self::clean_source_date(data.date.as_deref())))
+            .or_else(|| ymgal_data.and_then(|data| Self::clean_source_date(data.date.as_deref())))
+    }
+
+    fn normalize_insert_date(mut game: InsertGameData) -> InsertGameData {
+        if game.date.is_none() {
+            game.date = Self::resolve_source_date(
+                game.bgm_data.as_ref(),
+                game.vndb_data.as_ref(),
+                game.ymgal_data.as_ref(),
+            );
+        }
+
+        game
+    }
+
+    fn should_normalize_update_date(updates: &UpdateGameData) -> bool {
+        matches!(updates.date, Some(None))
+            || (updates.date.is_none()
+                && (updates.bgm_data.is_some()
+                    || updates.vndb_data.is_some()
+                    || updates.ymgal_data.is_some()))
+    }
+
+    async fn normalize_update_date<C>(
+        db: &C,
+        game_id: i32,
+        mut updates: UpdateGameData,
+    ) -> Result<UpdateGameData, DbErr>
+    where
+        C: ConnectionTrait,
+    {
+        if !Self::should_normalize_update_date(&updates) {
+            return Ok(updates);
+        }
+
+        let current = Games::find_by_id(game_id)
+            .one(db)
+            .await?
+            .ok_or_else(|| DbErr::RecordNotFound(format!("game {} not found", game_id)))?;
+
+        let next_bgm_data = match &updates.bgm_data {
+            Some(data) => data.as_ref(),
+            None => current.bgm_data.as_ref(),
+        };
+        let next_vndb_data = match &updates.vndb_data {
+            Some(data) => data.as_ref(),
+            None => current.vndb_data.as_ref(),
+        };
+        let next_ymgal_data = match &updates.ymgal_data {
+            Some(data) => data.as_ref(),
+            None => current.ymgal_data.as_ref(),
+        };
+
+        updates.date = Some(Self::resolve_source_date(
+            next_bgm_data,
+            next_vndb_data,
+            next_ymgal_data,
+        ));
+
+        Ok(updates)
+    }
+
     fn build_insert_active_model(game: InsertGameData, now: i32) -> games::ActiveModel {
         games::ActiveModel {
             id: NotSet,
@@ -93,6 +171,36 @@ impl GamesRepository {
         }
     }
 
+    fn build_update_active_model(
+        game_id: i32,
+        updates: UpdateGameData,
+        now: i32,
+    ) -> games::ActiveModel {
+        games::ActiveModel {
+            id: Set(game_id),
+            bgm_id: updates.bgm_id.map_or(NotSet, Set),
+            vndb_id: updates.vndb_id.map_or(NotSet, Set),
+            ymgal_id: updates.ymgal_id.map_or(NotSet, Set),
+            kun_id: updates.kun_id.map_or(NotSet, Set),
+            id_type: updates.id_type.map_or(NotSet, Set),
+            date: updates.date.map_or(NotSet, Set),
+            localpath: updates.localpath.map_or(NotSet, Set),
+            savepath: updates.savepath.map_or(NotSet, Set),
+            autosave: updates.autosave.map_or(NotSet, Set),
+            maxbackups: updates.maxbackups.map_or(NotSet, Set),
+            clear: updates.clear.map_or(NotSet, Set),
+            le_launch: updates.le_launch.map_or(NotSet, Set),
+            magpie: updates.magpie.map_or(NotSet, Set),
+            vndb_data: updates.vndb_data.map_or(NotSet, Set),
+            bgm_data: updates.bgm_data.map_or(NotSet, Set),
+            ymgal_data: updates.ymgal_data.map_or(NotSet, Set),
+            kun_data: updates.kun_data.map_or(NotSet, Set),
+            custom_data: updates.custom_data.map_or(NotSet, Set),
+            updated_at: Set(Some(now)),
+            ..Default::default()
+        }
+    }
+
     /// 插入游戏数据（单表操作）
     ///
     /// 所有元数据通过 JSON 列直接存储，无需多表事务
@@ -100,7 +208,7 @@ impl GamesRepository {
         db: &DatabaseConnection,
         game: InsertGameData,
     ) -> Result<games::Model, DbErr> {
-        let game = game.cleaned(); // 清洗空字符串为 NULL
+        let game = Self::normalize_insert_date(game.cleaned()); // 清洗空字符串为 NULL
 
         let now = chrono::Utc::now().timestamp() as i32;
 
@@ -124,7 +232,8 @@ impl GamesRepository {
         };
 
         for (index, game) in games.into_iter().enumerate() {
-            let game_active = Self::build_insert_active_model(game.cleaned(), now);
+            let game_active =
+                Self::build_insert_active_model(Self::normalize_insert_date(game.cleaned()), now);
 
             match game_active.insert(&txn).await {
                 Ok(result) => {
@@ -160,32 +269,10 @@ impl GamesRepository {
         game_id: i32,
         updates: UpdateGameData,
     ) -> Result<games::Model, DbErr> {
-        let updates = updates.cleaned(); // 清洗空字符串为 NULL
+        let updates = Self::normalize_update_date(db, game_id, updates.cleaned()).await?; // 清洗空字符串为 NULL
         let now = chrono::Utc::now().timestamp() as i32;
 
-        let game_active = games::ActiveModel {
-            id: Set(game_id),
-            bgm_id: updates.bgm_id.map_or(NotSet, Set),
-            vndb_id: updates.vndb_id.map_or(NotSet, Set),
-            ymgal_id: updates.ymgal_id.map_or(NotSet, Set),
-            kun_id: updates.kun_id.map_or(NotSet, Set),
-            id_type: updates.id_type.map_or(NotSet, Set),
-            date: updates.date.map_or(NotSet, Set),
-            localpath: updates.localpath.map_or(NotSet, Set),
-            savepath: updates.savepath.map_or(NotSet, Set),
-            autosave: updates.autosave.map_or(NotSet, Set),
-            maxbackups: updates.maxbackups.map_or(NotSet, Set),
-            clear: updates.clear.map_or(NotSet, Set),
-            le_launch: updates.le_launch.map_or(NotSet, Set),
-            magpie: updates.magpie.map_or(NotSet, Set),
-            vndb_data: updates.vndb_data.map_or(NotSet, Set),
-            bgm_data: updates.bgm_data.map_or(NotSet, Set),
-            ymgal_data: updates.ymgal_data.map_or(NotSet, Set),
-            kun_data: updates.kun_data.map_or(NotSet, Set),
-            custom_data: updates.custom_data.map_or(NotSet, Set),
-            updated_at: Set(Some(now)),
-            ..Default::default()
-        };
+        let game_active = Self::build_update_active_model(game_id, updates, now);
 
         game_active.update(db).await
     }
@@ -206,31 +293,9 @@ impl GamesRepository {
         let mut updated_games = Vec::with_capacity(updates.len());
 
         for (game_id, update) in updates {
-            let update = update.cleaned(); // 清洗空字符串为 NULL
+            let update = Self::normalize_update_date(&txn, game_id, update.cleaned()).await?; // 清洗空字符串为 NULL
 
-            let game_active = games::ActiveModel {
-                id: Set(game_id),
-                bgm_id: update.bgm_id.map_or(NotSet, Set),
-                vndb_id: update.vndb_id.map_or(NotSet, Set),
-                ymgal_id: update.ymgal_id.map_or(NotSet, Set),
-                kun_id: update.kun_id.map_or(NotSet, Set),
-                id_type: update.id_type.map_or(NotSet, Set),
-                date: update.date.map_or(NotSet, Set),
-                localpath: update.localpath.map_or(NotSet, Set),
-                savepath: update.savepath.map_or(NotSet, Set),
-                autosave: update.autosave.map_or(NotSet, Set),
-                maxbackups: update.maxbackups.map_or(NotSet, Set),
-                clear: update.clear.map_or(NotSet, Set),
-                le_launch: update.le_launch.map_or(NotSet, Set),
-                magpie: update.magpie.map_or(NotSet, Set),
-                bgm_data: update.bgm_data.map_or(NotSet, Set),
-                vndb_data: update.vndb_data.map_or(NotSet, Set),
-                ymgal_data: update.ymgal_data.map_or(NotSet, Set),
-                kun_data: update.kun_data.map_or(NotSet, Set),
-                custom_data: update.custom_data.map_or(NotSet, Set),
-                updated_at: Set(Some(now)),
-                ..Default::default()
-            };
+            let game_active = Self::build_update_active_model(game_id, update, now);
 
             let result = game_active.update(&txn).await?;
             updated_games.push(result);

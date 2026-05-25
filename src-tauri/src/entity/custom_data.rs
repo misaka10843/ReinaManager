@@ -39,10 +39,6 @@ pub struct CustomData {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub developer: Option<String>,
 
-    /// 发布日期
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub date: Option<String>,
-
     /// 是否为成人内容
     #[serde(skip_serializing_if = "Option::is_none")]
     pub nsfw: Option<bool>,
