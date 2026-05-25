@@ -17,6 +17,9 @@ import type { BgmAuth, BgmData, GameCandidateData } from "@/types";
 import { AppError, isHttpStatus } from "@/utils/errors";
 import http, { USER_AGENT } from "./http";
 
+const BGM_API_BASE_URL = "https://api.bgm.tv/v0";
+const BGM_OAUTH_BASE_URL = "https://bgm.tv/oauth";
+
 const BGM_JSON_HEADERS = {
 	Accept: "application/json",
 	"User-Agent": USER_AGENT,
@@ -163,7 +166,7 @@ export async function fetchBgmById(
 ): Promise<GameCandidateData> {
 	const BGMdata = (
 		await http.get<BgmSubjectResponse>(
-			`https://api.bgm.tv/v0/subjects/${id}`,
+			`${BGM_API_BASE_URL}/subjects/${id}`,
 			buildBgmAuthHeaders(token),
 		)
 	).data;
@@ -194,7 +197,7 @@ export async function fetchBgmByName(
 	const keyword = name.trim();
 	const resp = (
 		await http.post<BgmSearchResponse>(
-			"https://api.bgm.tv/v0/search/subjects",
+			`${BGM_API_BASE_URL}/search/subjects`,
 			{
 				keyword: keyword,
 				filter: {
@@ -251,7 +254,7 @@ export async function fetchBgmByIds(
 
 			const BGMdata = (
 				await http.get<BgmSubjectResponse>(
-					`https://api.bgm.tv/v0/subjects/${id}`,
+					`${BGM_API_BASE_URL}/subjects/${id}`,
 					buildBgmAuthHeaders(token),
 				)
 			).data;
@@ -285,7 +288,7 @@ export async function fetchBgmByIds(
  */
 export async function fetchCurrentUserProfile(token: string) {
 	const res = await http.get<BgmUserProfile>(
-		"https://api.bgm.tv/v0/me",
+		`${BGM_API_BASE_URL}/me`,
 		buildBgmAuthHeaders(token),
 	);
 	return res.data;
@@ -295,7 +298,7 @@ export async function fetchBgmTokenStatus(
 	token: string,
 ): Promise<BgmTokenStatus> {
 	const res = await http.post<BgmTokenStatus>(
-		"https://bgm.tv/oauth/token_status",
+		`${BGM_OAUTH_BASE_URL}/token_status`,
 		null,
 		buildBgmAuthHeaders(token),
 	);
@@ -304,7 +307,7 @@ export async function fetchBgmTokenStatus(
 
 export function getBgmAvatarUrl(username?: string | null) {
 	return username
-		? `https://api.bgm.tv/v0/users/${encodeURIComponent(username)}/avatar?type=large`
+		? `${BGM_API_BASE_URL}/users/${encodeURIComponent(username)}/avatar?type=large`
 		: undefined;
 }
 
@@ -363,7 +366,7 @@ export async function fetchUserCollection(
 			rate?: number;
 			comment?: string;
 		}>(
-			`https://api.bgm.tv/v0/users/${username}/collections/${subjectId}`,
+			`${BGM_API_BASE_URL}/users/${username}/collections/${subjectId}`,
 			buildBgmAuthHeaders(token),
 		);
 		return res.data;
@@ -406,7 +409,7 @@ export async function fetchUserGameCollectionsPage(
 	params: { limit: number; offset: number },
 ): Promise<BgmUserCollectionsPage> {
 	const res = await http.get<BgmUserCollectionsResponse>(
-		`https://api.bgm.tv/v0/users/${username}/collections`,
+		`${BGM_API_BASE_URL}/users/${username}/collections`,
 		{
 			...buildBgmAuthHeaders(token),
 			params: {
@@ -436,7 +439,7 @@ export async function updateUserCollection(
 	token: string,
 ): Promise<boolean> {
 	await http.post(
-		`https://api.bgm.tv/v0/users/-/collections/${subjectId}`,
+		`${BGM_API_BASE_URL}/users/-/collections/${subjectId}`,
 		{ type },
 		buildBgmAuthHeaders(token),
 	);
