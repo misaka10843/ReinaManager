@@ -18,6 +18,7 @@ import "virtual:uno.css";
 import createCache from "@emotion/cache";
 import { CacheProvider } from "@emotion/react";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { isTauri } from "@tauri-apps/api/core";
 import { queryClient } from "@/providers/queryClient";
 import { initTray } from "@/services/plugins/trayService";
 import { initPathCache } from "@/utils/fs/pathCache";
@@ -51,15 +52,19 @@ document.addEventListener("keydown", (e) => {
 
 // 初始化全局状态后，挂载 React 应用
 initializeStores().then(async () => {
-	const trayReady = initTray().catch((error) => {
-		console.error("托盘初始化失败:", error);
-	});
+	const trayReady = isTauri()
+		? initTray().catch((error) => {
+				console.error("托盘初始化失败:", error);
+			})
+		: Promise.resolve(null);
 
 	// 封面路径依赖路径缓存，仍需在首屏挂载前完成
-	try {
-		await initPathCache();
-	} catch (error) {
-		console.error("路径缓存初始化失败:", error);
+	if (isTauri()) {
+		try {
+			await initPathCache();
+		} catch (error) {
+			console.error("路径缓存初始化失败:", error);
+		}
 	}
 
 	createRoot(document.getElementById("root") as HTMLElement).render(

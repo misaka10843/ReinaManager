@@ -49,6 +49,7 @@ import Stack from "@mui/material/Stack";
 import Switch from "@mui/material/Switch";
 import { useColorScheme } from "@mui/material/styles";
 import Tooltip from "@mui/material/Tooltip";
+import { isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open as openurl } from "@tauri-apps/plugin-shell";
 import type { MouseEvent } from "react";
@@ -123,6 +124,7 @@ const ThemeSwitcher = () => {
 	const isDualTheme = allColorSchemes.length > 1;
 
 	useEffect(() => {
+		if (!isTauri()) return;
 		if (lastAppliedWindowTheme === currentMode) return;
 
 		lastAppliedWindowTheme = currentMode;

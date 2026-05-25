@@ -3,7 +3,7 @@
  * @description 提供统一的错误归一化能力
  */
 
-import { invoke } from "@tauri-apps/api/core";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 import { AppError, toError } from "@/utils/errors";
 
 /**
@@ -20,6 +20,13 @@ export class BaseService {
 		command: string,
 		args?: Record<string, unknown>,
 	): Promise<T> {
+		if (!isTauri()) {
+			throw new AppError({
+				code: "tauri_invoke_failed",
+				message: `Tauri runtime is unavailable: ${command}`,
+			});
+		}
+
 		try {
 			return await invoke<T>(command, args);
 		} catch (error) {
