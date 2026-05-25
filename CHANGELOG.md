@@ -1,3 +1,31 @@
+## [0.21.4](https://github.com/huoshen80/ReinaManager/compare/v0.21.3...v0.21.4) (2026-05-25)
+
+<details>
+<summary>查看中文版本</summary>
+
+### 🐛 Bug 修复
+
+- *(tauri)* 在 Tauri 运行时外保护原生 API ([c065ead](https://github.com/huoshen80/ReinaManager/commit/c065ead90aca9384e16481db657b1d87aed85a9c))
+- *(games)* 集中处理日期回退 ([b6d4fa8](https://github.com/huoshen80/ReinaManager/commit/b6d4fa88dcb6df8dc10104ce3478a6116064f80e))
+
+### 🚜 重构
+
+- *(frontend)* 使用规范游戏日期 ([5cb0cc0](https://github.com/huoshen80/ReinaManager/commit/5cb0cc09ad578baf8e46eb6dd314444a48691eca))
+- *(bgm)* 集中管理 Bangumi API 基础 URL ([acc95e3](https://github.com/huoshen80/ReinaManager/commit/acc95e388f7ffbea56ad338832489716ed3138c0))
+
+</details>
+
+### 🐛 Bug Fixes
+
+- *(tauri)* Guard native APIs outside Tauri runtime ([c065ead](https://github.com/huoshen80/ReinaManager/commit/c065ead90aca9384e16481db657b1d87aed85a9c))
+- *(games)* Centralize date fallback handling ([b6d4fa8](https://github.com/huoshen80/ReinaManager/commit/b6d4fa88dcb6df8dc10104ce3478a6116064f80e))
+
+### 🚜 Refactor
+
+- *(frontend)* Rely on canonical game dates ([5cb0cc0](https://github.com/huoshen80/ReinaManager/commit/5cb0cc09ad578baf8e46eb6dd314444a48691eca))
+- *(bgm)* Centralize bangumi api base urls ([acc95e3](https://github.com/huoshen80/ReinaManager/commit/acc95e388f7ffbea56ad338832489716ed3138c0))
+
+
 ## [0.21.3](https://github.com/huoshen80/ReinaManager/compare/v0.21.2...v0.21.3) (2026-05-24)
 
 <details>
