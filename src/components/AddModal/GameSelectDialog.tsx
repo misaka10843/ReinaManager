@@ -81,7 +81,7 @@ export function extractDisplayInfo(
 		name_cn: data?.name_cn || null,
 		image: data?.image || null,
 		developer: data?.developer || null,
-		date: item.date || null,
+		date: data && "date" in data ? data.date || null : null,
 		sourceLabel,
 	};
 }

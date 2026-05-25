@@ -264,7 +264,6 @@ function transformYmData(
 	return {
 		ymgal_id: String(ymData.gid),
 		...(update_batch ? {} : { id_type: "ymgal" }),
-		date: ymData.releaseDate,
 		ymgal_data,
 	};
 }
@@ -302,6 +301,7 @@ export async function fetchYmByName(
 	// 将列表数据转换为统一格式（不包含详细信息）
 	const results = data.result.map((item: YmGameListItem): GameCandidateData => {
 		const ymgal_data: YmgalData = {
+			date: item.releaseDate,
 			image: item.mainImg,
 			name: item.name,
 			name_cn: item.chineseName,
@@ -312,7 +312,6 @@ export async function fetchYmByName(
 		return {
 			ymgal_id: String(item.id),
 			id_type: "ymgal",
-			date: item.releaseDate,
 			ymgal_data,
 		};
 	});

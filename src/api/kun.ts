@@ -257,7 +257,6 @@ export async function fetchGalgameById(
 		return {
 			...kunResult,
 			vndb_data: vndbResult.vndb_data,
-			date: vndbResult.date,
 		};
 	} catch (error) {
 		if (import.meta.env.DEV) {

@@ -201,7 +201,6 @@ function transformVndbData(
 	return {
 		vndb_id: VNDBdata.id,
 		...(update_batch ? {} : { id_type: "vndb" }),
-		date: releasedDate,
 		vndb_data,
 	};
 }

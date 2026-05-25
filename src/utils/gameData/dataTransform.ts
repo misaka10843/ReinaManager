@@ -43,7 +43,6 @@ const assignBasicFields = (
 		summary?: string | null;
 		developer?: string | null;
 		nsfw?: boolean | null;
-		date?: string | null;
 	},
 ) => {
 	if (source.name != null) target.name = source.name;
@@ -51,7 +50,6 @@ const assignBasicFields = (
 	if (source.summary != null) target.summary = source.summary;
 	if (source.developer != null) target.developer = source.developer;
 	if (source.nsfw != null) target.nsfw = source.nsfw;
-	if (source.date != null) target.date = source.date;
 };
 
 /**
@@ -286,9 +284,6 @@ function applyCustomDataOverride(target: GameData, customData: CustomData) {
 	}
 	if (customData.nsfw != null) {
 		target.nsfw = customData.nsfw;
-	}
-	if (customData.date) {
-		target.date = customData.date;
 	}
 
 	// 数组字段增量合并

@@ -95,7 +95,6 @@ const transformBgmData = (BGMdata: any): GameCandidateData => {
 	const baseData = {
 		bgm_id: String(BGMdata.id),
 		id_type: "bgm",
-		date: BGMdata.date,
 	};
 
 	// 处理 aliases 字段：可能是数组或字符串

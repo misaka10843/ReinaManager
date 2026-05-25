@@ -147,7 +147,6 @@ export interface CustomData {
 	tags?: Nullable<string[]>;
 	developer?: Nullable<string>;
 	nsfw?: Nullable<boolean>;
-	date?: Nullable<string>;
 }
 
 // ==================== 游戏数据类型（DTO 三位一体） ====================
@@ -186,15 +185,15 @@ export function isSourceType(value: string): value is SourceType {
  */
 export type IdType = apiSourceType | "custom" | "Whitecloud";
 
-interface BaseGameDataPayload {
-	// --- 外部 ID ---
+interface GameIdentityPayload {
 	bgm_id?: string;
 	vndb_id?: string;
 	ymgal_id?: string;
 	kun_id?: string;
 	id_type?: IdType | string;
+}
 
-	// --- 核心状态 ---
+interface GameRuntimePayload {
 	localpath?: Nullable<string>;
 	savepath?: Nullable<string>;
 	autosave?: number;
@@ -202,19 +201,19 @@ interface BaseGameDataPayload {
 	clear?: number;
 	le_launch?: number;
 	magpie?: number;
+}
 
-	// --- JSON Payload (嵌入式元数据) ---
+interface GameMetadataPayload {
 	bgm_data?: Nullable<BgmData>;
 	vndb_data?: Nullable<VndbData>;
 	ymgal_data?: Nullable<YmgalData>;
 	kun_data?: Nullable<KunData>;
 	custom_data?: Nullable<CustomData>;
-
-	// --- 时间类（只读） ---
-	date?: string;
-	created_at?: number;
-	updated_at?: number;
 }
+
+type GamePayload = GameIdentityPayload &
+	GameRuntimePayload &
+	GameMetadataPayload;
 
 /**
  * 完整游戏数据 - 对应数据库 games 表结构（读取用）
@@ -222,15 +221,18 @@ interface BaseGameDataPayload {
  * 这是后端返回的原始数据格式，用于 UI 渲染和数据展示。
  * 所有元数据以 JSON 列形式嵌入，数据库主键必定存在。
  */
-export interface FullGameData extends BaseGameDataPayload {
+export interface FullGameData extends GamePayload {
 	// --- 主键 ---
 	id: number;
+	date?: string;
+	created_at?: number;
+	updated_at?: number;
 }
 
 /**
  * 游戏候选数据 - 来自外部 API 或添加链路，尚未写入数据库
  */
-export interface GameCandidateData extends BaseGameDataPayload {
+export interface GameCandidateData extends GamePayload {
 	id?: never;
 }
 
@@ -242,30 +244,13 @@ export interface GameCandidateData extends BaseGameDataPayload {
  * - 不包含 created_at/updated_at（由数据库自动设置）
  * - id_type 是必需的
  */
-export interface InsertGameParams {
-	// --- 外部 ID ---
-	bgm_id?: string;
-	vndb_id?: string;
-	ymgal_id?: string;
-	kun_id?: string;
+export interface InsertGameParams
+	extends Omit<GameIdentityPayload, "id_type">,
+		Omit<GameRuntimePayload, "localpath" | "savepath">,
+		GameMetadataPayload {
 	id_type: IdType | string; // 必需字段
-
-	// --- 核心状态 ---
-	date?: string;
 	localpath?: string;
 	savepath?: string;
-	autosave?: number;
-	maxbackups?: number;
-	clear?: number;
-	le_launch?: number;
-	magpie?: number;
-
-	// --- JSON Payload ---
-	bgm_data?: BgmData;
-	vndb_data?: VndbData;
-	ymgal_data?: YmgalData;
-	kun_data?: KunData;
-	custom_data?: CustomData;
 }
 
 /**
@@ -329,22 +314,14 @@ export interface UpdateSettingsParams {
  * 所有字段已展平，用于组件直接消费
  * 注意：所有可选字段使用 undefined（与 Rust 后端保持一致）
  */
-export interface GameData {
+export interface GameData
+	extends GameIdentityPayload,
+		Omit<GameRuntimePayload, "localpath" | "savepath"> {
 	// 基础字段
 	id: number;
-	bgm_id?: string;
-	vndb_id?: string;
-	ymgal_id?: string;
-	kun_id?: string;
-	id_type?: string;
 	date?: string;
 	localpath?: string;
 	savepath?: string;
-	autosave?: number;
-	maxbackups?: number;
-	clear?: number;
-	le_launch?: number;
-	magpie?: number;
 	custom_data?: CustomData;
 	created_at?: number;
 	updated_at?: number;

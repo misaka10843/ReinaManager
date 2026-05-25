@@ -63,7 +63,6 @@ export interface MixedSourceListResult {
 interface MixedSourceMergeRule {
 	source: SourceType;
 	resultKey: keyof MixedSourceResult;
-	getDate: (game: GameCandidateData) => string | undefined;
 }
 
 export type MixedSourceCandidates = Record<SourceType, GameCandidateData[]>;
@@ -76,22 +75,18 @@ const mixedSourceMergeRules: readonly MixedSourceMergeRule[] = [
 	{
 		source: "bgm",
 		resultKey: "bgm_data",
-		getDate: (game) => game.bgm_data?.date,
 	},
 	{
 		source: "vndb",
 		resultKey: "vndb_data",
-		getDate: (game) => game.vndb_data?.date,
 	},
 	{
 		source: "ymgal",
 		resultKey: "ymgal_data",
-		getDate: (game) => game.ymgal_data?.date,
 	},
 	{
 		source: "kun",
 		resultKey: "kun_data",
-		getDate: (game) => game.vndb_data?.date,
 	},
 ];
 
@@ -117,25 +112,6 @@ function mergeSourceIntoGame(
 	assignGameField(target, source, dataKey);
 }
 
-/**
- * 从多个数据源的结果中合并日期信息
- * 优先级：BGM > VNDB > YMGal
- */
-function mergeDateFromMixedResult(
-	result: MixedSourceResult,
-): string | undefined {
-	// 合并日期信息，优先级由规则数组的顺序决定
-	for (const rule of mixedSourceMergeRules) {
-		const sourceGame = result[rule.resultKey];
-		const date = sourceGame ? rule.getDate(sourceGame) : undefined;
-		if (date) {
-			return date;
-		}
-	}
-
-	return undefined;
-}
-
 export function mergeMixedResult(
 	result: MixedSourceResult,
 ): GameCandidateData | null {
@@ -151,11 +127,6 @@ export function mergeMixedResult(
 		}
 		hasMergedSource = true;
 		mergeSourceIntoGame(mergedGame, sourceGame, rule.source);
-	}
-
-	const mergedDate = mergeDateFromMixedResult(result);
-	if (mergedDate) {
-		mergedGame.date = mergedDate;
 	}
 
 	if (!hasMergedSource) {
@@ -202,14 +173,6 @@ export function buildGameFromMixedSelection(params: {
 			id_type: source,
 		};
 		mergeSourceIntoGame(result, game, source);
-
-		const date =
-			mixedSourceMergeRules
-				.find((rule) => rule.source === source)
-				?.getDate(game) ?? game.date;
-		if (date) {
-			result.date = date;
-		}
 
 		return result;
 	}
@@ -331,7 +294,6 @@ export async function buildInsertGameData(
 		ymgal_id: gameData.ymgal_id,
 		kun_id: gameData.kun_id,
 		id_type: gameData.id_type || "mixed",
-		date: gameData.date,
 		localpath: gameData.localpath ?? undefined,
 		bgm_data: gameData.bgm_data ?? undefined,
 		vndb_data: gameData.vndb_data ?? undefined,
@@ -398,18 +360,16 @@ export function buildGameInfoUpdatePayload(
 	const originalDeveloper = originalGame.developer ?? "";
 	const originalNsfw = getGameNsfwStatus(originalGame) ?? false;
 	const originalDate = originalGame.date ?? "";
-	const nextCustomData: CustomData = { ...currentCustomData };
-	let customDataChanged = false;
+	let nextCustomData: CustomData | undefined;
+	const customData = () => (nextCustomData ??= { ...currentCustomData });
 
 	const nameDiff = getDiff(draft.newName, currentCustomName);
 	if (nameDiff !== undefined) {
-		nextCustomData.name = nameDiff;
-		customDataChanged = true;
+		customData().name = nameDiff;
 	}
 
 	if (draft.newImageExt !== undefined) {
-		nextCustomData.image = draft.newImageExt;
-		customDataChanged = true;
+		customData().image = draft.newImageExt;
 	}
 
 	if (draft.newAliases !== undefined) {
@@ -418,52 +378,46 @@ export function buildGameInfoUpdatePayload(
 			currentCustomData.aliases,
 		);
 		if (aliasesDiff !== undefined) {
-			nextCustomData.aliases = aliasesDiff;
-			customDataChanged = true;
+			customData().aliases = aliasesDiff;
 		}
 	}
 
 	if (draft.newSummary !== undefined) {
 		const summaryDiff = getDiff(draft.newSummary, originalSummary);
 		if (summaryDiff !== undefined) {
-			nextCustomData.summary = summaryDiff;
-			customDataChanged = true;
+			customData().summary = summaryDiff;
 		}
 	}
 
 	if (draft.newTags !== undefined) {
 		const tagsDiff = getArrayDiff(draft.newTags, currentCustomData.tags);
 		if (tagsDiff !== undefined) {
-			nextCustomData.tags = tagsDiff;
-			customDataChanged = true;
+			customData().tags = tagsDiff;
 		}
 	}
 
 	if (draft.newDeveloper !== undefined) {
 		const developerDiff = getDiff(draft.newDeveloper, originalDeveloper);
 		if (developerDiff !== undefined) {
-			nextCustomData.developer = developerDiff;
-			customDataChanged = true;
+			customData().developer = developerDiff;
 		}
 	}
 
 	if (draft.newNsfw !== undefined) {
 		const nsfwDiff = getBoolDiff(draft.newNsfw, originalNsfw);
 		if (nsfwDiff !== undefined) {
-			nextCustomData.nsfw = nsfwDiff;
-			customDataChanged = true;
+			customData().nsfw = nsfwDiff;
 		}
 	}
 
 	if (draft.newDate !== undefined) {
 		const dateDiff = getDiff(draft.newDate, originalDate);
 		if (dateDiff !== undefined) {
-			nextCustomData.date = dateDiff;
-			customDataChanged = true;
+			payload.date = dateDiff;
 		}
 	}
 
-	if (customDataChanged) {
+	if (nextCustomData) {
 		payload.custom_data = nextCustomData;
 	}
 
