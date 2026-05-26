@@ -30,10 +30,11 @@ export const handleOpenFolder = async (
 	}
 };
 
-export const handleFolder = async () => {
+export const handleFolder = async (defaultPath: string = "") => {
 	const selectedPath = await openDirectory({
 		multiple: false,
 		directory: true,
+		defaultPath: defaultPath,
 		filters: [
 			{
 				name: t("utils.handleDirectory.folder", "文件夹"),
@@ -143,22 +144,6 @@ export const handleDroppedPath = async (
 		);
 		return null;
 	}
-};
-
-export const handleGetFolder = async (defaultPath?: string) => {
-	const selectedPath = await openDirectory({
-		multiple: false,
-		directory: true,
-		defaultPath: defaultPath,
-		filters: [
-			{
-				name: "存档文件夹",
-				extensions: ["*"],
-			},
-		],
-	});
-	if (selectedPath === null) return null;
-	return selectedPath;
 };
 
 /**

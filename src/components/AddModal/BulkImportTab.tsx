@@ -29,7 +29,7 @@ import type { apiSourceType, GameCandidateData, SourceType } from "@/types";
 import { createAbortableRunner, isAbortError } from "@/utils/async";
 import { isBgmAuthExpiredError, withBgmAuth } from "@/utils/bgmAuthSession";
 import { getUserErrorMessage, isApiRateLimitError } from "@/utils/errors";
-import { handleGetFolder } from "@/utils/fs/fileDialog";
+import { handleFolder } from "@/utils/fs/fileDialog";
 import { ApiSourceRadioGroup } from "./ApiSourceRadioGroup";
 import BulkImportResultTable, {
 	type BulkImportItem,
@@ -172,7 +172,7 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 	}, [isMatchingMetadata, onClose, t]);
 
 	const scanFolder = async () => {
-		const result = await handleGetFolder();
+		const result = await handleFolder();
 		if (!result) return;
 
 		setRootPath(result);

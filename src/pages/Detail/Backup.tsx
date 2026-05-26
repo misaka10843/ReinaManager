@@ -30,7 +30,7 @@ import { useSaveDataResources } from "@/hooks/queries/useSavedata";
 import { snackbar } from "@/providers/snackBar";
 import type { GameData, SavedataRecord } from "@/types";
 import { getUserErrorMessage } from "@/utils/errors";
-import { handleGetFolder } from "@/utils/fs/fileDialog";
+import { handleFolder } from "@/utils/fs/fileDialog";
 import {
 	openGameBackupFolder,
 	openGameSaveDataFolder,
@@ -159,7 +159,7 @@ function BackupContent({ selectedGame, gameId }: BackupContentProps) {
 
 	// 选择存档文件夹
 	const handleSelectSaveDataPath = async () => {
-		const selectedPath = await handleGetFolder();
+		const selectedPath = await handleFolder(saveDataPath);
 		if (selectedPath) {
 			setSaveDataPath(selectedPath);
 		}

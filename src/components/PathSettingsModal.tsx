@@ -31,13 +31,13 @@ import InputLabel from "@mui/material/InputLabel";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import { open as openfile } from "@tauri-apps/plugin-dialog";
+import { dirname } from "pathe";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAllSettings, useUpdateSettings } from "@/hooks/queries/useSettings";
 import { snackbar } from "@/providers/snackBar";
 import { getUserErrorMessage } from "@/utils/errors";
-import { handleGetFolder } from "@/utils/fs/fileDialog";
+import { handleExeFile, handleFolder } from "@/utils/fs/fileDialog";
 import { getAppDataDirPath } from "@/utils/fs/pathCache";
 import { moveBackupFolder } from "@/utils/fs/savedataBackup";
 
@@ -125,7 +125,7 @@ export const PathSettingsModal: React.FC<PathSettingsModalProps> = ({
 	 */
 	const handleSelectFolder = async (key: keyof PathSettingsDraft) => {
 		try {
-			const selectedPath = await handleGetFolder();
+			const selectedPath = await handleFolder(draft[key]);
 			if (selectedPath) {
 				updateDraft(key, selectedPath);
 			}
@@ -145,21 +145,13 @@ export const PathSettingsModal: React.FC<PathSettingsModalProps> = ({
 	/**
 	 * 选择文件的通用处理函数
 	 */
-	const handleSelectFile = async (
-		key: keyof PathSettingsDraft,
-		fileTypes: string[],
-	) => {
+	const handleSelectExeFile = async (key: keyof PathSettingsDraft) => {
 		try {
-			const selectedPath = await openfile({
-				multiple: false,
-				filters: [
-					{
-						name: "Executable Files",
-						extensions: fileTypes,
-					},
-				],
-			});
-			if (selectedPath && !Array.isArray(selectedPath)) {
+			const currentPath = draft[key];
+			const selectedPath = await handleExeFile(
+				currentPath ? dirname(currentPath) : "",
+			);
+			if (selectedPath) {
 				updateDraft(key, selectedPath);
 			}
 		} catch (error) {
@@ -327,7 +319,7 @@ export const PathSettingsModal: React.FC<PathSettingsModalProps> = ({
 							/>
 							<Button
 								variant="outlined"
-								onClick={() => handleSelectFile("lePath", ["exe"])}
+								onClick={() => handleSelectExeFile("lePath")}
 								disabled={isLoading}
 								startIcon={<FolderOpenIcon />}
 								className="px-4 py-2"
@@ -378,7 +370,7 @@ export const PathSettingsModal: React.FC<PathSettingsModalProps> = ({
 							/>
 							<Button
 								variant="outlined"
-								onClick={() => handleSelectFile("magpiePath", ["exe"])}
+								onClick={() => handleSelectExeFile("magpiePath")}
 								disabled={isLoading}
 								startIcon={<FolderOpenIcon />}
 								className="px-4 py-2"
