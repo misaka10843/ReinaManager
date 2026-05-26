@@ -82,7 +82,10 @@
 			"editMetadata": "ゲーム情報を編集",
 			"executable": "実行ファイル",
 			"gamesCount_other": "全 {{count}} 件",
-			"importAll": "すべてインポート",
+			"importAsCustom_other": "カスタムとしてインポート（{{count}}）",
+			"importAsCustomConfirmMessage_other": "一致済み以外の {{count}} 件をカスタムゲームとしてインポートします。名前とローカルパスのみ保存され、メタデータは含まれません。続行しますか？",
+			"importAsCustomConfirmTitle": "カスタムとしてインポート",
+			"importMatched_other": "一致済みをインポート（{{count}}）",
 			"importPartialFailed": "{{failed}} 件のゲームのインポートに失敗しました",
 			"importSummary": "{{total}} 件中 {{success}} 件のゲームをインポートしました",
 			"matchCancelled": "マッチングタスクをキャンセルしました",
@@ -335,6 +338,7 @@
 	"errors": {
 		"authFailed": "認証に失敗しました。資格情報または権限を確認してください",
 		"badRequest": "リクエスト内容が不正です。確認して再試行してください",
+		"bgmRateLimited": "Bangumi のリクエストが制限されています。現在のタスクは停止しました。1時間後に手動で再試行してください",
 		"bgmTokenRequired": "BGM Token が必要です。先に設定してください",
 		"invalidGameId": "ゲーム ID の形式が不正です",
 		"invokeFailed": "アプリ内部コマンドの呼び出しに失敗しました。後でもう一度お試しください",
@@ -343,10 +347,12 @@
 		"mixedSourcesFailed": "すべてのデータソースへのリクエストに失敗しました",
 		"notFound": "対象の内容が見つかりませんでした",
 		"requestFailed": "リクエストに失敗しました。後でもう一度お試しください",
+		"requestRateLimited": "リクエストが多すぎます。後でもう一度お試しください",
 		"responseParseFailed": "レスポンスの解析に失敗しました。後でもう一度お試しください",
 		"unknownError": "不明なエラー",
 		"unsupportedSource": "サポートされていないデータソースです",
-		"updatePlayStatusFailed": "プレイ状態の更新に失敗しました"
+		"updatePlayStatusFailed": "プレイ状態の更新に失敗しました",
+		"vndbRateLimited": "VNDB のリクエストが多すぎます。短時間待っても失敗したため、後でもう一度お試しください"
 	},
 	"home": {
 		"activity": {

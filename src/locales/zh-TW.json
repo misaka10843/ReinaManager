@@ -82,7 +82,10 @@
 			"editMetadata": "編輯遊戲資訊",
 			"executable": "啟動程式",
 			"gamesCount_other": "共 {{count}} 個遊戲",
-			"importAll": "全部匯入",
+			"importAsCustom_other": "匯入為自訂（{{count}}）",
+			"importAsCustomConfirmMessage_other": "將把已匹配以外的 {{count}} 個項目作為自訂遊戲匯入，僅保存名稱和本地路徑，不包含中繼資料。是否繼續？",
+			"importAsCustomConfirmTitle": "匯入為自訂",
+			"importMatched_other": "匯入已匹配（{{count}}）",
 			"importPartialFailed": "{{failed}} 個遊戲匯入失敗",
 			"importSummary": "成功匯入 {{success}}/{{total}} 個遊戲",
 			"matchCancelled": "已取消匹配任務",
@@ -335,6 +338,7 @@
 	"errors": {
 		"authFailed": "認證失敗，請檢查憑證或權限",
 		"badRequest": "請求參數有誤，請檢查後再試",
+		"bgmRateLimited": "Bangumi 請求被限速，當前任務已停止，請 1 小時後手動重試",
 		"bgmTokenRequired": "缺少 BGM Token，請先完成設定後再試",
 		"invalidGameId": "遊戲 ID 格式無效",
 		"invokeFailed": "應用內部呼叫失敗，請稍後再試",
@@ -343,10 +347,12 @@
 		"mixedSourcesFailed": "所有資料來源請求都失敗了",
 		"notFound": "找不到相關內容",
 		"requestFailed": "請求失敗，請稍後再試",
+		"requestRateLimited": "請求過於頻繁，請稍後再試",
 		"responseParseFailed": "回應解析失敗，請稍後再試",
 		"unknownError": "未知錯誤",
 		"unsupportedSource": "不支援的資料來源",
-		"updatePlayStatusFailed": "更新遊戲狀態失敗"
+		"updatePlayStatusFailed": "更新遊戲狀態失敗",
+		"vndbRateLimited": "VNDB 請求過於頻繁，短暫停頓後仍失敗，請稍後再試"
 	},
 	"home": {
 		"activity": {

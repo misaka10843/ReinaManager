@@ -19,6 +19,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { gameMetadataService } from "@/api";
+import { AlertBox } from "@/components/AlertBox";
 import { useMetadataSearchFlow } from "@/hooks/common/useMetadataSearchFlow";
 import { useBulkGameAddActions } from "@/hooks/features/games/useGameMetadataFacade";
 import { useAllSettings } from "@/hooks/queries/useSettings";
@@ -87,9 +88,16 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 	const [editName, setEditName] = useState("");
 	const [editApiSource, setEditApiSource] =
 		useState<apiSourceType>(defaultBulkApiSource);
+	const [customImportConfirmOpen, setCustomImportConfirmOpen] = useState(false);
 	const editSearchAbortControllerRef = useRef<AbortController | null>(null);
 	const matchAbortControllerRef = useRef<AbortController | null>(null);
 	const loading = isMatchingMetadata || isScanningDirectories || isAddingGames;
+	const matchedImportCount = items.filter(
+		(item) => item.status === "matched",
+	).length;
+	const customImportCount = items.filter(
+		(item) => item.status !== "matched",
+	).length;
 
 	useEffect(() => {
 		return () => {
@@ -146,6 +154,7 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 		setEditItemPath(null);
 		setEditName("");
 		setEditApiSource(defaultBulkApiSource);
+		setCustomImportConfirmOpen(false);
 		metadataSearchFlow.reset();
 	}, [defaultBulkApiSource, metadataSearchFlow]);
 
@@ -279,19 +288,29 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 		}
 	};
 
-	const handleImportAll = async () => {
+	const importBulkItems = async (
+		importItems: { item: BulkImportItem; originalIndex: number }[],
+	) => {
 		const nextItems = [...items];
 
-		const result = await addGamesFromBulkImport(nextItems);
+		const result = await addGamesFromBulkImport(
+			importItems.map(({ item }) => item),
+		);
 
 		for (const index of result.duplicateItemIndices) {
-			nextItems[index].status = "error";
+			const originalIndex = importItems[index]?.originalIndex;
+			if (originalIndex !== undefined) {
+				nextItems[originalIndex].status = "error";
+			}
 		}
 
 		for (const preparationError of result.preparationErrors) {
-			nextItems[preparationError.itemIndex].status = "error";
+			const originalIndex =
+				importItems[preparationError.itemIndex]?.originalIndex;
+			if (originalIndex === undefined) continue;
+			nextItems[originalIndex].status = "error";
 			snackbar.warning(
-				`${nextItems[preparationError.itemIndex].name}: ${preparationError.message}`,
+				`${nextItems[originalIndex].name}: ${preparationError.message}`,
 			);
 		}
 
@@ -309,9 +328,12 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 			);
 
 			for (const { itemIndex, payloadIndex } of result.pendingPayloads) {
-				nextItems[itemIndex].status = failedIndices.has(payloadIndex)
-					? "error"
-					: "imported";
+				const originalIndex = importItems[itemIndex]?.originalIndex;
+				if (originalIndex !== undefined) {
+					nextItems[originalIndex].status = failedIndices.has(payloadIndex)
+						? "error"
+						: "imported";
+				}
 			}
 
 			if (result.batchResult.success > 0) {
@@ -321,7 +343,7 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 						"成功导入 {{success}}/{{total}} 个游戏",
 						{
 							success: result.batchResult.success,
-							total: nextItems.length, // 去重逻辑在前端执行
+							total: importItems.length, // 去重逻辑在前端执行
 						},
 					),
 				);
@@ -343,11 +365,33 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 		if (result.mutationError) {
 			snackbar.error(result.mutationError);
 			for (const { itemIndex } of result.pendingPayloads) {
-				nextItems[itemIndex].status = "error";
+				const originalIndex = importItems[itemIndex]?.originalIndex;
+				if (originalIndex !== undefined) {
+					nextItems[originalIndex].status = "error";
+				}
 			}
 		}
 
 		setItems(nextItems.filter((item) => item.status !== "imported"));
+	};
+
+	const handleImportMatched = () =>
+		importBulkItems(
+			items
+				.map((item, originalIndex) => ({ item, originalIndex }))
+				.filter(({ item }) => item.status === "matched"),
+		);
+
+	const handleImportCustom = () => {
+		setCustomImportConfirmOpen(false);
+		return importBulkItems(
+			items
+				.map((item, originalIndex) => ({
+					item: { ...item, matchedData: undefined },
+					originalIndex,
+				}))
+				.filter(({ item }) => item.status !== "matched"),
+		);
 	};
 
 	const handleEditRowSearch = async () => {
@@ -568,11 +612,26 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 						</Button>
 						<Button
 							variant="contained"
-							onClick={handleImportAll}
-							disabled={items.length === 0 || loading}
+							onClick={handleImportMatched}
+							disabled={matchedImportCount === 0 || loading}
 							startIcon={loading ? <CircularProgress size={20} /> : undefined}
 						>
-							{t("components.BulkImportModal.importAll", "全部导入")}
+							{t(
+								"components.BulkImportModal.importMatched",
+								"导入已匹配（{{count}}）",
+								{ count: matchedImportCount },
+							)}
+						</Button>
+						<Button
+							variant="outlined"
+							onClick={() => setCustomImportConfirmOpen(true)}
+							disabled={customImportCount === 0 || loading}
+						>
+							{t(
+								"components.BulkImportModal.importAsCustom",
+								"导入为自定义（{{count}}）",
+								{ count: customImportCount },
+							)}
 						</Button>
 					</Stack>
 				</Stack>
@@ -666,6 +725,23 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 					title={t("components.BulkImportModal.editMetadata", "编辑游戏信息")}
 				/>
 			)}
+			<AlertBox
+				open={customImportConfirmOpen}
+				setOpen={setCustomImportConfirmOpen}
+				title={t(
+					"components.BulkImportModal.importAsCustomConfirmTitle",
+					"导入为自定义",
+				)}
+				message={t(
+					"components.BulkImportModal.importAsCustomConfirmMessage",
+					"将把已匹配以外的 {{count}} 个项目作为自定义游戏导入，仅保存名称和本地路径，不包含元数据。是否继续？",
+					{ count: customImportCount },
+				)}
+				onConfirm={handleImportCustom}
+				confirmText={t("common.confirm", "确认")}
+				confirmVariant="contained"
+				isLoading={isAddingGames}
+			/>
 		</>
 	);
 };
