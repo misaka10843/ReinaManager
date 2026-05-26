@@ -27,6 +27,7 @@ interface SearchMetadataParams {
 	source: apiSourceType;
 	defaults?: Partial<GameCandidateData>;
 	withAbort?: <T>(promise: Promise<T>) => Promise<T>;
+	signal?: AbortSignal;
 }
 
 interface MetadataSearchFlowOptions {
@@ -112,7 +113,13 @@ export function useMetadataSearchFlow({
 	}, [closeMixedCandidates, closeSearchResult]);
 
 	const searchMetadata = useCallback(
-		async ({ query, source, defaults, withAbort }: SearchMetadataParams) => {
+		async ({
+			query,
+			source,
+			defaults,
+			withAbort,
+			signal,
+		}: SearchMetadataParams) => {
 			setIsSearching(true);
 			setLastMixedDefaults(defaults);
 
@@ -126,6 +133,7 @@ export function useMetadataSearchFlow({
 									bgmToken: token ?? undefined,
 									mixedEnabledSources,
 									defaults,
+									signal,
 								});
 							return withAbort
 								? withAbort(candidatesPromise)
@@ -154,6 +162,7 @@ export function useMetadataSearchFlow({
 										source,
 										bgmToken: token,
 										defaults,
+										signal,
 									});
 									return withAbort ? withAbort(searchPromise) : searchPromise;
 								},
@@ -165,12 +174,14 @@ export function useMetadataSearchFlow({
 											query,
 											source,
 											defaults,
+											signal,
 										}),
 									)
 								: gameMetadataService.searchGames({
 										query,
 										source,
 										defaults,
+										signal,
 									}));
 
 				if (results.length === 0) {

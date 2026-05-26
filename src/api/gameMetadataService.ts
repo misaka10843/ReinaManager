@@ -93,6 +93,7 @@ export interface GameSearchParams {
 	bgmToken?: string; // BGM API访问令牌
 	defaults?: Partial<GameCandidateData>; // UI 相关默认值，会合并到返回的候选数据中
 	mixedEnabledSources?: readonly SourceType[]; // mixed 模式下允许请求的数据源
+	signal?: AbortSignal;
 }
 
 interface SelectionDetailEnrichRule {
@@ -124,7 +125,8 @@ class GameMetadataService {
 	 * - source 未指定：mixed 名称搜索，返回各源第一个结果
 	 */
 	async searchGames(params: GameSearchParams): Promise<GameCandidateData[]> {
-		const { query, source, bgmToken, defaults, mixedEnabledSources } = params;
+		const { query, source, bgmToken, defaults, mixedEnabledSources, signal } =
+			params;
 
 		return source
 			? this.searchSingleSource(
@@ -133,8 +135,15 @@ class GameMetadataService {
 					bgmToken,
 					defaults,
 					this.shouldUseIdSearch(query, source),
+					signal,
 				)
-			: this.searchMixed(query, bgmToken, defaults, mixedEnabledSources);
+			: this.searchMixed(
+					query,
+					bgmToken,
+					defaults,
+					mixedEnabledSources,
+					signal,
+				);
 	}
 
 	/**
@@ -154,13 +163,14 @@ class GameMetadataService {
 		bgmToken: string | undefined,
 		defaults: Partial<GameCandidateData> | undefined,
 		isIdSearch: boolean,
+		signal?: AbortSignal,
 	): Promise<GameCandidateData[]> {
 		if (isIdSearch) {
-			const game = await this.getGameById(query, source, bgmToken);
+			const game = await this.getGameById(query, source, bgmToken, signal);
 			return [this.applyDefaults(game, defaults)];
 		}
 
-		const results = await this.searchByName(query, source, bgmToken);
+		const results = await this.searchByName(query, source, bgmToken, signal);
 		return results.map((game) => this.applyDefaults(game, defaults));
 	}
 
@@ -172,11 +182,13 @@ class GameMetadataService {
 		bgmToken: string | undefined,
 		defaults: Partial<GameCandidateData> | undefined,
 		mixedEnabledSources?: readonly SourceType[],
+		signal?: AbortSignal,
 	): Promise<GameCandidateData[]> {
 		const result = await this.getMixedGameByName(
 			query,
 			bgmToken,
 			mixedEnabledSources,
+			signal,
 		);
 		if (!result) {
 			return [];
@@ -193,14 +205,16 @@ class GameMetadataService {
 		bgmToken?: string;
 		defaults?: Partial<GameCandidateData>;
 		mixedEnabledSources?: readonly SourceType[];
+		signal?: AbortSignal;
 	}): Promise<MixedSourceCandidates> {
-		const { query, bgmToken, defaults, mixedEnabledSources } = params;
+		const { query, bgmToken, defaults, mixedEnabledSources, signal } = params;
 
 		try {
 			const result = await fetchMixedData({
 				name: query,
 				bgmToken,
 				enabledSources: mixedEnabledSources,
+				signal,
 			});
 
 			return {
@@ -233,6 +247,7 @@ class GameMetadataService {
 		id: string,
 		source: SourceType,
 		bgmToken?: string,
+		signal?: AbortSignal,
 	): Promise<GameCandidateData> {
 		if (import.meta.env.DEV) {
 			console.log(`[MetadataService] getGameById called:`, {
@@ -250,13 +265,13 @@ class GameMetadataService {
 							"Bangumi token is required for Bangumi lookup",
 						);
 					}
-					return await fetchBgmById(id, bgmToken);
+					return await fetchBgmById(id, bgmToken, signal);
 				case "vndb":
-					return await fetchVndbById(id);
+					return await fetchVndbById(id, signal);
 				case "ymgal":
-					return await fetchYmById(id);
+					return await fetchYmById(id, signal);
 				case "kun":
-					return await fetchGalgameById(id);
+					return await fetchGalgameById(id, { signal });
 				default:
 					return assertNever(source);
 			}
@@ -376,6 +391,7 @@ class GameMetadataService {
 		name: string,
 		source: SourceType,
 		bgmToken?: string,
+		signal?: AbortSignal,
 	): Promise<GameCandidateData[]> {
 		try {
 			switch (source) {
@@ -386,13 +402,13 @@ class GameMetadataService {
 							"Bangumi token is required for Bangumi lookup",
 						);
 					}
-					return await fetchBgmByName(name, bgmToken);
+					return await fetchBgmByName(name, bgmToken, 25, signal);
 				case "vndb":
-					return await fetchVndbByName(name);
+					return await fetchVndbByName(name, undefined, 25, signal);
 				case "ymgal":
-					return await fetchYmByName(name);
+					return await fetchYmByName(name, 1, 20, false, signal);
 				case "kun":
-					return await searchGalgame(name);
+					return await searchGalgame(name, 1, 12, false, { signal });
 				default:
 					return assertNever(source);
 			}
@@ -412,12 +428,14 @@ class GameMetadataService {
 		name: string,
 		bgmToken?: string,
 		enabledSources?: readonly SourceType[],
+		signal?: AbortSignal,
 	): Promise<GameCandidateData | null> {
 		try {
 			const result = await fetchMixedData({
 				name,
 				bgmToken,
 				enabledSources,
+				signal,
 			});
 
 			return mergeMixedResult(pickFirstMixedResult(result));

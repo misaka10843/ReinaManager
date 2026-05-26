@@ -28,7 +28,7 @@ import { getEnabledMixedSources, useStore } from "@/store/appStore";
 import type { apiSourceType, GameCandidateData, SourceType } from "@/types";
 import { createAbortableRunner, isAbortError } from "@/utils/async";
 import { isBgmAuthExpiredError, withBgmAuth } from "@/utils/bgmAuthSession";
-import { getUserErrorMessage } from "@/utils/errors";
+import { getUserErrorMessage, isApiRateLimitError } from "@/utils/errors";
 import { handleGetFolder } from "@/utils/fs/fileDialog";
 import { ApiSourceRadioGroup } from "./ApiSourceRadioGroup";
 import BulkImportResultTable, {
@@ -232,6 +232,7 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 												query: nextItems[index].name,
 												source: bulkApiSource,
 												bgmToken: token,
+												signal: controller.signal,
 											}),
 										),
 									{ required: true },
@@ -240,6 +241,7 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 									gameMetadataService.searchGames({
 										query: nextItems[index].name,
 										source: bulkApiSource,
+										signal: controller.signal,
 									}),
 								);
 
@@ -256,6 +258,10 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 					if (isBgmAuthExpiredError(error)) {
 						break;
 					}
+					if (isApiRateLimitError(error)) {
+						snackbar.warning(getUserErrorMessage(error, t));
+						break;
+					}
 
 					snackbar.warning(
 						`${nextItems[index].name}: ${getUserErrorMessage(error, t)}`,
@@ -264,7 +270,6 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 				}
 
 				setItems([...nextItems]);
-				await new Promise((resolve) => setTimeout(resolve, 300));
 			}
 		} finally {
 			if (matchAbortControllerRef.current === controller) {
@@ -360,6 +365,7 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 				query: editName,
 				source: editApiSource,
 				withAbort,
+				signal: controller.signal,
 			});
 		} catch (error) {
 			if (isAbortError(error)) {
