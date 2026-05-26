@@ -14,7 +14,10 @@ export type AppErrorCode =
 	| "mixed_sources_failed"
 	| "http_response_error"
 	| "http_response_parse_failed"
+	| "api_rate_limited"
 	| "metadata_request_failed";
+
+type ApiRateLimitSource = "bgm" | "vndb" | "ymgal" | "kun";
 
 interface AppErrorOptions {
 	code: AppErrorCode | string;
@@ -67,6 +70,68 @@ export class HttpResponseError extends AppError {
 		this.status = status;
 		this.statusText = statusText;
 	}
+}
+
+interface ApiRateLimitErrorOptions {
+	source: ApiRateLimitSource;
+	message: string;
+	retryAfterMs?: number;
+	backoffUntil?: number;
+	fatal?: boolean;
+	cause?: unknown;
+}
+
+export class ApiRateLimitError extends AppError {
+	source: ApiRateLimitSource;
+	retryAfterMs?: number;
+	backoffUntil?: number;
+	fatal: boolean;
+
+	constructor({
+		source,
+		message,
+		retryAfterMs,
+		backoffUntil,
+		fatal = false,
+		cause,
+	}: ApiRateLimitErrorOptions) {
+		super({
+			code: "api_rate_limited",
+			message,
+			cause,
+			name: "ApiRateLimitError",
+		});
+		this.source = source;
+		this.retryAfterMs = retryAfterMs;
+		this.backoffUntil = backoffUntil;
+		this.fatal = fatal;
+	}
+}
+
+export function isApiRateLimitError(
+	error: unknown,
+	depth = 0,
+): error is ApiRateLimitError {
+	return getApiRateLimitError(error, depth) !== null;
+}
+
+function getApiRateLimitError(
+	error: unknown,
+	depth = 0,
+): ApiRateLimitError | null {
+	if (depth > 8) {
+		return null;
+	}
+
+	if (error instanceof ApiRateLimitError) {
+		return error;
+	}
+
+	if (error instanceof AppError && error.cause) {
+		return getApiRateLimitError(error.cause, depth + 1);
+	}
+
+	return null;
 }
 
 export function toError(error: unknown, fallback = "Unknown error"): Error {
@@ -133,11 +198,33 @@ function getAppErrorDetailMessage(error: AppError): string {
 	return "";
 }
 
+function getRateLimitUserMessage(error: ApiRateLimitError, t: TFunction) {
+	switch (error.source) {
+		case "bgm":
+			return t(
+				"errors.bgmRateLimited",
+				"Bangumi 请求被限速，当前任务已停止，请 1 小时后手动重试",
+			);
+		case "vndb":
+			return t(
+				"errors.vndbRateLimited",
+				"VNDB 请求过于频繁，短暂停顿后仍失败，请稍后重试",
+			);
+		default:
+			return t("errors.requestRateLimited", "请求过于频繁，请稍后重试");
+	}
+}
+
 export function getUserErrorMessage(
 	error: unknown,
 	t: TFunction,
 	fallback?: string,
 ): string {
+	const rateLimitError = getApiRateLimitError(error);
+	if (rateLimitError) {
+		return getRateLimitUserMessage(rateLimitError, t);
+	}
+
 	if (error instanceof HttpResponseError) {
 		if (error.status === 401) {
 			return t("errors.authFailed", "认证失败，请检查凭证或权限");
@@ -165,6 +252,8 @@ export function getUserErrorMessage(
 				return t("errors.mixedSourcesFailed", "所有数据源请求均失败");
 			case "metadata_request_failed":
 				return t("errors.metadataRequestFailed", "获取元数据失败，请稍后重试");
+			case "api_rate_limited":
+				return t("errors.requestRateLimited", "请求过于频繁，请稍后重试");
 			case "http_response_parse_failed":
 				return t("errors.responseParseFailed", "响应解析失败，请稍后重试");
 			case "tauri_invoke_failed":

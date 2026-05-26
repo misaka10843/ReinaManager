@@ -17,14 +17,28 @@
 
 import { version } from "@pkg";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
-import { AppError, HttpResponseError, toError } from "@/utils/errors";
+import {
+	ApiRateLimitError,
+	AppError,
+	HttpResponseError,
+	toError,
+} from "@/utils/errors";
+import {
+	type ApiRateLimitedRequestOptions,
+	type ApiRateLimitSource,
+	handleApiRateLimited,
+	markApiRequestSucceeded,
+	scheduleApiRequest,
+} from "./rateLimit";
 
 export const USER_AGENT = `huoshen80/ReinaManager/${version} (https://github.com/huoshen80/ReinaManager)`;
 
-interface TauriHttpOptions {
+export interface TauriHttpOptions {
 	headers?: Record<string, string>;
 	params?: Record<string, unknown>;
 	allowRetry?: boolean;
+	rateLimit?: ApiRateLimitedRequestOptions;
+	signal?: AbortSignal;
 }
 
 interface TauriHttpResponse<T = unknown> {
@@ -86,23 +100,69 @@ async function requestTauriHttp<T>(
 ): Promise<TauriHttpResponse<T>> {
 	const fullUrl =
 		method === "GET" ? buildUrlWithParams(url, options?.params) : url;
+	const rateLimitSource =
+		options?.rateLimit?.source ?? inferRateLimitSource(url);
 
-	if (import.meta.env.DEV) {
-		console.log(`[TauriHTTP] ${method} ${fullUrl}`, {
-			headers: options?.headers,
-			body: data,
+	const fetchResponse = () => {
+		if (import.meta.env.DEV) {
+			console.log(`[TauriHTTP] ${method} ${fullUrl}`, {
+				headers: options?.headers,
+				body: data,
+			});
+		}
+
+		return tauriFetch(fullUrl, {
+			method,
+			headers: {
+				...(method === "GET" ? {} : { "Content-Type": "application/json" }),
+				...options?.headers,
+			},
+			body:
+				method === "GET" || data === undefined
+					? undefined
+					: JSON.stringify(data),
+			signal: options?.signal,
 		});
-	}
+	};
 
-	const response = await tauriFetch(fullUrl, {
-		method,
-		headers: {
-			...(method === "GET" ? {} : { "Content-Type": "application/json" }),
-			...options?.headers,
-		},
-		body:
-			method === "GET" || data === undefined ? undefined : JSON.stringify(data),
-	});
+	let response: Response;
+	let attempt = 0;
+	try {
+		while (true) {
+			response = rateLimitSource
+				? await scheduleApiRequest(
+						rateLimitSource,
+						fetchResponse,
+						options?.signal,
+					)
+				: await fetchResponse();
+
+			if (response.status !== 429 || !rateLimitSource) {
+				break;
+			}
+
+			const handling = handleApiRateLimited(
+				rateLimitSource,
+				response.headers,
+				attempt,
+			);
+			if (!handling.shouldRetry) {
+				throw new ApiRateLimitError({
+					source: rateLimitSource,
+					message: getApiRateLimitErrorMessage(rateLimitSource),
+					retryAfterMs: handling.retryAfterMs,
+					backoffUntil: handling.backoffUntil,
+					fatal: handling.fatal,
+				});
+			}
+			attempt += 1;
+		}
+	} catch (error) {
+		if (import.meta.env.DEV) {
+			console.error(`[TauriHTTP Failed] ${method} ${fullUrl}`, error);
+		}
+		throw error;
+	}
 
 	if (!response.ok) {
 		if (import.meta.env.DEV) {
@@ -118,6 +178,9 @@ async function requestTauriHttp<T>(
 			statusText: response.statusText,
 		});
 	}
+	if (rateLimitSource) {
+		markApiRequestSucceeded(rateLimitSource);
+	}
 
 	const parsedData = await parseTauriResponse<T>(response, method, fullUrl);
 
@@ -131,6 +194,31 @@ async function requestTauriHttp<T>(
 		statusText: response.statusText,
 		headers: Array.from(response.headers.entries()),
 	};
+}
+
+function inferRateLimitSource(url: string): ApiRateLimitSource | undefined {
+	try {
+		const host = new URL(url).host;
+		if (host === "api.bgm.tv") return "bgm";
+		if (host === "api.vndb.org") return "vndb";
+		if (host === "www.ymgal.games") return "ymgal";
+		if (host === "www.kungal.com") return "kun";
+	} catch {
+		return undefined;
+	}
+}
+
+function getApiRateLimitErrorMessage(source: ApiRateLimitSource): string {
+	switch (source) {
+		case "bgm":
+			return "Bangumi 请求被限速，当前任务已停止，请 1 小时后手动重试";
+		case "vndb":
+			return "VNDB 请求过于频繁，短暂停顿后仍失败，请稍后重试";
+		case "ymgal":
+			return "YMGal 请求被限速，请稍后重试";
+		case "kun":
+			return "Kungal 请求被限速，请稍后重试";
+	}
 }
 
 /**
