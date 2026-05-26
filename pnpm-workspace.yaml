@@ -1,4 +1,4 @@
-minimumReleaseAge: 5760
+minimumReleaseAge: 1440
 minimumReleaseAgeStrict: true
 minimumReleaseAgeIgnoreMissingTime: false
 
@@ -12,3 +12,5 @@ allowBuilds:
   "@biomejs/biome": true
   "@swc/core": true
   esbuild: false
+
+verifyDepsBeforeRun: warn
