@@ -16,8 +16,8 @@
 
 import { useStore } from "@/store/appStore";
 import type { GameCandidateData, VndbData } from "@/types";
-import { AppError } from "@/utils/errors";
-import http, { USER_AGENT } from "./http";
+import { AppError, isApiRateLimitError } from "@/utils/errors";
+import http, { type TauriHttpOptions, USER_AGENT } from "./http";
 
 const VNDB_API_BASE = "https://api.vndb.org/kana";
 const VNDB_JSON_HEADERS = {
@@ -30,20 +30,27 @@ const VNDB_FIELDS =
 	"id,titles{title,lang,main},aliases,image{url},released,rating,tags{name,rating,spoiler},description,developers{name},length_minutes";
 const VNDB_USER_COLLECTION_FIELDS = "id, labels{id, label}";
 
-function buildVndbHeaders() {
+function buildVndbRateLimitedOptions(signal?: AbortSignal): TauriHttpOptions {
 	return {
 		headers: {
 			...VNDB_JSON_HEADERS,
 		},
+		rateLimit: { source: "vndb" as const },
+		signal,
 	};
 }
 
-function buildVndbAuthHeaders(token: string) {
+function buildVndbRateLimitedAuthOptions(
+	token: string,
+	signal?: AbortSignal,
+): TauriHttpOptions {
 	return {
 		headers: {
 			...VNDB_JSON_HEADERS,
 			Authorization: `Token ${token}`,
 		},
+		rateLimit: { source: "vndb" as const },
+		signal,
 	};
 }
 
@@ -130,12 +137,16 @@ export interface UpdateVndbUserCollectionPayload {
 	labels_unset?: number[];
 }
 
-async function resolveVndbUserId(token: string, userId?: string) {
+async function resolveVndbUserId(
+	token: string,
+	userId?: string,
+	signal?: AbortSignal,
+) {
 	if (userId) {
 		return userId;
 	}
 
-	const authInfo = await fetchVndbCurrentUserProfile(token);
+	const authInfo = await fetchVndbCurrentUserProfile(token, signal);
 	return authInfo?.id ?? null;
 }
 
@@ -220,6 +231,7 @@ export async function fetchVndbByName(
 	name: string,
 	id?: string,
 	limit = 25,
+	signal?: AbortSignal,
 ): Promise<GameCandidateData[]> {
 	// 构建 API 请求体
 	const requestBody = {
@@ -235,7 +247,7 @@ export async function fetchVndbByName(
 		await http.post<{ results: RawVNDBData[] }>(
 			`${VNDB_API_BASE}/vn`,
 			requestBody,
-			buildVndbHeaders(),
+			buildVndbRateLimitedOptions(signal),
 		)
 	).data.results;
 
@@ -252,8 +264,11 @@ export async function fetchVndbByName(
  * @param {string} id VNDB 游戏 ID（如 "v17"）。
  * @returns {Promise<GameCandidateData>} 包含游戏详细信息的对象。
  */
-export async function fetchVndbById(id: string): Promise<GameCandidateData> {
-	const result = await fetchVndbByName("", id);
+export async function fetchVndbById(
+	id: string,
+	signal?: AbortSignal,
+): Promise<GameCandidateData> {
+	const result = await fetchVndbByName("", id, 25, signal);
 	if (result.length === 0) {
 		throw new AppError({
 			code: "metadata_not_found",
@@ -279,14 +294,14 @@ export async function fetchVndbById(id: string): Promise<GameCandidateData> {
  */
 export async function fetchVNDBByIds(
 	ids: string[],
+	signal?: AbortSignal,
 ): Promise<GameCandidateData[]> {
 	if (ids.length === 0) {
 		return [];
 	}
 
-	// 分批处理，每批最多 100 个 ID，并限制并发以降低触发 VNDB 限流的概率
+	// 分批处理，每批最多 100 个 ID；请求节奏由统一限速队列控制。
 	const batchSize = 100;
-	const batchConcurrency = 3;
 	const batches: string[][] = [];
 
 	for (let i = 0; i < ids.length; i += batchSize) {
@@ -309,7 +324,7 @@ export async function fetchVNDBByIds(
 		const response = await http.post<{ results: RawVNDBData[] }>(
 			`${VNDB_API_BASE}/vn`,
 			requestBody,
-			buildVndbHeaders(),
+			buildVndbRateLimitedOptions(signal),
 		);
 
 		const results = response.data.results;
@@ -325,31 +340,16 @@ export async function fetchVNDBByIds(
 
 	const allResults: GameCandidateData[] = [];
 
-	for (let i = 0; i < batches.length; i += batchConcurrency) {
-		const batchResults = await Promise.allSettled(
-			batches.slice(i, i + batchConcurrency).map((batch) => fetchBatch(batch)),
-		);
-		const failedBatches = batchResults
-			.map((result, index) =>
-				result.status === "rejected" ? i + index + 1 : null,
-			)
-			.filter((batchNumber): batchNumber is number => batchNumber !== null);
-
-		if (failedBatches.length > 0) {
+	for (let i = 0; i < batches.length; i++) {
+		try {
+			allResults.push(...(await fetchBatch(batches[i])));
+		} catch (error) {
+			if (isApiRateLimitError(error)) throw error;
 			throw new AppError({
 				code: "metadata_request_failed",
-				message: `VNDB batch fetch failed for batch(es): ${failedBatches.join(", ")}`,
-				cause: batchResults.find(
-					(result): result is PromiseRejectedResult =>
-						result.status === "rejected",
-				)?.reason,
+				message: `VNDB batch fetch failed for batch: ${i + 1}`,
+				cause: error,
 			});
-		}
-
-		for (const result of batchResults) {
-			if (result.status === "fulfilled") {
-				allResults.push(...result.value);
-			}
 		}
 	}
 
@@ -363,16 +363,18 @@ export async function fetchVNDBByIds(
  */
 export async function fetchVndbCurrentUserProfile(
 	token: string,
+	signal?: AbortSignal,
 ): Promise<VndbAuthInfo | null> {
 	if (!token) return null;
 
 	try {
 		const response = await http.get<VndbAuthInfo>(
 			`${VNDB_API_BASE}/authinfo`,
-			buildVndbAuthHeaders(token),
+			buildVndbRateLimitedAuthOptions(token, signal),
 		);
 		return response.data;
-	} catch {
+	} catch (error) {
+		if (isApiRateLimitError(error)) throw error;
 		return null;
 	}
 }
@@ -386,6 +388,7 @@ export async function fetchVndbCurrentUserProfile(
 export async function fetchVndbUserLabels(
 	token: string,
 	userId?: string,
+	signal?: AbortSignal,
 ): Promise<VndbUserLabel[]> {
 	if (!token) return [];
 
@@ -393,14 +396,15 @@ export async function fetchVndbUserLabels(
 		const response = await http.get<{ labels: VndbUserLabel[] }>(
 			`${VNDB_API_BASE}/ulist_labels`,
 			{
-				...buildVndbAuthHeaders(token),
+				...buildVndbRateLimitedAuthOptions(token, signal),
 				params: userId
 					? { user: userId, fields: "count" }
 					: { fields: "count" },
 			},
 		);
 		return Array.isArray(response.data?.labels) ? response.data.labels : [];
-	} catch {
+	} catch (error) {
+		if (isApiRateLimitError(error)) throw error;
 		return [];
 	}
 }
@@ -416,11 +420,12 @@ export async function fetchVndbUserCollection(
 	vndbId: string,
 	token: string,
 	userId?: string,
+	signal?: AbortSignal,
 ): Promise<VndbUserCollectionItem | null> {
 	if (!token || !vndbId) return null;
 
 	try {
-		const resolvedUserId = await resolveVndbUserId(token, userId);
+		const resolvedUserId = await resolveVndbUserId(token, userId, signal);
 		if (!resolvedUserId) return null;
 
 		const response = await http.post<{ results: VndbUserCollectionItem[] }>(
@@ -431,7 +436,7 @@ export async function fetchVndbUserCollection(
 				fields: VNDB_USER_COLLECTION_FIELDS,
 				results: 1,
 			},
-			buildVndbAuthHeaders(token),
+			buildVndbRateLimitedAuthOptions(token, signal),
 		);
 
 		const results = Array.isArray(response.data?.results)
@@ -439,7 +444,8 @@ export async function fetchVndbUserCollection(
 			: [];
 
 		return results[0] ?? null;
-	} catch {
+	} catch (error) {
+		if (isApiRateLimitError(error)) throw error;
 		return null;
 	}
 }
@@ -471,7 +477,8 @@ export async function fetchVndbUserCollections(
 		}
 
 		return collections;
-	} catch {
+	} catch (error) {
+		if (isApiRateLimitError(error)) throw error;
 		return [];
 	}
 }
@@ -483,6 +490,7 @@ export async function fetchVndbUserCollectionsPage(
 		page: number;
 		count?: boolean;
 	},
+	signal?: AbortSignal,
 ): Promise<VndbUserCollectionsPage> {
 	const response = await http.post<VndbUserCollectionsResponse>(
 		`${VNDB_API_BASE}/ulist`,
@@ -493,7 +501,7 @@ export async function fetchVndbUserCollectionsPage(
 			page: params.page,
 			...(params.count ? { count: true } : {}),
 		},
-		buildVndbAuthHeaders(token),
+		buildVndbRateLimitedAuthOptions(token, signal),
 	);
 
 	return {
@@ -514,6 +522,7 @@ export async function updateVndbUserCollection(
 	vndbId: string,
 	payload: UpdateVndbUserCollectionPayload,
 	token: string,
+	signal?: AbortSignal,
 ): Promise<boolean> {
 	if (!token || !vndbId) return false;
 
@@ -521,10 +530,11 @@ export async function updateVndbUserCollection(
 		await http.patch(
 			`${VNDB_API_BASE}/ulist/${vndbId}`,
 			payload,
-			buildVndbAuthHeaders(token),
+			buildVndbRateLimitedAuthOptions(token, signal),
 		);
 		return true;
-	} catch {
+	} catch (error) {
+		if (isApiRateLimitError(error)) throw error;
 		return false;
 	}
 }

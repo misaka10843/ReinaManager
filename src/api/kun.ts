@@ -10,7 +10,7 @@ import i18next from "i18next";
 import { useStore } from "@/store/appStore";
 import type { GameCandidateData, KunData } from "@/types";
 import { AppError } from "@/utils/errors";
-import http, { USER_AGENT } from "./http";
+import http, { type TauriHttpOptions, USER_AGENT } from "./http";
 import { fetchVndbById } from "./vndb";
 
 const KUN_API_BASE = "https://www.kungal.com/api";
@@ -70,6 +70,7 @@ type KunLocaleKey = keyof KunLanguage;
 
 interface KunFetchOptions {
 	enrichVndb?: boolean;
+	signal?: AbortSignal;
 }
 
 const KUN_LOCALE_ORDER: KunLocaleKey[] = ["zh-cn", "ja-jp", "en-us", "zh-tw"];
@@ -170,12 +171,17 @@ function computeNsfw(payload: GalgameDetailResponse): boolean {
 	return contentLimitNsfw || payload.ageLimit === "r18";
 }
 
-function buildKunAuthHeaders() {
+function buildKunRateLimitedOptions(
+	options: TauriHttpOptions = {},
+): TauriHttpOptions {
 	return {
+		...options,
 		headers: {
 			...KUN_JSON_HEADERS,
 			"Content-Type": "application/json",
+			...options.headers,
 		},
+		rateLimit: { source: "kun" },
 	};
 }
 
@@ -228,15 +234,18 @@ export async function fetchGalgameById(
 	id: string,
 	options: KunFetchOptions = {},
 ): Promise<GameCandidateData> {
-	const { enrichVndb = true } = options;
+	const { enrichVndb = true, signal } = options;
 	const url = `${KUN_API_BASE}/galgame/${id}`;
 
-	const resp = await http.get<GalgameDetailResponse>(url, {
-		params: {
-			galgameId: Number(id),
-		},
-		...buildKunAuthHeaders(),
-	});
+	const resp = await http.get<GalgameDetailResponse>(
+		url,
+		buildKunRateLimitedOptions({
+			params: {
+				galgameId: Number(id),
+			},
+			signal,
+		}),
+	);
 
 	if (!resp.data || resp.data.code === 233) {
 		throw new AppError({
@@ -252,7 +261,7 @@ export async function fetchGalgameById(
 	}
 
 	try {
-		const vndbResult = await fetchVndbById(kunResult.vndb_id);
+		const vndbResult = await fetchVndbById(kunResult.vndb_id, signal);
 
 		return {
 			...kunResult,
@@ -293,15 +302,18 @@ export async function searchGalgame(
 	fetchDetailById = false,
 	options: KunFetchOptions = {},
 ): Promise<GameCandidateData[]> {
-	const resp = await http.get<SearchResultGalgame[]>(`${KUN_API_BASE}/search`, {
-		params: {
-			keywords,
-			type: "galgame",
-			page,
-			limit,
-		},
-		...buildKunAuthHeaders(),
-	});
+	const resp = await http.get<SearchResultGalgame[]>(
+		`${KUN_API_BASE}/search`,
+		buildKunRateLimitedOptions({
+			params: {
+				keywords,
+				type: "galgame",
+				page,
+				limit,
+			},
+			signal: options.signal,
+		}),
+	);
 
 	if (!Array.isArray(resp.data)) {
 		throw new AppError({

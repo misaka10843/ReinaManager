@@ -18,7 +18,12 @@
  * - fetchMultiSourceData：多数据源搜索和获取的统一接口
  */
 
-import { AppError, isHttpStatus, toError } from "@/utils/errors";
+import {
+	AppError,
+	isApiRateLimitError,
+	isHttpStatus,
+	toError,
+} from "@/utils/errors";
 import type { GameCandidateData, SourceType } from "../types";
 import { fetchBgmById, fetchBgmByName } from "./bgm";
 import { fetchGalgameById, searchGalgame } from "./kun";
@@ -42,17 +47,19 @@ async function getBangumiDataSafely(
 	name: string,
 	bgmToken: string,
 	bgm_id?: string,
+	signal?: AbortSignal,
 ): Promise<SafeFetchResult> {
 	try {
 		if (bgm_id) {
 			return {
-				data: [await fetchBgmById(bgm_id, bgmToken)],
+				data: [await fetchBgmById(bgm_id, bgmToken, signal)],
 				failed: false,
 			};
 		}
-		const result = await fetchBgmByName(name, bgmToken);
+		const result = await fetchBgmByName(name, bgmToken, 25, signal);
 		return { data: result, failed: false };
 	} catch (error) {
+		if (isApiRateLimitError(error)) throw error;
 		if (isHttpStatus(error, 401)) throw error;
 		return { data: [], failed: true };
 	}
@@ -62,14 +69,19 @@ async function getBangumiDataSafely(
 async function getVNDBDataSafely(
 	searchName: string,
 	vndb_id?: string,
+	signal?: AbortSignal,
 ): Promise<SafeFetchResult> {
 	try {
 		if (vndb_id) {
-			return { data: [await fetchVndbById(vndb_id)], failed: false };
+			return {
+				data: [await fetchVndbById(vndb_id, signal)],
+				failed: false,
+			};
 		}
-		const result = await fetchVndbByName(searchName);
+		const result = await fetchVndbByName(searchName, undefined, 25, signal);
 		return { data: result, failed: false };
-	} catch {
+	} catch (error) {
+		if (isApiRateLimitError(error)) throw error;
 		return { data: [], failed: true };
 	}
 }
@@ -78,14 +90,16 @@ async function getVNDBDataSafely(
 async function getYmgalDataSafely(
 	searchName: string,
 	ymgal_id?: string,
+	signal?: AbortSignal,
 ): Promise<SafeFetchResult> {
 	try {
 		if (ymgal_id) {
-			return { data: [await fetchYmById(ymgal_id)], failed: false };
+			return { data: [await fetchYmById(ymgal_id, signal)], failed: false };
 		}
-		const result = await fetchYmByName(searchName);
+		const result = await fetchYmByName(searchName, 1, 20, false, signal);
 		return { data: result, failed: false };
-	} catch {
+	} catch (error) {
+		if (isApiRateLimitError(error)) throw error;
 		return { data: [], failed: true };
 	}
 }
@@ -94,19 +108,22 @@ async function getYmgalDataSafely(
 async function getKungalDataSafely(
 	searchName: string,
 	kun_id?: string,
+	signal?: AbortSignal,
 ): Promise<SafeFetchResult> {
 	try {
 		if (kun_id) {
 			return {
-				data: [await fetchGalgameById(kun_id, { enrichVndb: false })],
+				data: [await fetchGalgameById(kun_id, { enrichVndb: false, signal })],
 				failed: false,
 			};
 		}
 		const result = await searchGalgame(searchName, 1, 12, false, {
 			enrichVndb: false,
+			signal,
 		});
 		return { data: result, failed: false };
-	} catch {
+	} catch (error) {
+		if (isApiRateLimitError(error)) throw error;
 		return { data: [], failed: true };
 	}
 }
@@ -149,9 +166,18 @@ export async function fetchMixedData(options: {
 	name?: string;
 	bgmToken?: string;
 	enabledSources?: readonly SourceType[];
+	signal?: AbortSignal;
 }) {
-	const { bgm_id, vndb_id, ymgal_id, kun_id, name, bgmToken, enabledSources } =
-		options;
+	const {
+		bgm_id,
+		vndb_id,
+		ymgal_id,
+		kun_id,
+		name,
+		bgmToken,
+		enabledSources,
+		signal,
+	} = options;
 	const enableBgm = isSourceEnabled(enabledSources, "bgm");
 	const enableVndb = isSourceEnabled(enabledSources, "vndb");
 	const enableYmgal = isSourceEnabled(enabledSources, "ymgal");
@@ -172,16 +198,16 @@ export async function fetchMixedData(options: {
 		let kunResult: SafeFetchResult = { data: [], failed: false };
 
 		if (enableBgm && bgm_id && bgmToken) {
-			bgmResult = await getBangumiDataSafely("", bgmToken, bgm_id);
+			bgmResult = await getBangumiDataSafely("", bgmToken, bgm_id, signal);
 			searchName = extractNameFromApi(bgmResult.data[0]);
 		} else if (enableVndb && vndb_id) {
-			vndbResult = await getVNDBDataSafely("", vndb_id);
+			vndbResult = await getVNDBDataSafely("", vndb_id, signal);
 			searchName = extractNameFromApi(vndbResult.data[0]);
 		} else if (enableYmgal && ymgal_id) {
-			ymgalResult = await getYmgalDataSafely("", ymgal_id);
+			ymgalResult = await getYmgalDataSafely("", ymgal_id, signal);
 			searchName = extractNameFromApi(ymgalResult.data[0]);
 		} else if (enableKun && kun_id) {
-			kunResult = await getKungalDataSafely("", kun_id);
+			kunResult = await getKungalDataSafely("", kun_id, signal);
 			searchName = extractNameFromApi(kunResult.data[0]);
 		}
 
@@ -189,16 +215,16 @@ export async function fetchMixedData(options: {
 			const [nextBgmResult, nextVndbResult, nextYmgalResult, nextKunResult] =
 				await Promise.all([
 					enableBgm && bgmResult.data.length === 0 && bgmToken
-						? getBangumiDataSafely(searchName, bgmToken)
+						? getBangumiDataSafely(searchName, bgmToken, undefined, signal)
 						: Promise.resolve(bgmResult),
 					enableVndb && vndbResult.data.length === 0
-						? getVNDBDataSafely(searchName)
+						? getVNDBDataSafely(searchName, undefined, signal)
 						: Promise.resolve(vndbResult),
 					enableYmgal && ymgalResult.data.length === 0
-						? getYmgalDataSafely(searchName)
+						? getYmgalDataSafely(searchName, undefined, signal)
 						: Promise.resolve(ymgalResult),
 					enableKun && kunResult.data.length === 0
-						? getKungalDataSafely(searchName)
+						? getKungalDataSafely(searchName, undefined, signal)
 						: Promise.resolve(kunResult),
 				]);
 			bgmResult = nextBgmResult;
@@ -232,16 +258,16 @@ export async function fetchMixedData(options: {
 		const searchName = name.trim();
 		const [bgmResult, vndbResult, ymgalResult, kunResult] = await Promise.all([
 			enableBgm && bgmToken
-				? getBangumiDataSafely(searchName, bgmToken)
+				? getBangumiDataSafely(searchName, bgmToken, undefined, signal)
 				: Promise.resolve({ data: [], failed: false }),
 			enableVndb
-				? getVNDBDataSafely(searchName)
+				? getVNDBDataSafely(searchName, undefined, signal)
 				: Promise.resolve({ data: [], failed: false }),
 			enableYmgal
-				? getYmgalDataSafely(searchName)
+				? getYmgalDataSafely(searchName, undefined, signal)
 				: Promise.resolve({ data: [], failed: false }),
 			enableKun
-				? getKungalDataSafely(searchName)
+				? getKungalDataSafely(searchName, undefined, signal)
 				: Promise.resolve({ data: [], failed: false }),
 		]);
 

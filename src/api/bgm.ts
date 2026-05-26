@@ -14,8 +14,8 @@
  */
 
 import type { BgmAuth, BgmData, GameCandidateData } from "@/types";
-import { AppError, isHttpStatus } from "@/utils/errors";
-import http, { USER_AGENT } from "./http";
+import { AppError, isApiRateLimitError, isHttpStatus } from "@/utils/errors";
+import http, { type TauriHttpOptions, USER_AGENT } from "./http";
 
 const BGM_API_BASE_URL = "https://api.bgm.tv/v0";
 const BGM_OAUTH_BASE_URL = "https://bgm.tv/oauth";
@@ -74,6 +74,17 @@ function buildBgmAuthHeaders(token: string) {
 			...BGM_JSON_HEADERS,
 			Authorization: `Bearer ${token}`,
 		},
+	};
+}
+
+function buildBgmRateLimitedOptions(
+	token: string,
+	signal?: AbortSignal,
+): TauriHttpOptions {
+	return {
+		...buildBgmAuthHeaders(token),
+		rateLimit: { source: "bgm" as const },
+		signal,
 	};
 }
 
@@ -163,11 +174,12 @@ const transformBgmData = (BGMdata: any): GameCandidateData => {
 export async function fetchBgmById(
 	id: string,
 	token: string,
+	signal?: AbortSignal,
 ): Promise<GameCandidateData> {
 	const BGMdata = (
 		await http.get<BgmSubjectResponse>(
 			`${BGM_API_BASE_URL}/subjects/${id}`,
-			buildBgmAuthHeaders(token),
+			buildBgmRateLimitedOptions(token, signal),
 		)
 	).data;
 
@@ -193,6 +205,7 @@ export async function fetchBgmByName(
 	name: string,
 	token: string,
 	limit = 25,
+	signal?: AbortSignal,
 ): Promise<GameCandidateData[]> {
 	const keyword = name.trim();
 	const resp = (
@@ -205,7 +218,7 @@ export async function fetchBgmByName(
 				},
 				limit: limit,
 			},
-			buildBgmAuthHeaders(token),
+			buildBgmRateLimitedOptions(token, signal),
 		)
 	).data;
 
@@ -218,8 +231,7 @@ export async function fetchBgmByName(
 /**
  * 批量获取 BGM 游戏信息（支持任意数量 ID）
  *
- * 通过多次 API 调用获取多个游戏的信息，自动分批处理以避免频繁请求。
- * 为了避免触发 Bangumi API 频率限制，使用延迟处理。
+ * 通过多次 API 调用获取多个游戏的信息，请求节奏由统一限速队列控制。
  *
  * @param ids BGM 游戏 ID 数组（如 ["123", "456", "789", ...]，支持任意数量）
  * @param token Bangumi API 访问令牌
@@ -233,6 +245,7 @@ export async function fetchBgmByName(
 export async function fetchBgmByIds(
 	ids: string[],
 	token: string,
+	signal?: AbortSignal,
 ): Promise<GameCandidateData[]> {
 	if (ids.length === 0) {
 		return [];
@@ -241,31 +254,20 @@ export async function fetchBgmByIds(
 	const allResults: GameCandidateData[] = [];
 	let hasRequestFailure = false;
 
-	// 逐个请求，避免频繁调用 API
-	// BGM API 对频率有限制，建议间隔 1 秒
-	for (let i = 0; i < ids.length; i++) {
-		const id = ids[i];
-
+	for (const id of ids) {
 		try {
-			// 每 10 个请求后延迟 2 秒，避免触发频率限制
-			if (i > 0 && i % 10 === 0) {
-				await new Promise((resolve) => setTimeout(resolve, 2000));
-			}
-
 			const BGMdata = (
 				await http.get<BgmSubjectResponse>(
 					`${BGM_API_BASE_URL}/subjects/${id}`,
-					buildBgmAuthHeaders(token),
+					buildBgmRateLimitedOptions(token, signal),
 				)
 			).data;
 
 			if (BGMdata?.id) {
 				allResults.push(transformBgmData(BGMdata));
 			}
-
-			// 每个请求之间延迟 200ms
-			await new Promise((resolve) => setTimeout(resolve, 200));
 		} catch (error) {
+			if (isApiRateLimitError(error)) throw error;
 			if (isHttpStatus(error, 401)) throw error;
 			hasRequestFailure = true;
 		}
@@ -286,10 +288,13 @@ export async function fetchBgmByIds(
  * @param token Bangumi API 访问令牌
  * @returns 当前用户资料。
  */
-export async function fetchCurrentUserProfile(token: string) {
+export async function fetchCurrentUserProfile(
+	token: string,
+	signal?: AbortSignal,
+) {
 	const res = await http.get<BgmUserProfile>(
 		`${BGM_API_BASE_URL}/me`,
-		buildBgmAuthHeaders(token),
+		buildBgmRateLimitedOptions(token, signal),
 	);
 	return res.data;
 }
@@ -359,6 +364,7 @@ export async function fetchUserCollection(
 	username: string,
 	subjectId: string,
 	token: string,
+	signal?: AbortSignal,
 ) {
 	try {
 		const res = await http.get<{
@@ -367,7 +373,7 @@ export async function fetchUserCollection(
 			comment?: string;
 		}>(
 			`${BGM_API_BASE_URL}/users/${username}/collections/${subjectId}`,
-			buildBgmAuthHeaders(token),
+			buildBgmRateLimitedOptions(token, signal),
 		);
 		return res.data;
 	} catch (error) {
@@ -407,11 +413,12 @@ export async function fetchUserGameCollectionsPage(
 	username: string,
 	token: string,
 	params: { limit: number; offset: number },
+	signal?: AbortSignal,
 ): Promise<BgmUserCollectionsPage> {
 	const res = await http.get<BgmUserCollectionsResponse>(
 		`${BGM_API_BASE_URL}/users/${username}/collections`,
 		{
-			...buildBgmAuthHeaders(token),
+			...buildBgmRateLimitedOptions(token, signal),
 			params: {
 				subject_type: 4,
 				limit: params.limit,
@@ -437,11 +444,12 @@ export async function updateUserCollection(
 	subjectId: string,
 	type: number,
 	token: string,
+	signal?: AbortSignal,
 ): Promise<boolean> {
 	await http.post(
 		`${BGM_API_BASE_URL}/users/-/collections/${subjectId}`,
 		{ type },
-		buildBgmAuthHeaders(token),
+		buildBgmRateLimitedOptions(token, signal),
 	);
 	// HTTP 204 does not return response body (但是官方api调试文档返回的是202(?))
 	return true;

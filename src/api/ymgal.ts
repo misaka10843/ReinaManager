@@ -16,7 +16,8 @@
 // 注意认证失败重试机制未生效
 import type { GameCandidateData, YmgalData } from "@/types";
 import { AppError, isHttpStatus, toError } from "@/utils/errors";
-import http from "./http";
+import type { TauriHttpOptions } from "./http";
+import http, { USER_AGENT } from "./http";
 
 /**
  * YMGal API 全局配置
@@ -37,6 +38,19 @@ interface TokenCache {
 
 let tokenCache: TokenCache | null = null;
 
+function buildYmgalRateLimitedOptions(
+	options: TauriHttpOptions = {},
+): TauriHttpOptions {
+	return {
+		...options,
+		headers: {
+			"User-Agent": USER_AGENT,
+			...options.headers,
+		},
+		rateLimit: { source: "ymgal" },
+	};
+}
+
 interface YmTokenResponse {
 	access_token: string;
 }
@@ -52,20 +66,24 @@ interface YmApiEnvelope<T> {
  * 获取 YMGal Access Token
  * @returns {Promise<string>} Access Token
  */
-async function getAccessToken(forceRefresh = false): Promise<string> {
+async function getAccessToken(
+	forceRefresh = false,
+	signal?: AbortSignal,
+): Promise<string> {
 	if (!forceRefresh && tokenCache?.token) return tokenCache.token;
 
 	try {
 		const response = await http.get<YmTokenResponse>(
 			`${YMGAL_CONFIG.baseUrl}/oauth/token`,
-			{
+			buildYmgalRateLimitedOptions({
 				params: {
 					grant_type: "client_credentials",
 					client_id: YMGAL_CONFIG.clientId,
 					client_secret: YMGAL_CONFIG.clientSecret,
 					scope: YMGAL_CONFIG.scope,
 				},
-			},
+				signal,
+			}),
 		);
 
 		const { access_token } = response.data;
@@ -95,15 +113,16 @@ async function ymApiRequest<T>(
 	path: string,
 	params: Record<string, unknown> = {},
 	maxRetries = 2,
+	signal?: AbortSignal,
 ): Promise<T> {
 	let lastError: unknown;
 
 	for (let attempt = 0; attempt <= maxRetries; attempt++) {
 		try {
-			const token = await getAccessToken(attempt > 0); // 第一次尝试使用缓存，失败后强制刷新
+			const token = await getAccessToken(attempt > 0, signal); // 第一次尝试使用缓存，失败后强制刷新
 			const response = await http.get<YmApiEnvelope<T>>(
 				`${YMGAL_CONFIG.baseUrl}${path}`,
-				{
+				buildYmgalRateLimitedOptions({
 					params,
 					headers: {
 						Accept: "application/json;charset=utf-8",
@@ -111,7 +130,8 @@ async function ymApiRequest<T>(
 						version: "1",
 					},
 					allowRetry: true, // 允许上层处理重试
-				},
+					signal,
+				}),
 			);
 
 			// 接口异常码 401/403 也视为需要重取 token 的信号
@@ -159,12 +179,13 @@ async function ymApiRequest<T>(
  */
 async function fetchOrganizationName(
 	orgId?: number,
+	signal?: AbortSignal,
 ): Promise<string | undefined> {
 	if (!orgId) return undefined;
 	try {
 		const data = await ymApiRequest<{
 			org?: { chineseName?: string; name?: string };
-		}>("/open/archive", { orgId });
+		}>("/open/archive", { orgId }, 2, signal);
 		const org = data?.org;
 		return org?.chineseName || org?.name || undefined;
 	} catch {
@@ -283,6 +304,7 @@ export async function fetchYmByName(
 	pageNum = 1,
 	pageSize = 20,
 	fetchDetailById = false,
+	signal?: AbortSignal,
 ): Promise<GameCandidateData[]> {
 	const data = await ymApiRequest<{ result?: YmGameListItem[] }>(
 		"/open/archive/search-game",
@@ -292,6 +314,8 @@ export async function fetchYmByName(
 			pageNum: pageNum,
 			pageSize: pageSize,
 		},
+		2,
+		signal,
 	);
 
 	if (!data?.result || data.result.length === 0) {
@@ -320,7 +344,7 @@ export async function fetchYmByName(
 	// 注意：详情请求失败时降级为首条轻量数据，避免上层 mixed 链路整体失败。
 	if (fetchDetailById && results.length > 0 && results[0].ymgal_id) {
 		try {
-			const detailedData = await fetchYmById(results[0].ymgal_id);
+			const detailedData = await fetchYmById(results[0].ymgal_id, signal);
 			return [detailedData];
 		} catch {
 			return [results[0]];
@@ -336,13 +360,14 @@ export async function fetchYmByName(
  * @param {number} gid YMGal 游戏 ID
  * @returns {Promise<GameCandidateData>} 游戏详细信息
  */
-export async function fetchYmById(gid: string): Promise<GameCandidateData> {
+export async function fetchYmById(
+	gid: string,
+	signal?: AbortSignal,
+): Promise<GameCandidateData> {
 	const id = Number(gid.replace(/^ga/i, ""));
 	const data = await ymApiRequest<{
 		game?: YmGameDetail;
-	}>("/open/archive", {
-		gid: id,
-	});
+	}>("/open/archive", { gid: id }, 2, signal);
 
 	if (!data?.game) {
 		throw new AppError({
@@ -355,6 +380,7 @@ export async function fetchYmById(gid: string): Promise<GameCandidateData> {
 	if (result.ymgal_data) {
 		result.ymgal_data.developer = await fetchOrganizationName(
 			data.game?.developerId,
+			signal,
 		);
 	}
 

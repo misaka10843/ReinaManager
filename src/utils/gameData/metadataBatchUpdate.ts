@@ -11,10 +11,7 @@ import { toError } from "@/utils/errors";
 
 async function batchUpdateCommon(
 	type: "vndb" | "bgm",
-	fetchFunction: (
-		ids: string[],
-		token?: string,
-	) => Promise<
+	fetchFunction: (ids: string[]) => Promise<
 		Array<{
 			bgm_id?: string | null;
 			vndb_id?: string | null;
@@ -24,7 +21,6 @@ async function batchUpdateCommon(
 	>,
 	getAllIdsFunction: () => Promise<Array<[number, string]>>,
 	updateKeyName: "vndb_data" | "bgm_data",
-	token?: string,
 ): Promise<{
 	total: number;
 	success: number;
@@ -43,9 +39,7 @@ async function batchUpdateCommon(
 		}
 
 		const ids = idPairs.map(([_, id]) => id);
-		const resultsTemp = token
-			? await fetchFunction(ids, token)
-			: await fetchFunction(ids);
+		const resultsTemp = await fetchFunction(ids);
 		const resultByApiId = new Map<string, (typeof resultsTemp)[number]>();
 		for (const result of resultsTemp) {
 			const apiId = type === "bgm" ? result.bgm_id : result.vndb_id;
@@ -108,7 +102,6 @@ export async function batchUpdateBgmData(): Promise<{
 				(ids: string[]) => fetchBgmByIds(ids, token),
 				() => gameService.getAllBgmIds(),
 				"bgm_data",
-				token,
 			),
 		{ required: true },
 	);
