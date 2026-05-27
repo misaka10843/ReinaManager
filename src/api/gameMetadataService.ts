@@ -93,6 +93,7 @@ export interface GameSearchParams {
 	bgmToken?: string; // BGM API访问令牌
 	defaults?: Partial<GameCandidateData>; // UI 相关默认值，会合并到返回的候选数据中
 	mixedEnabledSources?: readonly SourceType[]; // mixed 模式下允许请求的数据源
+	limit?: number; // 名称搜索返回数量上限
 	signal?: AbortSignal;
 }
 
@@ -125,8 +126,15 @@ class GameMetadataService {
 	 * - source 未指定：mixed 名称搜索，返回各源第一个结果
 	 */
 	async searchGames(params: GameSearchParams): Promise<GameCandidateData[]> {
-		const { query, source, bgmToken, defaults, mixedEnabledSources, signal } =
-			params;
+		const {
+			query,
+			source,
+			bgmToken,
+			defaults,
+			mixedEnabledSources,
+			limit,
+			signal,
+		} = params;
 
 		return source
 			? this.searchSingleSource(
@@ -135,6 +143,7 @@ class GameMetadataService {
 					bgmToken,
 					defaults,
 					this.shouldUseIdSearch(query, source),
+					limit,
 					signal,
 				)
 			: this.searchMixed(
@@ -163,6 +172,7 @@ class GameMetadataService {
 		bgmToken: string | undefined,
 		defaults: Partial<GameCandidateData> | undefined,
 		isIdSearch: boolean,
+		limit?: number,
 		signal?: AbortSignal,
 	): Promise<GameCandidateData[]> {
 		if (isIdSearch) {
@@ -170,7 +180,13 @@ class GameMetadataService {
 			return [this.applyDefaults(game, defaults)];
 		}
 
-		const results = await this.searchByName(query, source, bgmToken, signal);
+		const results = await this.searchByName(
+			query,
+			source,
+			bgmToken,
+			limit,
+			signal,
+		);
 		return results.map((game) => this.applyDefaults(game, defaults));
 	}
 
@@ -391,6 +407,7 @@ class GameMetadataService {
 		name: string,
 		source: SourceType,
 		bgmToken?: string,
+		limit?: number,
 		signal?: AbortSignal,
 	): Promise<GameCandidateData[]> {
 		try {
@@ -402,13 +419,13 @@ class GameMetadataService {
 							"Bangumi token is required for Bangumi lookup",
 						);
 					}
-					return await fetchBgmByName(name, bgmToken, 25, signal);
+					return await fetchBgmByName(name, bgmToken, limit ?? 25, signal);
 				case "vndb":
-					return await fetchVndbByName(name, undefined, 25, signal);
+					return await fetchVndbByName(name, undefined, limit ?? 25, signal);
 				case "ymgal":
-					return await fetchYmByName(name, 1, 20, false, signal);
+					return await fetchYmByName(name, 1, limit ?? 20, false, signal);
 				case "kun":
-					return await searchGalgame(name, 1, 12, false, { signal });
+					return await searchGalgame(name, 1, limit ?? 12, false, { signal });
 				default:
 					return assertNever(source);
 			}

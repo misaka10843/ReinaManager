@@ -62,7 +62,7 @@ const API_RATE_LIMIT_POLICIES: Record<ApiRateLimitSource, ApiRateLimitPolicy> =
 		},
 		ymgal: {
 			source: "ymgal",
-			minIntervalMs: 300,
+			minIntervalMs: 500,
 			defaultBackoffMs: 0,
 			maxBackoffMs: 0,
 			max429Retries: 0,
@@ -70,7 +70,7 @@ const API_RATE_LIMIT_POLICIES: Record<ApiRateLimitSource, ApiRateLimitPolicy> =
 		},
 		kun: {
 			source: "kun",
-			minIntervalMs: 300,
+			minIntervalMs: 500,
 			defaultBackoffMs: 0,
 			maxBackoffMs: 0,
 			max429Retries: 0,

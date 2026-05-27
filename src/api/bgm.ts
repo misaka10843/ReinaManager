@@ -216,9 +216,11 @@ export async function fetchBgmByName(
 				filter: {
 					type: [4], // 4 = 游戏类型
 				},
-				limit: limit,
 			},
-			buildBgmRateLimitedOptions(token, signal),
+			{
+				...buildBgmRateLimitedOptions(token, signal),
+				params: { limit },
+			},
 		)
 	).data;
 

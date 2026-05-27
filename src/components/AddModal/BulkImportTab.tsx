@@ -241,6 +241,7 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 												query: nextItems[index].name,
 												source: bulkApiSource,
 												bgmToken: token,
+												limit: 1,
 												signal: controller.signal,
 											}),
 										),
@@ -250,6 +251,7 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 									gameMetadataService.searchGames({
 										query: nextItems[index].name,
 										source: bulkApiSource,
+										limit: 1,
 										signal: controller.signal,
 									}),
 								);

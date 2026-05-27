@@ -48,6 +48,7 @@ async function getBangumiDataSafely(
 	bgmToken: string,
 	bgm_id?: string,
 	signal?: AbortSignal,
+	limit = 25,
 ): Promise<SafeFetchResult> {
 	try {
 		if (bgm_id) {
@@ -56,7 +57,7 @@ async function getBangumiDataSafely(
 				failed: false,
 			};
 		}
-		const result = await fetchBgmByName(name, bgmToken, 25, signal);
+		const result = await fetchBgmByName(name, bgmToken, limit, signal);
 		return { data: result, failed: false };
 	} catch (error) {
 		if (isApiRateLimitError(error)) throw error;
@@ -70,6 +71,7 @@ async function getVNDBDataSafely(
 	searchName: string,
 	vndb_id?: string,
 	signal?: AbortSignal,
+	limit = 25,
 ): Promise<SafeFetchResult> {
 	try {
 		if (vndb_id) {
@@ -78,7 +80,7 @@ async function getVNDBDataSafely(
 				failed: false,
 			};
 		}
-		const result = await fetchVndbByName(searchName, undefined, 25, signal);
+		const result = await fetchVndbByName(searchName, undefined, limit, signal);
 		return { data: result, failed: false };
 	} catch (error) {
 		if (isApiRateLimitError(error)) throw error;
@@ -91,12 +93,13 @@ async function getYmgalDataSafely(
 	searchName: string,
 	ymgal_id?: string,
 	signal?: AbortSignal,
+	limit = 20,
 ): Promise<SafeFetchResult> {
 	try {
 		if (ymgal_id) {
 			return { data: [await fetchYmById(ymgal_id, signal)], failed: false };
 		}
-		const result = await fetchYmByName(searchName, 1, 20, false, signal);
+		const result = await fetchYmByName(searchName, 1, limit, false, signal);
 		return { data: result, failed: false };
 	} catch (error) {
 		if (isApiRateLimitError(error)) throw error;
@@ -109,6 +112,7 @@ async function getKungalDataSafely(
 	searchName: string,
 	kun_id?: string,
 	signal?: AbortSignal,
+	limit = 12,
 ): Promise<SafeFetchResult> {
 	try {
 		if (kun_id) {
@@ -117,7 +121,7 @@ async function getKungalDataSafely(
 				failed: false,
 			};
 		}
-		const result = await searchGalgame(searchName, 1, 12, false, {
+		const result = await searchGalgame(searchName, 1, limit, false, {
 			enrichVndb: false,
 			signal,
 		});
@@ -215,16 +219,16 @@ export async function fetchMixedData(options: {
 			const [nextBgmResult, nextVndbResult, nextYmgalResult, nextKunResult] =
 				await Promise.all([
 					enableBgm && bgmResult.data.length === 0 && bgmToken
-						? getBangumiDataSafely(searchName, bgmToken, undefined, signal)
+						? getBangumiDataSafely(searchName, bgmToken, undefined, signal, 1)
 						: Promise.resolve(bgmResult),
 					enableVndb && vndbResult.data.length === 0
-						? getVNDBDataSafely(searchName, undefined, signal)
+						? getVNDBDataSafely(searchName, undefined, signal, 1)
 						: Promise.resolve(vndbResult),
 					enableYmgal && ymgalResult.data.length === 0
-						? getYmgalDataSafely(searchName, undefined, signal)
+						? getYmgalDataSafely(searchName, undefined, signal, 1)
 						: Promise.resolve(ymgalResult),
 					enableKun && kunResult.data.length === 0
-						? getKungalDataSafely(searchName, undefined, signal)
+						? getKungalDataSafely(searchName, undefined, signal, 1)
 						: Promise.resolve(kunResult),
 				]);
 			bgmResult = nextBgmResult;

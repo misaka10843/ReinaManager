@@ -98,8 +98,7 @@ async function requestTauriHttp<T>(
 	options?: TauriHttpOptions,
 	data?: unknown,
 ): Promise<TauriHttpResponse<T>> {
-	const fullUrl =
-		method === "GET" ? buildUrlWithParams(url, options?.params) : url;
+	const fullUrl = buildUrlWithParams(url, options?.params);
 	const rateLimitSource =
 		options?.rateLimit?.source ?? inferRateLimitSource(url);
 
