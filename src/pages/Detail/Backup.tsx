@@ -21,6 +21,7 @@ import {
 	Tooltip,
 	Typography,
 } from "@mui/material";
+import { dirname } from "pathe";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertConfirmBox } from "@/components/AlertBox";
@@ -159,7 +160,8 @@ function BackupContent({ selectedGame, gameId }: BackupContentProps) {
 
 	// 选择存档文件夹
 	const handleSelectSaveDataPath = async () => {
-		const selectedPath = await handleFolder(saveDataPath);
+		const defaultPath = dirname(selectedGame.localpath);
+		const selectedPath = await handleFolder(defaultPath);
 		if (selectedPath) {
 			setSaveDataPath(selectedPath);
 		}
