@@ -1,3 +1,55 @@
+## [0.21.5](https://github.com/huoshen80/ReinaManager/compare/v0.21.4...v0.21.5) (2026-05-27)
+
+<details>
+<summary>查看中文版本</summary>
+
+### ⚙️ 杂类任务
+
+- *(pnpm)* 固定 pnpm 和构建策略 ([26714af](https://github.com/huoshen80/ReinaManager/commit/26714afae64e1e276bf1691623b6a48f573a0c7a))
+- 更新 pnpm 11 构建工作流 ([28a12fd](https://github.com/huoshen80/ReinaManager/commit/28a12fd9619ea3fe4464e7883257edd2f6615165))
+- *(workspace)* 更新 pnpm 工作区配置 ([1f8df89](https://github.com/huoshen80/ReinaManager/commit/1f8df89a1621f044cc73cdbce7d9b074d8f43c77))
+
+### ✨ 新功能
+
+- *(api)* 添加统一限速基础设施 ([184005b](https://github.com/huoshen80/ReinaManager/commit/184005b401458b9d66852a514002de1785d353f8))
+- *(api)* 在 API 源中集成限速和中止信号 ([28c5c24](https://github.com/huoshen80/ReinaManager/commit/28c5c2486956ab52e788d6aa63da2f08a2fd2dc6))
+- *(ui)* 通过服务层和 UI 层传播中止信号 ([cff4dd3](https://github.com/huoshen80/ReinaManager/commit/cff4dd3d475536adbcb01ad62964516b4533dab5))
+- *(bulk-import)* 将导入拆分为已匹配和自定义两条路径 ([cb0b16f](https://github.com/huoshen80/ReinaManager/commit/cb0b16f5d15cd019d5e825f4d739a94055f343d2))
+- *(api)* 搜索限制可配置并调整限速参数 ([27bd316](https://github.com/huoshen80/ReinaManager/commit/27bd316ca3cf457c05880e1a0737c805dd375426))
+
+### 🐛 Bug 修复
+
+- *(backup)* 将默认存档路径设为所选游戏所在文件夹 ([5016867](https://github.com/huoshen80/ReinaManager/commit/5016867c38306ee2cf6160b249cf807cc75214e5))
+
+### 🚜 重构
+
+- *(dialog)* 合并文件夹/文件对话框并支持默认路径 ([00b712c](https://github.com/huoshen80/ReinaManager/commit/00b712ceadcbb2ac778f0633125c7dbf0bcc9ade))
+
+</details>
+
+### ⚙️ Miscellaneous Tasks
+
+- *(pnpm)* Pin pnpm and build policy ([26714af](https://github.com/huoshen80/ReinaManager/commit/26714afae64e1e276bf1691623b6a48f573a0c7a))
+- Update build workflows for pnpm 11 ([28a12fd](https://github.com/huoshen80/ReinaManager/commit/28a12fd9619ea3fe4464e7883257edd2f6615165))
+- *(workspace)* Update pnpm workspace config ([1f8df89](https://github.com/huoshen80/ReinaManager/commit/1f8df89a1621f044cc73cdbce7d9b074d8f43c77))
+
+### ✨ Features
+
+- *(api)* Add unified rate limiting infrastructure ([184005b](https://github.com/huoshen80/ReinaManager/commit/184005b401458b9d66852a514002de1785d353f8))
+- *(api)* Integrate rate limiting and abort signals in API sources ([28c5c24](https://github.com/huoshen80/ReinaManager/commit/28c5c2486956ab52e788d6aa63da2f08a2fd2dc6))
+- *(ui)* Propagate abort signals through service and UI layers ([cff4dd3](https://github.com/huoshen80/ReinaManager/commit/cff4dd3d475536adbcb01ad62964516b4533dab5))
+- *(bulk-import)* Split import into matched and custom paths ([cb0b16f](https://github.com/huoshen80/ReinaManager/commit/cb0b16f5d15cd019d5e825f4d739a94055f343d2))
+- *(api)* Make search limit configurable and tune rate limits ([27bd316](https://github.com/huoshen80/ReinaManager/commit/27bd316ca3cf457c05880e1a0737c805dd375426))
+
+### 🐛 Bug Fixes
+
+- *(backup)* Set default save data path to parent of selected game ([5016867](https://github.com/huoshen80/ReinaManager/commit/5016867c38306ee2cf6160b249cf807cc75214e5))
+
+### 🚜 Refactor
+
+- *(dialog)* Consolidate folder/file dialogs and pass defaultPath ([00b712c](https://github.com/huoshen80/ReinaManager/commit/00b712ceadcbb2ac778f0633125c7dbf0bcc9ade))
+
+
 ## [0.21.4](https://github.com/huoshen80/ReinaManager/compare/v0.21.3...v0.21.4) (2026-05-25)
 
 <details>
