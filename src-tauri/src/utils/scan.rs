@@ -226,8 +226,14 @@ fn scan_games_blocking(
     dirs.sort_by_key(|p| p.components().count());
 
     let mut selected: Vec<PathBuf> = Vec::new();
+    let mut selected_dirs: HashSet<PathBuf> = HashSet::new();
     for dir in dirs {
-        if !selected.iter().any(|s| dir.starts_with(s) && dir != *s) {
+        if !dir
+            .ancestors()
+            .skip(1)
+            .any(|ancestor| selected_dirs.contains(ancestor))
+        {
+            selected_dirs.insert(dir.clone());
             selected.push(dir);
         }
     }
