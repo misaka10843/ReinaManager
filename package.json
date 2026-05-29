@@ -8,6 +8,7 @@
 		"build": "tsc -b && vite build",
 		"preview": "vite preview",
 		"tauri": "tauri",
+		"tauri:dev-cdp": "powershell -ExecutionPolicy Bypass -File ./scripts/dev-cdp.ps1",
 		"typecheck": "tsgo -b --noEmit",
 		"format": "biome format --write .",
 		"lint": "biome check .",
