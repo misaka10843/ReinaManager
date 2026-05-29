@@ -70,6 +70,13 @@ class FileService extends BaseService {
 	}
 
 	/**
+	 * 从剪贴板导入图片到临时文件
+	 */
+	async importClipboardImageToTemp(gameId: number): Promise<string> {
+		return this.invoke<string>("import_clipboard_image_to_temp", { gameId });
+	}
+
+	/**
 	 * 删除指定游戏的自定义封面
 	 */
 	async deleteGameCovers(gameId: number, coversDir: string): Promise<void> {

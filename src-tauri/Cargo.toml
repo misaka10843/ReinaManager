@@ -42,7 +42,7 @@ tauri-plugin-process = "~2.3.1"
 tauri-plugin-window-state = "=2.2.3"
 tauri-plugin-store = "~2.4.2"
 tauri-plugin-os = "~2.3.2"
-
+tauri-plugin-clipboard-manager = "~2.3.2"
 
 # System / utilities
 sevenz-rust2 = { version = "0.21.0", features = ["zstd"] }
@@ -64,6 +64,7 @@ pinyin = "0.11.0"
 walkdir = "2"
 migration = { path = "migration" }
 reina-path = { path = "reina-path" }
+image = { version = "0.25.8", default-features = false, features = ["png"] }
 
 # Windows system APIs
 [target.'cfg(target_os = "windows")'.dependencies]

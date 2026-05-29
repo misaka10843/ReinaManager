@@ -12,8 +12,8 @@ use tauri_plugin_log::{RotationStrategy, Target, TargetKind, TimezoneStrategy};
 use utils::{
     bgm_auth::{bgm_oauth_exchange_code, bgm_oauth_refresh_token, bgm_oauth_start_login},
     fs::{
-        backup_custom_covers, copy_file, delete_file, delete_game_covers, is_portable_mode,
-        move_backup_folder, open_directory,
+        backup_custom_covers, copy_file, delete_file, delete_game_covers,
+        import_clipboard_image_to_temp, is_portable_mode, move_backup_folder, open_directory,
     },
     game_cover::{delete_cloud_cache, register_game_cover_protocol},
     launch::{launch_game, stop_game},
@@ -46,6 +46,7 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_http::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             // 工具类 commands
@@ -60,6 +61,7 @@ pub fn run() {
             delete_savedata_backup,
             restore_savedata_backup,
             delete_file,
+            import_clipboard_image_to_temp,
             delete_game_covers,
             delete_cloud_cache,
             backup_database,

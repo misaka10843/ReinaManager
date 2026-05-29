@@ -1,5 +1,7 @@
+import ContentPasteIcon from "@mui/icons-material/ContentPaste";
 import DeleteIcon from "@mui/icons-material/Delete";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import SaveIcon from "@mui/icons-material/Save";
 import {
@@ -11,23 +13,28 @@ import {
 	Chip,
 	CircularProgress,
 	FormControlLabel,
+	ListItemIcon,
+	ListItemText,
+	Menu,
+	MenuItem,
 	Stack,
 	Switch,
 	TextField,
 	Typography,
 } from "@mui/material";
 import { basename, dirname } from "pathe";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useImagePreview } from "@/hooks/common/useImagePreview";
 import { snackbar } from "@/providers/snackBar";
+import { fileService } from "@/services/invoke";
 import type { GameData, UpdateGameParams } from "@/types";
 import {
 	deleteGameCustomCovers,
 	selectImageFile,
 	uploadSelectedImage,
 } from "@/utils/customCover";
-import { getUserErrorMessage } from "@/utils/errors";
+import { getUserErrorMessage, toError } from "@/utils/errors";
 import { handleExeFile } from "@/utils/fs/fileDialog";
 import {
 	getGameCover,
@@ -98,6 +105,8 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 	const [nsfw, setNsfw] = useState<boolean>(false);
 	const [releaseDate, setReleaseDate] = useState<string>("");
 	const [isLoading, setIsLoading] = useState(false);
+	const [imageMenuAnchorEl, setImageMenuAnchorEl] =
+		useState<HTMLElement | null>(null);
 
 	// 标签输入的临时状态
 	const [aliasInput, setAliasInput] = useState<string>("");
@@ -111,6 +120,12 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 		cleanup: cleanupPreview,
 	} = useImagePreview();
 
+	// 只记录由剪贴板导入创建的临时文件，避免误删用户本地图片
+	const [clipboardTempImagePath, setClipboardTempImagePathState] = useState<
+		string | null
+	>(null);
+	const clipboardTempImagePathRef = useRef<string | null>(null);
+
 	// 图片删除标记（不立即提交）
 	const [shouldDeleteImage, setShouldDeleteImage] = useState(false);
 
@@ -120,6 +135,24 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 	const [pendingCoverImage, setPendingCoverImage] = useState<string | null>(
 		null,
 	);
+
+	const setClipboardTempImagePath = useCallback((path: string | null) => {
+		clipboardTempImagePathRef.current = path;
+		setClipboardTempImagePathState(path);
+	}, []);
+
+	const cleanupClipboardTempImage = useCallback(async () => {
+		const tempPath = clipboardTempImagePathRef.current;
+		if (!tempPath) return;
+
+		setClipboardTempImagePath(null);
+
+		try {
+			await fileService.deleteFile(tempPath);
+		} catch (error) {
+			console.warn("删除剪贴板临时封面失败:", error);
+		}
+	}, [setClipboardTempImagePath]);
 
 	// 1. 提取初始化函数
 	const initForm = useCallback(
@@ -167,6 +200,13 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 		}
 	}, [pendingCoverImage, selectedGame.custom_data?.image]);
 
+	// 切换游戏或离开组件时，清理由本组件创建的剪贴板临时图片
+	useEffect(() => {
+		return () => {
+			void cleanupClipboardTempImage();
+		};
+	}, [cleanupClipboardTempImage]);
+
 	// 检查是否有任何更改
 	// 重要：比较时必须使用"展平后的原始值"作为基准，与初始化时一致
 	const hasChanges = () => {
@@ -209,12 +249,24 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 		}
 	};
 
+	const handleImageMenuOpen = (event: React.MouseEvent<HTMLButtonElement>) => {
+		setImageMenuAnchorEl(event.currentTarget);
+	};
+
+	const handleImageMenuClose = () => {
+		setImageMenuAnchorEl(null);
+	};
+
 	// 处理自定义封面文件选择 - 只选择，不立即上传
 	const handleCustomCoverSelect = async () => {
+		handleImageMenuClose();
+
 		try {
 			// 选择图片文件
 			const imagePath = await selectImageFile();
 			if (!imagePath) return;
+
+			await cleanupClipboardTempImage();
 
 			// 重置删除标记，因为用户选择了新图片
 			setShouldDeleteImage(false);
@@ -225,6 +277,46 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 			snackbar.error(
 				`${t("pages.Detail.GameInfoEdit.selectImageFailed", "选择图片失败")}: ${getUserErrorMessage(error, t)}`,
 			);
+		}
+	};
+
+	const getClipboardImageImportErrorMessage = (error: unknown) => {
+		const rawErrorMessage = toError(error).message;
+
+		if (rawErrorMessage.includes("CLIPBOARD_IMAGE_NOT_FOUND")) {
+			return t(
+				"pages.Detail.GameInfoEdit.clipboardImageNotFound",
+				"剪贴板中没有可用图片",
+			);
+		}
+
+		if (rawErrorMessage.includes("CLIPBOARD_IMAGE_WRITE_FAILED")) {
+			return t(
+				"pages.Detail.GameInfoEdit.clipboardImageProcessFailed",
+				"处理剪贴板图片失败",
+			);
+		}
+
+		return `${t(
+			"pages.Detail.GameInfoEdit.clipboardImageReadFailed",
+			"读取剪贴板图片失败",
+		)}: ${getUserErrorMessage(error, t)}`;
+	};
+
+	const handleClipboardImageImport = async () => {
+		handleImageMenuClose();
+
+		try {
+			const tempPath = await fileService.importClipboardImageToTemp(
+				selectedGame.id,
+			);
+
+			await cleanupClipboardTempImage();
+			setClipboardTempImagePath(tempPath);
+			setShouldDeleteImage(false);
+			selectImage(tempPath);
+		} catch (error) {
+			snackbar.error(getClipboardImageImportErrorMessage(error));
 		}
 	};
 
@@ -252,7 +344,8 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 	};
 
 	// 处理删除自定义封面（标记删除，不立即提交）
-	const handleRemoveCustomCover = () => {
+	const handleRemoveCustomCover = async () => {
+		await cleanupClipboardTempImage();
 		setShouldDeleteImage(true);
 		cleanupPreview();
 	};
@@ -354,6 +447,10 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 			// 3. 执行保存
 			await onSave(updateData);
 
+			if (clipboardTempImagePath) {
+				await cleanupClipboardTempImage();
+			}
+
 			// 4. 处理 UI 状态（乐观更新）
 			if (uploadedImageExt && typeof uploadedImageExt === "string") {
 				// 锁定新封面直到父级数据刷新，避免出现"旧图 -> 新图"的闪回
@@ -408,13 +505,48 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 								<Stack direction="row" spacing={1} flexWrap="wrap">
 									<Button
 										variant="outlined"
-										onClick={handleCustomCoverSelect}
+										onClick={handleImageMenuOpen}
 										startIcon={<PhotoCameraIcon />}
+										endIcon={<KeyboardArrowDownIcon />}
 										disabled={isLoading || disabled}
 										size="small"
 									>
 										{t("pages.Detail.GameInfoEdit.selectImage", "选择图片")}
 									</Button>
+									<Menu
+										anchorEl={imageMenuAnchorEl}
+										open={Boolean(imageMenuAnchorEl)}
+										onClose={handleImageMenuClose}
+									>
+										<MenuItem
+											onClick={handleCustomCoverSelect}
+											disabled={isLoading || disabled}
+										>
+											<ListItemIcon>
+												<PhotoCameraIcon fontSize="small" />
+											</ListItemIcon>
+											<ListItemText>
+												{t(
+													"pages.Detail.GameInfoEdit.selectLocalImage",
+													"本地图片",
+												)}
+											</ListItemText>
+										</MenuItem>
+										<MenuItem
+											onClick={handleClipboardImageImport}
+											disabled={isLoading || disabled}
+										>
+											<ListItemIcon>
+												<ContentPasteIcon fontSize="small" />
+											</ListItemIcon>
+											<ListItemText>
+												{t(
+													"pages.Detail.GameInfoEdit.importFromClipboard",
+													"从剪贴板导入",
+												)}
+											</ListItemText>
+										</MenuItem>
+									</Menu>
 
 									{selectedGame.custom_data?.image && !shouldDeleteImage && (
 										<Button
@@ -446,11 +578,15 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 
 								{selectedImagePath && (
 									<Typography variant="caption" color="primary">
-										{t(
-											"pages.Detail.GameInfoEdit.previewSelected",
-											"已选择新图片，保存后生效",
-										)}
-										: {basename(selectedImagePath)}
+										{selectedImagePath === clipboardTempImagePath
+											? t(
+													"pages.Detail.GameInfoEdit.clipboardPreviewSelected",
+													"已从剪贴板导入图片，保存后生效",
+												)
+											: `${t(
+													"pages.Detail.GameInfoEdit.previewSelected",
+													"已选择新图片，保存后生效",
+												)}: ${basename(selectedImagePath)}`}
 									</Typography>
 								)}
 							</Stack>

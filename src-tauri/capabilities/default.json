@@ -17,6 +17,7 @@
 		"fs:allow-appdata-write",
 		"fs:allow-appdata-write-recursive",
 		"fs:allow-stat",
+		"clipboard-manager:allow-read-image",
 		"core:app:allow-default-window-icon",
 		"core:tray:allow-new",
 		"core:tray:default",

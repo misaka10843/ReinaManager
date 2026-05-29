@@ -3,12 +3,15 @@ use crate::utils::command_ext::CommandGuiExt;
 
 use crate::backup::archive::create_7z_archive;
 use crate::database::db::{BackupResult, resolve_backup_dir};
+use image::{ColorType, ImageFormat};
 use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 use std::process::Command;
+use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::{State, command};
+use tauri_plugin_clipboard_manager::ClipboardExt;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PortableModeResult {
@@ -447,6 +450,54 @@ pub async fn delete_file(file_path: String) -> Result<(), String> {
 
     fs::remove_file(path).map_err(|e| format!("无法删除文件: {}", e))?;
     Ok(())
+}
+
+/// 从剪贴板读取图片并写入临时 PNG 文件。
+///
+/// 该文件只用于前端保存前预览，保存成功后仍由现有上传逻辑复制到正式封面目录。
+#[command]
+pub async fn import_clipboard_image_to_temp(
+    app: tauri::AppHandle,
+    game_id: u32,
+) -> Result<String, String> {
+    let clipboard_image = app.clipboard().read_image().map_err(|e| {
+        let message = e.to_string();
+        let lower_message = message.to_lowercase();
+        if lower_message.contains("not available")
+            || lower_message.contains("unavailable")
+            || lower_message.contains("requested format")
+        {
+            "CLIPBOARD_IMAGE_NOT_FOUND".to_string()
+        } else {
+            format!("CLIPBOARD_IMAGE_READ_FAILED: {}", message)
+        }
+    })?;
+
+    let temp_dir = std::env::temp_dir()
+        .join("ReinaManager")
+        .join("clipboard-cover");
+    fs::create_dir_all(&temp_dir).map_err(|e| format!("创建剪贴板图片临时目录失败: {}", e))?;
+
+    let timestamp_nanos = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|e| format!("获取系统时间失败: {}", e))?
+        .as_nanos();
+    let target_path = temp_dir.join(format!(
+        "clipboard_cover_{}_{}.png",
+        game_id, timestamp_nanos
+    ));
+
+    image::save_buffer_with_format(
+        &target_path,
+        clipboard_image.rgba(),
+        clipboard_image.width(),
+        clipboard_image.height(),
+        ColorType::Rgba8,
+        ImageFormat::Png,
+    )
+    .map_err(|e| format!("CLIPBOARD_IMAGE_WRITE_FAILED: {}", e))?;
+
+    Ok(target_path.to_string_lossy().to_string())
 }
 
 /// 删除指定游戏的所有自定义封面文件，但保留封面目录
