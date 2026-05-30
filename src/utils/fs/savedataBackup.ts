@@ -1,6 +1,4 @@
-import i18next from "i18next";
 import { join } from "pathe";
-import { snackbar } from "@/providers/snackBar";
 import { fileService, savedataService } from "@/services/invoke";
 import { toError } from "@/utils/errors";
 import {
@@ -45,19 +43,8 @@ export async function openGameSaveDataFolder(
 }
 
 export async function openDatabaseBackupFolder(): Promise<void> {
-	try {
-		const backupPath = await getDbBackupPath();
-		await fileService.openDirectory(backupPath);
-	} catch (error) {
-		snackbar.error(
-			i18next.t(
-				"components.Snackbar.failedOpenDatabaseBackupFolder",
-				"打开数据库备份文件夹失败",
-			),
-		);
-		console.error("打开数据库备份文件夹失败:", error);
-		throw error;
-	}
+	const backupPath = await getDbBackupPath();
+	await fileService.openDirectory(backupPath);
 }
 
 export async function moveBackupFolder(

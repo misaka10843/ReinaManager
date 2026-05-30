@@ -24,18 +24,76 @@ interface AppErrorOptions {
 	message: string;
 	cause?: unknown;
 	name?: string;
+	detail?: string;
+	context?: Record<string, unknown>;
 }
 
 export class AppError extends Error {
 	code: AppErrorCode | string;
 	cause?: unknown;
+	detail?: string;
+	context?: Record<string, unknown>;
 
-	constructor({ code, message, cause, name = "AppError" }: AppErrorOptions) {
+	constructor({
+		code,
+		message,
+		cause,
+		name = "AppError",
+		detail,
+		context,
+	}: AppErrorOptions) {
 		super(message);
 		this.name = name;
 		this.code = code;
 		this.cause = cause;
+		this.detail = detail;
+		this.context = context;
 	}
+}
+
+interface TauriErrorContext extends Record<string, unknown> {
+	command: string;
+	args?: Record<string, unknown>;
+}
+
+function getStringField(source: Record<string, unknown>, key: string): string {
+	const value = source[key];
+	return typeof value === "string" ? value : "";
+}
+
+export function normalizeTauriError(
+	error: unknown,
+	context: TauriErrorContext,
+): AppError {
+	if (error && typeof error === "object" && !(error instanceof Error)) {
+		const errorRecord = error as Record<string, unknown>;
+		const message =
+			getStringField(errorRecord, "message") ||
+			getStringField(errorRecord, "error") ||
+			`Tauri command failed: ${context.command}`;
+		const code = getStringField(errorRecord, "code") || "tauri_invoke_failed";
+		const detail = getStringField(errorRecord, "detail");
+
+		return new AppError({
+			code,
+			message,
+			detail: detail || undefined,
+			cause: error,
+			context,
+		});
+	}
+
+	const normalizedError = toError(
+		error,
+		`Tauri command failed: ${context.command}`,
+	);
+	return new AppError({
+		code: "tauri_invoke_failed",
+		message:
+			normalizedError.message || `Tauri command failed: ${context.command}`,
+		cause: normalizedError,
+		context,
+	});
 }
 
 interface HttpResponseErrorOptions {
@@ -186,13 +244,19 @@ export function isHttpStatus(
 }
 
 function getAppErrorDetailMessage(error: AppError): string {
-	for (const message of [
+	const messages = [
 		error.message,
+		error.detail ?? "",
 		error.cause ? toError(error.cause, "").message : "",
-	]) {
-		if (message && !message.startsWith("Tauri command failed:")) {
-			return message;
-		}
+	].filter(
+		(message, index, allMessages) =>
+			message &&
+			!message.startsWith("Tauri command failed:") &&
+			allMessages.indexOf(message) === index,
+	);
+
+	if (messages.length > 0) {
+		return messages.join(": ");
 	}
 
 	return "";
@@ -261,6 +325,11 @@ export function getUserErrorMessage(
 					getAppErrorDetailMessage(error) ||
 					t("errors.invokeFailed", "应用内部调用失败，请稍后重试")
 				);
+		}
+
+		const detailMessage = getAppErrorDetailMessage(error);
+		if (detailMessage) {
+			return detailMessage;
 		}
 	}
 

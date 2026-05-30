@@ -6,13 +6,16 @@ import { extname, join } from "pathe";
 import { snackbar } from "@/providers/snackBar";
 import { fileService } from "@/services/invoke";
 import type { GameData } from "@/types";
+import { getUserErrorMessage } from "@/utils/errors";
 
 export const handleOpenFolder = async (
 	selectedGame: Pick<GameData, "localpath">,
 ) => {
 	try {
 		if (!selectedGame.localpath) {
-			console.error("游戏路径未找到");
+			snackbar.error(
+				i18next.t("components.LaunchModal.gamePathNotFound", "游戏路径未找到"),
+			);
 			return;
 		}
 		const folder = await tauriPath.dirname(selectedGame.localpath);
@@ -20,11 +23,12 @@ export const handleOpenFolder = async (
 			await fileService.openDirectory(folder);
 		}
 	} catch (error) {
+		const errorMessage = getUserErrorMessage(error, i18next.t.bind(i18next));
 		snackbar.error(
-			i18next.t(
+			`${i18next.t(
 				"components.Snackbar.failedOpenGameFolder",
 				"打开游戏文件夹失败",
-			),
+			)}: ${errorMessage}`,
 		);
 		console.error("打开文件夹失败:", error);
 	}
@@ -137,10 +141,10 @@ export const handleDroppedPath = async (
 	} catch (error) {
 		console.error("处理拖拽路径失败:", error);
 		snackbar.error(
-			t(
+			`${t(
 				"components.AddModal.invalidFile",
 				"请拖入有效的可执行文件（.exe/.bat/.cmd）或文件夹",
-			),
+			)}: ${getUserErrorMessage(error, t)}`,
 		);
 		return null;
 	}

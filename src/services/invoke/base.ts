@@ -4,7 +4,7 @@
  */
 
 import { invoke, isTauri } from "@tauri-apps/api/core";
-import { AppError, toError } from "@/utils/errors";
+import { AppError, normalizeTauriError } from "@/utils/errors";
 
 /**
  * 基础 Service 类
@@ -30,15 +30,7 @@ export class BaseService {
 		try {
 			return await invoke<T>(command, args);
 		} catch (error) {
-			const normalizedError = toError(
-				error,
-				`Tauri command failed: ${command}`,
-			);
-			throw new AppError({
-				code: "tauri_invoke_failed",
-				message: normalizedError.message || `Tauri command failed: ${command}`,
-				cause: normalizedError,
-			});
+			throw normalizeTauriError(error, { command, args });
 		}
 	}
 }
