@@ -1,3 +1,67 @@
+## [0.21.6](https://github.com/huoshen80/ReinaManager/compare/v0.21.5...v0.21.6) (2026-05-30)
+
+<details>
+<summary>查看中文版本</summary>
+
+### ⚙️ 杂类任务
+
+- *(dev)* 添加 WebView2 CDP 调试脚本 ([940eff9](https://github.com/huoshen80/ReinaManager/commit/940eff9fdb2336374c8841a3fd1781089f8c4917))
+
+### ✨ 新功能
+
+- *(cover)* 添加游戏封面的剪贴板图片导入 ([1ede9ea](https://github.com/huoshen80/ReinaManager/commit/1ede9eab5f4d4ca4e8fd7a7b8b03c007e27513fc))
+
+### 🐛 Bug 修复
+
+- *(errors)* 保留 invoke 错误详情 ([a50edaa](https://github.com/huoshen80/ReinaManager/commit/a50edaaf619ae3b0c0df2e2b00faf24125d3d805))
+- *(tray)* 防护并发初始化 ([10dd3b6](https://github.com/huoshen80/ReinaManager/commit/10dd3b609bc76dd3ea7f23f04297140b47524d78))
+- *(fs)* 明确缺失目录错误 ([b7f9d48](https://github.com/huoshen80/ReinaManager/commit/b7f9d482e8a99e8035644d2135ad076663481885))
+
+### 📚 文档
+
+- *(ui)* 更新截图并修复 ymgallink 标签 ([f586f47](https://github.com/huoshen80/ReinaManager/commit/f586f47663713e3e8f886440d6d4b0c8d5ed276c))
+
+### 🚀 性能优化
+
+- *(scan)* 在目录扫描中使用 HashSet 做祖先去重 ([85ca31c](https://github.com/huoshen80/ReinaManager/commit/85ca31c928c295048ca89e2aba6a5f2d425c184f))
+- *(launch)* 收窄游戏计时器订阅 ([b552c8a](https://github.com/huoshen80/ReinaManager/commit/b552c8a3c2f53c72837bcc2abf7a435304c6f8a7))
+
+### 🚜 重构
+
+- *(logging)* 用 log 宏替换 println 并降低游戏监控日志冗余 ([00930d1](https://github.com/huoshen80/ReinaManager/commit/00930d13fe573e59ccd87c02f910ec4698da6dff))
+- *(logging)* 规范日志级别、添加运行日志并改进错误处理 ([9988244](https://github.com/huoshen80/ReinaManager/commit/9988244e7f5d6adae18bf91db89aa8a7161a7d9c))
+
+</details>
+
+### ⚙️ Miscellaneous Tasks
+
+- *(dev)* Add CDP debugging script for WebView2 ([940eff9](https://github.com/huoshen80/ReinaManager/commit/940eff9fdb2336374c8841a3fd1781089f8c4917))
+
+### ✨ Features
+
+- *(cover)* Add clipboard image import for game covers ([1ede9ea](https://github.com/huoshen80/ReinaManager/commit/1ede9eab5f4d4ca4e8fd7a7b8b03c007e27513fc))
+
+### 🐛 Bug Fixes
+
+- *(errors)* Preserve invoke error details ([a50edaa](https://github.com/huoshen80/ReinaManager/commit/a50edaaf619ae3b0c0df2e2b00faf24125d3d805))
+- *(tray)* Guard concurrent initialization ([10dd3b6](https://github.com/huoshen80/ReinaManager/commit/10dd3b609bc76dd3ea7f23f04297140b47524d78))
+- *(fs)* Clarify missing directory error ([b7f9d48](https://github.com/huoshen80/ReinaManager/commit/b7f9d482e8a99e8035644d2135ad076663481885))
+
+### 📚 Documentation
+
+- *(ui)* Update screenshots and fix ymgallink label ([f586f47](https://github.com/huoshen80/ReinaManager/commit/f586f47663713e3e8f886440d6d4b0c8d5ed276c))
+
+### 🚀 Performance
+
+- *(scan)* Use HashSet for ancestor dedup in directory scanning ([85ca31c](https://github.com/huoshen80/ReinaManager/commit/85ca31c928c295048ca89e2aba6a5f2d425c184f))
+- *(launch)* Narrow game timer subscriptions ([b552c8a](https://github.com/huoshen80/ReinaManager/commit/b552c8a3c2f53c72837bcc2abf7a435304c6f8a7))
+
+### 🚜 Refactor
+
+- *(logging)* Replace println with log macros and lower game monitor verbosity ([00930d1](https://github.com/huoshen80/ReinaManager/commit/00930d13fe573e59ccd87c02f910ec4698da6dff))
+- *(logging)* Standardize log levels, add operational logging, and improve error handling ([9988244](https://github.com/huoshen80/ReinaManager/commit/9988244e7f5d6adae18bf91db89aa8a7161a7d9c))
+
+
 ## [0.21.5](https://github.com/huoshen80/ReinaManager/compare/v0.21.4...v0.21.5) (2026-05-27)
 
 <details>
