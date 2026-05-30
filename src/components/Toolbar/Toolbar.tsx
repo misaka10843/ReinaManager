@@ -488,7 +488,7 @@ const MoreButton = ({ selectedGame }: { selectedGame: GameData }) => {
 							<SourceLinkIcon source="ymgal" />
 						</ListItemIcon>
 						<ListItemText>
-							{t("components.Toolbar.ymgallink", "月幕Gal页面")}
+							{t("components.Toolbar.ymgallink", "查看月幕Gal页面")}
 						</ListItemText>
 					</MenuItem>
 				) : null}
