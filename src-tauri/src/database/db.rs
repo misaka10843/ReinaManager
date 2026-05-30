@@ -48,7 +48,7 @@ pub async fn establish_connection() -> Result<DatabaseConnection, DbErr> {
         }
         log::info!("首次启动，创建{}模式数据库: {}", mode(), db_path.display());
     } else {
-        log::info!("使用{}模式数据库: {}", mode(), db_path.display());
+        log::debug!("使用{}模式数据库: {}", mode(), db_path.display());
     }
 
     // 3. 使用 `url` crate 安全地构建连接字符串
@@ -189,7 +189,13 @@ pub async fn import_database(
     }
 
     // 在关闭连接前读取备份配置
-    let backup_dir = resolve_backup_dir(&db).await.ok();
+    let backup_dir = match resolve_backup_dir(&db).await {
+        Ok(dir) => Some(dir),
+        Err(e) => {
+            log::warn!("导入前读取备份目录失败，将跳过冷备份: {}", e);
+            None
+        }
+    };
 
     // 获取当前数据库路径（自动判断便携模式）
     let target_db_path = get_db_path()?;

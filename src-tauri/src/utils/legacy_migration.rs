@@ -74,6 +74,15 @@ fn m20260326_000001_migrate_legacy_covers() -> Result<StartupMigrationResult, St
     // 清理可能存在的空 resources 目录
     remove_dir_if_empty(&legacy_covers_dir)?;
 
+    log::info!(
+        "启动迁移完成 name=m20260326_000001_migrate_legacy_covers from={} to={} migrated={} replaced={} removed_legacy={}",
+        legacy_covers_dir.display(),
+        current_covers_dir.display(),
+        result.migrated_files,
+        result.replaced_files,
+        result.removed_legacy_files
+    );
+
     Ok(result)
 }
 

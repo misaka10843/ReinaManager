@@ -3,6 +3,7 @@ use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
+use std::time::Instant;
 use tauri::{State, command};
 use walkdir::WalkDir;
 
@@ -133,12 +134,39 @@ pub async fn scan_directory_for_games(
         .collect();
 
     let max_depth = max_depth.clamp(MIN_SCAN_MAX_DEPTH, MAX_SCAN_MAX_DEPTH);
+    let existing_dirs_count = existing_dirs.len();
+    let started_at = Instant::now();
+    let path_for_log = path.clone();
+    log::debug!(
+        "开始扫描游戏目录 path={} max_depth={} existing_dirs={}",
+        path_for_log,
+        max_depth,
+        existing_dirs_count
+    );
 
     // WalkDir 大量文件系统 I/O 属于阻塞操作，
     // 放入 Tokio 革层阻塞线程池，避免占用异步运行时线程。
-    tokio::task::spawn_blocking(move || scan_games_blocking(path, existing_dirs, max_depth))
-        .await
-        .map_err(|e| format!("扫描任务异常: {}", e))?
+    let results =
+        tokio::task::spawn_blocking(move || scan_games_blocking(path, existing_dirs, max_depth))
+            .await
+            .map_err(|e| {
+                log::error!(
+                    "扫描任务异常 path={} max_depth={}: {}",
+                    path_for_log,
+                    max_depth,
+                    e
+                );
+                format!("扫描任务异常: {}", e)
+            })??;
+
+    log::info!(
+        "游戏目录扫描完成 max_depth={} result_count={} elapsed_ms={}",
+        max_depth,
+        results.len(),
+        started_at.elapsed().as_millis()
+    );
+
+    Ok(results)
 }
 
 /// 包含所有阻塞 I/O 和 CPU 密集计算的同步扫描逻辑

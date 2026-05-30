@@ -17,7 +17,7 @@
 //! 注意：本迁移要求 SQLite >= 3.35.0 以支持 DROP COLUMN
 
 use crate::backup::backup_sqlite;
-use log::{error, info};
+use log::{info, warn};
 use sea_orm::{ConnectionTrait, DatabaseBackend, Statement};
 use sea_orm_migration::prelude::*;
 use sea_orm_migration::sea_orm::TransactionTrait;
@@ -149,7 +149,7 @@ impl MigrationTrait for Migration {
         info!("[MIGRATION] Starting database backup before hybrid single table migration...");
         match backup_sqlite("v0.13.0").await {
             Ok(backup_path) => info!("[MIGRATION] Backup successful: {:?}", backup_path),
-            Err(e) => error!("[MIGRATION] Backup failed (continuing anyway): {}", e),
+            Err(e) => warn!("[MIGRATION] Backup failed (continuing anyway): {}", e),
         }
 
         let conn = manager.get_connection();

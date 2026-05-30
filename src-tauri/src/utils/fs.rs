@@ -236,7 +236,7 @@ pub fn move_dir_recursive(from: &Path, to: &Path) -> Result<usize, String> {
         Ok(_) => {
             // rename 成功，统计文件数量
             let count = count_files_in_dir(to).unwrap_or(0);
-            log::info!(
+            log::debug!(
                 "已移动目录(rename): {} -> {} ({} 个文件)",
                 from.display(),
                 to.display(),
@@ -246,7 +246,7 @@ pub fn move_dir_recursive(from: &Path, to: &Path) -> Result<usize, String> {
         }
         Err(_) => {
             // rename 失败，可能是跨盘符
-            log::info!(
+            log::debug!(
                 "rename 失败，使用分步骤复制策略: {} -> {}",
                 from.display(),
                 to.display()
@@ -285,7 +285,7 @@ pub fn move_dir_recursive(from: &Path, to: &Path) -> Result<usize, String> {
                 )
             })?;
 
-            log::info!(
+            log::debug!(
                 "已移动目录(copy+remove): {} -> {} ({} 个文件)",
                 from.display(),
                 to.display(),

@@ -6,7 +6,7 @@
 // ============================================================================
 // 外部依赖导入
 // ============================================================================
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use serde_json::json;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Runtime};
@@ -197,7 +197,7 @@ async fn is_game_running(systemd_scope: &str) -> bool {
                                 state == "active"
                             }
                             Err(e) => {
-                                error!(
+                                debug!(
                                     "无法获取 systemd scope '{}' 的 active_state: {}",
                                     systemd_scope, e
                                 );
@@ -205,22 +205,22 @@ async fn is_game_running(systemd_scope: &str) -> bool {
                             }
                         },
                         Err(e) => {
-                            error!("无法创建 systemd Unit 代理: {}", e);
+                            debug!("无法创建 systemd Unit 代理: {}", e);
                             false
                         }
                     }
                 } else {
-                    error!("无法连接到 systemd 管理器");
+                    debug!("无法连接到 systemd 管理器");
                     false
                 }
             }
             Err(e) => {
-                error!("无法获取 systemd unit '{}': {}", systemd_scope, e);
+                debug!("无法获取 systemd unit '{}': {}", systemd_scope, e);
                 false
             }
         },
         Err(e) => {
-            error!("无法连接到 systemd 管理器: {}", e);
+            debug!("无法连接到 systemd 管理器: {}", e);
             false
         }
     }
@@ -459,7 +459,10 @@ async fn run_game_monitor(
             );
 
             if consecutive_failures >= MAX_CONSECUTIVE_FAILURES {
-                info!("游戏scope {} 已失活，结束监控会话", systemd_scope);
+                warn!(
+                    "游戏scope {} 连续 {} 次不可访问或非 active，结束监控会话 best_pid={}",
+                    systemd_scope, consecutive_failures, best_pid
+                );
                 break;
             }
         } else {

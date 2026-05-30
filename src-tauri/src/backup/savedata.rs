@@ -66,6 +66,13 @@ pub async fn create_savedata_backup(
     let backup_size = create_7z_archive(source_path, &backup_file_path)
         .map_err(|e| format!("创建压缩包失败: {}", e))?;
 
+    log::info!(
+        "存档备份创建成功 game_id={} file={} size={} bytes",
+        game_id,
+        backup_filename,
+        backup_size
+    );
+
     Ok(BackupInfo {
         folder_name: backup_filename,
         backup_time: timestamp,
@@ -102,6 +109,15 @@ pub async fn restore_savedata_backup(
 
     // 解压7z文件
     extract_7z_archive(backup_path, target_path).map_err(|e| format!("解压备份失败: {}", e))?;
+
+    log::info!(
+        "存档备份恢复成功 file={}",
+        backup_path
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or("<unknown>")
+    );
+    log::debug!("存档备份恢复目标路径: {}", target_path.display());
 
     Ok(())
 }
@@ -173,6 +189,12 @@ pub async fn delete_savedata_backup(
         return Err(error);
     }
 
+    log::info!(
+        "存档备份删除成功 backup_id={} game_id={}",
+        backup_id,
+        record.game_id
+    );
+
     Ok(())
 }
 
@@ -243,6 +265,12 @@ async fn cleanup_old_backups(
             errors.push(error);
         }
     }
+
+    log::debug!(
+        "旧存档备份清理完成 game_id={} deleted_count={}",
+        game_id,
+        records_to_delete.len()
+    );
 
     // 有错误时记录日志，但不终止备份流程
     if !errors.is_empty() {

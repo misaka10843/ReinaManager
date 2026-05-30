@@ -295,8 +295,6 @@ async fn run_game_monitor<R: Runtime>(
         monitor_state.clone(),
         shared_candidate_pids.clone(),
         game_directory,
-        app_handle.clone(),
-        game_id,
         stop_signal.clone(),
     );
 
@@ -324,7 +322,7 @@ async fn run_game_monitor<R: Runtime>(
 
         // 检查停止信号（支持外部停止）
         if stop_signal.load(Ordering::Acquire) {
-            info!("收到停止信号，结束监控游戏 {}", game_id);
+            debug!("收到停止信号，结束监控游戏 {}", game_id);
             break;
         }
 
@@ -373,16 +371,9 @@ async fn run_game_monitor<R: Runtime>(
                     state.is_foreground = false;
                 }
 
-                info!("成功切换到新的最佳进程 PID: {}", new_best_pid);
+                debug!("成功切换到新的最佳进程 PID: {}", new_best_pid);
                 consecutive_failures = 0;
                 last_best_pid = new_best_pid;
-
-                app_handle
-                    .emit(
-                        "game-process-switched",
-                        json!({ "gameId": game_id, "newProcessId": new_best_pid }),
-                    )
-                    .ok();
                 continue;
             }
         } else {
@@ -391,7 +382,7 @@ async fn run_game_monitor<R: Runtime>(
 
             // 如果 best_pid 变化了，记录日志
             if current_best_pid != last_best_pid {
-                info!("检测到进程切换: {} -> {}", last_best_pid, current_best_pid);
+                debug!("检测到进程切换: {} -> {}", last_best_pid, current_best_pid);
                 last_best_pid = current_best_pid;
             }
 
@@ -506,12 +497,10 @@ fn finalize_session<R: Runtime>(
 /// 3. 检查 PID 是否在已知的候选列表中
 /// 4. 如果不在，检查其可执行文件路径是否在游戏目录下（逃逸检测）
 /// 5. 更新共享状态：is_foreground、best_pid，并将新进程加入候选列表
-fn start_foreground_hook<R: Runtime + 'static>(
+fn start_foreground_hook(
     state: Arc<RwLock<MonitorState>>,
     candidate_pids: Arc<RwLock<HashSet<u32>>>,
     game_directory: String,
-    app_handle: AppHandle<R>,
-    game_id: u32,
     stop_signal: Arc<AtomicBool>,
 ) {
     // 使用 tokio::task::spawn_blocking 统一运行时管理
@@ -559,25 +548,12 @@ fn start_foreground_hook<R: Runtime + 'static>(
 
                 if is_in_candidates {
                     // 更新状态（缩小锁的持有范围）
-                    let should_emit = {
+                    {
                         let mut s = state.write();
                         s.is_foreground = true;
-                        let changed = s.best_pid != new_pid;
-                        if changed {
+                        if s.best_pid != new_pid {
                             s.best_pid = new_pid;
-                        }
-                        changed
-                    };
-
-                    // 锁已释放，安全发送事件
-                    if should_emit {
-                        debug!("前台窗口切换到已知游戏进程: PID {}", new_pid);
-                        let emit_result = app_handle.emit(
-                            "game-process-switched", //暂时无用
-                            json!({ "gameId": game_id, "newProcessId": new_pid }),
-                        );
-                        if let Err(e) = emit_result {
-                            warn!("无法发送进程切换事件: {}", e);
+                            debug!("前台窗口切换到已知游戏进程: PID {}", new_pid);
                         }
                     }
                     continue;
@@ -609,14 +585,6 @@ fn start_foreground_hook<R: Runtime + 'static>(
                             s.best_pid = new_pid;
                         }
 
-                        // 发送进程切换事件
-                        let emit_result = app_handle.emit(
-                            "game-process-switched", //暂时无用
-                            json!({ "gameId": game_id, "newProcessId": new_pid }),
-                        );
-                        if let Err(e) = emit_result {
-                            warn!("无法发送进程切换事件: {}", e);
-                        }
                         continue;
                     }
                 }

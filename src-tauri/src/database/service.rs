@@ -104,6 +104,11 @@ pub async fn delete_game(
 
     if rows_affected > 0 {
         cover_state.mark_game_deleted(id as u32).await;
+        log::info!(
+            "游戏删除成功 game_id={} rows_affected={}",
+            id,
+            rows_affected
+        );
     }
 
     if rows_affected > 0
@@ -126,6 +131,7 @@ pub async fn delete_games_batch(
         .await
         .map(|result| result.rows_affected)
         .map_err(|e| format!("批量删除游戏失败: {}", e))?;
+    let requested_count = ids.len();
 
     for game_id in &ids {
         if *game_id > 0 {
@@ -142,6 +148,12 @@ pub async fn delete_games_batch(
             );
         }
     }
+
+    log::info!(
+        "批量删除游戏完成 requested_count={} rows_affected={}",
+        requested_count,
+        rows_affected
+    );
 
     Ok(rows_affected)
 }

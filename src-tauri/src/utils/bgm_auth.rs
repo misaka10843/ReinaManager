@@ -48,14 +48,21 @@ pub async fn bgm_oauth_start_login(app: AppHandle) -> Result<String, String> {
         .set_nonblocking(true)
         .map_err(|e| format!("设置 OAuth 回调监听失败: {}", e))?;
 
+    log::info!("BGM OAuth 回调服务已启动 port={}", BGM_CALLBACK_PORT);
+
     let expected_state = state.clone();
     std::thread::spawn(
         move || match wait_for_callback(&listener, &expected_state) {
             Ok(code) => {
-                let _ = app.emit("bgm-oauth-code", &code);
+                if let Err(e) = app.emit("bgm-oauth-code", &code) {
+                    log::warn!("发送 BGM OAuth code 事件失败: {}", e);
+                }
             }
             Err(message) => {
-                let _ = app.emit("bgm-oauth-error", &message);
+                log::warn!("BGM OAuth 回调失败: {}", message);
+                if let Err(e) = app.emit("bgm-oauth-error", &message) {
+                    log::warn!("发送 BGM OAuth error 事件失败: {}", e);
+                }
             }
         },
     );
@@ -108,6 +115,7 @@ pub async fn bgm_oauth_exchange_code(
     };
 
     store_bgm_auth(&db, &auth).await?;
+    log::info!("BGM OAuth 授权信息已保存 expires_at={:?}", auth.expires_at);
     Ok(auth)
 }
 
@@ -143,6 +151,7 @@ pub async fn bgm_oauth_refresh_token(
     };
 
     store_bgm_auth(&db, &auth).await?;
+    log::info!("BGM OAuth 授权信息已刷新 expires_at={:?}", auth.expires_at);
     Ok(auth)
 }
 
@@ -172,20 +181,28 @@ fn wait_for_callback(listener: &TcpListener, expected_state: &str) -> Result<Str
             Ok((stream, _)) => break stream,
             Err(ref e) if e.kind() == std::io::ErrorKind::WouldBlock => {
                 if std::time::Instant::now() >= deadline {
+                    log::warn!("BGM OAuth 回调等待超时");
                     return Err("OAuth 回调等待超时，请重新登录".to_string());
                 }
                 std::thread::sleep(Duration::from_millis(200));
             }
-            Err(e) => return Err(format!("OAuth 回调监听失败: {}", e)),
+            Err(e) => {
+                log::warn!("BGM OAuth 回调监听失败: {}", e);
+                return Err(format!("OAuth 回调监听失败: {}", e));
+            }
         }
     };
 
     let result = parse_callback(&stream)
-        .ok_or_else(|| "OAuth 回调参数无效".to_string())
+        .ok_or_else(|| {
+            log::warn!("BGM OAuth 回调参数无效");
+            "OAuth 回调参数无效".to_string()
+        })
         .and_then(|(code, state)| {
             if state.as_deref() == Some(expected_state) {
                 Ok(code)
             } else {
+                log::warn!("BGM OAuth state 校验失败");
                 Err("OAuth state 校验失败，请重新登录".to_string())
             }
         });

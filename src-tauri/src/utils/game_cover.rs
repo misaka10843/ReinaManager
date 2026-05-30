@@ -390,7 +390,7 @@ async fn fetch_and_cache_cover(
                 return Ok(bytes);
             }
             Err(CoverDownloadError::Retryable(e)) => {
-                log::warn!(
+                log::debug!(
                     "封面下载失败 game_id={} attempt={}/{}: {}",
                     game_id,
                     attempt,

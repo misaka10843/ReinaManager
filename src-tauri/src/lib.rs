@@ -186,10 +186,10 @@ pub fn run() {
             tauri::async_runtime::block_on(async move {
                 match db::establish_connection().await {
                     Ok(conn) => {
-                        log::info!("数据库连接建立成功");
+                        log::debug!("数据库连接建立成功");
 
                         // 执行数据库迁移
-                        log::info!("开始执行数据库迁移...");
+                        log::debug!("开始执行数据库迁移...");
                         match migration::Migrator::up(&conn, None).await {
                             Ok(_) => log::info!("数据库迁移完成"),
                             Err(e) => log::error!("数据库迁移失败: {}", e),

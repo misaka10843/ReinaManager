@@ -24,7 +24,7 @@ pub fn create_7z_archive(
     let mut writer = ArchiveWriter::create(archive_path)?;
 
     let zstd_options = ZstandardOptions::from_level(ZSTD_COMPRESSION_LEVEL);
-    log::info!("7z 压缩参数: codec=ZSTD, level={}", ZSTD_COMPRESSION_LEVEL);
+    log::debug!("7z 压缩参数: codec=ZSTD, level={}", ZSTD_COMPRESSION_LEVEL);
     writer.set_content_methods(vec![zstd_options.into()]);
 
     // 递归添加源目录中的所有文件，过滤器返回 true 表示包含

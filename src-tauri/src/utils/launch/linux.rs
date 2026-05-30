@@ -85,9 +85,26 @@ pub async fn launch_game<R: Runtime>(
         command.args(arguments);
     }
 
+    debug!(
+        "准备启动游戏 game_id={} scope={} command={} arg_count={} cwd={}",
+        game_id,
+        systemd_unit_name,
+        if exe_name.to_string_lossy().ends_with(".exe") {
+            "systemd-run+wine"
+        } else {
+            "systemd-run"
+        },
+        args_clone.as_ref().map_or(0, Vec::len),
+        game_dir.display()
+    );
+
     match command.spawn() {
         Ok(child) => {
             let process_id = child.id();
+            info!(
+                "游戏启动成功 game_id={} pid={} scope={}",
+                game_id, process_id, systemd_unit_name
+            );
 
             monitor_game(
                 app_handle.clone(),

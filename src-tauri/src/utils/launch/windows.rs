@@ -8,7 +8,7 @@ use std::path::Path;
 use std::process::Command;
 use tauri::{AppHandle, Runtime, State, command};
 use {
-    log::{error, info},
+    log::{debug, info, warn},
     tokio::time,
 };
 
@@ -229,10 +229,26 @@ pub async fn launch_game<R: Runtime>(
         command.args(arguments);
     }
 
+    debug!(
+        "准备启动游戏 game_id={} mode={} magpie={} arg_count={} cwd={}",
+        game_id,
+        if use_le { "le" } else { "normal" },
+        use_magpie,
+        args_clone.as_ref().map_or(0, Vec::len),
+        game_dir.display()
+    );
+
     let spawn_result = command.gui_safe().spawn();
     match spawn_result {
         Ok(child) => {
             let process_id = child.id();
+            info!(
+                "游戏启动成功 game_id={} pid={} mode={} magpie={}",
+                game_id,
+                process_id,
+                if use_le { "le" } else { "normal" },
+                use_magpie
+            );
 
             // 启动游戏监控
             monitor_game(app_handle.clone(), game_id, process_id, game_path.clone()).await;
@@ -248,7 +264,7 @@ pub async fn launch_game<R: Runtime>(
                 tokio::spawn(async move {
                     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
                     if let Err(e) = start_magpie_for_game(&magpie_path).await {
-                        error!("启动Magpie失败: {}", e);
+                        warn!("启动Magpie失败: {}", e);
                     }
                 });
             }
@@ -268,6 +284,10 @@ pub async fn launch_game<R: Runtime>(
             // 如果为 Windows 的 740 错误（需要提升权限），尝试使用 ShellExecuteExW("runas") 再启动
             let needs_elevation = e.raw_os_error() == Some(740);
             if needs_elevation {
+                warn!(
+                    "普通启动需要提权，准备回退到管理员启动 game_id={}: {}",
+                    game_id, e
+                );
                 // 对于LE启动，需要用LE路径作为执行文件，游戏路径作为参数
                 let (exec_path, exec_args) = if use_le {
                     let le_path = settings
@@ -290,6 +310,13 @@ pub async fn launch_game<R: Runtime>(
                     game_dir,
                 ) {
                     Ok(pid) => {
+                        info!(
+                            "游戏提权启动成功 game_id={} pid={} mode={} magpie={}",
+                            game_id,
+                            pid,
+                            if use_le { "le" } else { "normal" },
+                            use_magpie
+                        );
                         // 提权启动成功，继续进入监控
                         monitor_game(app_handle.clone(), game_id, pid, game_path.clone()).await;
 
@@ -304,7 +331,7 @@ pub async fn launch_game<R: Runtime>(
                             tokio::spawn(async move {
                                 time::sleep(time::Duration::from_secs(1)).await;
                                 if let Err(e) = start_magpie_for_game(&magpie_path).await {
-                                    error!("启动Magpie失败: {}", e);
+                                    warn!("启动Magpie失败: {}", e);
                                 }
                             });
                         }
@@ -366,14 +393,14 @@ async fn start_magpie_for_game(magpie_path: &str) -> Result<(), String> {
         let spawn_result = command.gui_safe().spawn();
         match spawn_result {
             Ok(_child) => {
-                info!("Magpie启动成功，等待游戏窗口加载...");
+                debug!("Magpie启动成功，等待游戏窗口加载...");
             }
             Err(e) => {
                 return Err(format!("启动Magpie失败: {}", e));
             }
         }
     } else {
-        info!("Magpie已经在运行中，准备激活放大...");
+        debug!("Magpie已经在运行中，准备激活放大...");
     }
 
     // 等待游戏窗口加载（无论Magpie是否新启动）
@@ -382,17 +409,17 @@ async fn start_magpie_for_game(magpie_path: &str) -> Result<(), String> {
     // 模拟Win+Shift+A快捷键激活放大
     match keyboard_simulator::simulate_win_shift_a() {
         Ok(_) => {
-            info!("Magpie放大激活成功");
+            debug!("Magpie放大激活成功");
             Ok(())
         }
         Err(e) => {
             let error_msg = format!("Magpie放大激活失败: {}", e);
             if magpie_was_running {
-                info!("{}（Magpie进程已在运行）", error_msg);
+                warn!("{}（Magpie进程已在运行）", error_msg);
                 // 如果Magpie本来就在运行，键盘模拟失败也不算严重错误
                 Ok(())
             } else {
-                info!("{}，但Magpie进程已启动", error_msg);
+                warn!("{}，但Magpie进程已启动", error_msg);
                 // 如果Magpie是刚启动的，键盘模拟失败也不算严重错误
                 Ok(())
             }

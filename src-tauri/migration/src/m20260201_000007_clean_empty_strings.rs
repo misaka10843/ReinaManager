@@ -8,7 +8,7 @@
 //! 注意: id_type 字段是 NOT NULL，保持原样不处理
 
 use crate::backup::backup_sqlite;
-use log::{error, info};
+use log::{info, warn};
 use sea_orm_migration::prelude::*;
 
 #[derive(DeriveMigrationName)]
@@ -23,7 +23,7 @@ impl MigrationTrait for Migration {
         info!("[MIGRATION] Starting database backup before clean empty strings migration...");
         match backup_sqlite("v0.14.2").await {
             Ok(backup_path) => info!("[MIGRATION] Backup successful: {:?}", backup_path),
-            Err(e) => error!("[MIGRATION] Backup failed (continuing anyway): {}", e),
+            Err(e) => warn!("[MIGRATION] Backup failed (continuing anyway): {}", e),
         }
         let db = manager.get_connection();
 
