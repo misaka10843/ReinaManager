@@ -8,6 +8,8 @@ import i18n from "i18next";
 import { exitCurrentWindowFromTray } from "@/utils/appExit";
 
 let trayInstance: TrayIcon | null = null;
+let trayInitPromise: Promise<TrayIcon | null> | null = null;
+const TRAY_ID = "main";
 
 const showUI = async () => {
 	const window = getCurrentWindow();
@@ -62,14 +64,21 @@ export const updateTrayLanguage = async () => {
 /**
  * 创建并初始化托盘图标
  */
-export const initTray = async () => {
+const initTrayInner = async () => {
 	try {
+		if (trayInstance) return trayInstance;
+
 		const menu = await createTrayMenu();
 		const windowIcon = await defaultWindowIcon();
 		const tooltipText = `ReinaManager v${version}`;
+		const existingTray = await TrayIcon.getById(TRAY_ID);
+
+		if (existingTray) {
+			await TrayIcon.removeById(TRAY_ID);
+		}
 
 		const tray = await TrayIcon.new({
-			id: "main",
+			id: TRAY_ID,
 			icon: windowIcon ?? undefined,
 			tooltip: tooltipText, // 显示软件名和版本号
 			menu,
@@ -94,4 +103,11 @@ export const initTray = async () => {
 		console.error("Failed to initialize tray icon:", error);
 		return null;
 	}
+};
+
+export const initTray = () => {
+	trayInitPromise ??= initTrayInner().finally(() => {
+		trayInitPromise = null;
+	});
+	return trayInitPromise;
 };
