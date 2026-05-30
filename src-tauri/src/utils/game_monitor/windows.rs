@@ -102,7 +102,7 @@ impl Drop for HookGuard {
     fn drop(&mut self) {
         // 无论函数如何退出（正常返回、?, panic 等），都会触发停止信号
         self.stop_signal.store(true, Ordering::Release);
-        info!("HookGuard 析构：已发送停止信号");
+        debug!("HookGuard 析构：已发送停止信号");
     }
 }
 
@@ -247,7 +247,7 @@ async fn run_game_monitor<R: Runtime>(
     let start_time = get_timestamp();
 
     // 等待游戏进程充分启动（例如 Launcher -> Game 的切换）
-    info!("等待 3 秒以便游戏进程充分启动...");
+    debug!("等待 3 秒以便游戏进程充分启动...");
     tokio::time::sleep(Duration::from_secs(3)).await;
 
     // 初始扫描：获取所有候选 PID
@@ -516,7 +516,7 @@ fn start_foreground_hook<R: Runtime + 'static>(
 ) {
     // 使用 tokio::task::spawn_blocking 统一运行时管理
     tokio::task::spawn_blocking(move || {
-        info!("前台窗口 Hook 线程已启动");
+        debug!("前台窗口 Hook 线程已启动");
 
         use windows::Win32::UI::WindowsAndMessaging::GetForegroundWindow;
 
@@ -571,7 +571,7 @@ fn start_foreground_hook<R: Runtime + 'static>(
 
                     // 锁已释放，安全发送事件
                     if should_emit {
-                        info!("前台窗口切换到已知游戏进程: PID {}", new_pid);
+                        debug!("前台窗口切换到已知游戏进程: PID {}", new_pid);
                         let emit_result = app_handle.emit(
                             "game-process-switched", //暂时无用
                             json!({ "gameId": game_id, "newProcessId": new_pid }),
@@ -626,7 +626,7 @@ fn start_foreground_hook<R: Runtime + 'static>(
             }
         }
 
-        info!("前台窗口 Hook 线程已停止");
+        debug!("前台窗口 Hook 线程已停止");
     });
 }
 

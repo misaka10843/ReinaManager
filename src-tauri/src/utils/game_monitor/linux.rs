@@ -228,14 +228,14 @@ async fn is_game_running(systemd_scope: &str) -> bool {
 
 fn select_best_from_candidates(candidate_pids: &[u32]) -> Option<u32> {
     if let Some(p) = check_any_foreground(candidate_pids) {
-        info!("从候选列表中找到聚焦进程 PID: {}", p);
+        debug!("从候选列表中找到聚焦进程 PID: {}", p);
         Some(p)
     } else if let Some(p) = check_any_has_window(candidate_pids) {
-        info!("从候选列表中找到有窗口的进程 PID: {}", p);
+        debug!("从候选列表中找到有窗口的进程 PID: {}", p);
         Some(p)
     } else if !candidate_pids.is_empty() {
         let first_pid = candidate_pids[0];
-        info!("使用候选列表中的第一个进程 PID: {}", first_pid);
+        debug!("使用候选列表中的第一个进程 PID: {}", first_pid);
         Some(first_pid)
     } else {
         None
@@ -427,8 +427,8 @@ async fn run_game_monitor(
         .map_err(|e| format!("无法发送 game-session-started 事件: {}", e))?;
     let mut consecutive_failures = 0u32;
 
-    // 等待 3 秒让游戏进程充分启动（例如 Launcher -> Game 的切换）
-    info!("等待 9 秒以便游戏进程充分启动...");
+    // 等待 9 秒让游戏进程充分启动（例如 Launcher -> Game 的切换）
+    debug!("等待 9 秒以便游戏进程充分启动...");
     tokio::time::sleep(Duration::from_secs(MONITOR_CHECK_INTERVAL_SECS * 9)).await;
 
     // 等待后重新扫描，获取最新的进程状态

@@ -20,22 +20,22 @@ impl MigrationTrait for Migration {
         let is_new_user = !has_any_legacy_tables(&txn).await?;
 
         if is_new_user {
-            println!("[MIGRATION] New user detected, creating modern split table structure");
+            log::info!("[MIGRATION] New user detected, creating modern split table structure");
             create_modern_schema(&txn).await?;
         } else {
             // 迁移前备份数据库
             match backup_sqlite("v0.6.9").await {
-                Ok(path) => println!("[MIGRATION] Database backed up to: {}", path.display()),
-                Err(e) => println!("[MIGRATION] Backup failed (continuing anyway): {}", e),
+                Ok(path) => log::info!("[MIGRATION] Database backed up to: {}", path.display()),
+                Err(e) => log::warn!("[MIGRATION] Backup failed (continuing anyway): {}", e),
             }
-            println!("[MIGRATION] Existing user detected, running legacy migration catch-up");
+            log::info!("[MIGRATION] Existing user detected, running legacy migration catch-up");
             run_legacy_migrations_with_sqlx().await?;
         }
 
         // 提交事务
         txn.commit().await?;
 
-        println!("[MIGRATION] v1 baseline schema created successfully");
+        log::info!("[MIGRATION] v1 baseline schema created successfully");
         Ok(())
     }
 }
@@ -259,7 +259,7 @@ where
 
 /// 为现有用户运行旧的 tauri-plugin-sql 迁移，使用 sqlx 执行
 async fn run_legacy_migrations_with_sqlx() -> Result<(), DbErr> {
-    println!("[MIGRATION] Running legacy migrations with sqlx...");
+    log::info!("[MIGRATION] Running legacy migrations with sqlx...");
 
     // 获取数据库连接 URL（从系统目录推导）
     let db_path =
@@ -279,13 +279,13 @@ async fn run_legacy_migrations_with_sqlx() -> Result<(), DbErr> {
     cleanup_sqlx_migration_table(&pool).await?;
 
     pool.close().await;
-    println!("[MIGRATION] Legacy migrations completed successfully");
+    log::info!("[MIGRATION] Legacy migrations completed successfully");
     Ok(())
 }
 
 /// 运行旧迁移 001 - 数据库初始化
 async fn run_legacy_migration_001(pool: &sqlx::SqlitePool) -> Result<(), DbErr> {
-    println!("[MIGRATION] Checking legacy migration 001...");
+    log::debug!("[MIGRATION] Checking legacy migration 001...");
 
     // 检查是否已经执行过这个迁移
     let migration_exists =
@@ -296,11 +296,11 @@ async fn run_legacy_migration_001(pool: &sqlx::SqlitePool) -> Result<(), DbErr> 
             > 0;
 
     if migration_exists {
-        println!("[MIGRATION] Migration 001 already applied, skipping");
+        log::debug!("[MIGRATION] Migration 001 already applied, skipping");
         return Ok(());
     }
 
-    println!("[MIGRATION] Applying migration 001 - database initialization");
+    log::info!("[MIGRATION] Applying migration 001 - database initialization");
 
     // 执行迁移 001 的 SQL
     let migration_sql = include_str!("../old_migrations/001_database_initialization.sql");
@@ -319,13 +319,13 @@ async fn run_legacy_migration_001(pool: &sqlx::SqlitePool) -> Result<(), DbErr> 
     .await
     .map_err(|e| DbErr::Custom(format!("Failed to record migration 001: {}", e)))?;
 
-    println!("[MIGRATION] Migration 001 applied successfully");
+    log::info!("[MIGRATION] Migration 001 applied successfully");
     Ok(())
 }
 
 /// 运行旧迁移 002 - 添加自定义字段
 async fn run_legacy_migration_002(pool: &sqlx::SqlitePool) -> Result<(), DbErr> {
-    println!("[MIGRATION] Checking legacy migration 002...");
+    log::debug!("[MIGRATION] Checking legacy migration 002...");
 
     // 检查是否已经执行过这个迁移
     let migration_exists =
@@ -336,11 +336,11 @@ async fn run_legacy_migration_002(pool: &sqlx::SqlitePool) -> Result<(), DbErr> 
             > 0;
 
     if migration_exists {
-        println!("[MIGRATION] Migration 002 already applied, skipping");
+        log::debug!("[MIGRATION] Migration 002 already applied, skipping");
         return Ok(());
     }
 
-    println!("[MIGRATION] Applying migration 002 - add custom fields");
+    log::info!("[MIGRATION] Applying migration 002 - add custom fields");
 
     // 执行迁移 002 的 SQL
     let migration_sql = include_str!("../old_migrations/002_add_custom_fields.sql");
@@ -359,13 +359,13 @@ async fn run_legacy_migration_002(pool: &sqlx::SqlitePool) -> Result<(), DbErr> 
     .await
     .map_err(|e| DbErr::Custom(format!("Failed to record migration 002: {}", e)))?;
 
-    println!("[MIGRATION] Migration 002 applied successfully");
+    log::info!("[MIGRATION] Migration 002 applied successfully");
     Ok(())
 }
 
 /// 清理 sqlx 的迁移记录表，为转移到 SeaORM 做准备
 async fn cleanup_sqlx_migration_table(pool: &sqlx::SqlitePool) -> Result<(), DbErr> {
-    println!("[MIGRATION] Cleaning up sqlx migration records...");
+    log::info!("[MIGRATION] Cleaning up sqlx migration records...");
 
     // 可选：保留迁移历史但重命名表
     sqlx::query("ALTER TABLE _sqlx_migrations RENAME TO _legacy_sqlx_migrations")
@@ -373,6 +373,6 @@ async fn cleanup_sqlx_migration_table(pool: &sqlx::SqlitePool) -> Result<(), DbE
         .await
         .map_err(|e| DbErr::Custom(format!("Failed to rename sqlx migrations table: {}", e)))?;
 
-    println!("[MIGRATION] sqlx migration table renamed to _legacy_sqlx_migrations");
+    log::info!("[MIGRATION] sqlx migration table renamed to _legacy_sqlx_migrations");
     Ok(())
 }

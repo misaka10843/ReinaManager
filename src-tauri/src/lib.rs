@@ -136,7 +136,7 @@ pub fn run() {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()
                         .timezone_strategy(TimezoneStrategy::UseLocal)
-                        .level(log::LevelFilter::Debug) // 允许运行时动态调整到任意级别
+                        .level(log::LevelFilter::Debug)
                         .max_file_size(LOG_MAX_FILE_SIZE)
                         .rotation_strategy(RotationStrategy::KeepSome(LOG_KEEP_FILE_COUNT))
                         .targets([
@@ -153,11 +153,13 @@ pub fn run() {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()
                         .timezone_strategy(TimezoneStrategy::UseLocal)
-                        .level(log::LevelFilter::Info) // 允许运行时动态调整到任意级别
+                        .level(log::LevelFilter::Debug)
                         .max_file_size(LOG_MAX_FILE_SIZE)
                         .rotation_strategy(RotationStrategy::KeepSome(LOG_KEEP_FILE_COUNT))
                         .build(),
                 )?;
+                // 发布版默认保持 Info，但保留本会话临时升到 Debug 的能力。
+                log::set_max_level(log::LevelFilter::Info);
             }
 
             match run_startup_migrations() {

@@ -72,7 +72,7 @@ pub async fn establish_connection() -> Result<DatabaseConnection, DbErr> {
     #[cfg(debug_assertions)]
     {
         options.sqlx_logging(false);
-        println!("Database connection string: {}", options.get_url());
+        log::debug!("数据库连接字符串: {}", options.get_url());
     }
     #[cfg(not(debug_assertions))]
     {
