@@ -396,7 +396,7 @@ export const Home: React.FC = () => {
 												variant="outlined"
 												component={Link}
 												to={`/libraries/${category.id}`}
-												className="block p-2 text-center text-inherit decoration-none cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-md"
+												className="block p-2 text-center text-inherit decoration-none cursor-pointer hover:-translate-y-0.5 hover:shadow-md"
 											>
 												<Typography variant="body2">
 													{category.title}
