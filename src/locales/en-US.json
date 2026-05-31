@@ -250,7 +250,6 @@
 			"notFound": "Game not found or has been deleted"
 		},
 		"Snackbar": {
-			"failedOpenDatabaseBackupFolder": "Failed to open the database backup folder",
 			"failedOpenGameFolder": "Failed to open the game folder",
 			"gameAddedSuccess": "Game added successfully",
 			"viewDetails": "View Details"
@@ -637,13 +636,13 @@
 				"importError": "Failed to import database: {{error}}",
 				"importFailed": "Import failed",
 				"importing": "Importing...",
-				"importSuccess": "Database imported successfully, application will restart automatically",
+				"importSuccess": "Database imported successfully. Custom covers were backed up and cover cache was cleared. The application will restart automatically.",
 				"noCoversToBackup": "No custom covers to backup",
 				"openFolder": "Open Backup Folder",
 				"openFolderError": "Failed to open backup folder: {{error}}",
 				"openFolderFailed": "Failed to open folder",
 				"restore": "Restore Database",
-				"restoreWarning": "Restoring database will overwrite existing data, please use with caution. The application will restart automatically after import.",
+				"restoreWarning": "Restoring database will overwrite existing data. Custom covers will be backed up first and cover cache will be cleared to avoid cover mismatches. The application will restart automatically after import.",
 				"title": "Data Backup and Restore"
 			},
 			"dev": {

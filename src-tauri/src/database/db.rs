@@ -6,6 +6,7 @@ use std::time::Duration;
 use tauri::{State, command};
 use url::Url;
 
+use crate::utils::fs::{backup_custom_covers_archive, delete_all_covers_dir};
 use reina_path::{get_db_path, get_default_db_backup_path, is_portable_mode};
 
 /// 数据库备份结果
@@ -131,9 +132,13 @@ pub async fn resolve_backup_dir(db: &DatabaseConnection) -> Result<PathBuf, Stri
 /// 备份结果，包含备份文件的路径
 #[command]
 pub async fn backup_database(db: State<'_, DatabaseConnection>) -> Result<BackupResult, String> {
+    backup_database_file(&db).await
+}
+
+pub async fn backup_database_file(db: &DatabaseConnection) -> Result<BackupResult, String> {
     // 生成备份文件名并确定目标路径
     let backup_name = generate_backup_filename();
-    let backup_dir = resolve_backup_dir(&db).await?;
+    let backup_dir = resolve_backup_dir(db).await?;
     let target_path = backup_dir.join(&backup_name);
 
     // 将路径转换为字符串
@@ -162,6 +167,27 @@ pub async fn backup_database(db: State<'_, DatabaseConnection>) -> Result<Backup
     })
 }
 
+fn backup_database_file_cold(db_path: &Path, backup_dir: &Path) -> Option<String> {
+    if !db_path.exists() {
+        return None;
+    }
+
+    let backup_name = generate_backup_filename();
+    let backup_file_path = backup_dir.join(&backup_name);
+
+    match fs::copy(db_path, &backup_file_path) {
+        Ok(_) => {
+            let path_str = backup_file_path.to_string_lossy().to_string();
+            log::info!("导入前冷备份成功: {}", path_str);
+            Some(path_str)
+        }
+        Err(e) => {
+            log::warn!("导入前备份失败: {}，继续导入", e);
+            None
+        }
+    }
+}
+
 /// 导入数据库文件（覆盖现有数据库）
 ///
 /// # Arguments
@@ -188,58 +214,45 @@ pub async fn import_database(
         return Err("无效的数据库文件，请选择 .db 文件".to_string());
     }
 
-    // 在关闭连接前读取备份配置
-    let backup_dir = match resolve_backup_dir(&db).await {
-        Ok(dir) => Some(dir),
-        Err(e) => {
-            log::warn!("导入前读取备份目录失败，将跳过冷备份: {}", e);
-            None
-        }
-    };
-
     // 获取当前数据库路径（自动判断便携模式）
     let target_db_path = get_db_path()?;
+    if let (Ok(source), Ok(target)) = (
+        fs::canonicalize(src_path),
+        fs::canonicalize(&target_db_path),
+    ) && source == target
+    {
+        return Err("不能导入当前正在使用的数据库文件".to_string());
+    }
 
-    // 步骤1：关闭数据库连接（必须先关闭才能安全备份和覆盖）
+    // 步骤1：关闭连接前读取备份目录配置，关闭后无法再查询设置
+    let backup_dir = resolve_backup_dir(&db).await?;
+
+    // 步骤2：导入前备份自定义封面，后续会清空 covers 避免旧 id 封面错配新库
+    backup_custom_covers_archive(&db).await?;
+
+    // 步骤3：关闭数据库连接，后续对数据库文件做冷备份和覆盖
     let conn = db.inner().clone();
     close_connection(conn)
         .await
         .map_err(|e| format!("关闭数据库连接失败: {}", e))?;
-    log::info!("数据库连接已关闭，准备备份和导入");
+    log::info!("数据库连接已关闭，准备冷备份和导入");
 
-    // 步骤2：使用 fs::copy 进行冷备份（连接已关闭，可以安全复制）
-    let result_backup_path = if target_db_path.exists() {
-        if let Some(dir) = backup_dir {
-            let backup_name = generate_backup_filename();
-            let backup_file_path = dir.join(&backup_name);
+    // 步骤4：冷备份当前数据库文件，避免覆盖后无法回滚
+    let result_backup_path = backup_database_file_cold(&target_db_path, &backup_dir);
 
-            match fs::copy(&target_db_path, &backup_file_path) {
-                Ok(_) => {
-                    let path_str = backup_file_path.to_string_lossy().to_string();
-                    log::info!("导入前冷备份成功: {}", path_str);
-                    Some(path_str)
-                }
-                Err(e) => {
-                    log::warn!("导入前备份失败: {}，继续导入", e);
-                    None
-                }
-            }
-        } else {
-            log::warn!("无法确定备份目录，跳过备份");
-            None
-        }
-    } else {
-        None
-    };
+    // 步骤5：删除整个封面目录。云端封面缓存会按新数据库重新下载，
+    // 自定义封面已单独备份，不自动恢复到新库。
+    delete_all_covers_dir()?;
+    log::info!("导入数据库前已清空封面目录");
 
-    // 步骤3：复制文件覆盖现有数据库
+    // 步骤6：复制文件覆盖现有数据库
     fs::copy(src_path, &target_db_path).map_err(|e| format!("复制数据库文件失败: {}", e))?;
     log::info!("数据库文件已复制: {} -> {:?}", source_path, target_db_path);
 
     // 导入成功，前端将负责重启应用以重新连接数据库
     Ok(ImportResult {
         success: true,
-        message: "数据库导入成功，应用将自动重启".to_string(),
+        message: "数据库导入成功，已备份自定义封面并清空封面缓存，应用将自动重启".to_string(),
         backup_path: result_backup_path,
     })
 }

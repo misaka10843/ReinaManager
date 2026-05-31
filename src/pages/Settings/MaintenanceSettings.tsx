@@ -153,7 +153,7 @@ export const DatabaseBackupSettings = () => {
 					snackbar.success(
 						t(
 							"pages.Settings.databaseBackup.importSuccess",
-							"数据库导入成功，应用将自动重启",
+							"数据库导入成功，已备份自定义封面并清空封面缓存，应用将自动重启",
 						),
 					);
 					// 延迟重启应用，让用户看到成功提示
@@ -277,7 +277,7 @@ export const DatabaseBackupSettings = () => {
 			>
 				{t(
 					"pages.Settings.databaseBackup.restoreWarning",
-					"恢复数据库将覆盖现有数据，请谨慎操作。导入后应用将自动重启。",
+					"恢复数据库将覆盖现有数据，并会先备份自定义封面、清空封面缓存以避免封面错配。导入后应用将自动重启。",
 				)}
 			</Typography>
 		</Box>

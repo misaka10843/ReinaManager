@@ -580,6 +580,10 @@ pub async fn delete_game_cover_dir(game_id: i32) -> Result<(), String> {
 pub async fn backup_custom_covers(
     db: State<'_, DatabaseConnection>,
 ) -> Result<BackupResult, String> {
+    backup_custom_covers_archive(&db).await
+}
+
+pub async fn backup_custom_covers_archive(db: &DatabaseConnection) -> Result<BackupResult, String> {
     // 1. 获取封面根目录
     let covers_dir = reina_path::get_base_data_dir()?.join("covers");
     if !covers_dir.exists() {
@@ -615,7 +619,7 @@ pub async fn backup_custom_covers(
     }
 
     // 4. 压缩为 7z 文件
-    let backup_dir = match resolve_backup_dir(&db).await {
+    let backup_dir = match resolve_backup_dir(db).await {
         Ok(dir) => dir,
         Err(e) => {
             fs::remove_dir_all(&temp_dir).ok();
@@ -650,6 +654,19 @@ pub async fn backup_custom_covers(
         path: Some(archive_path.to_string_lossy().to_string()),
         message: "自定义封面备份成功".to_string(),
     })
+}
+
+pub fn delete_all_covers_dir() -> Result<(), String> {
+    let covers_dir = reina_path::get_base_data_dir()?.join("covers");
+
+    if !covers_dir.exists() {
+        return Ok(());
+    }
+
+    fs::remove_dir_all(&covers_dir)
+        .map_err(|e| format!("无法删除封面目录 {}: {}", covers_dir.display(), e))?;
+
+    Ok(())
 }
 
 /// 扫描 covers 目录并将自定义封面文件复制到临时目录

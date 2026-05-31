@@ -243,7 +243,6 @@
 			"notFound": "遊戲不存在或已被刪除"
 		},
 		"Snackbar": {
-			"failedOpenDatabaseBackupFolder": "打開數據庫備份文件夾失敗",
 			"failedOpenGameFolder": "打開遊戲文件夾失敗",
 			"gameAddedSuccess": "遊戲添加成功",
 			"viewDetails": "查看詳情"
@@ -624,13 +623,13 @@
 				"importError": "資料庫匯入失敗: {{error}}",
 				"importFailed": "匯入失敗",
 				"importing": "匯入中...",
-				"importSuccess": "資料庫匯入成功，應用程式將自動重新啟動",
+				"importSuccess": "資料庫匯入成功，已備份自訂封面並清空封面快取，應用程式將自動重新啟動",
 				"noCoversToBackup": "沒有自訂封面需要備份",
 				"openFolder": "開啟備份資料夾",
 				"openFolderError": "開啟備份資料夾失敗: {{error}}",
 				"openFolderFailed": "開啟資料夾失敗",
 				"restore": "還原資料庫",
-				"restoreWarning": "還原資料庫將覆蓋現有資料，請謹慎操作。匯入後應用程式將自動重新啟動。",
+				"restoreWarning": "還原資料庫將覆蓋現有資料，並會先備份自訂封面、清空封面快取以避免封面錯配。匯入後應用程式將自動重新啟動。",
 				"title": "資料備份與還原"
 			},
 			"dev": {

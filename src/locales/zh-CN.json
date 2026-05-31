@@ -243,7 +243,6 @@
 			"notFound": "游戏不存在或已被删除"
 		},
 		"Snackbar": {
-			"failedOpenDatabaseBackupFolder": "打开数据库备份文件夹失败",
 			"failedOpenGameFolder": "打开游戏文件夹失败",
 			"gameAddedSuccess": "游戏添加成功",
 			"viewDetails": "查看详情"
@@ -624,13 +623,13 @@
 				"importError": "数据库导入失败: {{error}}",
 				"importFailed": "导入失败",
 				"importing": "导入中...",
-				"importSuccess": "数据库导入成功，应用将自动重启",
+				"importSuccess": "数据库导入成功，已备份自定义封面并清空封面缓存，应用将自动重启",
 				"noCoversToBackup": "没有自定义封面需要备份",
 				"openFolder": "打开备份文件夹",
 				"openFolderError": "打开备份文件夹失败: {{error}}",
 				"openFolderFailed": "打开文件夹失败",
 				"restore": "恢复数据库",
-				"restoreWarning": "恢复数据库将覆盖现有数据，请谨慎操作。导入后应用将自动重启。",
+				"restoreWarning": "恢复数据库将覆盖现有数据，并会先备份自定义封面、清空封面缓存以避免封面错配。导入后应用将自动重启。",
 				"title": "数据备份与恢复"
 			},
 			"dev": {
