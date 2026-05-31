@@ -124,6 +124,10 @@ pub fn run() {
             get_categories_with_count,
         ])
         .setup(|app| {
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+            }
+
             // 仅在调试模式下自动打开开发者工具
             #[cfg(debug_assertions)]
             {
