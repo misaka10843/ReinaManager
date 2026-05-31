@@ -1,5 +1,6 @@
+use crate::database::dto::UpdateSettingsData;
 use crate::database::repository::games_repository::GamesRepository;
-use crate::database::repository::settings_repository::DbSettingsExt;
+use crate::database::repository::settings_repository::{DbSettingsExt, SettingsRepository};
 use crate::utils::command_ext::CommandGuiExt;
 use crate::utils::game_monitor::{monitor_game, stop_game_session};
 use sea_orm::DatabaseConnection;
@@ -18,6 +19,34 @@ pub struct LaunchResult {
     message: String,
 
     process_id: Option<u32>, // 添加进程ID字段
+}
+
+#[derive(Clone, Copy)]
+enum ToolPathKind {
+    Le,
+    Magpie,
+}
+
+impl ToolPathKind {
+    fn label(self) -> &'static str {
+        match self {
+            Self::Le => "LE转区软件",
+            Self::Magpie => "Magpie软件",
+        }
+    }
+
+    fn clear_update(self) -> UpdateSettingsData {
+        match self {
+            Self::Le => UpdateSettingsData {
+                le_path: Some(None),
+                ..Default::default()
+            },
+            Self::Magpie => UpdateSettingsData {
+                magpie_path: Some(None),
+                ..Default::default()
+            },
+        }
+    }
 }
 
 /// 停止游戏结果
@@ -156,6 +185,46 @@ mod win_elevated_launch {
     }
 }
 
+async fn clear_tool_path_setting(
+    db: &DatabaseConnection,
+    tool_kind: ToolPathKind,
+) -> Result<(), String> {
+    SettingsRepository::update_settings(db, tool_kind.clear_update())
+        .await
+        .map_err(|e| format!("清空{}路径失败: {}", tool_kind.label(), e))
+}
+
+async fn resolve_tool_path(
+    db: &DatabaseConnection,
+    path: Option<&str>,
+    tool_kind: ToolPathKind,
+) -> Result<String, String> {
+    let Some(path) = path.filter(|value| !value.trim().is_empty()) else {
+        return Err(format!("{}路径未设置，请先配置路径", tool_kind.label()));
+    };
+
+    let tool_path = Path::new(path);
+    let invalid_reason = if !tool_path.exists() {
+        Some("不存在")
+    } else if !tool_path.is_file() {
+        Some("不是文件")
+    } else {
+        None
+    };
+
+    if let Some(reason) = invalid_reason {
+        clear_tool_path_setting(db, tool_kind).await?;
+        return Err(format!(
+            "{}路径{}，已清空配置，请重新设置: {}",
+            tool_kind.label(),
+            reason,
+            path
+        ));
+    }
+
+    Ok(path.to_string())
+}
+
 /// 启动游戏
 ///
 /// # Arguments
@@ -192,6 +261,31 @@ pub async fn launch_game<R: Runtime>(
     } else {
         None
     };
+    let le_path = if use_le {
+        Some(
+            resolve_tool_path(
+                db.inner(),
+                settings.as_ref().and_then(|s| s.le_path_value()),
+                ToolPathKind::Le,
+            )
+            .await?,
+        )
+    } else {
+        None
+    };
+
+    let magpie_path = if use_magpie {
+        Some(
+            resolve_tool_path(
+                db.inner(),
+                settings.as_ref().and_then(|s| s.magpie_path_value()),
+                ToolPathKind::Magpie,
+            )
+            .await?,
+        )
+    } else {
+        None
+    };
 
     // 获取游戏可执行文件的目录
     let game_dir = match Path::new(&game_path).parent() {
@@ -207,11 +301,9 @@ pub async fn launch_game<R: Runtime>(
 
     // 根据启动选项决定启动方式
     let mut command = if use_le {
-        let le_path = settings
-            .as_ref()
-            .and_then(|s| s.le_path_value())
-            .ok_or_else(|| "LE转区软件路径未设置".to_string())?;
-
+        let le_path = le_path
+            .as_deref()
+            .ok_or_else(|| "LE转区软件路径未设置，请先配置路径".to_string())?;
         let mut cmd = Command::new(le_path);
         cmd.current_dir(game_dir);
         cmd.arg(&game_path);
@@ -254,13 +346,7 @@ pub async fn launch_game<R: Runtime>(
             monitor_game(app_handle.clone(), game_id, process_id, game_path.clone()).await;
 
             // 如果需要Magpie放大，在后台启动
-            if use_magpie {
-                let magpie_path = settings
-                    .as_ref()
-                    .and_then(|s| s.magpie_path_value())
-                    .ok_or_else(|| "Magpie放大软件路径未设置".to_string())?
-                    .to_string();
-
+            if let Some(magpie_path) = magpie_path.clone() {
                 tokio::spawn(async move {
                     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
                     if let Err(e) = start_magpie_for_game(&magpie_path).await {
@@ -290,17 +376,17 @@ pub async fn launch_game<R: Runtime>(
                 );
                 // 对于LE启动，需要用LE路径作为执行文件，游戏路径作为参数
                 let (exec_path, exec_args) = if use_le {
-                    let le_path = settings
-                        .as_ref()
-                        .and_then(|s| s.le_path_value())
-                        .ok_or_else(|| "LE转区软件路径未设置，无法提权启动".to_string())?;
-
                     let mut args = vec![game_path.clone()];
                     if let Some(additional_args) = &args_clone {
                         args.extend(additional_args.clone());
                     }
 
-                    (le_path.to_string(), Some(args))
+                    (
+                        le_path
+                            .clone()
+                            .ok_or_else(|| "LE转区软件路径未设置，请先配置路径".to_string())?,
+                        Some(args),
+                    )
                 } else {
                     (game_path.clone(), args_clone)
                 };
@@ -321,13 +407,7 @@ pub async fn launch_game<R: Runtime>(
                         monitor_game(app_handle.clone(), game_id, pid, game_path.clone()).await;
 
                         // 如果需要Magpie放大，在后台启动
-                        if use_magpie {
-                            let magpie_path = settings
-                                .as_ref()
-                                .and_then(|s| s.magpie_path_value())
-                                .ok_or_else(|| "Magpie放大软件路径未设置".to_string())?
-                                .to_string();
-
+                        if let Some(magpie_path) = magpie_path.clone() {
                             tokio::spawn(async move {
                                 time::sleep(time::Duration::from_secs(1)).await;
                                 if let Err(e) = start_magpie_for_game(&magpie_path).await {

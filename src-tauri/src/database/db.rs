@@ -100,20 +100,34 @@ fn generate_backup_filename() -> String {
 
 /// 解析备份目标目录（按需读取 user.db_backup_path）
 pub async fn resolve_backup_dir(db: &DatabaseConnection) -> Result<PathBuf, String> {
-    use crate::database::repository::settings_repository::DbSettingsExt;
+    use crate::database::dto::UpdateSettingsData;
+    use crate::database::repository::settings_repository::{DbSettingsExt, SettingsRepository};
 
     let settings = db.get_settings().await?;
 
-    let backup_dir = if let Some(custom) = settings.db_backup_path_value() {
-        PathBuf::from(custom)
-    } else {
-        get_default_db_backup_path()?
-    };
+    if let Some(custom) = settings.db_backup_path_value() {
+        let custom_path = PathBuf::from(custom);
+        if custom_path.is_dir() {
+            return Ok(custom_path);
+        }
 
-    // 确保目录存在
-    if !backup_dir.exists() {
-        fs::create_dir_all(&backup_dir).map_err(|e| format!("无法创建备份目录: {}", e))?;
+        log::warn!(
+            "自定义数据库备份目录无效，清空设置并回退默认目录: {}",
+            custom
+        );
+        SettingsRepository::update_settings(
+            db,
+            UpdateSettingsData {
+                db_backup_path: Some(None),
+                ..Default::default()
+            },
+        )
+        .await
+        .map_err(|e| format!("清空无效数据库备份路径失败: {}", e))?;
     }
+
+    let backup_dir = get_default_db_backup_path()?;
+    fs::create_dir_all(&backup_dir).map_err(|e| format!("无法创建备份目录: {}", e))?;
 
     Ok(backup_dir)
 }

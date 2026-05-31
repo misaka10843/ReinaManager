@@ -20,6 +20,7 @@
 
 import { create } from "zustand";
 import { gameKeys } from "@/hooks/queries/useGames";
+import { settingsKeys } from "@/hooks/queries/useSettings";
 import { queryClient } from "@/providers/queryClient";
 import { useStore } from "@/store/appStore";
 import type { StopGameResult } from "@/types";
@@ -165,6 +166,10 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
 
 			return result;
 		} catch (error) {
+			await queryClient.invalidateQueries({
+				queryKey: settingsKeys.allSettings(),
+			});
+
 			// 启动异常，恢复状态
 			set((state) => {
 				const newRunningGames = new Set(state.runningGameIds);

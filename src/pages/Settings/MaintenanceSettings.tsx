@@ -7,9 +7,11 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import InputLabel from "@mui/material/InputLabel";
 import Stack from "@mui/material/Stack";
+import { useQueryClient } from "@tanstack/react-query";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { settingsKeys } from "@/hooks/queries/useSettings";
 import { snackbar } from "@/providers/snackBar";
 import { getUserErrorMessage } from "@/utils/errors";
 import {
@@ -21,9 +23,14 @@ import { openDatabaseBackupFolder } from "@/utils/fs/savedataBackup";
 
 export const DatabaseBackupSettings = () => {
 	const { t } = useTranslation();
+	const queryClient = useQueryClient();
 	const [isBackingUp, setIsBackingUp] = useState(false);
 	const [isBackingCovers, setIsBackingCovers] = useState(false);
 	const [isImporting, setIsImporting] = useState(false);
+
+	const refreshSettings = () => {
+		queryClient.invalidateQueries({ queryKey: settingsKeys.allSettings() });
+	};
 
 	const handleBackupDatabase = async () => {
 		setIsBackingUp(true);
@@ -31,6 +38,7 @@ export const DatabaseBackupSettings = () => {
 		try {
 			const result = await backupDatabase();
 			if (result.success) {
+				refreshSettings();
 				snackbar.success(
 					t(
 						"pages.Settings.databaseBackup.backupSuccess",
@@ -75,6 +83,7 @@ export const DatabaseBackupSettings = () => {
 		try {
 			const result = await backupCustomCovers();
 			if (result.success) {
+				refreshSettings();
 				snackbar.success(
 					result.path
 						? t(
@@ -150,6 +159,7 @@ export const DatabaseBackupSettings = () => {
 			const result = await importDatabase();
 			if (result) {
 				if (result.success) {
+					refreshSettings();
 					snackbar.success(
 						t(
 							"pages.Settings.databaseBackup.importSuccess",
@@ -159,7 +169,7 @@ export const DatabaseBackupSettings = () => {
 					// 延迟重启应用，让用户看到成功提示
 					setTimeout(async () => {
 						await relaunch();
-					}, 2000);
+					}, 3000);
 				} else {
 					snackbar.error(
 						t(
