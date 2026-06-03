@@ -1,3 +1,45 @@
+## [0.21.7](https://github.com/huoshen80/ReinaManager/compare/v0.21.6...v0.21.7) (2026-06-03)
+
+### ⚠️注意：Bangumi 已经被墙，如果没有梯子，更新后请主动前往设置 Mixed 搜索源关闭 Bangumi 源以提升 Mixed 源的搜索速度。
+
+<details>
+<summary>查看中文版本</summary>
+
+### ✨ 新功能
+
+- *(backup)* 重构导入流程，加入封面备份、冷备份提取和相同路径保护 ([a18d28a](https://github.com/huoshen80/ReinaManager/commit/a18d28a4f14b43693cc4a465d92cd7a3adf9f142))
+- *(settings)* 自修复无效工具/备份路径并同步前端缓存 ([6a09e4c](https://github.com/huoshen80/ReinaManager/commit/6a09e4cf9914086676acb5e049f8af2a68605254))
+
+### 🐛 Bug 修复
+
+- *(window)* 设置阶段显示主窗口，避免静默启动 ([76e0ee0](https://github.com/huoshen80/ReinaManager/commit/76e0ee0f4392536a2b9bbe4334b42c4413c559cd))
+- *(migration)* 通过幂等列操作和更广的旧版检测强化基线迁移 ([d340165](https://github.com/huoshen80/ReinaManager/commit/d3401653e1159a2d4c072022ff17cccefbcb7d32))
+
+### 🚜 重构
+
+- *(settings)* 将混合来源标志统一为 mixedEnabledSources 数组 ([e25d3fe](https://github.com/huoshen80/ReinaManager/commit/e25d3fef643163d915648a6b83cb4f048a21d643))
+- *(collection)* 用 SelectedCategory 替换 selectedCategoryId ([2e06ca5](https://github.com/huoshen80/ReinaManager/commit/2e06ca5ee1396000374245aa173e4de4bb5debdc))
+- *(collection)* 虚拟化开发者分类网格并恢复滚动位置 ([61c10fa](https://github.com/huoshen80/ReinaManager/commit/61c10fa2ad6239739268263dd2a3d4262e1dd156))
+
+</details>
+
+### ✨ Features
+
+- *(backup)* Refactor import flow with cover backup, cold backup extraction, and same-path guard ([a18d28a](https://github.com/huoshen80/ReinaManager/commit/a18d28a4f14b43693cc4a465d92cd7a3adf9f142))
+- *(settings)* Self-heal invalid tool/backup paths and sync frontend cache ([6a09e4c](https://github.com/huoshen80/ReinaManager/commit/6a09e4cf9914086676acb5e049f8af2a68605254))
+
+### 🐛 Bug Fixes
+
+- *(window)* Show main window on setup to prevent silent startup ([76e0ee0](https://github.com/huoshen80/ReinaManager/commit/76e0ee0f4392536a2b9bbe4334b42c4413c559cd))
+- *(migration)* Harden baseline migration with idempotent column ops and broader legacy detection ([d340165](https://github.com/huoshen80/ReinaManager/commit/d3401653e1159a2d4c072022ff17cccefbcb7d32))
+
+### 🚜 Refactor
+
+- *(settings)* Unify mixed source flags into mixedEnabledSources array ([e25d3fe](https://github.com/huoshen80/ReinaManager/commit/e25d3fef643163d915648a6b83cb4f048a21d643))
+- *(collection)* Replace selectedCategoryId with SelectedCategory ([2e06ca5](https://github.com/huoshen80/ReinaManager/commit/2e06ca5ee1396000374245aa173e4de4bb5debdc))
+- *(collection)* Virtualize developer category grid with scroll restore ([61c10fa](https://github.com/huoshen80/ReinaManager/commit/61c10fa2ad6239739268263dd2a3d4262e1dd156))
+
+
 ## [0.21.6](https://github.com/huoshen80/ReinaManager/compare/v0.21.5...v0.21.6) (2026-05-30)
 
 <details>
