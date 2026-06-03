@@ -13,15 +13,15 @@ impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         let conn = manager.get_connection();
 
-        // 开启事务，保证所有操作的原子性
-        let txn = conn.begin().await?;
-
         // 判断是否为新用户 - 检查是否存在任何遗留数据表
-        let is_new_user = !has_any_legacy_tables(&txn).await?;
+        let is_new_user = !has_any_legacy_tables(conn).await?;
 
         if is_new_user {
+            // 新用户建表使用事务，保证 schema 初始化原子性。
+            let txn = conn.begin().await?;
             log::info!("[MIGRATION] New user detected, creating modern split table structure");
             create_modern_schema(&txn).await?;
+            txn.commit().await?;
         } else {
             // 迁移前备份数据库
             match backup_sqlite("v0.6.9").await {
@@ -31,9 +31,6 @@ impl MigrationTrait for Migration {
             log::info!("[MIGRATION] Existing user detected, running legacy migration catch-up");
             run_legacy_migrations_with_sqlx().await?;
         }
-
-        // 提交事务
-        txn.commit().await?;
 
         log::info!("[MIGRATION] v1 baseline schema created successfully");
         Ok(())
@@ -45,15 +42,25 @@ async fn has_any_legacy_tables<C>(conn: &C) -> Result<bool, DbErr>
 where
     C: ConnectionTrait,
 {
-    // 检查是否存在 tauri-plugin-sql 的迁移表
-    let legacy_migration_exists = conn
+    // 老版本可能没有 _sqlx_migrations，只能通过业务表判断是否已有旧数据。
+    let legacy_table_exists = conn
         .query_one(Statement::from_string(
             DatabaseBackend::Sqlite,
-            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='_sqlx_migrations'",
+            r#"SELECT 1 FROM sqlite_master
+               WHERE type='table'
+               AND name IN (
+                   '_sqlx_migrations',
+                   'games',
+                   'user',
+                   'game_sessions',
+                   'game_statistics',
+                   'savedata'
+               )
+               LIMIT 1"#,
         ))
         .await?
         .is_some();
-    Ok(legacy_migration_exists)
+    Ok(legacy_table_exists)
 }
 
 /// 为新用户创建现代的拆分表结构
@@ -271,6 +278,9 @@ async fn run_legacy_migrations_with_sqlx() -> Result<(), DbErr> {
         .await
         .map_err(|e| DbErr::Custom(format!("Failed to connect with sqlx: {}", e)))?;
 
+    // 更老的数据库可能没有 sqlx 迁移记录表，先补齐后再执行补偿迁移。
+    ensure_sqlx_migrations_table(&pool).await?;
+
     // 检查并运行旧迁移
     run_legacy_migration_001(&pool).await?;
     run_legacy_migration_002(&pool).await?;
@@ -280,6 +290,26 @@ async fn run_legacy_migrations_with_sqlx() -> Result<(), DbErr> {
 
     pool.close().await;
     log::info!("[MIGRATION] Legacy migrations completed successfully");
+    Ok(())
+}
+
+/// 确保旧 sqlx 迁移记录表存在
+async fn ensure_sqlx_migrations_table(pool: &sqlx::SqlitePool) -> Result<(), DbErr> {
+    sqlx::query(
+        r#"CREATE TABLE IF NOT EXISTS _sqlx_migrations (
+            version        BIGINT    PRIMARY KEY,
+            description    TEXT      NOT NULL,
+            installed_on   TIMESTAMP NOT NULL
+                                     DEFAULT CURRENT_TIMESTAMP,
+            success        BOOLEAN   NOT NULL,
+            checksum       BLOB      NOT NULL,
+            execution_time BIGINT    NOT NULL
+        )"#,
+    )
+    .execute(pool)
+    .await
+    .map_err(|e| DbErr::Custom(format!("Failed to ensure sqlx migrations table: {}", e)))?;
+
     Ok(())
 }
 
@@ -312,7 +342,7 @@ async fn run_legacy_migration_001(pool: &sqlx::SqlitePool) -> Result<(), DbErr> 
 
     // 记录迁移
     sqlx::query(
-        "INSERT INTO _sqlx_migrations (version, description, installed_on, success, checksum, execution_time) 
+        "INSERT INTO _sqlx_migrations (version, description, installed_on, success, checksum, execution_time)
          VALUES (1, 'database_initialization', datetime('now'), 1, 0, 0)"
     )
     .execute(pool)
@@ -342,17 +372,23 @@ async fn run_legacy_migration_002(pool: &sqlx::SqlitePool) -> Result<(), DbErr> 
 
     log::info!("[MIGRATION] Applying migration 002 - add custom fields");
 
-    // 执行迁移 002 的 SQL
-    let migration_sql = include_str!("../old_migrations/002_add_custom_fields.sql");
+    ensure_games_column(pool, "aliases", "TEXT").await?;
+    ensure_games_column(pool, "custom_name", "TEXT").await?;
+    ensure_games_column(pool, "custom_cover", "TEXT").await?;
 
-    sqlx::query(migration_sql)
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_games_custom_name ON games(custom_name)")
         .execute(pool)
         .await
-        .map_err(|e| DbErr::Custom(format!("Failed to execute migration 002: {}", e)))?;
+        .map_err(|e| DbErr::Custom(format!("Failed to create idx_games_custom_name: {}", e)))?;
+
+    sqlx::query("CREATE INDEX IF NOT EXISTS idx_games_custom_cover ON games(custom_cover)")
+        .execute(pool)
+        .await
+        .map_err(|e| DbErr::Custom(format!("Failed to create idx_games_custom_cover: {}", e)))?;
 
     // 记录迁移
     sqlx::query(
-        "INSERT INTO _sqlx_migrations (version, description, installed_on, success, checksum, execution_time) 
+        "INSERT INTO _sqlx_migrations (version, description, installed_on, success, checksum, execution_time)
          VALUES (2, 'add_custom_fields', datetime('now'), 1, 0, 0)"
     )
     .execute(pool)
@@ -363,11 +399,51 @@ async fn run_legacy_migration_002(pool: &sqlx::SqlitePool) -> Result<(), DbErr> 
     Ok(())
 }
 
+/// SQLite 不支持旧版本通用的 ADD COLUMN IF NOT EXISTS，需要先查列。
+async fn ensure_games_column(
+    pool: &sqlx::SqlitePool,
+    column_name: &str,
+    column_type: &str,
+) -> Result<(), DbErr> {
+    let column_exists = sqlx::query_scalar::<_, i64>(
+        "SELECT COUNT(*) FROM pragma_table_info('games') WHERE name = ?",
+    )
+    .bind(column_name)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| DbErr::Custom(format!("Failed to inspect games.{}: {}", column_name, e)))?
+        > 0;
+
+    if column_exists {
+        return Ok(());
+    }
+
+    sqlx::query(&format!(
+        r#"ALTER TABLE games ADD COLUMN "{}" {}"#,
+        column_name, column_type
+    ))
+    .execute(pool)
+    .await
+    .map_err(|e| DbErr::Custom(format!("Failed to add games.{}: {}", column_name, e)))?;
+
+    Ok(())
+}
+
 /// 清理 sqlx 的迁移记录表，为转移到 SeaORM 做准备
 async fn cleanup_sqlx_migration_table(pool: &sqlx::SqlitePool) -> Result<(), DbErr> {
     log::info!("[MIGRATION] Cleaning up sqlx migration records...");
 
-    // 可选：保留迁移历史但重命名表
+    sqlx::query("DROP TABLE IF EXISTS _legacy_sqlx_migrations")
+        .execute(pool)
+        .await
+        .map_err(|e| {
+            DbErr::Custom(format!(
+                "Failed to drop legacy sqlx migrations table: {}",
+                e
+            ))
+        })?;
+
+    // 保留本轮补偿迁移历史，但避免重试时 rename 目标表已存在。
     sqlx::query("ALTER TABLE _sqlx_migrations RENAME TO _legacy_sqlx_migrations")
         .execute(pool)
         .await
