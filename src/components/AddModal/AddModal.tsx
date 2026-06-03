@@ -37,7 +37,7 @@ import { useSingleGameAddActions } from "@/hooks/features/games/useGameMetadataF
 import { useAddGame } from "@/hooks/queries/useGames";
 import { useAllSettings } from "@/hooks/queries/useSettings";
 import { showGameAddedSuccess } from "@/providers/snackBar";
-import { getEnabledMixedSources, useStore } from "@/store/appStore";
+import { useStore } from "@/store/appStore";
 import type { GameCandidateData, InsertGameParams } from "@/types";
 import { createAbortableRunner } from "@/utils/async";
 import { getUserErrorMessage } from "@/utils/errors";
@@ -89,8 +89,7 @@ const AddModal: React.FC = () => {
 	const {
 		apiSource,
 		setApiSource,
-		mixedEnableYmgal,
-		mixedEnableKun,
+		mixedEnabledSources,
 		addModalOpen,
 		addModalPath,
 		openAddModal,
@@ -100,8 +99,7 @@ const AddModal: React.FC = () => {
 		useShallow((s) => ({
 			apiSource: s.apiSource,
 			setApiSource: s.setApiSource,
-			mixedEnableYmgal: s.mixedEnableYmgal,
-			mixedEnableKun: s.mixedEnableKun,
+			mixedEnabledSources: s.mixedEnabledSources,
 			addModalOpen: s.addModalOpen,
 			addModalPath: s.addModalPath,
 			openAddModal: s.openAddModal,
@@ -109,11 +107,6 @@ const AddModal: React.FC = () => {
 			setAddModalPath: s.setAddModalPath,
 		})),
 	);
-	const enabledMixedSources = getEnabledMixedSources({
-		mixedEnableYmgal,
-		mixedEnableKun,
-	});
-
 	const [formText, setFormText] = useState("");
 	const [error, setError] = useState("");
 	const [customLoading, setCustomLoading] = useState(false);
@@ -159,7 +152,7 @@ const AddModal: React.FC = () => {
 	);
 
 	const metadataSearchFlow = useMetadataSearchFlow({
-		mixedEnabledSources: enabledMixedSources,
+		mixedEnabledSources,
 		t,
 		onResolved: handleAddGame,
 		onError: showError,

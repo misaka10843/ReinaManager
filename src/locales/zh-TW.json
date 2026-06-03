@@ -660,7 +660,7 @@
 				"title": "日誌設置"
 			},
 			"mixedSearchSources": {
-				"description": "此設定僅影響新增遊戲時的 mixed 搜尋請求。BGM 與 VNDB 會始終啟用，YMGal 與 Kungal 可依需求啟用。",
+				"description": "此設定會影響新增遊戲、批量匯入與詳情頁 mixed 資料來源更新。BGM 與 VNDB 預設啟用，YMGal 與 Kungal 可依需求啟用，且至少保留兩個來源。",
 				"title": "Mixed 搜尋來源"
 			},
 			"navigation": "設定分類導覽",

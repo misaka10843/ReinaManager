@@ -43,6 +43,7 @@ interface SourceUpdateParams {
 	vndbId?: string;
 	ymgalId?: string;
 	kunId?: string;
+	enabledSources?: readonly SourceType[];
 	bgmToken?: string;
 }
 
@@ -227,6 +228,7 @@ export async function fetchMetadataForUpdate({
 	vndbId,
 	ymgalId,
 	kunId,
+	enabledSources,
 	bgmToken,
 }: SourceUpdateParams): Promise<GameCandidateData> {
 	if (!selectedGame) {
@@ -247,12 +249,14 @@ export async function fetchMetadataForUpdate({
 	let apiData: GameCandidateData;
 
 	if (idType === "mixed") {
+		const enabled = new Set(enabledSources ?? SOURCE_KEYS);
 		apiData = await gameMetadataService.getGameByIds({
-			bgmId,
-			vndbId,
-			ymgalId,
-			kunId,
-			bgmToken,
+			bgmId: enabled.has("bgm") ? bgmId : undefined,
+			vndbId: enabled.has("vndb") ? vndbId : undefined,
+			ymgalId: enabled.has("ymgal") ? ymgalId : undefined,
+			kunId: enabled.has("kun") ? kunId : undefined,
+			bgmToken: enabled.has("bgm") ? bgmToken : undefined,
+			enabledSources,
 		});
 	} else if (isSourceType(idType)) {
 		const sourceId = getSourceUpdateId(

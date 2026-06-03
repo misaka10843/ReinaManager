@@ -24,24 +24,26 @@ import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { snackbar } from "@/providers/snackBar";
 import { useStore } from "@/store/appStore";
+import { SOURCE_KEYS, type SourceType } from "@/types";
 import { isBgmAuthExpiredError } from "@/utils/bgmAuthSession";
 import { getUserErrorMessage } from "@/utils/errors";
 
+const SOURCE_LABELS: Record<SourceType, string> = {
+	bgm: "Bangumi",
+	vndb: "VNDB",
+	ymgal: "YMGal",
+	kun: "Kungal",
+};
+
 export const MixedSearchSourceSettings = () => {
 	const { t } = useTranslation();
-	const {
-		mixedEnableYmgal,
-		setMixedEnableYmgal,
-		mixedEnableKun,
-		setMixedEnableKun,
-	} = useStore(
+	const { mixedEnabledSources, toggleMixedSource } = useStore(
 		useShallow((s) => ({
-			mixedEnableYmgal: s.mixedEnableYmgal,
-			setMixedEnableYmgal: s.setMixedEnableYmgal,
-			mixedEnableKun: s.mixedEnableKun,
-			setMixedEnableKun: s.setMixedEnableKun,
+			mixedEnabledSources: s.mixedEnabledSources,
+			toggleMixedSource: s.toggleMixedSource,
 		})),
 	);
+	const enabledCount = mixedEnabledSources.length;
 
 	return (
 		<Box className="mb-6">
@@ -52,7 +54,7 @@ export const MixedSearchSourceSettings = () => {
 				<Typography variant="caption" color="text.secondary" className="block">
 					{t(
 						"pages.Settings.mixedSearchSources.description",
-						"该设置仅影响添加游戏时的 mixed 搜索请求。BGM 和 VNDB 始终启用，YMGal 与 Kungal 可按需开启。",
+						"该设置影响添加游戏、批量导入和详情页 mixed 数据源更新。BGM 与 VNDB 默认启用，YMGal 与 Kungal 可按需开启，至少保留两个源。",
 					)}
 				</Typography>
 				<Stack
@@ -62,26 +64,23 @@ export const MixedSearchSourceSettings = () => {
 					flexWrap="wrap"
 					alignItems="center"
 				>
-					<FormControlLabel
-						control={
-							<Checkbox
-								checked={mixedEnableYmgal}
-								onChange={(e) => setMixedEnableYmgal(e.target.checked)}
-								color="primary"
+					{SOURCE_KEYS.map((source) => {
+						const checked = mixedEnabledSources.includes(source);
+						return (
+							<FormControlLabel
+								key={source}
+								control={
+									<Checkbox
+										checked={checked}
+										onChange={() => toggleMixedSource(source)}
+										color="primary"
+										disabled={checked && enabledCount <= 2}
+									/>
+								}
+								label={SOURCE_LABELS[source]}
 							/>
-						}
-						label="YMGal"
-					/>
-					<FormControlLabel
-						control={
-							<Checkbox
-								checked={mixedEnableKun}
-								onChange={(e) => setMixedEnableKun(e.target.checked)}
-								color="primary"
-							/>
-						}
-						label="Kungal"
-					/>
+						);
+					})}
 				</Stack>
 			</Box>
 		</Box>

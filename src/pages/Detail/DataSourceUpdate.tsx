@@ -14,8 +14,9 @@ import {
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { snackbar } from "@/providers/snackBar";
+import { useStore } from "@/store/appStore";
 import type { GameCandidateData, GameData, SourceType } from "@/types";
-import { isSourceType, SOURCE_FIELD_KEYS, SOURCE_KEYS } from "@/types";
+import { isSourceType, SOURCE_FIELD_KEYS, type SOURCE_KEYS } from "@/types";
 import { isBgmAuthExpiredError, withBgmAuth } from "@/utils/bgmAuthSession";
 import { getUserErrorMessage } from "@/utils/errors";
 import { fetchMetadataForUpdate } from "@/utils/gameData/metadata";
@@ -49,8 +50,40 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 	const [idType, setIdType] = useState<string>(selectedGame.id_type || "");
 	const [isLoading, setIsLoading] = useState(false);
 	const [isSwitching, setIsSwitching] = useState(false);
+	const mixedEnabledSources = useStore((s) => s.mixedEnabledSources);
 	const showMixedInputs = idType === "mixed";
 	const isBusy = isLoading || isSwitching || disabled;
+	const isMixedSourceEnabled = (source: SourceType) =>
+		mixedEnabledSources.includes(source);
+	const sourceInputs = [
+		{
+			source: "bgm",
+			label: t("pages.Detail.DataSourceUpdate.bgmId", "Bangumi ID"),
+			value: bgmId,
+			setValue: setBgmId,
+		},
+		{
+			source: "vndb",
+			label: t("pages.Detail.DataSourceUpdate.vndbId", "VNDB ID"),
+			value: vndbId,
+			setValue: setVndbId,
+		},
+		{
+			source: "ymgal",
+			label: t("pages.Detail.DataSourceUpdate.ymgalId", "YMGal ID"),
+			value: ymgalId,
+			setValue: setYmgalId,
+		},
+		{
+			source: "kun",
+			label: t("pages.Detail.DataSourceUpdate.kunId", "Kungal ID"),
+			value: kunId,
+			setValue: setKunId,
+		},
+	] as const;
+	const hasEnabledMixedSourceId = sourceInputs.some(
+		({ source, value }) => isMixedSourceEnabled(source) && Boolean(value),
+	);
 
 	const hasSelectedSourceData = (source: (typeof SOURCE_KEYS)[number]) => {
 		const { id } = SOURCE_FIELD_KEYS[source];
@@ -67,7 +100,9 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 			return false;
 		}
 		if (idType === "mixed") {
-			return SOURCE_KEYS.some((source) => hasSelectedSourceData(source));
+			return mixedEnabledSources.some((source) =>
+				hasSelectedSourceData(source),
+			);
 		}
 		if (isSourceType(idType)) {
 			return hasSelectedSourceData(idType);
@@ -104,7 +139,8 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 		try {
 			setIsLoading(true);
 			const shouldUseBgmToken =
-				idType === "bgm" || (idType === "mixed" && bgmId);
+				idType === "bgm" ||
+				(idType === "mixed" && isMixedSourceEnabled("bgm") && bgmId);
 			const result = await withBgmAuth(
 				(token) =>
 					fetchMetadataForUpdate({
@@ -114,6 +150,8 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 						vndbId,
 						ymgalId,
 						kunId,
+						enabledSources:
+							idType === "mixed" ? mixedEnabledSources : undefined,
 						bgmToken: shouldUseBgmToken ? (token ?? undefined) : undefined,
 					}),
 				{ required: idType === "bgm" },
@@ -182,56 +220,20 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 				</MuiSelect>
 			</FormControl>
 
-			{/* Bangumi ID 编辑框 */}
-			{(idType === "bgm" || showMixedInputs) && (
-				<TextField
-					label={t("pages.Detail.DataSourceUpdate.bgmId", "Bangumi ID")}
-					variant="outlined"
-					fullWidth
-					value={bgmId}
-					onChange={(e) => setBgmId(e.target.value)}
-					disabled={isBusy}
-					required={idType === "bgm"}
-				/>
-			)}
-
-			{/* VNDB ID 编辑框 */}
-			{(idType === "vndb" || showMixedInputs) && (
-				<TextField
-					label={t("pages.Detail.DataSourceUpdate.vndbId", "VNDB ID")}
-					variant="outlined"
-					fullWidth
-					value={vndbId}
-					onChange={(e) => setVndbId(e.target.value)}
-					disabled={isBusy}
-					required={idType === "vndb"}
-				/>
-			)}
-
-			{/* YMGal ID 编辑框 */}
-			{(idType === "ymgal" || showMixedInputs) && (
-				<TextField
-					label={t("pages.Detail.DataSourceUpdate.ymgalId", "YMGal ID")}
-					variant="outlined"
-					fullWidth
-					value={ymgalId}
-					onChange={(e) => setYmgalId(e.target.value)}
-					disabled={isBusy}
-					required={idType === "ymgal"}
-				/>
-			)}
-
-			{/* Kungal ID 编辑框 */}
-			{(idType === "kun" || showMixedInputs) && (
-				<TextField
-					label={t("pages.Detail.DataSourceUpdate.kunId", "Kungal ID")}
-					variant="outlined"
-					fullWidth
-					value={kunId}
-					onChange={(e) => setKunId(e.target.value)}
-					disabled={isBusy}
-					required={idType === "kun"}
-				/>
+			{sourceInputs.map(({ source, label, value, setValue }) =>
+				idType === source ||
+				(showMixedInputs && isMixedSourceEnabled(source)) ? (
+					<TextField
+						key={source}
+						label={label}
+						variant="outlined"
+						fullWidth
+						value={value}
+						onChange={(e) => setValue(e.target.value)}
+						disabled={isBusy}
+						required={idType === source}
+					/>
+				) : null,
 			)}
 
 			{/* 操作按钮 */}
@@ -271,7 +273,7 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 						(idType === "vndb" && !vndbId) ||
 						(idType === "ymgal" && !ymgalId) ||
 						(idType === "kun" && !kunId) ||
-						(idType === "mixed" && !(bgmId || vndbId || ymgalId || kunId))
+						(idType === "mixed" && !hasEnabledMixedSourceId)
 					}
 					onClick={handleFetchAndPreview}
 					startIcon={

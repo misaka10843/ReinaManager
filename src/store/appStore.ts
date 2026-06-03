@@ -22,9 +22,14 @@ import type { Update } from "@tauri-apps/plugin-updater";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { GameType, SortOption, SortOrder } from "@/services/invoke/types";
-import type { apiSourceType, SourceType } from "@/types";
+import { type apiSourceType, SOURCE_KEYS, type SourceType } from "@/types";
 import type { PlayStatusFilter } from "@/types/collection";
 import { normalizeTagFilters } from "@/utils/tagFilter";
+import {
+	APP_STORE_VERSION,
+	DEFAULT_MIXED_ENABLED_SOURCES,
+	migrateAppStorePersistedState,
+} from "./appStoreMigrations";
 import { initializeGamePlayTracking } from "./gamePlayStore";
 
 /**
@@ -80,10 +85,8 @@ export interface AppState {
 	// 数据来源选择
 	apiSource: apiSourceType;
 	setApiSource: (source: apiSourceType) => void;
-	mixedEnableYmgal: boolean;
-	setMixedEnableYmgal: (enabled: boolean) => void;
-	mixedEnableKun: boolean;
-	setMixedEnableKun: (enabled: boolean) => void;
+	mixedEnabledSources: SourceType[];
+	toggleMixedSource: (source: SourceType) => void;
 
 	// NSFW相关
 	nsfwFilter: boolean;
@@ -143,24 +146,6 @@ export interface AppState {
 	setLibrariesScrollTop: (scrollTop: number) => void;
 }
 
-const REQUIRED_MIXED_SOURCES: readonly SourceType[] = ["bgm", "vndb"];
-
-export function getEnabledMixedSources(
-	state: Pick<AppState, "mixedEnableYmgal" | "mixedEnableKun">,
-): SourceType[] {
-	const sources: SourceType[] = [...REQUIRED_MIXED_SOURCES];
-
-	if (state.mixedEnableYmgal) {
-		sources.push("ymgal");
-	}
-
-	if (state.mixedEnableKun) {
-		sources.push("kun");
-	}
-
-	return sources;
-}
-
 // 创建持久化的全局状态
 export const useStore = create<AppState>()(
 	persist(
@@ -194,13 +179,21 @@ export const useStore = create<AppState>()(
 			setApiSource: (source: apiSourceType) => {
 				set({ apiSource: source });
 			},
-			mixedEnableYmgal: false,
-			setMixedEnableYmgal: (enabled: boolean) => {
-				set({ mixedEnableYmgal: enabled });
-			},
-			mixedEnableKun: false,
-			setMixedEnableKun: (enabled: boolean) => {
-				set({ mixedEnableKun: enabled });
+			mixedEnabledSources: [...DEFAULT_MIXED_ENABLED_SOURCES],
+			toggleMixedSource: (source: SourceType) => {
+				set((state) => {
+					const current = state.mixedEnabledSources;
+					const enabledAfterAdd = SOURCE_KEYS.filter(
+						(item) => item === source || current.includes(item),
+					);
+					const nextSources = current.includes(source)
+						? current.filter((item) => item !== source)
+						: enabledAfterAdd;
+
+					return nextSources.length >= DEFAULT_MIXED_ENABLED_SOURCES.length
+						? { mixedEnabledSources: nextSources }
+						: {};
+				});
 			},
 
 			openAddModal: (path?: string) => {
@@ -409,8 +402,7 @@ export const useStore = create<AppState>()(
 				defaultCloseAction: state.defaultCloseAction,
 				// 数据来源选择
 				apiSource: state.apiSource,
-				mixedEnableYmgal: state.mixedEnableYmgal,
-				mixedEnableKun: state.mixedEnableKun,
+				mixedEnabledSources: state.mixedEnabledSources,
 				// nsfw相关
 				nsfwFilter: state.nsfwFilter,
 				nsfwCoverReplace: state.nsfwCoverReplace,
@@ -432,6 +424,8 @@ export const useStore = create<AppState>()(
 				selectedCategoryId: state.selectedCategoryId,
 				selectedCategoryName: state.selectedCategoryName,
 			}),
+			version: APP_STORE_VERSION,
+			migrate: migrateAppStorePersistedState,
 		},
 	),
 );

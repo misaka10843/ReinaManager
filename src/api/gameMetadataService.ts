@@ -501,9 +501,18 @@ class GameMetadataService {
 		ymgalId?: string;
 		kunId?: string;
 		bgmToken?: string;
+		enabledSources?: readonly SourceType[];
 		defaults?: Partial<GameCandidateData>;
 	}): Promise<GameCandidateData> {
-		const { bgmId, vndbId, ymgalId, kunId, bgmToken, defaults } = params;
+		const {
+			bgmId,
+			vndbId,
+			ymgalId,
+			kunId,
+			bgmToken,
+			enabledSources,
+			defaults,
+		} = params;
 		const providedIds = [bgmId, vndbId, ymgalId, kunId].filter(Boolean).length;
 
 		if (providedIds === 0) {
@@ -521,12 +530,14 @@ class GameMetadataService {
 					ymgal_id: ymgalId,
 					kun_id: kunId,
 					bgmToken,
+					enabledSources,
 				});
-
-				return this.applyDefaults(
-					ensureMixedResult(mergeMixedResult(pickFirstMixedResult(result))),
-					defaults,
+				const mergedResult = ensureMixedResult(
+					mergeMixedResult(pickFirstMixedResult(result)),
 				);
+				mergedResult.id_type = this.determineIdType(mergedResult);
+
+				return this.applyDefaults(mergedResult, defaults);
 			}
 
 			const promises: Promise<GameCandidateData | null>[] = [];
@@ -557,15 +568,7 @@ class GameMetadataService {
 
 			const [bgm, vndb, ymgal, kun] = await Promise.all(promises);
 
-			const mergedGame: GameCandidateData = {
-				...defaults,
-				id_type: this.determineIdType({
-					bgm_id: bgmId,
-					vndb_id: vndbId,
-					ymgal_id: ymgalId,
-					kun_id: kunId,
-				}),
-			};
+			const mergedGame: GameCandidateData = { ...defaults, id_type: "mixed" };
 
 			if (bgm) {
 				mergedGame.bgm_id = bgm.bgm_id;
@@ -595,6 +598,7 @@ class GameMetadataService {
 					message: "No metadata result returned from requested sources",
 				});
 			}
+			mergedGame.id_type = this.determineIdType(mergedGame);
 
 			return mergedGame;
 		} catch (error) {

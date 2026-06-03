@@ -25,7 +25,7 @@ import { useBulkGameAddActions } from "@/hooks/features/games/useGameMetadataFac
 import { useAllSettings } from "@/hooks/queries/useSettings";
 import { snackbar } from "@/providers/snackBar";
 import { fileService } from "@/services/invoke";
-import { getEnabledMixedSources, useStore } from "@/store/appStore";
+import { useStore } from "@/store/appStore";
 import type { apiSourceType, GameCandidateData, SourceType } from "@/types";
 import { createAbortableRunner, isAbortError } from "@/utils/async";
 import { isBgmAuthExpiredError, withBgmAuth } from "@/utils/bgmAuthSession";
@@ -64,18 +64,13 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 	const { t } = useTranslation();
 	const { data: settings } = useAllSettings();
 	const hasBgmAuth = Boolean(settings?.bgm_auth);
-	const { mixedEnableYmgal, mixedEnableKun } = useStore(
+	const { mixedEnabledSources } = useStore(
 		useShallow((s) => ({
-			mixedEnableYmgal: s.mixedEnableYmgal,
-			mixedEnableKun: s.mixedEnableKun,
+			mixedEnabledSources: s.mixedEnabledSources,
 		})),
 	);
 	const { addGamesFromBulkImport, isAddingGames } = useBulkGameAddActions();
 	const defaultBulkApiSource: SourceType = hasBgmAuth ? "bgm" : "vndb";
-	const enabledMixedSources = getEnabledMixedSources({
-		mixedEnableYmgal,
-		mixedEnableKun,
-	});
 
 	const [isScanningDirectories, setIsScanningDirectories] = useState(false);
 	const [isMatchingMetadata, setIsMatchingMetadata] = useState(false);
@@ -128,7 +123,7 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 	);
 
 	const metadataSearchFlow = useMetadataSearchFlow({
-		mixedEnabledSources: enabledMixedSources,
+		mixedEnabledSources,
 		t,
 		onResolved: handleResolvedEditMetadata,
 		onError: (message) => snackbar.error(message),

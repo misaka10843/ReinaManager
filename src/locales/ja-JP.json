@@ -660,7 +660,7 @@
 				"title": "ログ設定"
 			},
 			"mixedSearchSources": {
-				"description": "この設定は、ゲーム追加時の mixed 検索リクエストにのみ影響します。BGM と VNDB は常に有効で、YMGal と Kungal は必要に応じて有効化できます。",
+				"description": "この設定は、ゲーム追加、バルクインポート、詳細ページでの mixed データソース更新に影響します。BGM と VNDB はデフォルトで有効、YMGal と Kungal は必要に応じて有効化でき、少なくとも 2 つのソースを有効にしておく必要があります。",
 				"title": "Mixed 検索ソース"
 			},
 			"navigation": "設定カテゴリナビゲーション",

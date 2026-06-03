@@ -673,7 +673,7 @@
 				"title": "Log Settings"
 			},
 			"mixedSearchSources": {
-				"description": "This setting only affects mixed search requests when adding games. BGM and VNDB are always enabled, while YMGal and Kungal can be enabled as needed.",
+				"description": "This setting affects mixed source requests when adding games, bulk importing, and updating data sources on the detail page. BGM and VNDB are enabled by default, YMGal and Kungal can be enabled as needed, and at least two sources must remain enabled.",
 				"title": "Mixed Search Sources"
 			},
 			"navigation": "Settings category navigation",
