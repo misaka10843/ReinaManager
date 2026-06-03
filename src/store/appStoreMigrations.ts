@@ -1,4 +1,5 @@
 import { SOURCE_KEYS, type SourceType } from "@/types";
+import { DefaultGroup } from "@/types/collection";
 
 export const APP_STORE_VERSION = 1;
 export const DEFAULT_MIXED_ENABLED_SOURCES: readonly SourceType[] = [
@@ -10,7 +11,16 @@ type AppStorePersistedState = {
 	mixedEnabledSources?: SourceType[];
 	mixedEnableYmgal?: boolean;
 	mixedEnableKun?: boolean;
+	currentGroupId?: string | null;
+	selectedCategory?: SelectedCategoryState;
+	selectedCategoryId?: number | null;
+	selectedCategoryName?: string | null;
 };
+
+type SelectedCategoryState =
+	| { type: "real"; id: number }
+	| { type: "developer"; key: string }
+	| null;
 
 function normalizeMixedEnabledSources(
 	sources?: readonly SourceType[] | null,
@@ -37,6 +47,7 @@ export function migrateAppStorePersistedState(
 	const state = persistedState as AppStorePersistedState;
 	if (version < 1) {
 		migrateMixedSourceFlagsToEnabledSources(state);
+		migrateSelectedCategoryState(state);
 	}
 
 	return state;
@@ -52,4 +63,32 @@ function migrateMixedSourceFlagsToEnabledSources(
 	]);
 	delete state.mixedEnableYmgal;
 	delete state.mixedEnableKun;
+}
+
+function migrateSelectedCategoryState(state: AppStorePersistedState) {
+	if (state.selectedCategory === undefined) {
+		if (
+			typeof state.selectedCategoryId === "number" &&
+			state.selectedCategoryId > 0
+		) {
+			state.selectedCategory = {
+				type: "real",
+				id: state.selectedCategoryId,
+			};
+		} else if (
+			state.currentGroupId === DefaultGroup.DEVELOPER &&
+			typeof state.selectedCategoryName === "string" &&
+			state.selectedCategoryName
+		) {
+			state.selectedCategory = {
+				type: "developer",
+				key: state.selectedCategoryName,
+			};
+		} else {
+			state.selectedCategory = null;
+		}
+	}
+
+	delete state.selectedCategoryId;
+	delete state.selectedCategoryName;
 }

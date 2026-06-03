@@ -20,6 +20,7 @@ export interface CollectionGroup {
 export interface CollectionCategory {
 	id: number;
 	name: string;
+	virtualKey?: string;
 	sort_order: number;
 	game_count: number;
 }

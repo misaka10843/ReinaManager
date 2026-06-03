@@ -152,7 +152,10 @@ export const Detail: React.FC = () => {
 			);
 			setCurrentGroup(DefaultGroup.DEVELOPER);
 			if (match) {
-				setSelectedCategory(match.id, developerName);
+				setSelectedCategory({
+					type: "developer",
+					key: match.virtualKey ?? developerName,
+				});
 			} else {
 				setSelectedCategory(null);
 			}

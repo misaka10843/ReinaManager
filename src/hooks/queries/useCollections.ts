@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { getVirtualCategoryGameIds } from "@/hooks/common/useVirtualCollections";
+import { getDeveloperCategoryGameIds } from "@/hooks/common/useVirtualCollections";
 import { collectionService } from "@/services/invoke";
+import type { SelectedCategory } from "@/store/appStore";
 import type { GameIndex } from "@/utils/game/gameIndex";
 
 export const collectionKeys = {
@@ -88,31 +89,31 @@ function useGameCategoryIds(gameId: number | null) {
  * 返回原始 ID 列表，不做 NSFW 过滤（收藏夹显示全部内容）。
  */
 function useCategoryGames(
-	categoryId: number | null,
-	gameIndex: Pick<GameIndex, "developerGameIdsByCategoryId">,
+	selectedCategory: SelectedCategory,
+	gameIndex: Pick<GameIndex, "developerGameIdsByName">,
 ) {
-	const categoryGameIdsQuery = useCategoryGameIds(categoryId);
+	const realCategoryId =
+		selectedCategory?.type === "real" ? selectedCategory.id : null;
+	const categoryGameIdsQuery = useCategoryGameIds(realCategoryId);
 
 	const data = useMemo((): number[] => {
-		if (categoryId === null) {
+		if (!selectedCategory) {
 			return [];
 		}
 
-		if (categoryId < 0) {
+		if (selectedCategory.type === "developer") {
 			// 虚拟分类：直接从 GameIndex 中读取预构建 ID 列表
-			return getVirtualCategoryGameIds(categoryId, gameIndex);
+			return getDeveloperCategoryGameIds(selectedCategory.key, gameIndex);
 		}
 
 		// 真实分类：直接返回 ID 列表
 		return categoryGameIdsQuery.data ?? [];
-	}, [categoryGameIdsQuery.data, categoryId, gameIndex]);
+	}, [categoryGameIdsQuery.data, gameIndex, selectedCategory]);
 
 	return {
 		data,
-		isLoading:
-			categoryId !== null && categoryId > 0 && categoryGameIdsQuery.isLoading,
-		isError:
-			categoryId !== null && categoryId > 0 && categoryGameIdsQuery.isError,
+		isLoading: realCategoryId !== null && categoryGameIdsQuery.isLoading,
+		isError: realCategoryId !== null && categoryGameIdsQuery.isError,
 		error: categoryGameIdsQuery.error,
 	};
 }

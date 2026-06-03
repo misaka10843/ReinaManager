@@ -36,7 +36,7 @@ import {
 	useRenameGroup,
 } from "@/hooks/queries/useCollections";
 import { snackbar } from "@/providers/snackBar";
-import { useStore } from "@/store/appStore";
+import { type SelectedCategory, useStore } from "@/store/appStore";
 import type { Category as CategoryType } from "@/types/collection";
 import { DefaultGroup } from "@/types/collection";
 import { getUserErrorMessage } from "@/utils/errors";
@@ -80,15 +80,13 @@ export const Collection: React.FC = () => {
 		currentGroupId,
 		setSelectedCategory,
 		setCurrentGroup,
-		selectedCategoryId,
-		selectedCategoryName,
+		selectedCategory,
 	} = useStore(
 		useShallow((s) => ({
 			currentGroupId: s.currentGroupId,
 			setSelectedCategory: s.setSelectedCategory,
 			setCurrentGroup: s.setCurrentGroup,
-			selectedCategoryId: s.selectedCategoryId,
-			selectedCategoryName: s.selectedCategoryName,
+			selectedCategory: s.selectedCategory,
 		})),
 	);
 	const { index: gameIndex } = useGameIndex();
@@ -97,7 +95,9 @@ export const Collection: React.FC = () => {
 	const groups = groupsQuery.data ?? [];
 	const categoriesQuery = useCategories(currentGroupId);
 	const currentCategories = categoriesQuery.data ?? [];
-	const categoryGamesQuery = useCategoryGames(selectedCategoryId, gameIndex);
+	const selectedRealCategoryId =
+		selectedCategory?.type === "real" ? selectedCategory.id : null;
+	const categoryGamesQuery = useCategoryGames(selectedCategory, gameIndex);
 	const categoryGames = categoryGamesQuery.data;
 	const groupIds = useMemo(() => groups.map((group) => group.id), [groups]);
 	const groupGameCountsQuery = useGroupGameCounts(groupIds);
@@ -137,17 +137,18 @@ export const Collection: React.FC = () => {
 
 	const getLevelKey = (
 		groupId: string | null,
-		categoryId: number | null,
+		category: SelectedCategory,
 	): string => {
 		if (!groupId) return "groups";
-		if (categoryId === null) return `categories:${groupId}`;
-		return `games:${groupId}:${categoryId}`;
+		if (!category) return `categories:${groupId}`;
+		if (category.type === "real") return `games:${groupId}:real:${category.id}`;
+		return `games:${groupId}:developer:${category.key}`;
 	};
 
 	const saveCurrentLevelScroll = () => {
 		const container = getScrollContainer();
 		if (!container) return;
-		const currentKey = getLevelKey(currentGroupId, selectedCategoryId);
+		const currentKey = getLevelKey(currentGroupId, selectedCategory);
 		levelScrollMapRef.current[currentKey] = container.scrollTop;
 	};
 
@@ -169,12 +170,13 @@ export const Collection: React.FC = () => {
 		saveCurrentLevelScroll();
 		navIntentRef.current = { type: "forward" };
 
-		// 对于虚拟分类，需要设置分类名称
 		if (virtualCategories.isVirtual(category.id)) {
-			setSelectedCategory(category.id, category.name);
+			setSelectedCategory({
+				type: "developer",
+				key: category.virtualKey ?? category.name,
+			});
 		} else {
-			// 真实分类，直接设置 ID
-			setSelectedCategory(category.id);
+			setSelectedCategory({ type: "real", id: category.id });
 		}
 	};
 
@@ -187,7 +189,7 @@ export const Collection: React.FC = () => {
 				categoryId: categoryIdToDelete,
 				groupId: currentGroupId,
 			});
-			if (selectedCategoryId === categoryIdToDelete) {
+			if (selectedRealCategoryId === categoryIdToDelete) {
 				setSelectedCategory(null);
 			}
 			snackbar.success(
@@ -351,7 +353,7 @@ export const Collection: React.FC = () => {
 		}
 	};
 
-	const currentLevelKey = getLevelKey(currentGroupId, selectedCategoryId);
+	const currentLevelKey = getLevelKey(currentGroupId, selectedCategory);
 
 	useEffect(() => {
 		const intent = navIntentRef.current;
@@ -394,17 +396,19 @@ export const Collection: React.FC = () => {
 	 * 根据分类ID从不同来源获取名称
 	 */
 	const getCurrentCategoryName = (): string => {
-		if (selectedCategoryId === null) return "";
+		if (!selectedCategory) return "";
 
-		// 尝试从虚拟分类获取
-		const virtualName = virtualCategories.getVirtualCategoryName(
-			selectedCategoryId,
-			selectedCategoryName,
-		);
-		if (virtualName) return virtualName;
+		if (selectedCategory.type === "developer") {
+			return (
+				virtualCategories.getVirtualCategoryName(selectedCategory.key) ||
+				t("pages.Collection.breadcrumb.unknownCategory", "未知分类")
+			);
+		}
 
 		// 真实分类，从 currentCategories 中查找
-		const category = currentCategories.find((c) => c.id === selectedCategoryId);
+		const category = currentCategories.find(
+			(c) => c.id === selectedCategory.id,
+		);
 		return (
 			category?.name ||
 			t("pages.Collection.breadcrumb.unknownCategory", "未知分类")
@@ -429,7 +433,7 @@ export const Collection: React.FC = () => {
 	// 统一返回单一结构，根据状态判断显示的内容
 	// showLevel: "groups" | "categories" | "games"
 	const showLevel: "groups" | "categories" | "games" =
-		currentGroupId && selectedCategoryId !== null
+		currentGroupId && selectedCategory !== null
 			? "games"
 			: currentGroupId
 				? "categories"
@@ -650,11 +654,11 @@ export const Collection: React.FC = () => {
 						"当前分类下暂无游戏",
 					)}
 				>
-					{selectedCategoryId !== null && selectedCategoryId > 0 ? (
+					{selectedRealCategoryId !== null ? (
 						<SortableCardsGrid
 							gameIds={categoryGames}
 							displayById={gameIndex.displayById}
-							categoryId={selectedCategoryId}
+							categoryId={selectedRealCategoryId}
 						/>
 					) : (
 						<CardsGrid

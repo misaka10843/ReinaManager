@@ -22,13 +22,6 @@ export function isVirtualCategory(categoryId: number): boolean {
 	return categoryId < 0;
 }
 
-/**
- * 判断是否为开发商分组
- */
-export function isDeveloperGroup(categoryId: number): boolean {
-	return categoryId <= -101;
-}
-
 function translateDeveloperCategoryName(
 	name: string,
 	unknownDeveloper: string,
@@ -51,6 +44,7 @@ export function useDeveloperCategories(
 		() =>
 			gameIndex.developerCategories.map((category) => ({
 				...category,
+				virtualKey: category.name,
 				name: translateDeveloperCategoryName(category.name, unknownDeveloper),
 			})),
 		[gameIndex.developerCategories, unknownDeveloper],
@@ -58,17 +52,15 @@ export function useDeveloperCategories(
 }
 
 /**
- * 获取虚拟分类下的游戏 ID 列表
+ * 获取开发商虚拟分类下的游戏 ID 列表
  */
-export function getVirtualCategoryGameIds(
-	categoryId: number,
-	gameIndex: Pick<GameIndex, "developerGameIdsByCategoryId">,
+export function getDeveloperCategoryGameIds(
+	categoryKey: string | null,
+	gameIndex: Pick<GameIndex, "developerGameIdsByName">,
 ): number[] {
-	if (isDeveloperGroup(categoryId)) {
-		return gameIndex.developerGameIdsByCategoryId.get(categoryId) ?? [];
-	}
-
-	return [];
+	return categoryKey
+		? (gameIndex.developerGameIdsByName.get(categoryKey) ?? [])
+		: [];
 }
 
 /**
@@ -76,12 +68,11 @@ export function getVirtualCategoryGameIds(
  * 返回所有虚拟分类相关的数据和方法
  */
 export function useVirtualCategories(
-	gameIndex: Pick<
-		GameIndex,
-		"developerCategories" | "developerGameIdsByCategoryId"
-	>,
+	gameIndex: Pick<GameIndex, "developerCategories" | "developerGameIdsByName">,
 ) {
 	const developerCategories = useDeveloperCategories(gameIndex);
+	const { t } = useTranslation();
+	const unknownDeveloper = t("category.unknownDeveloper", "未知开发商");
 
 	/**
 	 * 根据分组ID获取对应的分类列表
@@ -102,21 +93,17 @@ export function useVirtualCategories(
 	 * 获取虚拟分类的名称（用于面包屑）
 	 */
 	const getVirtualCategoryName = (
-		_categoryId: number,
-		storedName: string | null,
+		categoryKey: string | null,
 	): string | null => {
-		return storedName;
+		return categoryKey
+			? translateDeveloperCategoryName(categoryKey, unknownDeveloper)
+			: null;
 	};
-
-	const getGameIds = (categoryId: number): number[] =>
-		getVirtualCategoryGameIds(categoryId, gameIndex);
 
 	return {
 		developerCategories,
 		getCategoriesByGroupId,
 		getVirtualCategoryName,
 		isVirtual: isVirtualCategory,
-		isDeveloper: isDeveloperGroup,
-		getGameIds,
 	};
 }

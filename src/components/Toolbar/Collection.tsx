@@ -32,13 +32,13 @@ export const CollectionToolbar: React.FC = () => {
 	const { t } = useTranslation();
 	const {
 		currentGroupId,
-		selectedCategoryId,
+		selectedCategory,
 		setCurrentGroup,
 		setSelectedCategory,
 	} = useStore(
 		useShallow((s) => ({
 			currentGroupId: s.currentGroupId,
-			selectedCategoryId: s.selectedCategoryId,
+			selectedCategory: s.selectedCategory,
 			setCurrentGroup: s.setCurrentGroup,
 			setSelectedCategory: s.setSelectedCategory,
 		})),
@@ -58,11 +58,15 @@ export const CollectionToolbar: React.FC = () => {
 
 	// 判断是否是默认分组
 	const isDefaultGroup = currentGroupId?.startsWith("default_") ?? false;
+	const selectedRealCategoryId =
+		selectedCategory?.type === "real" ? selectedCategory.id : null;
 
 	// 获取当前分类名称
 	const getCurrentCategoryName = () => {
-		if (selectedCategoryId === null || selectedCategoryId < 0) return "";
-		const category = currentCategories.find((c) => c.id === selectedCategoryId);
+		if (selectedRealCategoryId === null) return "";
+		const category = currentCategories.find(
+			(c) => c.id === selectedRealCategoryId,
+		);
 		return category?.name || "";
 	};
 
@@ -135,7 +139,7 @@ export const CollectionToolbar: React.FC = () => {
 	}
 
 	// 层级2: 分类列表页 - 显示"添加分类"和"删除分组"按钮
-	if (selectedCategoryId === null && !isDefaultGroup) {
+	if (selectedCategory === null && !isDefaultGroup) {
 		return (
 			<>
 				<Button
@@ -192,7 +196,7 @@ export const CollectionToolbar: React.FC = () => {
 	}
 
 	// 层级3: 游戏列表页 - 显示"管理游戏"按钮（只在真实分类中显示）
-	if (selectedCategoryId !== null && selectedCategoryId > 0) {
+	if (selectedRealCategoryId !== null) {
 		return (
 			<>
 				<LaunchModal />
@@ -206,7 +210,7 @@ export const CollectionToolbar: React.FC = () => {
 				<ManageGamesDialog
 					open={manageGamesDialogOpen}
 					onClose={() => setManageGamesDialogOpen(false)}
-					categoryId={selectedCategoryId}
+					categoryId={selectedRealCategoryId}
 					categoryName={getCurrentCategoryName()}
 				/>
 			</>

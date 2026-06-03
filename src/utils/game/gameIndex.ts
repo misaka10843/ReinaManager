@@ -14,7 +14,6 @@ export interface GameIndex {
 	sourceAvailabilityById: Map<number, SourceAvailability>;
 	developerCategories: Category[];
 	developerGameIdsByName: Map<string, number[]>;
-	developerGameIdsByCategoryId: Map<number, number[]>;
 }
 
 export const EMPTY_SOURCE_AVAILABILITY: SourceAvailability = {
@@ -33,12 +32,11 @@ export const EMPTY_GAME_INDEX: GameIndex = {
 	sourceAvailabilityById: new Map(),
 	developerCategories: [],
 	developerGameIdsByName: new Map(),
-	developerGameIdsByCategoryId: new Map(),
 };
 
 const gameIndexCache = new WeakMap<FullGameData[], GameIndex>();
 export const UNKNOWN_DEVELOPER_KEY = "__unknown_developer__";
-const DEVELOPER_CATEGORY_ID_OFFSET = 100000;
+const DEVELOPER_CATEGORY_ID_START = -101;
 
 export function setGameIndexCache(
 	fullGames: FullGameData[],
@@ -73,38 +71,7 @@ export function getDeveloperNames(
 	return developers.length > 0 ? developers : [unknownDeveloper];
 }
 
-function hashDeveloperCategoryName(name: string): number {
-	let h1 = 0xdeadbeef ^ name.length;
-	let h2 = 0x41c6ce57 ^ name.length;
-	for (let i = 0; i < name.length; i++) {
-		const charCode = name.charCodeAt(i);
-		h1 = Math.imul(h1 ^ charCode, 2654435761);
-		h2 = Math.imul(h2 ^ charCode, 1597334677);
-	}
-
-	h1 =
-		Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^
-		Math.imul(h2 ^ (h2 >>> 13), 3266489909);
-	h2 =
-		Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^
-		Math.imul(h1 ^ (h1 >>> 13), 3266489909);
-
-	return 4294967296 * (1048575 & h2) + (h1 >>> 0);
-}
-
-function getDeveloperCategoryId(name: string): number {
-	return -(DEVELOPER_CATEGORY_ID_OFFSET + hashDeveloperCategoryName(name));
-}
-
-function buildDeveloperIndex(
-	games: GameData[],
-	unknownDeveloper: string,
-): Pick<
-	GameIndex,
-	| "developerCategories"
-	| "developerGameIdsByName"
-	| "developerGameIdsByCategoryId"
-> {
+function buildDeveloperIndex(games: GameData[], unknownDeveloper: string) {
 	const developerGameIdsByName = new Map<string, number[]>();
 
 	for (const game of games) {
@@ -118,24 +85,18 @@ function buildDeveloperIndex(
 		}
 	}
 
-	const developerGameIdsByCategoryId = new Map<number, number[]>();
 	const developerCategories = Array.from(developerGameIdsByName.entries())
 		.toSorted((a, b) => b[1].length - a[1].length)
-		.map(([name, gameIds]) => {
-			const id = getDeveloperCategoryId(name);
-			developerGameIdsByCategoryId.set(id, gameIds);
-			return {
-				id,
-				name,
-				sort_order: 0,
-				game_count: gameIds.length,
-			};
-		});
+		.map(([name, gameIds], index) => ({
+			id: DEVELOPER_CATEGORY_ID_START - index,
+			name,
+			sort_order: 0,
+			game_count: gameIds.length,
+		}));
 
 	return {
 		developerCategories,
 		developerGameIdsByName,
-		developerGameIdsByCategoryId,
 	};
 }
 
@@ -173,7 +134,6 @@ export function buildGameIndex(fullGames: FullGameData[]): GameIndex {
 		sourceAvailabilityById,
 		developerCategories: developerIndex.developerCategories,
 		developerGameIdsByName: developerIndex.developerGameIdsByName,
-		developerGameIdsByCategoryId: developerIndex.developerGameIdsByCategoryId,
 	};
 }
 
@@ -211,7 +171,6 @@ function withDeveloperIndex(
 		...index,
 		developerCategories: developerIndex.developerCategories,
 		developerGameIdsByName: developerIndex.developerGameIdsByName,
-		developerGameIdsByCategoryId: developerIndex.developerGameIdsByCategoryId,
 	};
 }
 

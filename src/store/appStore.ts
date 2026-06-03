@@ -32,6 +32,11 @@ import {
 } from "./appStoreMigrations";
 import { initializeGamePlayTracking } from "./gamePlayStore";
 
+export type SelectedCategory =
+	| { type: "real"; id: number }
+	| { type: "developer"; key: string }
+	| null;
+
 /**
  * AppState 全局状态类型定义
  */
@@ -133,13 +138,9 @@ export interface AppState {
 
 	// 分组分类选择状态
 	currentGroupId: string | null; // 当前选中的分组ID
-	selectedCategoryId: number | null; // 当前选中的分类ID
-	selectedCategoryName: string | null; // 当前选中的分类名称
+	selectedCategory: SelectedCategory; // 当前选中的分类
 	setCurrentGroup: (groupId: string | null) => void; // 设置当前分组
-	setSelectedCategory: (
-		categoryId: number | null,
-		categoryName?: string,
-	) => void; // 设置当前选中的分类
+	setSelectedCategory: (category: SelectedCategory) => void; // 设置当前选中的分类
 
 	// 游戏仓库虚拟滚动位置
 	librariesScrollTop: number;
@@ -352,27 +353,19 @@ export const useStore = create<AppState>()(
 
 			// 分组分类选择状态初始值
 			currentGroupId: null,
-			selectedCategoryId: null,
-			selectedCategoryName: null,
+			selectedCategory: null,
 
 			// 设置当前分组
 			setCurrentGroup: (groupId: string | null) => {
 				set({
 					currentGroupId: groupId,
-					selectedCategoryId: null,
-					selectedCategoryName: null,
+					selectedCategory: null,
 				});
 			},
 
 			// 设置当前选中的分类
-			setSelectedCategory: (
-				categoryId: number | null,
-				categoryName?: string,
-			) => {
-				set({
-					selectedCategoryId: categoryId,
-					selectedCategoryName: categoryName || null,
-				});
+			setSelectedCategory: (category: SelectedCategory) => {
+				set({ selectedCategory: category });
 			},
 
 			// 游戏仓库虚拟滚动位置
@@ -421,8 +414,7 @@ export const useStore = create<AppState>()(
 				timeTrackingMode: state.timeTrackingMode,
 				// 分组分类选择状态
 				currentGroupId: state.currentGroupId,
-				selectedCategoryId: state.selectedCategoryId,
-				selectedCategoryName: state.selectedCategoryName,
+				selectedCategory: state.selectedCategory,
 			}),
 			version: APP_STORE_VERSION,
 			migrate: migrateAppStorePersistedState,
