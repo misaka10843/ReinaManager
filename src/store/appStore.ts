@@ -141,10 +141,6 @@ export interface AppState {
 	selectedCategory: SelectedCategory; // 当前选中的分类
 	setCurrentGroup: (groupId: string | null) => void; // 设置当前分组
 	setSelectedCategory: (category: SelectedCategory) => void; // 设置当前选中的分类
-
-	// 游戏仓库虚拟滚动位置
-	librariesScrollTop: number;
-	setLibrariesScrollTop: (scrollTop: number) => void;
 }
 
 // 创建持久化的全局状态
@@ -366,12 +362,6 @@ export const useStore = create<AppState>()(
 			// 设置当前选中的分类
 			setSelectedCategory: (category: SelectedCategory) => {
 				set({ selectedCategory: category });
-			},
-
-			// 游戏仓库虚拟滚动位置
-			librariesScrollTop: 0,
-			setLibrariesScrollTop: (scrollTop: number) => {
-				set({ librariesScrollTop: scrollTop });
 			},
 
 			// 初始化方法

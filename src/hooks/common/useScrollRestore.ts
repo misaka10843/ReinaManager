@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
+import type { GridStateSnapshot } from "react-virtuoso";
 
 const scrollPositions: Record<string, number> = {};
+const virtuosoGridStates: Record<string, GridStateSnapshot | undefined> = {};
+const VIRTUAL_SCROLL_CONTAINER_SELECTOR = "main";
 
 export const getScrollPosition = (path: string): number => {
 	return scrollPositions[path] ?? 0;
@@ -9,6 +12,13 @@ export const getScrollPosition = (path: string): number => {
 
 export const setScrollPosition = (path: string, position: number): void => {
 	scrollPositions[path] = position;
+	if (position === 0) {
+		for (const key of Object.keys(virtuosoGridStates)) {
+			if (key === path || key.startsWith(`${path}:`)) {
+				delete virtuosoGridStates[key];
+			}
+		}
+	}
 };
 
 interface UseScrollRestoreOptions {
@@ -155,4 +165,93 @@ export function useScrollRestore(
 	useEffect(() => {
 		performScrollRestore();
 	}, [performScrollRestore]);
+}
+
+interface UseVirtuosoGridRestoreOptions {
+	columns: number;
+	itemCount: number;
+	rowHeight: number;
+	scrollKey: string | null | undefined;
+}
+
+export function useVirtuosoGridRestore({
+	columns,
+	itemCount,
+	rowHeight,
+	scrollKey,
+}: UseVirtuosoGridRestoreOptions) {
+	const [scrollParent, setScrollParent] = useState<HTMLElement | null>(null);
+	const wrapperRef = useRef<HTMLDivElement>(null);
+	const initialScrollTop = useMemo(
+		() => (scrollKey ? getScrollPosition(scrollKey) : 0),
+		[scrollKey],
+	);
+	const lastScrollTopRef = useRef(initialScrollTop);
+
+	useEffect(() => {
+		setScrollParent(
+			document.querySelector<HTMLElement>(VIRTUAL_SCROLL_CONTAINER_SELECTOR),
+		);
+	}, []);
+
+	useEffect(() => {
+		lastScrollTopRef.current = initialScrollTop;
+	}, [initialScrollTop]);
+
+	useEffect(() => {
+		if (!scrollParent || !scrollKey) return;
+
+		const wrapper = wrapperRef.current;
+		if (!wrapper) return;
+
+		const wrapperOffsetTop =
+			wrapper.getBoundingClientRect().top -
+			scrollParent.getBoundingClientRect().top +
+			scrollParent.scrollTop;
+
+		const onScroll = () => {
+			lastScrollTopRef.current = Math.max(
+				0,
+				scrollParent.scrollTop - wrapperOffsetTop,
+			);
+		};
+
+		scrollParent.addEventListener("scroll", onScroll, { passive: true });
+
+		return () => {
+			scrollParent.removeEventListener("scroll", onScroll);
+			setScrollPosition(scrollKey, lastScrollTopRef.current);
+		};
+	}, [scrollKey, scrollParent]);
+	const stateKey = scrollKey ? `${scrollKey}:${columns}:${itemCount}` : null;
+	const state = stateKey ? virtuosoGridStates[stateKey] : undefined;
+	const initialTopMostItemIndex =
+		itemCount > 0 && initialScrollTop > 0
+			? Math.min(
+					itemCount - 1,
+					Math.max(0, Math.floor(initialScrollTop / rowHeight) * columns),
+				)
+			: null;
+	const restoreProps = state
+		? { restoreStateFrom: state }
+		: initialTopMostItemIndex !== null
+			? {
+					initialTopMostItemIndex,
+				}
+			: {};
+
+	const handleStateChanged = useCallback(
+		(nextState: GridStateSnapshot) => {
+			if (!stateKey) return;
+			virtuosoGridStates[stateKey] = nextState;
+		},
+		[stateKey],
+	);
+
+	return {
+		restoreProps,
+		scrollParent,
+		stateChanged: handleStateChanged,
+		wrapperRef,
+	};
 }

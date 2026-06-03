@@ -26,6 +26,12 @@ interface EntityCardProps {
 	};
 	/** 点击卡片回调 */
 	onClick: () => void;
+	/** 悬停提示 */
+	title?: string;
+	/** 是否撑满父容器高度 */
+	fillHeight?: boolean;
+	/** 是否单行省略标题 */
+	titleNoWrap?: boolean;
 	/** 删除回调 */
 	onDelete?: (id: string | number) => void;
 	/** 右键菜单回调 */
@@ -52,6 +58,9 @@ export const EntityCard = memo<EntityCardProps>(
 	({
 		entity,
 		onClick,
+		title,
+		fillHeight = false,
+		titleNoWrap = false,
 		onDelete,
 		onContextMenu,
 		showDelete = true,
@@ -85,13 +94,31 @@ export const EntityCard = memo<EntityCardProps>(
 		};
 
 		return (
-			<Box sx={{ p: 1, position: "relative" }}>
-				<Card onContextMenu={handleContextMenu}>
-					<CardActionArea onClick={onClick}>
-						<CardContent>
+			<Box
+				sx={{
+					p: 1,
+					position: "relative",
+					...(fillHeight && { boxSizing: "border-box", height: "100%" }),
+				}}
+			>
+				<Card
+					onContextMenu={handleContextMenu}
+					sx={fillHeight ? { height: "100%" } : undefined}
+				>
+					<CardActionArea
+						onClick={onClick}
+						title={title}
+						sx={fillHeight ? { height: "100%" } : undefined}
+					>
+						<CardContent sx={fillHeight ? { height: "100%" } : undefined}>
 							<Box display="flex" alignItems="center" gap={1} mb={1}>
 								<FolderIcon color="primary" />
-								<Typography variant="h6" component="div">
+								<Typography
+									variant="h6"
+									component="div"
+									noWrap={titleNoWrap}
+									sx={titleNoWrap ? { minWidth: 0 } : undefined}
+								>
 									{entity.name}
 								</Typography>
 							</Box>

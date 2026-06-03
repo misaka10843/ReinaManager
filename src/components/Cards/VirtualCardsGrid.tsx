@@ -1,6 +1,6 @@
-import { memo, useEffect, useMemo, useRef, useState } from "react";
-import { Virtuoso } from "react-virtuoso";
-import { useStore } from "@/store/appStore";
+import { memo, useEffect, useState } from "react";
+import { VirtuosoGrid } from "react-virtuoso";
+import { useVirtuosoGridRestore } from "@/hooks/common/useScrollRestore";
 import type { GameData } from "@/types";
 import { CardItem } from "./CardItem";
 import { useCardsController } from "./useCardsController";
@@ -13,6 +13,10 @@ const BREAKPOINTS = [
 	{ min: 1024, cols: 6 },
 ] as const;
 
+const CARD_GRID_ROW_HEIGHT_ESTIMATE = 260;
+const VIRTUAL_CARDS_GRID_CLASS =
+	"grid gap-4 pb-4 [grid-template-columns:repeat(var(--virtual-cards-grid-columns),minmax(0,1fr))]";
+
 function getColumnCount(): number {
 	const width = window.innerWidth;
 	for (const bp of BREAKPOINTS) {
@@ -24,6 +28,7 @@ function getColumnCount(): number {
 interface VirtualCardsGridProps {
 	gameIds: number[];
 	displayById: Map<number, GameData>;
+	scrollRestoreKey?: string | null;
 }
 
 /**
@@ -31,26 +36,16 @@ interface VirtualCardsGridProps {
  *
  * 滚动恢复：
  * - 保存：scroll 事件中缓存 main.scrollTop - wrapper 相对偏移（列表内坐标），
- *         unmount 时写入 Zustand（ref 值，避免 react-router 重置 DOM 的时序问题）
- * - 恢复：initialScrollTop 直接传列表内偏移，Virtuoso 初始化时同步生效
+ *         unmount 时写入通用滚动缓存（ref 值，避免 react-router 重置 DOM 的时序问题）
+ * - 恢复：优先使用 VirtuosoGrid 状态快照，缺失时 fallback 到近似 item index
  */
 export const VirtualCardsGrid = memo(
-	({ gameIds, displayById }: VirtualCardsGridProps) => {
+	({
+		gameIds,
+		displayById,
+		scrollRestoreKey = "libraries",
+	}: VirtualCardsGridProps) => {
 		const { controls, getCardProps } = useCardsController({ gameIds });
-
-		const [mainEl, setMainEl] = useState<HTMLElement | null>(null);
-		const virtuosoWrapperRef = useRef<HTMLDivElement>(null);
-
-		useEffect(() => {
-			setMainEl(document.querySelector("main"));
-		}, []);
-
-		// 首次 mount 时读取，仅用于 initialScrollTop（Virtuoso 初始化时同步生效）
-		const savedScrollTop = useMemo(
-			() => useStore.getState().librariesScrollTop,
-			[],
-		);
-
 		const [columns, setColumns] = useState(() => getColumnCount());
 
 		useEffect(() => {
@@ -59,65 +54,49 @@ export const VirtualCardsGrid = memo(
 			return () => window.removeEventListener("resize", onResize);
 		}, []);
 
-		const rows = useMemo(() => {
-			const result: number[][] = [];
-			for (let i = 0; i < gameIds.length; i += columns) {
-				result.push(gameIds.slice(i, i + columns));
-			}
-			return result;
-		}, [gameIds, columns]);
-
-		// scroll 事件缓存列表内相对偏移，unmount 时存入 Zustand
-		const lastScrollTop = useRef(0);
-
-		useEffect(() => {
-			if (!mainEl) return;
-
-			// wrapper 相对 main 内容区的固定偏移（含 margin），算一次
-			const wrapperOffsetTop =
-				(virtuosoWrapperRef.current?.getBoundingClientRect().top ?? 0) -
-				mainEl.getBoundingClientRect().top +
-				mainEl.scrollTop;
-
-			const onScroll = () => {
-				lastScrollTop.current = Math.max(
-					0,
-					mainEl.scrollTop - wrapperOffsetTop,
-				);
-			};
-
-			mainEl.addEventListener("scroll", onScroll, { passive: true });
-			return () => {
-				mainEl.removeEventListener("scroll", onScroll);
-				useStore.getState().setLibrariesScrollTop(lastScrollTop.current);
-			};
-		}, [mainEl]);
+		const {
+			restoreProps,
+			scrollParent,
+			stateChanged,
+			wrapperRef: virtuosoWrapperRef,
+		} = useVirtuosoGridRestore({
+			columns,
+			itemCount: gameIds.length,
+			rowHeight: CARD_GRID_ROW_HEIGHT_ESTIMATE,
+			scrollKey: scrollRestoreKey,
+		});
 
 		return (
 			<>
 				{controls}
 				<div ref={virtuosoWrapperRef} className="flex-1 min-h-0">
-					{mainEl && (
-						<Virtuoso
-							customScrollParent={mainEl}
-							totalCount={rows.length}
-							overscan={400}
-							initialScrollTop={savedScrollTop}
-							itemContent={(rowIndex) => (
-								<div
-									className="grid gap-4 pb-4"
-									style={{
-										gridTemplateColumns: `repeat(${columns}, 1fr)`,
-									}}
-								>
-									{rows[rowIndex].map((gameId) => {
-										const game = displayById.get(gameId);
-										if (!game) return null;
-										const props = getCardProps(game);
-										return <CardItem key={gameId} {...props} />;
-									})}
-								</div>
-							)}
+					{scrollParent && (
+						<VirtuosoGrid
+							key={scrollRestoreKey ?? "no-scroll-restore"}
+							customScrollParent={scrollParent}
+							data={gameIds}
+							computeItemKey={(index, gameId) =>
+								gameId === undefined
+									? `missing-game-${index}`
+									: `game-${gameId}`
+							}
+							listClassName={VIRTUAL_CARDS_GRID_CLASS}
+							itemClassName="min-w-0"
+							increaseViewportBy={{ top: 600, bottom: 1200 }}
+							stateChanged={stateChanged}
+							{...restoreProps}
+							style={
+								{
+									"--virtual-cards-grid-columns": columns,
+								} as React.CSSProperties
+							}
+							itemContent={(_, gameId) => {
+								if (gameId === undefined) return null;
+								const game = displayById.get(gameId);
+								if (!game) return null;
+								const props = getCardProps(game);
+								return <CardItem {...props} />;
+							}}
 						/>
 					)}
 				</div>

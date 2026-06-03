@@ -15,14 +15,19 @@ import Link from "@mui/material/Link";
 import Typography from "@mui/material/Typography";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { VirtuosoGrid } from "react-virtuoso";
 import { useShallow } from "zustand/react/shallow";
-import { CardsGrid, SortableCardsGrid } from "@/components/Cards";
+import { SortableCardsGrid, VirtualCardsGrid } from "@/components/Cards";
 import { ManageGamesDialog } from "@/components/Collection";
 import { EntityCard } from "@/components/Collection/EntityCard";
 import { GameListStateView } from "@/components/GameListStateView";
 import { InputDialog } from "@/components/InputDialog";
 import { CollectionRightMenu } from "@/components/RightMenu";
-import { useScrollRestore } from "@/hooks/common/useScrollRestore";
+import {
+	setScrollPosition,
+	useScrollRestore,
+	useVirtuosoGridRestore,
+} from "@/hooks/common/useScrollRestore";
 import { useVirtualCategories } from "@/hooks/common/useVirtualCollections";
 import { useGameIndex } from "@/hooks/features/games/useGameListFacade";
 import {
@@ -42,9 +47,30 @@ import { DefaultGroup } from "@/types/collection";
 import { getUserErrorMessage } from "@/utils/errors";
 
 const SCROLL_CONTAINER_SELECTOR = "main";
+const CATEGORY_WIDE_BREAKPOINT = 1200;
+const CATEGORY_GRID_TEMPLATE_COLUMNS = {
+	md: "repeat(3, 1fr)",
+	lg: "repeat(4, 1fr)",
+};
 
 const getScrollContainer = () =>
 	document.querySelector<HTMLElement>(SCROLL_CONTAINER_SELECTOR);
+
+function getCategoryColumnCount(): number {
+	return window.innerWidth >= CATEGORY_WIDE_BREAKPOINT ? 4 : 3;
+}
+
+function useCategoryColumnCount(): number {
+	const [columns, setColumns] = useState(() => getCategoryColumnCount());
+
+	useEffect(() => {
+		const onResize = () => setColumns(getCategoryColumnCount());
+		window.addEventListener("resize", onResize);
+		return () => window.removeEventListener("resize", onResize);
+	}, []);
+
+	return columns;
+}
 
 type CollectionScrollNavIntent =
 	| { type: "forward" }
@@ -70,6 +96,62 @@ type CollectionMenuPosition =
 type CollectionMenuTarget =
 	| { type: "group"; id: string; name: string }
 	| { type: "category"; id: number; name: string };
+
+interface DeveloperCategoryGridProps {
+	categories: CategoryType[];
+	columns: number;
+	renderCategory: (category: CategoryType) => React.ReactNode;
+	scrollKey: string | null;
+}
+
+const DEVELOPER_CATEGORY_GRID_ROW_HEIGHT = 112;
+const DEVELOPER_CATEGORY_GRID_CLASS =
+	"grid gap-4 pb-4 [grid-template-columns:repeat(var(--collection-category-columns),minmax(0,1fr))]";
+
+function DeveloperCategoryGrid({
+	categories,
+	columns,
+	renderCategory,
+	scrollKey,
+}: DeveloperCategoryGridProps) {
+	const { restoreProps, scrollParent, stateChanged, wrapperRef } =
+		useVirtuosoGridRestore({
+			columns,
+			itemCount: categories.length,
+			rowHeight: DEVELOPER_CATEGORY_GRID_ROW_HEIGHT,
+			scrollKey,
+		});
+
+	return (
+		<div ref={wrapperRef} className="flex-1 min-h-0">
+			{scrollParent && (
+				<VirtuosoGrid
+					key={scrollKey ?? "developer-categories"}
+					customScrollParent={scrollParent}
+					data={categories}
+					computeItemKey={(index, category) =>
+						category
+							? `category-${category.virtualKey ?? category.id}`
+							: `missing-category-${index}`
+					}
+					listClassName={DEVELOPER_CATEGORY_GRID_CLASS}
+					itemClassName="min-w-0 h-112px"
+					increaseViewportBy={{ top: 400, bottom: 800 }}
+					stateChanged={stateChanged}
+					{...restoreProps}
+					style={
+						{
+							"--collection-category-columns": columns,
+						} as React.CSSProperties
+					}
+					itemContent={(_, category) =>
+						category ? renderCategory(category) : null
+					}
+				/>
+			)}
+		</div>
+	);
+}
 
 // 原本的 GroupCard/CategoryCard 已被通用 EntityCard 取代
 
@@ -146,6 +228,7 @@ export const Collection: React.FC = () => {
 	};
 
 	const saveCurrentLevelScroll = () => {
+		if (currentGroupId === DefaultGroup.DEVELOPER) return;
 		const container = getScrollContainer();
 		if (!container) return;
 		const currentKey = getLevelKey(currentGroupId, selectedCategory);
@@ -158,6 +241,10 @@ export const Collection: React.FC = () => {
 	const handleGroupClick = (groupIdToNavigate: string) => {
 		saveCurrentLevelScroll();
 		navIntentRef.current = { type: "forward" };
+		if (groupIdToNavigate === DefaultGroup.DEVELOPER) {
+			const nextLevelKey = getLevelKey(groupIdToNavigate, null);
+			setScrollPosition(nextLevelKey, 0);
+		}
 		setCurrentGroup(groupIdToNavigate);
 	};
 
@@ -171,10 +258,12 @@ export const Collection: React.FC = () => {
 		navIntentRef.current = { type: "forward" };
 
 		if (virtualCategories.isVirtual(category.id)) {
-			setSelectedCategory({
+			const nextCategory: SelectedCategory = {
 				type: "developer",
 				key: category.virtualKey ?? category.name,
-			});
+			};
+			setScrollPosition(getLevelKey(currentGroupId, nextCategory), 0);
+			setSelectedCategory(nextCategory);
 		} else {
 			setSelectedCategory({ type: "real", id: category.id });
 		}
@@ -359,6 +448,11 @@ export const Collection: React.FC = () => {
 		const intent = navIntentRef.current;
 		if (!intent || !currentLevelKey) return;
 
+		if (currentGroupId === DefaultGroup.DEVELOPER) {
+			navIntentRef.current = null;
+			return;
+		}
+
 		const container = getScrollContainer();
 		if (!container) {
 			navIntentRef.current = null;
@@ -372,7 +466,7 @@ export const Collection: React.FC = () => {
 		}
 
 		navIntentRef.current = null;
-	}, [currentLevelKey]);
+	}, [currentLevelKey, currentGroupId]);
 
 	/**
 	 * 获取当前分组的名称
@@ -438,6 +532,46 @@ export const Collection: React.FC = () => {
 			: currentGroupId
 				? "categories"
 				: "groups";
+	const isDeveloperCategoryList =
+		showLevel === "categories" && currentGroupId === DefaultGroup.DEVELOPER;
+	const categoryColumns = useCategoryColumnCount();
+	const categoryScrollRestoreKey = isDeveloperCategoryList
+		? currentLevelKey
+		: null;
+
+	const renderCategoryCard = (category: CategoryType) => {
+		const isVirtual = virtualCategories.isVirtual(category.id);
+		return (
+			<EntityCard
+				key={category.virtualKey ?? category.id}
+				entity={{
+					id: category.id,
+					name: category.name,
+					count: category.game_count,
+				}}
+				title={category.name}
+				fillHeight={isVirtual}
+				titleNoWrap={isVirtual}
+				onClick={() => handleCategoryClick(category)}
+				onDelete={
+					isVirtual ? undefined : (id) => handleDeleteCategory(id as number)
+				}
+				onContextMenu={(e, id, name) => {
+					if (!isVirtual) handleCategoryContextMenu(e, id as number, name);
+				}}
+				showDelete={!isVirtual}
+				deleteTitle={t("pages.Collection.deleteCategoryTitle", "删除分类")}
+				deleteMessage={t(
+					"pages.Collection.deleteCategoryMessage",
+					'确定要删除分类 "{{name}}" 吗？此操作将移除该分类与所有游戏的关联，但不会删除游戏本身。',
+					{
+						name: category.name,
+					},
+				)}
+				countLabel={t("pages.Collection.gamesCount", "个游戏")}
+			/>
+		);
+	};
 
 	// 准备默认分组和自定义分组
 	const defaultGroups = [
@@ -534,12 +668,7 @@ export const Collection: React.FC = () => {
 				<Box
 					sx={{
 						display: "grid",
-						gridTemplateColumns: {
-							xs: "repeat(1, 1fr)",
-							sm: "repeat(2, 1fr)",
-							md: "repeat(3, 1fr)",
-							lg: "repeat(4, 1fr)",
-						},
+						gridTemplateColumns: CATEGORY_GRID_TEMPLATE_COLUMNS,
 						gap: 2,
 					}}
 				>
@@ -592,55 +721,22 @@ export const Collection: React.FC = () => {
 							{t("pages.Collection.noCategoriesHint", "当前分组下没有分类")}
 						</Typography>
 					</Box>
+				) : isDeveloperCategoryList ? (
+					<DeveloperCategoryGrid
+						categories={categories}
+						columns={categoryColumns}
+						renderCategory={renderCategoryCard}
+						scrollKey={categoryScrollRestoreKey}
+					/>
 				) : (
 					<Box
 						sx={{
 							display: "grid",
-							gridTemplateColumns: {
-								xs: "repeat(1, 1fr)",
-								sm: "repeat(2, 1fr)",
-								md: "repeat(3, 1fr)",
-								lg: "repeat(4, 1fr)",
-							},
+							gridTemplateColumns: CATEGORY_GRID_TEMPLATE_COLUMNS,
 							gap: 2,
 						}}
 					>
-						{categories.map((category) => {
-							const isVirtual = virtualCategories.isVirtual(category.id);
-							return (
-								<EntityCard
-									key={category.id}
-									entity={{
-										id: category.id,
-										name: category.name,
-										count: category.game_count,
-									}}
-									onClick={() => handleCategoryClick(category)}
-									onDelete={
-										isVirtual
-											? undefined
-											: (id) => handleDeleteCategory(id as number)
-									}
-									onContextMenu={(e, id, name) => {
-										if (!isVirtual)
-											handleCategoryContextMenu(e, id as number, name);
-									}}
-									showDelete={!isVirtual}
-									deleteTitle={t(
-										"pages.Collection.deleteCategoryTitle",
-										"删除分类",
-									)}
-									deleteMessage={t(
-										"pages.Collection.deleteCategoryMessage",
-										'确定要删除分类 "{{name}}" 吗？此操作将移除该分类与所有游戏的关联，但不会删除游戏本身。',
-										{
-											name: category.name,
-										},
-									)}
-									countLabel={t("pages.Collection.gamesCount", "个游戏")}
-								/>
-							);
-						})}
+						{categories.map(renderCategoryCard)}
 					</Box>
 				))}
 
@@ -661,9 +757,10 @@ export const Collection: React.FC = () => {
 							categoryId={selectedRealCategoryId}
 						/>
 					) : (
-						<CardsGrid
+						<VirtualCardsGrid
 							gameIds={categoryGames}
 							displayById={gameIndex.displayById}
+							scrollRestoreKey={currentLevelKey}
 						/>
 					)}
 				</GameListStateView>
