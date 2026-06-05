@@ -1,10 +1,4 @@
-import {
-	FormControlLabel,
-	Radio,
-	RadioGroup,
-	Switch,
-	Typography,
-} from "@mui/material";
+import { FormControlLabel, Radio, RadioGroup, Switch } from "@mui/material";
 import Box from "@mui/material/Box";
 import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
@@ -104,21 +98,10 @@ export const NsfwSettings = () => {
 
 export const CardClickModeSettings = () => {
 	const { t } = useTranslation();
-	const {
-		cardClickMode,
-		setCardClickMode,
-		doubleClickLaunch,
-		setDoubleClickLaunch,
-		longPressLaunch,
-		setLongPressLaunch,
-	} = useStore(
+	const { cardClickMode, setCardClickMode } = useStore(
 		useShallow((s) => ({
 			cardClickMode: s.cardClickMode,
 			setCardClickMode: s.setCardClickMode,
-			doubleClickLaunch: s.doubleClickLaunch,
-			setDoubleClickLaunch: s.setDoubleClickLaunch,
-			longPressLaunch: s.longPressLaunch,
-			setLongPressLaunch: s.setLongPressLaunch,
 		})),
 	);
 
@@ -154,66 +137,6 @@ export const CardClickModeSettings = () => {
 						className="mb-1"
 					/>
 				</RadioGroup>
-
-				{/* 双击启动游戏设置 */}
-				<Box className="mt-4 pl-2">
-					<FormControlLabel
-						control={
-							<Switch
-								checked={doubleClickLaunch}
-								onChange={(e) => setDoubleClickLaunch(e.target.checked)}
-								color="primary"
-							/>
-						}
-						label={t(
-							"pages.Settings.cardClickMode.doubleClickLaunch",
-							"双击启动游戏",
-						)}
-						className="mb-1"
-					/>
-					{doubleClickLaunch && cardClickMode === "navigate" && (
-						<Typography
-							variant="caption"
-							color="text.secondary"
-							className="block ml-8"
-						>
-							{t(
-								"pages.Settings.cardClickMode.doubleClickLaunchNote",
-								"开启后会导致左键单击延迟200ms（仅导航模式）",
-							)}
-						</Typography>
-					)}
-				</Box>
-
-				{/* 长按启动游戏设置 */}
-				<Box className="mt-4 pl-2">
-					<FormControlLabel
-						control={
-							<Switch
-								checked={longPressLaunch}
-								onChange={(e) => setLongPressLaunch(e.target.checked)}
-								color="primary"
-							/>
-						}
-						label={t(
-							"pages.Settings.cardClickMode.longPressLaunch",
-							"长按启动游戏",
-						)}
-						className="mb-1"
-					/>
-					{longPressLaunch && (
-						<Typography
-							variant="caption"
-							color="text.secondary"
-							className="block ml-8"
-						>
-							{t(
-								"pages.Settings.cardClickMode.longPressLaunchNote",
-								"长按卡片800ms后启动游戏，开启后收藏夹拖拽排序功能将被禁用",
-							)}
-						</Typography>
-					)}
-				</Box>
 			</Box>
 		</Box>
 	);

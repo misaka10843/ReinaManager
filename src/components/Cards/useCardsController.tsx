@@ -31,17 +31,10 @@ export function useCardsController({
 	const canUseBatchMode = isLibraries || isCollectionCategory;
 	const rightMenuRef = useRef<RightMenuHostHandle>(null);
 
-	const {
-		setSelectedGameId,
-		cardClickMode,
-		doubleClickLaunch,
-		longPressLaunch,
-	} = useStore(
+	const { setSelectedGameId, cardClickMode } = useStore(
 		useShallow((s) => ({
 			setSelectedGameId: s.setSelectedGameId,
 			cardClickMode: s.cardClickMode,
-			doubleClickLaunch: s.doubleClickLaunch,
-			longPressLaunch: s.longPressLaunch,
 		})),
 	);
 	const launchGame = useGamePlayStore((s) => s.launchGame);
@@ -91,43 +84,19 @@ export function useCardsController({
 	const handleCardDoubleClick = useCallback(
 		async (game: GameData) => {
 			if (showBatchControls) return;
+			if (!game.localpath) return;
 
-			if (doubleClickLaunch) {
-				if (!game.localpath) return;
-
-				setSelectedGameId(game.id);
-				try {
-					const result = await launchGame(game.id);
-					if (!result.success) {
-						snackbar.error(result.message);
-					}
-				} catch (error) {
-					snackbar.error(getUserErrorMessage(error, i18n.t.bind(i18n)));
+			setSelectedGameId(game.id);
+			try {
+				const result = await launchGame(game.id);
+				if (!result.success) {
+					snackbar.error(result.message);
 				}
+			} catch (error) {
+				snackbar.error(getUserErrorMessage(error, i18n.t.bind(i18n)));
 			}
 		},
-		[doubleClickLaunch, launchGame, setSelectedGameId, showBatchControls, i18n],
-	);
-
-	const handleCardLongPress = useCallback(
-		async (game: GameData) => {
-			if (showBatchControls) return;
-
-			if (longPressLaunch) {
-				if (!game.localpath) return;
-
-				setSelectedGameId(game.id);
-				try {
-					const result = await launchGame(game.id);
-					if (!result.success) {
-						snackbar.error(result.message);
-					}
-				} catch (error) {
-					snackbar.error(getUserErrorMessage(error, i18n.t.bind(i18n)));
-				}
-			}
-		},
-		[longPressLaunch, launchGame, setSelectedGameId, showBatchControls, i18n],
+		[launchGame, setSelectedGameId, showBatchControls, i18n],
 	);
 
 	const handleContextMenu = useCallback(
@@ -198,24 +167,18 @@ export function useCardsController({
 							}
 						: undefined,
 				interaction: {
-					useDelayedClick:
-						!showBatchControls &&
-						cardClickMode === "navigate" &&
-						doubleClickLaunch,
+					useDelayedClick: !showBatchControls && cardClickMode === "navigate",
 					onContextMenu: (e: React.MouseEvent) => handleContextMenu(e, gameId),
 					onClick: () => handleCardClick(gameId),
 					onDoubleClick: () => handleCardDoubleClick(game),
-					onLongPress: () => handleCardLongPress(game),
 				},
 			};
 		},
 		[
 			cardClickMode,
-			doubleClickLaunch,
 			handleContextMenu,
 			handleCardClick,
 			handleCardDoubleClick,
-			handleCardLongPress,
 			handleRemoveSingleFromCategory,
 			isCollectionCategory,
 			selectedBatchGameIdSet,
@@ -246,7 +209,6 @@ export function useCardsController({
 	return {
 		controls,
 		getCardProps,
-		longPressLaunch,
 		showBatchControls,
 	};
 }

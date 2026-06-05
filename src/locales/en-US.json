@@ -603,10 +603,6 @@
 				"userInfo": "User info"
 			},
 			"cardClickMode": {
-				"doubleClickLaunch": "Double-click to launch game",
-				"doubleClickLaunchNote": "Enabling this will cause a 200ms delay for left-click (navigation mode only)",
-				"longPressLaunch": "Long-press to launch game",
-				"longPressLaunchNote": "Launch game after long-pressing card for 800ms. Enabling this will disable collection drag-sort feature",
 				"navigate": "Navigation Mode (Single click to view details)",
 				"select": "Selection Mode (Single click to select game)",
 				"title": "Card Click Mode"

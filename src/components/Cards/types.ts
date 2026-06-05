@@ -5,7 +5,6 @@ export interface CardInteraction {
 	onContextMenu?: (event: React.MouseEvent) => void;
 	onClick: () => void;
 	onDoubleClick?: () => void;
-	onLongPress?: () => void;
 	useDelayedClick?: boolean;
 }
 

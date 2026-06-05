@@ -73,12 +73,11 @@ export const SortableCardsGrid = memo(
 			categoryId,
 			enabled: true,
 		});
-		const { controls, getCardProps, longPressLaunch, showBatchControls } =
-			useCardsController({
-				gameIds: ids,
-				categoryId,
-			});
-		const isDragSortEnabled = !longPressLaunch && !showBatchControls;
+		const { controls, getCardProps, showBatchControls } = useCardsController({
+			gameIds: ids,
+			categoryId,
+		});
+		const isDragSortEnabled = !showBatchControls;
 
 		return (
 			<DndContext

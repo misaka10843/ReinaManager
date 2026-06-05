@@ -103,14 +103,6 @@ export interface AppState {
 	cardClickMode: "navigate" | "select";
 	setCardClickMode: (mode: "navigate" | "select") => void;
 
-	// 双击启动游戏功能
-	doubleClickLaunch: boolean;
-	setDoubleClickLaunch: (enabled: boolean) => void;
-
-	// 长按启动游戏功能
-	longPressLaunch: boolean;
-	setLongPressLaunch: (enabled: boolean) => void;
-
 	// TAG翻译功能
 	tagTranslation: boolean;
 	setTagTranslation: (enabled: boolean) => void;
@@ -220,18 +212,6 @@ export const useStore = create<AppState>()(
 			cardClickMode: "navigate",
 			setCardClickMode: (mode: "navigate" | "select") => {
 				set({ cardClickMode: mode });
-			},
-
-			// 双击启动游戏功能
-			doubleClickLaunch: true,
-			setDoubleClickLaunch: (enabled: boolean) => {
-				set({ doubleClickLaunch: enabled });
-			},
-
-			// 长按启动游戏功能
-			longPressLaunch: false,
-			setLongPressLaunch: (enabled: boolean) => {
-				set({ longPressLaunch: enabled });
 			},
 
 			// TAG翻译功能（默认关闭）
@@ -391,8 +371,6 @@ export const useStore = create<AppState>()(
 				nsfwCoverReplace: state.nsfwCoverReplace,
 				// 卡片点击模式
 				cardClickMode: state.cardClickMode,
-				doubleClickLaunch: state.doubleClickLaunch,
-				longPressLaunch: state.longPressLaunch,
 				// VNDB标签翻译
 				tagTranslation: state.tagTranslation,
 				// 收藏同步开关

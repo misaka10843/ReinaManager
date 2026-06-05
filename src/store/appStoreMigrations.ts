@@ -1,7 +1,7 @@
 import { SOURCE_KEYS, type SourceType } from "@/types";
 import { DefaultGroup } from "@/types/collection";
 
-export const APP_STORE_VERSION = 1;
+export const APP_STORE_VERSION = 2;
 export const DEFAULT_MIXED_ENABLED_SOURCES: readonly SourceType[] = [
 	"bgm",
 	"vndb",
@@ -15,6 +15,8 @@ type AppStorePersistedState = {
 	selectedCategory?: SelectedCategoryState;
 	selectedCategoryId?: number | null;
 	selectedCategoryName?: string | null;
+	doubleClickLaunch?: boolean;
+	longPressLaunch?: boolean;
 };
 
 type SelectedCategoryState =
@@ -48,6 +50,10 @@ export function migrateAppStorePersistedState(
 	if (version < 1) {
 		migrateMixedSourceFlagsToEnabledSources(state);
 		migrateSelectedCategoryState(state);
+	}
+
+	if (version < 2) {
+		migrateCardLaunchSettings(state);
 	}
 
 	return state;
@@ -91,4 +97,9 @@ function migrateSelectedCategoryState(state: AppStorePersistedState) {
 
 	delete state.selectedCategoryId;
 	delete state.selectedCategoryName;
+}
+
+function migrateCardLaunchSettings(state: AppStorePersistedState) {
+	delete state.doubleClickLaunch;
+	delete state.longPressLaunch;
 }

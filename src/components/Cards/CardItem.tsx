@@ -36,10 +36,9 @@ export const CardItem = memo(
 			const nsfwCoverReplace = useStore((s) => s.nsfwCoverReplace);
 			const isActive = useStore((s) => s.selectedGameId === game.id);
 
-			const { isLongPressing, handlers } = useCardInteraction({
+			const { handlers } = useCardInteraction({
 				onClick: interaction?.onClick ?? noop,
 				onDoubleClick: interaction?.onDoubleClick ?? noop,
-				onLongPress: interaction?.onLongPress ?? noop,
 				useDelayedClick: interaction?.useDelayedClick ?? false,
 			});
 
@@ -93,7 +92,6 @@ export const CardItem = memo(
 							duration-100
 							hover:shadow-lg hover:scale-105
 							active:shadow-sm active:scale-95
-							${isLongPressing ? "ring-2 ring-blue-500 shadow-lg" : ""}
 							${isOverlay ? "shadow-lg scale-105" : ""}
 						`}
 					>
