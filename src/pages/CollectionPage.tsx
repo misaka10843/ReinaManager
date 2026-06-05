@@ -386,7 +386,7 @@ export const Collection: React.FC = () => {
 	 * 处理打开管理游戏对话框
 	 */
 	const handleOpenManageGamesDialog = async () => {
-		if (!selectedItem || selectedItem.type !== "category") return;
+		if (selectedItem?.type !== "category") return;
 
 		setMenuPosition(null); // 关闭右键菜单
 
