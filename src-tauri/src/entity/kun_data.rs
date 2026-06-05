@@ -8,13 +8,24 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize, FromJsonQueryResult)]
 pub struct KunData {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub image: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub name_cn: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub all_titles: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub aliases: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub summary: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub tags: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub developer: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub nsfw: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub date: Option<String>,
 }

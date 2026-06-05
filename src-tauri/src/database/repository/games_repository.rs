@@ -7,9 +7,7 @@ use crate::database::dto::{
     BatchOperationError, BatchOperationResult, InsertGameData, UpdateGameData,
 };
 use crate::entity::prelude::*;
-use crate::entity::{
-    bgm_data::BgmData, games, savedata, vndb_data::VndbData, ymgal_data::YmgalData,
-};
+use crate::entity::{games, savedata};
 use sea_orm::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -75,24 +73,40 @@ impl GamesRepository {
             .map(ToOwned::to_owned)
     }
 
-    fn resolve_source_date(
-        bgm_data: Option<&BgmData>,
-        vndb_data: Option<&VndbData>,
-        ymgal_data: Option<&YmgalData>,
-    ) -> Option<String> {
-        bgm_data
-            .and_then(|data| Self::clean_source_date(data.date.as_deref()))
-            .or_else(|| vndb_data.and_then(|data| Self::clean_source_date(data.date.as_deref())))
-            .or_else(|| ymgal_data.and_then(|data| Self::clean_source_date(data.date.as_deref())))
+    fn resolve_source_date<'a>(dates: impl IntoIterator<Item = Option<&'a str>>) -> Option<String> {
+        dates.into_iter().find_map(Self::clean_source_date)
+    }
+
+    fn pick_next_data<'a, T>(
+        update: &'a Option<Option<T>>,
+        current: &'a Option<T>,
+    ) -> Option<&'a T> {
+        update.as_ref().map_or(current.as_ref(), Option::as_ref)
+    }
+
+    fn has_source_data_update(updates: &UpdateGameData) -> bool {
+        [
+            updates.bgm_data.is_some(),
+            updates.vndb_data.is_some(),
+            updates.ymgal_data.is_some(),
+            updates.kun_data.is_some(),
+        ]
+        .into_iter()
+        .any(|updated| updated)
     }
 
     fn normalize_insert_date(mut game: InsertGameData) -> InsertGameData {
         if game.date.is_none() {
-            game.date = Self::resolve_source_date(
-                game.bgm_data.as_ref(),
-                game.vndb_data.as_ref(),
-                game.ymgal_data.as_ref(),
-            );
+            game.date = Self::resolve_source_date([
+                game.bgm_data.as_ref().and_then(|data| data.date.as_deref()),
+                game.vndb_data
+                    .as_ref()
+                    .and_then(|data| data.date.as_deref()),
+                game.ymgal_data
+                    .as_ref()
+                    .and_then(|data| data.date.as_deref()),
+                game.kun_data.as_ref().and_then(|data| data.date.as_deref()),
+            ]);
         }
 
         game
@@ -100,10 +114,7 @@ impl GamesRepository {
 
     fn should_normalize_update_date(updates: &UpdateGameData) -> bool {
         matches!(updates.date, Some(None))
-            || (updates.date.is_none()
-                && (updates.bgm_data.is_some()
-                    || updates.vndb_data.is_some()
-                    || updates.ymgal_data.is_some()))
+            || (updates.date.is_none() && Self::has_source_data_update(updates))
     }
 
     async fn normalize_update_date<C>(
@@ -123,24 +134,16 @@ impl GamesRepository {
             .await?
             .ok_or_else(|| DbErr::RecordNotFound(format!("game {} not found", game_id)))?;
 
-        let next_bgm_data = match &updates.bgm_data {
-            Some(data) => data.as_ref(),
-            None => current.bgm_data.as_ref(),
-        };
-        let next_vndb_data = match &updates.vndb_data {
-            Some(data) => data.as_ref(),
-            None => current.vndb_data.as_ref(),
-        };
-        let next_ymgal_data = match &updates.ymgal_data {
-            Some(data) => data.as_ref(),
-            None => current.ymgal_data.as_ref(),
-        };
-
-        updates.date = Some(Self::resolve_source_date(
-            next_bgm_data,
-            next_vndb_data,
-            next_ymgal_data,
-        ));
+        updates.date = Some(Self::resolve_source_date([
+            Self::pick_next_data(&updates.bgm_data, &current.bgm_data)
+                .and_then(|data| data.date.as_deref()),
+            Self::pick_next_data(&updates.vndb_data, &current.vndb_data)
+                .and_then(|data| data.date.as_deref()),
+            Self::pick_next_data(&updates.ymgal_data, &current.ymgal_data)
+                .and_then(|data| data.date.as_deref()),
+            Self::pick_next_data(&updates.kun_data, &current.kun_data)
+                .and_then(|data| data.date.as_deref()),
+        ]));
 
         Ok(updates)
     }

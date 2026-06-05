@@ -47,7 +47,6 @@ export interface GalgameOfficialItem {
 
 export interface GalgameDetailResponse {
 	id: number;
-	code: number;
 	vndbId?: string;
 	name: Partial<KunLanguage>;
 	banner?: string;
@@ -58,12 +57,25 @@ export interface GalgameDetailResponse {
 	alias?: string[];
 	official?: GalgameOfficialItem[];
 	tag?: GalgameDetailTag[];
+	releaseDate?: string | null;
 }
 
 export interface SearchResultGalgame {
 	id: number;
 	name: KunLanguage;
 	banner: string;
+	releaseDate?: string | null;
+}
+
+export interface KunApiResponse<T> {
+	code: number;
+	message: string;
+	data?: T;
+}
+
+export interface KunPaginatedData<T> {
+	items: T[];
+	total: number;
 }
 
 type KunLocaleKey = keyof KunLanguage;
@@ -210,6 +222,7 @@ const transformKunData = (
 		tags: kunData.vndbId ? undefined : extractKunTags(kunData.tag),
 		developer: extractDeveloper(kunData.official),
 		nsfw: computeNsfw(kunData),
+		date: kunData.releaseDate ?? undefined,
 	};
 
 	const result: GameCandidateData = {
@@ -237,7 +250,7 @@ export async function fetchGalgameById(
 	const { enrichVndb = true, signal } = options;
 	const url = `${KUN_API_BASE}/galgame/${id}`;
 
-	const resp = await http.get<GalgameDetailResponse>(
+	const resp = await http.get<KunApiResponse<GalgameDetailResponse>>(
 		url,
 		buildKunRateLimitedOptions({
 			params: {
@@ -247,14 +260,16 @@ export async function fetchGalgameById(
 		}),
 	);
 
-	if (!resp.data || resp.data.code === 233) {
+	const kunData = resp.data?.data;
+
+	if (!kunData || resp.data.code === 233) {
 		throw new AppError({
 			code: "metadata_not_found",
 			message: `Kungal game not found: ${id}`,
 		});
 	}
 
-	const kunResult = transformKunData(resp.data);
+	const kunResult = transformKunData(kunData);
 
 	if (!enrichVndb || !kunResult.vndb_id) {
 		return kunResult;
@@ -281,7 +296,7 @@ export async function fetchGalgameById(
 			kun_data: {
 				...kunResult.kun_data,
 				// VNDB 不可用时，保留鲲源自身 tags，避免 kun 源整体失效。
-				tags: extractKunTags(resp.data.tag),
+				tags: extractKunTags(kunData.tag),
 			},
 		};
 	}
@@ -302,7 +317,9 @@ export async function searchGalgame(
 	fetchDetailById = false,
 	options: KunFetchOptions = {},
 ): Promise<GameCandidateData[]> {
-	const resp = await http.get<SearchResultGalgame[]>(
+	const resp = await http.get<
+		KunApiResponse<KunPaginatedData<SearchResultGalgame>>
+	>(
 		`${KUN_API_BASE}/search`,
 		buildKunRateLimitedOptions({
 			params: {
@@ -315,19 +332,22 @@ export async function searchGalgame(
 		}),
 	);
 
-	if (!Array.isArray(resp.data)) {
+	const items = resp.data?.data?.items;
+
+	if (!Array.isArray(items)) {
 		throw new AppError({
 			code: "metadata_not_found",
 			message: `Kungal search failed for: ${keywords}`,
 		});
 	}
 
-	const results = resp.data.map((item) => ({
+	const results = items.map((item) => ({
 		kun_id: String(item.id),
 		id_type: "kun",
 		kun_data: {
 			name: pickLocalizedText(item.name),
 			image: item.banner,
+			date: item.releaseDate ?? undefined,
 		},
 	}));
 

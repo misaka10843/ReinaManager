@@ -129,6 +129,7 @@ export interface KunData {
 	tags?: string[];
 	developer?: string;
 	nsfw?: boolean;
+	date?: string;
 }
 
 /**
