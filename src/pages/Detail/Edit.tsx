@@ -50,6 +50,7 @@ function EditContent({ selectedGame }: { selectedGame: GameData }) {
 	const [openViewBox, setOpenViewBox] = useState(false);
 	const sourceAvailability =
 		gameIndex.sourceAvailabilityById.get(id) ?? EMPTY_SOURCE_AVAILABILITY;
+	const rawGame = gameIndex.rawById.get(id);
 
 	// 确认更新游戏数据（从数据源）
 	const handleConfirmGameUpdate = async () => {
@@ -139,6 +140,7 @@ function EditContent({ selectedGame }: { selectedGame: GameData }) {
 						</Typography>
 						<GameInfoEdit
 							selectedGame={selectedGame}
+							rawGame={rawGame}
 							onSave={handleGameInfoSave}
 						/>
 					</CardContent>

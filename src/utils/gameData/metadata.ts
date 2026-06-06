@@ -21,6 +21,7 @@ export interface GameInfoUpdateDraft {
 	newLocalPath: string;
 	newName: string;
 	newImageExt?: string | null;
+	newCoverSource?: SourceType | null;
 	newAliases?: string[];
 	newSummary?: string;
 	newTags?: string[];
@@ -374,6 +375,12 @@ export function buildGameInfoUpdatePayload(
 
 	if (draft.newImageExt !== undefined) {
 		customData().image = draft.newImageExt;
+	}
+
+	if (draft.newCoverSource !== undefined) {
+		if (draft.newCoverSource !== (currentCustomData.cover_source ?? null)) {
+			customData().cover_source = draft.newCoverSource;
+		}
 	}
 
 	if (draft.newAliases !== undefined) {

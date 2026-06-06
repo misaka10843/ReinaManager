@@ -20,6 +20,7 @@ import type {
 	YmgalData,
 } from "@/types";
 import { isSourceType, SOURCE_FIELD_KEYS } from "@/types";
+import { getSourceImageMap, resolveSourceImage } from "./sourceImage";
 
 /**
  * 将 null 转换为 undefined
@@ -218,8 +219,15 @@ function mergeMultipleDataSources(
 	const primarySource = bgm_data || vndb_data || ymgal_data || kun_data;
 	if (primarySource) assignBasicFields(target, primarySource);
 
-	target.image =
-		bgm_data?.image || vndb_data?.image || ymgal_data?.image || kun_data?.image;
+	target.image = resolveSourceImage(
+		getSourceImageMap({
+			bgm_data,
+			vndb_data,
+			ymgal_data,
+			kun_data,
+		}),
+		custom_data?.cover_source,
+	);
 
 	target.summary =
 		ymgal_data?.summary ||

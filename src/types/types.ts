@@ -142,6 +142,7 @@ export interface KunData {
  */
 export interface CustomData {
 	image?: Nullable<string>;
+	cover_source?: Nullable<SourceType>;
 	name?: Nullable<string>;
 	aliases?: Nullable<string[]>;
 	summary?: Nullable<string>;

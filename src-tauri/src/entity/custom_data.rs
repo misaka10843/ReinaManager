@@ -6,6 +6,16 @@
 use sea_orm::FromJsonQueryResult;
 use serde::{Deserialize, Serialize};
 
+/// 外部数据源类型
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum SourceType {
+    Bgm,
+    Vndb,
+    Ymgal,
+    Kun,
+}
+
 /// 自定义元数据结构（存储为 JSON）
 ///
 /// 用于用户自定义的游戏数据，包括：
@@ -18,6 +28,10 @@ pub struct CustomData {
     /// 自定义封面图片路径或 URL
     #[serde(skip_serializing_if = "Option::is_none")]
     pub image: Option<String>,
+
+    /// Mixed 模式下选定的封面数据源
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cover_source: Option<SourceType>,
 
     /// 自定义名称
     #[serde(skip_serializing_if = "Option::is_none")]

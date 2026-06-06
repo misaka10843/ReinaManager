@@ -1,17 +1,24 @@
 import ContentPasteIcon from "@mui/icons-material/ContentPaste";
 import DeleteIcon from "@mui/icons-material/Delete";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
+import ImageSearchIcon from "@mui/icons-material/ImageSearch";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import SaveIcon from "@mui/icons-material/Save";
 import {
 	Autocomplete,
 	Box,
 	Button,
+	ButtonBase,
 	Card,
 	CardContent,
 	Chip,
 	CircularProgress,
+	Dialog,
+	DialogActions,
+	DialogContent,
+	DialogTitle,
 	FormControlLabel,
 	ListItemIcon,
 	ListItemText,
@@ -23,12 +30,17 @@ import {
 	Typography,
 } from "@mui/material";
 import { basename, dirname } from "pathe";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useImagePreview } from "@/hooks/common/useImagePreview";
 import { snackbar } from "@/providers/snackBar";
 import { fileService } from "@/services/invoke";
-import type { GameData, UpdateGameParams } from "@/types";
+import type {
+	FullGameData,
+	GameData,
+	SourceType,
+	UpdateGameParams,
+} from "@/types";
 import {
 	deleteGameCustomCovers,
 	selectImageFile,
@@ -42,6 +54,12 @@ import {
 	getGameNsfwStatus,
 } from "@/utils/game";
 import { buildGameInfoUpdatePayload } from "@/utils/gameData/metadata";
+import {
+	getSourceImageMap,
+	getSourceImageOptions,
+	resolveSourceImage,
+	type SourceImageOption,
+} from "@/utils/gameData/sourceImage";
 
 // 公共样式常量
 const CHIP_INPUT_BOX_SX = {
@@ -70,6 +88,181 @@ const CHIP_INPUT_STYLE = {
 	color: "inherit",
 } as const;
 
+const SOURCE_LABELS: Record<SourceType, string> = {
+	bgm: "Bangumi",
+	vndb: "VNDB",
+	ymgal: "YMGal",
+	kun: "Kungal",
+};
+
+interface CoverPreviewParams {
+	selectedGame: GameData;
+	shouldDeleteImage: boolean;
+	tempCoverUrl: string | null;
+	previewUrl: string | null;
+	sourceCoverImage?: string;
+	sourceCoverChanged: boolean;
+}
+
+function getCoverPreviewUrl({
+	selectedGame,
+	shouldDeleteImage,
+	tempCoverUrl,
+	previewUrl,
+	sourceCoverImage,
+	sourceCoverChanged,
+}: CoverPreviewParams): string {
+	if (shouldDeleteImage) {
+		return sourceCoverImage ?? "/images/default.png";
+	}
+
+	if (tempCoverUrl) {
+		return tempCoverUrl;
+	}
+
+	if (previewUrl) {
+		return previewUrl;
+	}
+
+	if (sourceCoverChanged && sourceCoverImage) {
+		return sourceCoverImage;
+	}
+
+	return getGameCover({
+		...selectedGame,
+		image: sourceCoverImage ?? selectedGame.image,
+	});
+}
+
+interface SourceCoverDialogProps {
+	open: boolean;
+	options: SourceImageOption[];
+	currentSource: SourceType | null;
+	hasCustomCover: boolean;
+	disabled: boolean;
+	onClose: () => void;
+	onSelect: (source: SourceType) => void;
+	onReset: () => void;
+	t: ReturnType<typeof useTranslation>["t"];
+}
+
+function SourceCoverDialog({
+	open,
+	options,
+	currentSource,
+	hasCustomCover,
+	disabled,
+	onClose,
+	onSelect,
+	onReset,
+	t,
+}: SourceCoverDialogProps) {
+	const statusText = currentSource
+		? t(
+				"pages.Detail.GameInfoEdit.sourceCoverSelected",
+				"数据源封面：{{source}}",
+				{
+					source: SOURCE_LABELS[currentSource],
+				},
+			)
+		: t("pages.Detail.GameInfoEdit.sourceCoverAuto", "数据源封面：自动");
+
+	return (
+		<Dialog
+			open={open}
+			onClose={onClose}
+			PaperProps={{
+				className: "w-fit min-w-75 max-w-[calc(100vw-32px)]",
+			}}
+		>
+			<DialogTitle>
+				{t(
+					"pages.Detail.GameInfoEdit.sourceCoverDialogTitle",
+					"选择数据源封面",
+				)}
+			</DialogTitle>
+			<DialogContent>
+				<Stack spacing={2}>
+					<Typography variant="body2" color="textSecondary">
+						{statusText}
+					</Typography>
+
+					<Typography variant="caption" color="textSecondary">
+						{t(
+							"pages.Detail.GameInfoEdit.sourceCoverAutoRule",
+							"自动规则：Bangumi > VNDB > Kungal > YMGal",
+						)}
+					</Typography>
+
+					{hasCustomCover && (
+						<Typography variant="caption" color="warning.main">
+							{t(
+								"pages.Detail.GameInfoEdit.sourceCoverCustomCoverNotice",
+								"当前本地自定义封面优先显示，移除后才会显示数据源封面。",
+							)}
+						</Typography>
+					)}
+
+					<Box className="flex max-w-[calc(100vw-64px)] justify-center gap-1.5 overflow-x-auto">
+						{options.map((option) => {
+							const selected = currentSource === option.source;
+
+							return (
+								<ButtonBase
+									key={option.source}
+									onClick={() => onSelect(option.source)}
+									disabled={disabled}
+									className={`block w-30 flex-none overflow-hidden rounded text-left border-2 ${
+										selected
+											? "border-[#1976d2] bg-[rgba(25,118,210,0.08)]"
+											: "border-solid border-gray-200 bg-white dark:bg-transparent"
+									}`}
+								>
+									<Box
+										component="img"
+										src={option.image}
+										alt={SOURCE_LABELS[option.source]}
+										className="block w-full aspect-[3/4] object-cover bg-gray-100"
+									/>
+									<Box className="p-1">
+										<Typography variant="caption" component="div">
+											{SOURCE_LABELS[option.source]}
+										</Typography>
+										{selected && (
+											<Typography
+												variant="caption"
+												component="div"
+												color="primary"
+											>
+												{t(
+													"pages.Detail.GameInfoEdit.sourceCoverSelectedBadge",
+													"已选择",
+												)}
+											</Typography>
+										)}
+									</Box>
+								</ButtonBase>
+							);
+						})}
+					</Box>
+				</Stack>
+			</DialogContent>
+			<DialogActions>
+				<Button onClick={onClose} disabled={disabled}>
+					{t("pages.Detail.GameInfoEdit.closeSourceCoverDialog", "关闭")}
+				</Button>
+				<Button
+					onClick={onReset}
+					disabled={disabled}
+					startIcon={<RestartAltIcon />}
+				>
+					{t("pages.Detail.GameInfoEdit.resetSourceCover", "重置为自动")}
+				</Button>
+			</DialogActions>
+		</Dialog>
+	);
+}
+
 function stringArraysEqual(
 	current: string[],
 	original: readonly string[] | null | undefined,
@@ -84,16 +277,26 @@ function stringArraysEqual(
 
 interface GameInfoEditProps {
 	selectedGame: GameData;
+	rawGame?: FullGameData;
 	onSave: (data: UpdateGameParams) => Promise<void>;
 	disabled?: boolean;
 }
 
 export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 	selectedGame,
+	rawGame,
 	onSave,
 	disabled = false,
 }) => {
 	const { t } = useTranslation();
+	const sourceImageMap = useMemo(
+		() => (rawGame ? getSourceImageMap(rawGame) : {}),
+		[rawGame],
+	);
+	const sourceImageOptions = useMemo(
+		() => (rawGame ? getSourceImageOptions(rawGame) : []),
+		[rawGame],
+	);
 
 	// 游戏信息编辑相关状态
 	const [localPath, setLocalPath] = useState<string>("");
@@ -107,6 +310,8 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 	const [isLoading, setIsLoading] = useState(false);
 	const [imageMenuAnchorEl, setImageMenuAnchorEl] =
 		useState<HTMLElement | null>(null);
+	const [sourceCoverDialogOpen, setSourceCoverDialogOpen] = useState(false);
+	const [coverSource, setCoverSource] = useState<SourceType | null>(null);
 
 	// 标签输入的临时状态
 	const [aliasInput, setAliasInput] = useState<string>("");
@@ -165,6 +370,7 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 			setDeveloper(game.developer ?? "");
 			setNsfw(getGameNsfwStatus(game) ?? false);
 			setReleaseDate(game.date ?? "");
+			setCoverSource(game.custom_data?.cover_source ?? null);
 			setShouldDeleteImage(false);
 			cleanupPreview();
 		},
@@ -224,6 +430,7 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 			gameNote !== currentCustomName ||
 			selectedImagePath !== null || // 有选择的图片但未保存
 			shouldDeleteImage ||
+			hasSourceCoverChanged() ||
 			!stringArraysEqual(aliases, selectedGame.custom_data?.aliases) ||
 			summary !== originalSummary ||
 			!stringArraysEqual(tags, selectedGame.custom_data?.tags) ||
@@ -255,6 +462,39 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 
 	const handleImageMenuClose = () => {
 		setImageMenuAnchorEl(null);
+	};
+
+	const getOriginalCoverSource = () =>
+		selectedGame.custom_data?.cover_source ?? null;
+
+	const hasSourceCoverChanged = () => coverSource !== getOriginalCoverSource();
+
+	const canSelectSourceCover =
+		selectedGame.id_type === "mixed" &&
+		(sourceImageOptions.length >= 2 || coverSource !== null);
+
+	const handleSourceCoverDialogOpen = () => {
+		handleImageMenuClose();
+		if (!canSelectSourceCover) return;
+		setSourceCoverDialogOpen(true);
+	};
+
+	const handleSourceCoverDialogClose = () => {
+		setSourceCoverDialogOpen(false);
+	};
+
+	const handleSourceCoverSelect = async (source: SourceType) => {
+		await cleanupClipboardTempImage();
+		cleanupPreview();
+		setCoverSource(source);
+		setSourceCoverDialogOpen(false);
+	};
+
+	const handleSourceCoverReset = async () => {
+		await cleanupClipboardTempImage();
+		cleanupPreview();
+		setCoverSource(null);
+		setSourceCoverDialogOpen(false);
 	};
 
 	// 处理自定义封面文件选择 - 只选择，不立即上传
@@ -322,25 +562,20 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 
 	// 获取当前要显示的封面URL
 	const getCurrentCoverUrl = () => {
-		// 如果标记为删除，显示原始默认封面（无自定义）
-		if (shouldDeleteImage) {
-			// 返回不含 custom_data.image 的封面
-			return getGameCover({
-				...selectedGame,
-				custom_data: { ...selectedGame.custom_data, image: undefined },
-			});
-		}
+		const sourceCoverImage =
+			selectedGame.id_type === "mixed"
+				? (resolveSourceImage(sourceImageMap, coverSource) ??
+					selectedGame.image)
+				: selectedGame.image;
 
-		// 如果有临时封面，优先使用（用于平滑过渡）
-		if (tempCoverUrl) {
-			return tempCoverUrl;
-		}
-
-		// 如果有预览URL（选择了本地文件）
-		if (previewUrl) return previewUrl;
-
-		// 最后使用实际封面
-		return getGameCover(selectedGame);
+		return getCoverPreviewUrl({
+			selectedGame,
+			shouldDeleteImage,
+			tempCoverUrl,
+			previewUrl,
+			sourceCoverImage,
+			sourceCoverChanged: hasSourceCoverChanged(),
+		});
 	};
 
 	// 处理删除自定义封面（标记删除，不立即提交）
@@ -410,6 +645,15 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 	const handleSaveAll = async () => {
 		if (!hasChanges()) return;
 
+		const coverSourceChanged = hasSourceCoverChanged();
+		const originalSourceCoverImage = resolveSourceImage(
+			sourceImageMap,
+			getOriginalCoverSource(),
+		);
+		const nextSourceCoverImage = resolveSourceImage(
+			sourceImageMap,
+			coverSource,
+		);
 		setIsLoading(true);
 
 		try {
@@ -432,6 +676,7 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 				newLocalPath: localPath,
 				newName: gameNote,
 				newImageExt: uploadedImageExt,
+				newCoverSource: coverSource,
 				newAliases: aliases,
 				newSummary: summary,
 				newTags: tags,
@@ -442,6 +687,13 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 			// 防御：没有任何字段需要更新时，不发请求
 			if (Object.keys(updateData).length === 0) {
 				return;
+			}
+
+			if (
+				coverSourceChanged &&
+				originalSourceCoverImage !== nextSourceCoverImage
+			) {
+				await fileService.deleteCloudCoverCache(selectedGame.id);
 			}
 
 			// 3. 执行保存
@@ -546,7 +798,34 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 												)}
 											</ListItemText>
 										</MenuItem>
+										<MenuItem
+											onClick={handleSourceCoverDialogOpen}
+											disabled={isLoading || disabled || !canSelectSourceCover}
+										>
+											<ListItemIcon>
+												<ImageSearchIcon fontSize="small" />
+											</ListItemIcon>
+											<ListItemText>
+												{t(
+													"pages.Detail.GameInfoEdit.selectSourceCover",
+													"数据源封面",
+												)}
+											</ListItemText>
+										</MenuItem>
 									</Menu>
+									<SourceCoverDialog
+										open={sourceCoverDialogOpen}
+										options={sourceImageOptions}
+										currentSource={getOriginalCoverSource()}
+										hasCustomCover={Boolean(
+											selectedGame.custom_data?.image && !shouldDeleteImage,
+										)}
+										disabled={isLoading || disabled}
+										onClose={handleSourceCoverDialogClose}
+										onSelect={(source) => void handleSourceCoverSelect(source)}
+										onReset={() => void handleSourceCoverReset()}
+										t={t}
+									/>
 
 									{selectedGame.custom_data?.image && !shouldDeleteImage && (
 										<Button
