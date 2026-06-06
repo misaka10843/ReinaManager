@@ -5,6 +5,11 @@ import {
 	type ImportResult,
 } from "@/services/invoke";
 
+export interface AutoBackupResult {
+	database: BackupResult;
+	covers: BackupResult | null;
+}
+
 /**
  * 使用 VACUUM INTO 进行数据库热备份
  *
@@ -46,6 +51,30 @@ export async function backupCustomCovers(): Promise<BackupResult> {
 		return result;
 	} catch (error) {
 		console.error("备份自定义封面失败:", error);
+		throw error;
+	}
+}
+
+/**
+ * 创建退出时自动备份。
+ *
+ * 后端会使用自动备份专用文件名，并只清理旧的自动备份文件。
+ */
+export async function createAutoBackup(
+	includeCovers: boolean,
+	maxBackups: number,
+): Promise<AutoBackupResult> {
+	try {
+		const options = { auto: true, maxAutoBackups: maxBackups };
+		const covers = includeCovers
+			? await fileService.backupCustomCovers(options)
+			: null;
+		const database = await fileService.backupDatabase(options);
+		const result = { database, covers };
+		console.log(`自动备份完成: ${result.database.path}`);
+		return result;
+	} catch (error) {
+		console.error("自动备份失败:", error);
 		throw error;
 	}
 }

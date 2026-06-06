@@ -180,23 +180,25 @@ export const Settings: React.FC = () => {
 							<InputLabel className="font-semibold mb-4">
 								{t("pages.Settings.pathSettings.title", "路径设置")}
 							</InputLabel>
-							<Button
-								variant="outlined"
-								onClick={() => setPathSettingsModalOpen(true)}
-								className="px-4 py-2"
-							>
-								{t("pages.Settings.pathSettings.openModal", "打开路径设置")}
-							</Button>
-							<Typography
-								variant="caption"
-								color="text.secondary"
-								className="block mt-2"
-							>
-								{t(
-									"pages.Settings.pathSettings.note",
-									"配置游戏存档备份、LE转区软件、Magpie软件、数据库备份等路径",
-								)}
-							</Typography>
+							<Box className="pl-2">
+								<Button
+									variant="outlined"
+									onClick={() => setPathSettingsModalOpen(true)}
+									className="px-4 py-2"
+								>
+									{t("pages.Settings.pathSettings.openModal", "打开路径设置")}
+								</Button>
+								<Typography
+									variant="caption"
+									color="text.secondary"
+									className="block mt-2"
+								>
+									{t(
+										"pages.Settings.pathSettings.note",
+										"配置游戏存档备份、LE转区软件、Magpie软件、数据库备份等路径",
+									)}
+								</Typography>
+							</Box>
 						</Box>
 						<Divider className="my-6" />
 						<DatabaseBackupSettings />

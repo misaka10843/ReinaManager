@@ -59,6 +59,22 @@ export interface AppState {
 	setSkipCloseRemind: (skip: boolean) => void;
 	setDefaultCloseAction: (action: "hide" | "close") => void;
 
+	// 退出时自动备份
+	autoBackupOnExit: boolean;
+	autoBackupIncludeCovers: boolean;
+	autoBackupMinIntervalHours: number;
+	autoBackupRetentionCount: number;
+	autoBackupLastSuccessAt: number | null;
+	autoBackupLastError: string | null;
+	setAutoBackupOnExit: (enabled: boolean) => void;
+	setAutoBackupIncludeCovers: (enabled: boolean) => void;
+	setAutoBackupMinIntervalHours: (hours: number) => void;
+	setAutoBackupRetentionCount: (count: number) => void;
+	setAutoBackupLastResult: (
+		successAt: number | null,
+		error: string | null,
+	) => void;
+
 	// UI 操作方法
 	setSelectedGameId: (id: number | null) => void;
 	openAddModal: (path?: string) => void;
@@ -162,6 +178,38 @@ export const useStore = create<AppState>()(
 			setSkipCloseRemind: (skip: boolean) => set({ skipCloseRemind: skip }),
 			setDefaultCloseAction: (action: "hide" | "close") =>
 				set({ defaultCloseAction: action }),
+
+			// 退出时自动备份
+			autoBackupOnExit: false,
+			autoBackupIncludeCovers: false,
+			autoBackupMinIntervalHours: 6,
+			autoBackupRetentionCount: 7,
+			autoBackupLastSuccessAt: null,
+			autoBackupLastError: null,
+			setAutoBackupOnExit: (enabled: boolean) =>
+				set({ autoBackupOnExit: enabled }),
+			setAutoBackupIncludeCovers: (enabled: boolean) =>
+				set({ autoBackupIncludeCovers: enabled }),
+			setAutoBackupMinIntervalHours: (hours: number) => {
+				const nextHours = Number.isFinite(hours) ? hours : 0;
+				set({
+					autoBackupMinIntervalHours: Math.max(0, Math.floor(nextHours)),
+				});
+			},
+			setAutoBackupRetentionCount: (count: number) => {
+				const nextCount = Number.isFinite(count) ? count : 1;
+				set({
+					autoBackupRetentionCount: Math.max(1, Math.floor(nextCount)),
+				});
+			},
+			setAutoBackupLastResult: (
+				successAt: number | null,
+				error: string | null,
+			) =>
+				set((state) => ({
+					autoBackupLastSuccessAt: successAt ?? state.autoBackupLastSuccessAt,
+					autoBackupLastError: error,
+				})),
 
 			// 数据来源选择
 			apiSource: "mixed",
@@ -363,6 +411,12 @@ export const useStore = create<AppState>()(
 				// 关闭应用相关
 				skipCloseRemind: state.skipCloseRemind,
 				defaultCloseAction: state.defaultCloseAction,
+				autoBackupOnExit: state.autoBackupOnExit,
+				autoBackupIncludeCovers: state.autoBackupIncludeCovers,
+				autoBackupMinIntervalHours: state.autoBackupMinIntervalHours,
+				autoBackupRetentionCount: state.autoBackupRetentionCount,
+				autoBackupLastSuccessAt: state.autoBackupLastSuccessAt,
+				autoBackupLastError: state.autoBackupLastError,
 				// 数据来源选择
 				apiSource: state.apiSource,
 				mixedEnabledSources: state.mixedEnabledSources,

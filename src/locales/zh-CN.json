@@ -606,6 +606,12 @@
 				"vndbTitle": "启用 VNDB 收藏同步"
 			},
 			"databaseBackup": {
+				"autoBackupOnExit": "退出时自动备份",
+				"autoIncludeCovers": "同时备份自定义封面",
+				"autoMinIntervalHelp": "填 0 表示每次退出都备份",
+				"autoMinIntervalHours": "最小间隔（小时）",
+				"autoNever": "从未自动备份",
+				"autoRetentionCount": "最多保留自动备份（份）",
 				"backing": "备份中...",
 				"backingCovers": "备份封面中...",
 				"backup": "备份数据库",
@@ -620,6 +626,8 @@
 				"importFailed": "导入失败",
 				"importing": "导入中...",
 				"importSuccess": "数据库导入成功，已备份自定义封面并清空封面缓存，应用将自动重启",
+				"lastAutoBackup": "上次自动备份：{{time}}",
+				"lastAutoBackupError": "上次自动备份失败：{{error}}",
 				"noCoversToBackup": "没有自定义封面需要备份",
 				"openFolder": "打开备份文件夹",
 				"openFolderError": "打开备份文件夹失败: {{error}}",

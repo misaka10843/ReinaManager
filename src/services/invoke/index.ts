@@ -5,6 +5,7 @@
 
 export { collectionService } from "./collectionService";
 export type {
+	BackupOptions,
 	BackupResult,
 	ImportResult,
 	MoveBackupFolderResult,

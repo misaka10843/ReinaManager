@@ -619,6 +619,12 @@
 				"vndbTitle": "Enable VNDB collection sync"
 			},
 			"databaseBackup": {
+				"autoBackupOnExit": "Auto backup on exit",
+				"autoIncludeCovers": "Also back up custom covers",
+				"autoMinIntervalHelp": "Use 0 to back up every time you exit",
+				"autoMinIntervalHours": "Minimum interval (hours)",
+				"autoNever": "Never backed up automatically",
+				"autoRetentionCount": "Maximum auto backups (copies)",
 				"backing": "Backing up...",
 				"backingCovers": "Backing up covers...",
 				"backup": "Backup Database",
@@ -633,6 +639,8 @@
 				"importFailed": "Import failed",
 				"importing": "Importing...",
 				"importSuccess": "Database imported successfully. Custom covers were backed up and cover cache was cleared. The application will restart automatically.",
+				"lastAutoBackup": "Last auto backup: {{time}}",
+				"lastAutoBackupError": "Last auto backup failed: {{error}}",
 				"noCoversToBackup": "No custom covers to backup",
 				"openFolder": "Open Backup Folder",
 				"openFolderError": "Failed to open backup folder: {{error}}",

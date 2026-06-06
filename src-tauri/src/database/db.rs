@@ -6,7 +6,9 @@ use std::time::Duration;
 use tauri::{State, command};
 use url::Url;
 
-use crate::utils::fs::{backup_custom_covers_archive, delete_all_covers_dir};
+use crate::utils::fs::{
+    BackupOptions, backup_custom_covers_archive, cleanup_auto_backup_files, delete_all_covers_dir,
+};
 use reina_path::{get_db_path, get_default_db_backup_path, is_portable_mode};
 
 /// 数据库备份结果
@@ -98,6 +100,12 @@ fn generate_backup_filename() -> String {
     format!("reina_manager_{}.db", timestamp)
 }
 
+/// 生成带自动备份标记的数据库备份文件名，便于保留策略只清理自动备份。
+fn generate_auto_backup_filename() -> String {
+    let timestamp = chrono::Local::now().format("%Y%m%d_%H%M%S").to_string();
+    format!("reina_manager_auto_{}.db", timestamp)
+}
+
 /// 解析备份目标目录（按需读取 user.db_backup_path）
 pub async fn resolve_backup_dir(db: &DatabaseConnection) -> Result<PathBuf, String> {
     use crate::database::dto::UpdateSettingsData;
@@ -145,8 +153,18 @@ pub async fn resolve_backup_dir(db: &DatabaseConnection) -> Result<PathBuf, Stri
 ///
 /// 备份结果，包含备份文件的路径
 #[command]
-pub async fn backup_database(db: State<'_, DatabaseConnection>) -> Result<BackupResult, String> {
-    backup_database_file(&db).await
+pub async fn backup_database(
+    db: State<'_, DatabaseConnection>,
+    options: Option<BackupOptions>,
+) -> Result<BackupResult, String> {
+    let options = options.unwrap_or_default();
+    if options.auto {
+        return backup_database_file_cold(&db, options.max_auto_backups).await;
+    }
+
+    let result = backup_database_file(&db).await?;
+
+    Ok(result)
 }
 
 pub async fn backup_database_file(db: &DatabaseConnection) -> Result<BackupResult, String> {
@@ -181,25 +199,56 @@ pub async fn backup_database_file(db: &DatabaseConnection) -> Result<BackupResul
     })
 }
 
-fn backup_database_file_cold(db_path: &Path, backup_dir: &Path) -> Option<String> {
-    if !db_path.exists() {
-        return None;
+async fn backup_database_file_cold(
+    db: &DatabaseConnection,
+    max_auto_backups: Option<usize>,
+) -> Result<BackupResult, String> {
+    // 自动冷备份用于退出流程，会关闭连接；关闭前必须先读取配置。
+    let backup_dir = resolve_backup_dir(db).await?;
+    let db_path = get_db_path()?;
+    close_connection(db.clone())
+        .await
+        .map_err(|e| format!("关闭数据库连接失败: {}", e))?;
+    log::info!("数据库连接已关闭，准备执行文件操作");
+
+    let result = copy_database_file_cold(&db_path, &backup_dir, true)?;
+
+    if let Some(max_auto_backups) = max_auto_backups
+        && let Err(e) =
+            cleanup_auto_backup_files(&backup_dir, "reina_manager_auto_", ".db", max_auto_backups)
+    {
+        log::warn!("清理旧数据库自动备份失败: {}", e);
     }
 
-    let backup_name = generate_backup_filename();
+    Ok(result)
+}
+
+fn copy_database_file_cold(
+    db_path: &Path,
+    backup_dir: &Path,
+    auto: bool,
+) -> Result<BackupResult, String> {
+    if !db_path.exists() {
+        return Err(format!("当前数据库文件不存在: {}", db_path.display()));
+    }
+
+    let backup_name = if auto {
+        generate_auto_backup_filename()
+    } else {
+        generate_backup_filename()
+    };
     let backup_file_path = backup_dir.join(&backup_name);
 
-    match fs::copy(db_path, &backup_file_path) {
-        Ok(_) => {
-            let path_str = backup_file_path.to_string_lossy().to_string();
-            log::info!("导入前冷备份成功: {}", path_str);
-            Some(path_str)
-        }
-        Err(e) => {
-            log::warn!("导入前备份失败: {}，继续导入", e);
-            None
-        }
-    }
+    fs::copy(db_path, &backup_file_path).map_err(|e| format!("数据库冷备份失败: {}", e))?;
+
+    let path_str = backup_file_path.to_string_lossy().to_string();
+    log::info!("数据库冷备份成功: {}", path_str);
+
+    Ok(BackupResult {
+        success: true,
+        path: Some(path_str),
+        message: "数据库备份成功".to_string(),
+    })
 }
 
 /// 导入数据库文件（覆盖现有数据库）
@@ -242,17 +291,22 @@ pub async fn import_database(
     let backup_dir = resolve_backup_dir(&db).await?;
 
     // 步骤2：导入前备份自定义封面，后续会清空 covers 避免旧 id 封面错配新库
-    backup_custom_covers_archive(&db).await?;
+    backup_custom_covers_archive(&db, false).await?;
 
     // 步骤3：关闭数据库连接，后续对数据库文件做冷备份和覆盖
-    let conn = db.inner().clone();
-    close_connection(conn)
+    close_connection(db.inner().clone())
         .await
         .map_err(|e| format!("关闭数据库连接失败: {}", e))?;
     log::info!("数据库连接已关闭，准备冷备份和导入");
 
     // 步骤4：冷备份当前数据库文件，避免覆盖后无法回滚
-    let result_backup_path = backup_database_file_cold(&target_db_path, &backup_dir);
+    let result_backup_path = match copy_database_file_cold(&target_db_path, &backup_dir, false) {
+        Ok(result) => result.path,
+        Err(e) => {
+            log::warn!("导入前备份失败: {}，继续导入", e);
+            None
+        }
+    };
 
     // 步骤5：删除整个封面目录。云端封面缓存会按新数据库重新下载，
     // 自定义封面已单独备份，不自动恢复到新库。

@@ -606,6 +606,12 @@
 				"vndbTitle": "VNDB コレクション同期を有効化"
 			},
 			"databaseBackup": {
+				"autoBackupOnExit": "終了時に自動バックアップ",
+				"autoIncludeCovers": "カスタムカバーもバックアップ",
+				"autoMinIntervalHelp": "0 にすると終了ごとにバックアップします",
+				"autoMinIntervalHours": "最小間隔（時間）",
+				"autoNever": "自動バックアップ未実行",
+				"autoRetentionCount": "自動バックアップの最大保持数（件）",
 				"backing": "バックアップ中...",
 				"backingCovers": "カバーをバックアップ中...",
 				"backup": "データベースをバックアップ",
@@ -620,6 +626,8 @@
 				"importFailed": "インポートに失敗しました",
 				"importing": "インポート中...",
 				"importSuccess": "データベースのインポートが成功しました。カスタムカバーをバックアップし、カバーキャッシュを削除しました。アプリが自動的に再起動します",
+				"lastAutoBackup": "前回の自動バックアップ：{{time}}",
+				"lastAutoBackupError": "前回の自動バックアップ失敗：{{error}}",
 				"noCoversToBackup": "バックアップするカスタムカバーがありません",
 				"openFolder": "バックアップフォルダを開く",
 				"openFolderError": "バックアップフォルダを開くのに失敗しました: {{error}}",

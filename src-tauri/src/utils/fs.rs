@@ -26,6 +26,55 @@ pub struct MoveResult {
     pub message: String,
 }
 
+#[derive(Debug, Default, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct BackupOptions {
+    pub auto: bool,
+    pub max_auto_backups: Option<usize>,
+}
+
+pub fn cleanup_auto_backup_files(
+    backup_dir: &Path,
+    prefix: &str,
+    extension: &str,
+    max_count: usize,
+) -> Result<Vec<String>, String> {
+    let max_count = max_count.max(1);
+    let entries = fs::read_dir(backup_dir).map_err(|e| format!("读取备份目录失败: {}", e))?;
+    let mut files = Vec::new();
+
+    for entry in entries {
+        let entry = entry.map_err(|e| format!("读取备份文件失败: {}", e))?;
+        let path = entry.path();
+        if !path.is_file() {
+            continue;
+        }
+
+        let Some(file_name) = path.file_name().and_then(|name| name.to_str()) else {
+            continue;
+        };
+
+        if file_name.starts_with(prefix) && file_name.ends_with(extension) {
+            files.push((file_name.to_string(), path));
+        }
+    }
+
+    files.sort_by(|a, b| a.0.cmp(&b.0));
+    if files.len() <= max_count {
+        return Ok(Vec::new());
+    }
+
+    let remove_count = files.len() - max_count;
+    let mut deleted_files = Vec::new();
+    for (file_name, path) in files.into_iter().take(remove_count) {
+        fs::remove_file(&path)
+            .map_err(|e| format!("删除旧自动备份失败 {}: {}", path.to_string_lossy(), e))?;
+        deleted_files.push(file_name);
+    }
+
+    Ok(deleted_files)
+}
+
 /// 打开目录
 ///
 /// # Arguments
@@ -579,11 +628,29 @@ pub async fn delete_game_cover_dir(game_id: i32) -> Result<(), String> {
 #[command]
 pub async fn backup_custom_covers(
     db: State<'_, DatabaseConnection>,
+    options: Option<BackupOptions>,
 ) -> Result<BackupResult, String> {
-    backup_custom_covers_archive(&db).await
+    let options = options.unwrap_or_default();
+    let result = backup_custom_covers_archive(&db, options.auto).await?;
+
+    if options.auto
+        && let Some(max_auto_backups) = options.max_auto_backups
+    {
+        let backup_dir = resolve_backup_dir(&db).await?;
+        if let Err(e) =
+            cleanup_auto_backup_files(&backup_dir, "custom_covers_auto_", ".7z", max_auto_backups)
+        {
+            log::warn!("清理旧自定义封面自动备份失败: {}", e);
+        }
+    }
+
+    Ok(result)
 }
 
-pub async fn backup_custom_covers_archive(db: &DatabaseConnection) -> Result<BackupResult, String> {
+pub async fn backup_custom_covers_archive(
+    db: &DatabaseConnection,
+    auto: bool,
+) -> Result<BackupResult, String> {
     // 1. 获取封面根目录
     let covers_dir = reina_path::get_base_data_dir()?.join("covers");
     if !covers_dir.exists() {
@@ -626,8 +693,14 @@ pub async fn backup_custom_covers_archive(db: &DatabaseConnection) -> Result<Bac
             return Err(e);
         }
     };
+    let archive_prefix = if auto {
+        "custom_covers_auto"
+    } else {
+        "custom_covers"
+    };
     let archive_name = format!(
-        "custom_covers_{}.7z",
+        "{}_{}.7z",
+        archive_prefix,
         chrono::Local::now().format("%Y%m%d_%H%M%S")
     );
     let archive_path = backup_dir.join(&archive_name);

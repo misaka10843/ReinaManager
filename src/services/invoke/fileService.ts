@@ -12,6 +12,11 @@ export interface BackupResult {
 	message: string;
 }
 
+export interface BackupOptions {
+	auto?: boolean;
+	maxAutoBackups?: number;
+}
+
 export interface ImportResult {
 	success: boolean;
 	message: string;
@@ -93,15 +98,19 @@ class FileService extends BaseService {
 	/**
 	 * 备份数据库
 	 */
-	async backupDatabase(): Promise<BackupResult> {
-		return this.invoke<BackupResult>("backup_database");
+	async backupDatabase(
+		options: BackupOptions | null = null,
+	): Promise<BackupResult> {
+		return this.invoke<BackupResult>("backup_database", { options });
 	}
 
 	/**
 	 * 备份自定义封面（仅自定义封面，不含云端缓存）
 	 */
-	async backupCustomCovers(): Promise<BackupResult> {
-		return this.invoke<BackupResult>("backup_custom_covers");
+	async backupCustomCovers(
+		options: BackupOptions | null = null,
+	): Promise<BackupResult> {
+		return this.invoke<BackupResult>("backup_custom_covers", { options });
 	}
 
 	/**
