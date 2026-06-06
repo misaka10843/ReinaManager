@@ -224,20 +224,19 @@ function mergeMultipleDataSources(
 	target.summary =
 		ymgal_data?.summary ||
 		bgm_data?.summary ||
-		vndb_data?.summary ||
-		kun_data?.summary;
+		kun_data?.summary ||
+		vndb_data?.summary;
 
 	target.developer =
 		vndb_data?.developer ||
 		kun_data?.developer ||
-		bgm_data?.developer ||
-		ymgal_data?.developer;
+		ymgal_data?.developer ||
+		bgm_data?.developer;
 
 	// 标签: 合并所有数据源的标签，去重
 	const allTags = [
 		...(bgm_data?.tags || []),
 		...(vndb_data?.tags || []),
-		...(ymgal_data?.tags || []),
 		...(kun_data?.tags || []),
 		...(custom_data?.tags || []),
 	];
@@ -247,8 +246,8 @@ function mergeMultipleDataSources(
 	const allAliases = [
 		...(bgm_data?.aliases || []),
 		...(vndb_data?.aliases || []),
-		...(ymgal_data?.aliases || []),
 		...(kun_data?.aliases || []),
+		...(ymgal_data?.aliases || []),
 		...(custom_data?.aliases || []),
 	];
 	target.aliases = Array.from(new Set(allAliases));
