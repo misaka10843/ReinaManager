@@ -22,18 +22,15 @@ import type React from "react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
+import {
+	DEFAULT_MIXED_SOURCE_KEYS,
+	getRuntimeSourceAdapter,
+	MIXED_SOURCE_KEYS,
+} from "@/metadata";
 import { snackbar } from "@/providers/snackBar";
 import { useStore } from "@/store/appStore";
-import { SOURCE_KEYS, type SourceType } from "@/types";
 import { isBgmAuthExpiredError } from "@/utils/bgmAuthSession";
 import { getUserErrorMessage } from "@/utils/errors";
-
-const SOURCE_LABELS: Record<SourceType, string> = {
-	bgm: "Bangumi",
-	vndb: "VNDB",
-	ymgal: "YMGal",
-	kun: "Kungal",
-};
 
 export const MixedSearchSourceSettings = () => {
 	const { t } = useTranslation();
@@ -64,7 +61,7 @@ export const MixedSearchSourceSettings = () => {
 					flexWrap="wrap"
 					alignItems="center"
 				>
-					{SOURCE_KEYS.map((source) => {
+					{MIXED_SOURCE_KEYS.map((source) => {
 						const checked = mixedEnabledSources.includes(source);
 						return (
 							<FormControlLabel
@@ -74,10 +71,13 @@ export const MixedSearchSourceSettings = () => {
 										checked={checked}
 										onChange={() => toggleMixedSource(source)}
 										color="primary"
-										disabled={checked && enabledCount <= 2}
+										disabled={
+											checked &&
+											enabledCount <= DEFAULT_MIXED_SOURCE_KEYS.length
+										}
 									/>
 								}
-								label={SOURCE_LABELS[source]}
+								label={getRuntimeSourceAdapter(source).label}
 							/>
 						);
 					})}

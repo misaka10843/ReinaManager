@@ -1,7 +1,6 @@
+import { getRuntimeSourceAdapter, REGISTERED_SOURCE_KEYS } from "@/metadata";
 import type { FullGameData, SourceDataKey, SourceType } from "@/types";
-import { SOURCE_FIELD_KEYS, SOURCE_KEYS } from "@/types";
-
-const SOURCE_COVER_KEYS = ["bgm", "vndb", "kun", "ymgal"] as const;
+import { SOURCE_COVER_PRIORITY } from "./displayMergeRules";
 
 type SourceImageData = Partial<
 	Record<SourceType, { image?: string | null } | null | undefined>
@@ -16,7 +15,10 @@ type SourceImagePayload = Pick<FullGameData, SourceDataKey>;
 
 export function getSourceImageMap(game: SourceImagePayload): SourceImageData {
 	return Object.fromEntries(
-		SOURCE_KEYS.map((source) => [source, game[SOURCE_FIELD_KEYS[source].data]]),
+		REGISTERED_SOURCE_KEYS.map((source) => [
+			source,
+			game[getRuntimeSourceAdapter(source).dataKey],
+		]),
 	) as SourceImageData;
 }
 
@@ -29,7 +31,7 @@ export function resolveSourceImage(
 		if (selectedImage) return selectedImage;
 	}
 
-	for (const source of SOURCE_COVER_KEYS) {
+	for (const source of SOURCE_COVER_PRIORITY) {
 		const image = sources[source]?.image;
 		if (image) return image;
 	}
@@ -40,7 +42,7 @@ export function resolveSourceImage(
 export function getSourceImageOptions(game: FullGameData): SourceImageOption[] {
 	const sources = getSourceImageMap(game);
 
-	return SOURCE_COVER_KEYS.map((source) => ({
+	return SOURCE_COVER_PRIORITY.map((source) => ({
 		source,
 		image: sources[source]?.image,
 	})).filter((option): option is SourceImageOption => Boolean(option.image));

@@ -13,10 +13,11 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { getRuntimeSourceAdapter } from "@/metadata";
 import { snackbar } from "@/providers/snackBar";
 import { useStore } from "@/store/appStore";
 import type { GameCandidateData, GameData, SourceType } from "@/types";
-import { isSourceType, SOURCE_FIELD_KEYS, type SOURCE_KEYS } from "@/types";
+import { isSourceType } from "@/types";
 import { isBgmAuthExpiredError, withBgmAuth } from "@/utils/bgmAuthSession";
 import { getUserErrorMessage } from "@/utils/errors";
 import { fetchMetadataForUpdate } from "@/utils/gameData/metadata";
@@ -85,9 +86,9 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 		({ source, value }) => isMixedSourceEnabled(source) && Boolean(value),
 	);
 
-	const hasSelectedSourceData = (source: (typeof SOURCE_KEYS)[number]) => {
-		const { id } = SOURCE_FIELD_KEYS[source];
-		return Boolean(selectedGame[id] && sourceAvailability[source]);
+	const hasSelectedSourceData = (source: SourceType) => {
+		const { idKey } = getRuntimeSourceAdapter(source);
+		return Boolean(selectedGame[idKey] && sourceAvailability[source]);
 	};
 
 	const canSwitchSource = () => {
@@ -139,17 +140,16 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 		try {
 			setIsLoading(true);
 			const shouldUseBgmToken =
-				idType === "bgm" ||
-				(idType === "mixed" && isMixedSourceEnabled("bgm") && bgmId);
+				idType === "bgm" || (idType === "mixed" && isMixedSourceEnabled("bgm"));
 			const result = await withBgmAuth(
 				(token) =>
 					fetchMetadataForUpdate({
 						selectedGame,
 						idType,
-						bgmId,
-						vndbId,
-						ymgalId,
-						kunId,
+						bgm_id: bgmId,
+						vndb_id: vndbId,
+						ymgal_id: ymgalId,
+						kun_id: kunId,
 						enabledSources:
 							idType === "mixed" ? mixedEnabledSources : undefined,
 						bgmToken: shouldUseBgmToken ? (token ?? undefined) : undefined,

@@ -10,8 +10,8 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import Typography from "@mui/material/Typography";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { getRuntimeSourceAdapter, MIXED_SOURCE_KEYS } from "@/metadata";
 import type { SourceType } from "@/types";
-import { SOURCE_KEYS } from "@/types";
 import type {
 	MixedSourceCandidates,
 	MixedSourceEnabled,
@@ -30,13 +30,6 @@ interface MixedSourceConfirmDialogProps {
 	loading?: boolean;
 	title?: string;
 }
-
-const SOURCE_LABELS: Record<SourceType, string> = {
-	bgm: "BGM",
-	vndb: "VNDB",
-	ymgal: "YMGal",
-	kun: "Kungal",
-};
 
 function getDialogMaxWidth(sourceCount: number): "xs" | "sm" | "md" | "lg" {
 	if (sourceCount >= 4) {
@@ -75,7 +68,7 @@ function buildInitialState(candidates: MixedSourceCandidates): {
 	const selection: MixedSourceSelection = {};
 	const enabled: MixedSourceEnabled = {};
 
-	for (const source of SOURCE_KEYS) {
+	for (const source of MIXED_SOURCE_KEYS) {
 		const firstGame = candidates[source]?.[0] ?? null;
 		selection[source] = firstGame;
 		enabled[source] = Boolean(firstGame);
@@ -110,12 +103,15 @@ const MixedSourceConfirmDialog: React.FC<MixedSourceConfirmDialogProps> = ({
 
 	const selectedSourceCount = useMemo(
 		() =>
-			SOURCE_KEYS.filter((source) => enabled[source] && selection[source])
+			MIXED_SOURCE_KEYS.filter((source) => enabled[source] && selection[source])
 				.length,
 		[enabled, selection],
 	);
 	const availableSources = useMemo(
-		() => SOURCE_KEYS.filter((source) => (candidates[source]?.length ?? 0) > 0),
+		() =>
+			MIXED_SOURCE_KEYS.filter(
+				(source) => (candidates[source]?.length ?? 0) > 0,
+			),
 		[candidates],
 	);
 	const sourceGridClassName = getSourceGridClassName(availableSources.length);
@@ -164,7 +160,7 @@ const MixedSourceConfirmDialog: React.FC<MixedSourceConfirmDialogProps> = ({
 													disabled={loading}
 												/>
 											}
-											label={SOURCE_LABELS[source]}
+											label={getRuntimeSourceAdapter(source).label}
 										/>
 
 										{displayInfo ? (

@@ -6,13 +6,15 @@
  * @copyright AGPL-3.0
  */
 
-import { fetchBgmById, fetchBgmByName } from "@/api/bgm";
-import { fetchGalgameById, searchGalgame } from "@/api/kun";
 import { fetchMixedData } from "@/api/mixed";
-import { fetchVndbById, fetchVndbByName } from "@/api/vndb";
-import { fetchYmById, fetchYmByName } from "@/api/ymgal";
+import type { MetadataSourceContext } from "@/metadata";
+import {
+	getRuntimeSourceAdapter,
+	getSourceAdapter,
+	getSourceCandidateFromGame,
+	resolveAutoSelectedSourceCandidate,
+} from "@/metadata";
 import type { apiSourceType, GameCandidateData, SourceType } from "@/types";
-import { SOURCE_FIELD_KEYS } from "@/types";
 import { AppError, toError } from "@/utils/errors";
 import {
 	buildGameFromMixedSelection,
@@ -34,7 +36,7 @@ function hasSourceId(
 	game: Partial<GameCandidateData>,
 	source: SourceType,
 ): boolean {
-	const { id: idKey } = SOURCE_FIELD_KEYS[source];
+	const { idKey } = getSourceAdapter(source);
 	return Boolean(game[idKey]);
 }
 
@@ -79,10 +81,6 @@ function ensureMixedResult(
 	return result;
 }
 
-function assertNever(value: never): never {
-	throw new Error(`Unhandled source: ${String(value)}`);
-}
-
 /**
  * 游戏搜索参数
  * 新的设计：添加游戏只能输入单 id、游戏名称两种
@@ -96,24 +94,6 @@ export interface GameSearchParams {
 	limit?: number; // 名称搜索返回数量上限
 	signal?: AbortSignal;
 }
-
-interface SelectionDetailEnrichRule {
-	source: SourceType;
-	getId: (game: GameCandidateData) => string | undefined;
-}
-
-const selectionDetailEnrichRules: Partial<
-	Record<SourceType, SelectionDetailEnrichRule>
-> = {
-	ymgal: {
-		source: "ymgal",
-		getId: (game) => game.ymgal_id,
-	},
-	kun: {
-		source: "kun",
-		getId: (game) => game.kun_id,
-	},
-};
 
 /**
  * 游戏元数据服务类
@@ -188,6 +168,24 @@ class GameMetadataService {
 			signal,
 		);
 		return results.map((game) => this.applyDefaults(game, defaults));
+	}
+
+	async searchBestMatch(params: {
+		query: string;
+		source: SourceType;
+		bgmToken?: string;
+		defaults?: Partial<GameCandidateData>;
+		signal?: AbortSignal;
+	}): Promise<GameCandidateData | null> {
+		const { query, source, bgmToken, defaults, signal } = params;
+		const candidate = await resolveAutoSelectedSourceCandidate({
+			query,
+			source,
+			bgmToken,
+			signal,
+		});
+
+		return candidate ? this.applyDefaults(candidate.raw, defaults) : null;
 	}
 
 	/**
@@ -273,24 +271,11 @@ class GameMetadataService {
 			});
 		}
 		try {
-			switch (source) {
-				case "bgm":
-					if (!bgmToken) {
-						throw createStableError(
-							"bgm_token_required",
-							"Bangumi token is required for Bangumi lookup",
-						);
-					}
-					return await fetchBgmById(id, bgmToken, signal);
-				case "vndb":
-					return await fetchVndbById(id, signal);
-				case "ymgal":
-					return await fetchYmById(id, signal);
-				case "kun":
-					return await fetchGalgameById(id, { signal });
-				default:
-					return assertNever(source);
-			}
+			const candidate = await getSourceAdapter(source).fetchById(id, {
+				bgmToken,
+				signal,
+			});
+			return candidate.raw;
 		} catch (error) {
 			throw createMetadataError(
 				`Failed to fetch ${source} metadata by id`,
@@ -316,18 +301,31 @@ class GameMetadataService {
 			return selectedGame;
 		}
 
-		const enrichRule = selectionDetailEnrichRules[source];
-		const selectedId = enrichRule?.getId(selectedGame);
-		if (!enrichRule || !selectedId) {
+		return this.enrichSourceSelectionDetails(selectedGame, source);
+	}
+
+	private async enrichSourceSelectionDetails(
+		selectedGame: GameCandidateData,
+		source: SourceType,
+		ctx: MetadataSourceContext = {},
+	): Promise<GameCandidateData> {
+		const adapter = getRuntimeSourceAdapter(source);
+		if (!adapter.enrichOnSelect) {
 			return selectedGame;
 		}
 
-		const detailedData = await this.getGameById(selectedId, enrichRule.source);
-		return {
-			...selectedGame,
-			...detailedData,
-			localpath: selectedGame.localpath ?? detailedData.localpath,
-		};
+		const sourceData = selectedGame[adapter.dataKey];
+		if (!selectedGame[adapter.idKey] || !sourceData) {
+			return selectedGame;
+		}
+
+		const sourceCandidate = getSourceCandidateFromGame(
+			selectedGame,
+			adapter,
+			adapter.toDisplayFields(sourceData),
+		);
+		const candidate = await adapter.enrichOnSelect(sourceCandidate, ctx);
+		return candidate.raw;
 	}
 
 	/**
@@ -351,28 +349,13 @@ class GameMetadataService {
 					return;
 				}
 
-				if (source === "ymgal" && selectedGame.ymgal_id) {
-					const detailedData = await this.getGameById(
-						selectedGame.ymgal_id,
-						"ymgal",
-					);
-					nextSelection[source] = {
-						...selectedGame,
-						...detailedData,
-						localpath: selectedGame.localpath ?? detailedData.localpath,
-					};
-				}
-
-				if (source === "kun" && selectedGame.kun_id) {
-					const detailedData = await fetchGalgameById(selectedGame.kun_id, {
-						enrichVndb: false,
-					});
-					nextSelection[source] = {
-						...selectedGame,
-						...detailedData,
-						localpath: selectedGame.localpath ?? detailedData.localpath,
-					};
-				}
+				nextSelection[source] = await this.enrichSourceSelectionDetails(
+					selectedGame,
+					source,
+					{
+						enrichCrossSource: false,
+					},
+				);
 			}),
 		);
 
@@ -411,24 +394,12 @@ class GameMetadataService {
 		signal?: AbortSignal,
 	): Promise<GameCandidateData[]> {
 		try {
-			switch (source) {
-				case "bgm":
-					if (!bgmToken) {
-						throw createStableError(
-							"bgm_token_required",
-							"Bangumi token is required for Bangumi lookup",
-						);
-					}
-					return await fetchBgmByName(name, bgmToken, limit ?? 25, signal);
-				case "vndb":
-					return await fetchVndbByName(name, undefined, limit ?? 25, signal);
-				case "ymgal":
-					return await fetchYmByName(name, 1, limit ?? 20, false, signal);
-				case "kun":
-					return await searchGalgame(name, 1, limit ?? 12, false, { signal });
-				default:
-					return assertNever(source);
-			}
+			const candidates = await getSourceAdapter(source).searchByName(name, {
+				bgmToken,
+				limit,
+				signal,
+			});
+			return candidates.map((candidate) => candidate.raw);
 		} catch (error) {
 			throw createMetadataError(
 				`Failed to search ${source} metadata by name`,
@@ -479,41 +450,33 @@ class GameMetadataService {
 	 * 验证游戏 ID 格式
 	 */
 	isValidGameId(id: string, source: SourceType): boolean {
-		switch (source) {
-			case "bgm":
-			case "kun":
-				return /^\d+$/.test(id);
-			case "vndb":
-				return /^v\d+$/i.test(id);
-			case "ymgal":
-				return /^(ga)?\d+$/i.test(id);
-			default:
-				return assertNever(source);
-		}
+		return getSourceAdapter(source).validateId(id);
 	}
 
 	/**
 	 * 根据多个 ID 获取游戏数据（用于更新场景）
 	 */
 	async getGameByIds(params: {
-		bgmId?: string;
-		vndbId?: string;
-		ymgalId?: string;
-		kunId?: string;
+		bgm_id?: string;
+		vndb_id?: string;
+		ymgal_id?: string;
+		kun_id?: string;
 		bgmToken?: string;
 		enabledSources?: readonly SourceType[];
 		defaults?: Partial<GameCandidateData>;
 	}): Promise<GameCandidateData> {
 		const {
-			bgmId,
-			vndbId,
-			ymgalId,
-			kunId,
+			bgm_id,
+			vndb_id,
+			ymgal_id,
+			kun_id,
 			bgmToken,
 			enabledSources,
 			defaults,
 		} = params;
-		const providedIds = [bgmId, vndbId, ymgalId, kunId].filter(Boolean).length;
+		const providedIds = [bgm_id, vndb_id, ymgal_id, kun_id].filter(
+			Boolean,
+		).length;
 
 		if (providedIds === 0) {
 			throw createStableError(
@@ -525,10 +488,10 @@ class GameMetadataService {
 		try {
 			if (providedIds === 1) {
 				const result = await fetchMixedData({
-					bgm_id: bgmId,
-					vndb_id: vndbId,
-					ymgal_id: ymgalId,
-					kun_id: kunId,
+					bgm_id,
+					vndb_id,
+					ymgal_id,
+					kun_id,
 					bgmToken,
 					enabledSources,
 				});
@@ -542,26 +505,26 @@ class GameMetadataService {
 
 			const promises: Promise<GameCandidateData | null>[] = [];
 
-			if (bgmId && bgmToken) {
-				promises.push(this.getGameById(bgmId, "bgm", bgmToken));
+			if (bgm_id && bgmToken) {
+				promises.push(this.getGameById(bgm_id, "bgm", bgmToken));
 			} else {
 				promises.push(Promise.resolve(null));
 			}
 
-			if (vndbId) {
-				promises.push(this.getGameById(vndbId, "vndb"));
+			if (vndb_id) {
+				promises.push(this.getGameById(vndb_id, "vndb"));
 			} else {
 				promises.push(Promise.resolve(null));
 			}
 
-			if (ymgalId) {
-				promises.push(this.getGameById(ymgalId, "ymgal"));
+			if (ymgal_id) {
+				promises.push(this.getGameById(ymgal_id, "ymgal"));
 			} else {
 				promises.push(Promise.resolve(null));
 			}
 
-			if (kunId) {
-				promises.push(this.getGameById(kunId, "kun"));
+			if (kun_id) {
+				promises.push(this.getGameById(kun_id, "kun"));
 			} else {
 				promises.push(Promise.resolve(null));
 			}

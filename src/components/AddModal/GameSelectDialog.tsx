@@ -17,14 +17,8 @@ import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
 import Typography from "@mui/material/Typography";
 import { useTranslation } from "react-i18next";
-import type {
-	BgmData,
-	GameCandidateData,
-	KunData,
-	SourceType,
-	VndbData,
-	YmgalData,
-} from "@/types";
+import { getRuntimeSourceAdapter } from "@/metadata";
+import type { GameCandidateData, SourceType } from "@/types";
 
 interface GameSelectDialogProps {
 	open: boolean;
@@ -52,37 +46,19 @@ export function extractDisplayInfo(
 	date: string | null;
 	sourceLabel: string;
 } {
-	// 根据数据源直接提取对应的数据
-	let data: BgmData | VndbData | YmgalData | KunData | null | undefined;
-	let id: string;
-	let sourceLabel: string;
-
-	if (apiSource === "bgm") {
-		data = item.bgm_data;
-		id = item.bgm_id || "";
-		sourceLabel = `BGM: ${id}`;
-	} else if (apiSource === "vndb") {
-		data = item.vndb_data;
-		id = item.vndb_id || "";
-		sourceLabel = `VNDB: ${id}`;
-	} else if (apiSource === "ymgal") {
-		data = item.ymgal_data;
-		id = item.ymgal_id || "";
-		sourceLabel = `YMGal: ${id}`;
-	} else {
-		data = item.kun_data;
-		id = item.kun_id || "";
-		sourceLabel = `Kungal: ${id}`;
-	}
+	const adapter = getRuntimeSourceAdapter(apiSource);
+	const data = item[adapter.dataKey];
+	const id = item[adapter.idKey] || "";
+	const display = data ? adapter.toDisplayFields(data) : {};
 
 	return {
 		id,
-		name: data?.name || "",
-		name_cn: data?.name_cn || null,
-		image: data?.image || null,
-		developer: data?.developer || null,
-		date: data && "date" in data ? data.date || null : null,
-		sourceLabel,
+		name: display.name || "",
+		name_cn: display.name_cn || null,
+		image: display.image || null,
+		developer: display.developer || null,
+		date: display.date || null,
+		sourceLabel: `${adapter.label}: ${id}`,
 	};
 }
 

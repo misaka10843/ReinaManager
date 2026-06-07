@@ -23,6 +23,7 @@ import { AlertBox } from "@/components/AlertBox";
 import { useMetadataSearchFlow } from "@/hooks/common/useMetadataSearchFlow";
 import { useBulkGameAddActions } from "@/hooks/features/games/useGameMetadataFacade";
 import { useAllSettings } from "@/hooks/queries/useSettings";
+import { getRuntimeSourceAdapter, REGISTERED_SOURCE_KEYS } from "@/metadata";
 import { snackbar } from "@/providers/snackBar";
 import { fileService } from "@/services/invoke";
 import { useStore } from "@/store/appStore";
@@ -47,12 +48,10 @@ interface BulkImportTabProps {
 
 const DEFAULT_SCAN_DEPTH = 2;
 const SCAN_DEPTH_OPTIONS = [2, 3, 4, 5] as const;
-const BULK_API_SOURCE_OPTIONS: { value: SourceType; label: string }[] = [
-	{ value: "bgm", label: "Bangumi" },
-	{ value: "vndb", label: "VNDB" },
-	{ value: "ymgal", label: "YMGal" },
-	{ value: "kun", label: "Kun" },
-];
+const BULK_API_SOURCE_OPTIONS = REGISTERED_SOURCE_KEYS.map((source) => ({
+	value: source,
+	label: getRuntimeSourceAdapter(source).label,
+}));
 
 function isVisibleBulkImportItem(
 	item: BulkImportItem,
@@ -227,32 +226,30 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 				}
 
 				try {
-					const searchResults =
+					const matchedData =
 						bulkApiSource === "bgm"
 							? await withBgmAuth(
 									(token) =>
 										withAbort(
-											gameMetadataService.searchGames({
+											gameMetadataService.searchBestMatch({
 												query: nextItems[index].name,
 												source: bulkApiSource,
 												bgmToken: token,
-												limit: 1,
 												signal: controller.signal,
 											}),
 										),
 									{ required: true },
 								)
 							: await withAbort(
-									gameMetadataService.searchGames({
+									gameMetadataService.searchBestMatch({
 										query: nextItems[index].name,
 										source: bulkApiSource,
-										limit: 1,
 										signal: controller.signal,
 									}),
 								);
 
-					if (searchResults.length > 0) {
-						nextItems[index].matchedData = searchResults[0];
+					if (matchedData) {
+						nextItems[index].matchedData = matchedData;
 						nextItems[index].status = "matched";
 					} else {
 						nextItems[index].status = "not found";

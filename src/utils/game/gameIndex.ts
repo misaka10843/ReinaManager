@@ -1,5 +1,5 @@
+import { getRuntimeSourceAdapter, REGISTERED_SOURCE_KEYS } from "@/metadata";
 import type { FullGameData, GameData, SourceType } from "@/types";
-import { SOURCE_FIELD_KEYS, SOURCE_KEYS } from "@/types";
 import type { Category } from "@/types/collection";
 import { getDisplayGameData } from "@/utils/gameData/dataTransform";
 
@@ -48,8 +48,10 @@ export function setGameIndexCache(
 function buildSourceAvailability(game: FullGameData): SourceAvailability {
 	const availability: SourceAvailability = { ...EMPTY_SOURCE_AVAILABILITY };
 
-	for (const source of SOURCE_KEYS) {
-		availability[source] = Boolean(game[SOURCE_FIELD_KEYS[source].data]);
+	for (const source of REGISTERED_SOURCE_KEYS) {
+		availability[source] = Boolean(
+			game[getRuntimeSourceAdapter(source).dataKey],
+		);
 	}
 
 	return availability;

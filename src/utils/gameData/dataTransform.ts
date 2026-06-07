@@ -8,19 +8,16 @@
  * - 转换时将 null 值转换为 undefined（展示层不需要 null）
  */
 
-import type {
-	BgmData,
-	CustomData,
-	FullGameData,
-	GameData,
-	KunData,
-	Nullable,
-	SourceType,
-	VndbData,
-	YmgalData,
-} from "@/types";
-import { isSourceType, SOURCE_FIELD_KEYS } from "@/types";
-import { getSourceImageMap, resolveSourceImage } from "./sourceImage";
+import { getRuntimeSourceAdapter } from "@/metadata";
+import type { FullGameData, GameData } from "@/types";
+import { isSourceType } from "@/types";
+import {
+	applyCustomDataOverride,
+	applyCustomSourceDisplay,
+	applyMixedSourceDisplay,
+	applySingleSourceDisplay,
+	getSourceDataMap,
+} from "./displayMergeRules";
 
 /**
  * 将 null 转换为 undefined
@@ -29,30 +26,6 @@ import { getSourceImageMap, resolveSourceImage } from "./sourceImage";
 const nullToUndefined = <T>(value: T | null | undefined): T | undefined =>
 	value ?? undefined;
 
-function assertNever(value: never): never {
-	throw new Error(`Unhandled source: ${String(value)}`);
-}
-
-/**
- * 辅助函数：从数据源提取基础字段（避免重复代码）
- */
-const assignBasicFields = (
-	target: GameData,
-	source: {
-		name?: string | null;
-		name_cn?: string | null;
-		summary?: string | null;
-		developer?: string | null;
-		nsfw?: boolean | null;
-	},
-) => {
-	if (source.name != null) target.name = source.name;
-	if (source.name_cn != null) target.name_cn = source.name_cn;
-	if (source.summary != null) target.summary = source.summary;
-	if (source.developer != null) target.developer = source.developer;
-	if (source.nsfw != null) target.nsfw = source.nsfw;
-};
-
 /**
  * 根据 id_type 智能合并游戏数据
  *
@@ -60,14 +33,8 @@ const assignBasicFields = (
  * @returns 展平的 GameData
  */
 export function getDisplayGameData(fullData: FullGameData): GameData {
-	const {
-		bgm_data,
-		vndb_data,
-		ymgal_data,
-		kun_data,
-		custom_data,
-		...gameData
-	} = fullData;
+	const { custom_data, ...gameData } = fullData;
+	const sourceDataMap = getSourceDataMap(fullData);
 
 	// 基础数据 - 直接从 fullData 中获取根节点字段
 	const baseData: GameData = {
@@ -92,35 +59,37 @@ export function getDisplayGameData(fullData: FullGameData): GameData {
 
 	// 根据 id_type 决定数据来源
 	if (fullData.id_type && isSourceType(fullData.id_type)) {
-		const sourceData = fullData[SOURCE_FIELD_KEYS[fullData.id_type].data];
+		const sourceData =
+			fullData[getRuntimeSourceAdapter(fullData.id_type).dataKey];
 		if (sourceData) {
-			assignFromDataSource(baseData, sourceData, fullData.id_type);
+			applySingleSourceDisplay(baseData, fullData.id_type, sourceData);
 		}
 	} else {
 		switch (fullData.id_type) {
 			case "mixed":
 				// 混合数据源：合并所有可用数据
-				if (bgm_data || vndb_data || ymgal_data || kun_data) {
-					mergeMultipleDataSources(baseData, {
-						bgm_data,
-						vndb_data,
-						ymgal_data,
-						kun_data,
-						custom_data,
-					});
+				if (Object.keys(sourceDataMap).length > 0) {
+					applyMixedSourceDisplay(
+						baseData,
+						sourceDataMap,
+						custom_data?.cover_source,
+					);
 				}
 				break;
 
 			case "custom":
 			case "Whitecloud":
-				if (custom_data) assignFromDataSource(baseData, custom_data, "custom");
+				if (custom_data) applyCustomSourceDisplay(baseData, custom_data);
 				break;
 
 			default: {
 				// 未知类型：尝试使用任何可用数据
-				const anyData =
-					bgm_data ?? vndb_data ?? ymgal_data ?? kun_data ?? custom_data;
-				if (anyData) assignFromDataSource(baseData, anyData, "fallback");
+				const [source, sourceData] = Object.entries(sourceDataMap)[0] ?? [];
+				if (source && sourceData && isSourceType(source)) {
+					applySingleSourceDisplay(baseData, source, sourceData);
+				} else if (custom_data) {
+					applyCustomSourceDisplay(baseData, custom_data);
+				}
 			}
 		}
 	}
@@ -131,177 +100,4 @@ export function getDisplayGameData(fullData: FullGameData): GameData {
 	}
 
 	return baseData;
-}
-
-/**
- * 数据源类型联合
- */
-type DataSource = BgmData | VndbData | YmgalData | KunData | CustomData;
-
-/**
- * 从单个数据源分配字段
- */
-function assignFromDataSource(
-	target: GameData,
-	source: DataSource,
-	sourceType: SourceType | "custom" | "fallback",
-) {
-	// 基础字段
-	assignBasicFields(target, source);
-
-	// 源特有的字段 - 使用类型断言处理不同数据源的属性差异
-	switch (sourceType) {
-		case "bgm": {
-			const bgmSource = source as BgmData;
-			target.image = bgmSource.image;
-			target.tags = bgmSource.tags || [];
-			target.rank = bgmSource.rank;
-			target.score = bgmSource.score;
-			target.aliases = bgmSource.aliases || [];
-			break;
-		}
-
-		case "vndb": {
-			const vndbSource = source as VndbData;
-			target.image = vndbSource.image;
-			target.tags = vndbSource.tags || [];
-			target.score = nullToUndefined(vndbSource.score);
-			target.all_titles = vndbSource.all_titles || [];
-			target.aliases = vndbSource.aliases || [];
-			target.average_hours = nullToUndefined(vndbSource.average_hours);
-			break;
-		}
-
-		case "ymgal": {
-			const ymgalSource = source as YmgalData;
-			target.image = ymgalSource.image;
-			target.aliases = ymgalSource.aliases || [];
-			break;
-		}
-
-		case "kun": {
-			const kunSource = source as KunData;
-			target.image = kunSource.image;
-			target.tags = kunSource.tags || [];
-			target.all_titles = kunSource.all_titles || [];
-			target.aliases = kunSource.aliases || [];
-			break;
-		}
-
-		case "custom":
-		case "fallback": {
-			const customSource = source as CustomData;
-			target.aliases = customSource.aliases || [];
-			target.tags = customSource.tags || [];
-			break;
-		}
-		default:
-			return assertNever(sourceType);
-	}
-}
-
-/**
- * 合并多个数据源的字段
- */
-function mergeMultipleDataSources(
-	target: GameData,
-	sources: {
-		bgm_data?: Nullable<BgmData>;
-		vndb_data?: Nullable<VndbData>;
-		ymgal_data?: Nullable<YmgalData>;
-		kun_data?: Nullable<KunData>;
-		custom_data?: Nullable<CustomData>;
-	},
-) {
-	const { bgm_data, vndb_data, ymgal_data, kun_data, custom_data } = sources;
-
-	// 基础字段：优先级 BGM > VNDB > YMGal > Kungal
-	const primarySource = bgm_data || vndb_data || ymgal_data || kun_data;
-	if (primarySource) assignBasicFields(target, primarySource);
-
-	target.image = resolveSourceImage(
-		getSourceImageMap({
-			bgm_data,
-			vndb_data,
-			ymgal_data,
-			kun_data,
-		}),
-		custom_data?.cover_source,
-	);
-
-	target.summary =
-		ymgal_data?.summary ||
-		bgm_data?.summary ||
-		kun_data?.summary ||
-		vndb_data?.summary;
-
-	target.developer =
-		vndb_data?.developer ||
-		kun_data?.developer ||
-		ymgal_data?.developer ||
-		bgm_data?.developer;
-
-	// 标签: 合并所有数据源的标签，去重
-	const allTags = [
-		...(bgm_data?.tags || []),
-		...(vndb_data?.tags || []),
-		...(kun_data?.tags || []),
-		...(custom_data?.tags || []),
-	];
-	target.tags = Array.from(new Set(allTags));
-
-	// 别名: 合并所有数据源的别名，去重
-	const allAliases = [
-		...(bgm_data?.aliases || []),
-		...(vndb_data?.aliases || []),
-		...(kun_data?.aliases || []),
-		...(ymgal_data?.aliases || []),
-		...(custom_data?.aliases || []),
-	];
-	target.aliases = Array.from(new Set(allAliases));
-
-	// 评分: BGM 优先，其次 VNDB
-	target.score = bgm_data?.score ?? nullToUndefined(vndb_data?.score);
-
-	// BGM 特有字段
-	target.rank = bgm_data?.rank;
-
-	// VNDB 和 Kun 特有字段，合并去重
-	const allTitles = [
-		...(vndb_data?.all_titles || []),
-		...(kun_data?.all_titles || []),
-	];
-	target.all_titles = Array.from(new Set(allTitles));
-
-	// VNDB 特有字段
-	target.average_hours = nullToUndefined(vndb_data?.average_hours);
-}
-
-/**
- * 应用 custom_data 覆盖层
- * custom_data 具有最高优先级，用于覆盖其他数据源的字段
- */
-function applyCustomDataOverride(target: GameData, customData: CustomData) {
-	// 基础字段覆盖
-	if (customData.summary) {
-		target.summary = customData.summary;
-	}
-	if (customData.developer) {
-		target.developer = customData.developer;
-	}
-	if (customData.nsfw != null) {
-		target.nsfw = customData.nsfw;
-	}
-
-	// 数组字段增量合并
-	if (customData.aliases) {
-		target.aliases = Array.from(
-			new Set([...(target.aliases || []), ...customData.aliases]),
-		);
-	}
-	if (customData.tags) {
-		target.tags = Array.from(
-			new Set([...(target.tags || []), ...customData.tags]),
-		);
-	}
 }

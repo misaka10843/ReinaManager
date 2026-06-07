@@ -21,8 +21,9 @@
 import type { Update } from "@tauri-apps/plugin-updater";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { MIXED_SOURCE_KEYS } from "@/metadata";
 import type { GameType, SortOption, SortOrder } from "@/services/invoke/types";
-import { type apiSourceType, SOURCE_KEYS, type SourceType } from "@/types";
+import type { apiSourceType, SourceType } from "@/types";
 import type { PlayStatusFilter } from "@/types/collection";
 import { normalizeTagFilters } from "@/utils/tagFilter";
 import {
@@ -220,7 +221,7 @@ export const useStore = create<AppState>()(
 			toggleMixedSource: (source: SourceType) => {
 				set((state) => {
 					const current = state.mixedEnabledSources;
-					const enabledAfterAdd = SOURCE_KEYS.filter(
+					const enabledAfterAdd = MIXED_SOURCE_KEYS.filter(
 						(item) => item === source || current.includes(item),
 					);
 					const nextSources = current.includes(source)

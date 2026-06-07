@@ -1,11 +1,10 @@
-import { SOURCE_KEYS, type SourceType } from "@/types";
+import { DEFAULT_MIXED_SOURCE_KEYS, MIXED_SOURCE_KEYS } from "@/metadata";
+import type { SourceType } from "@/types";
 import { DefaultGroup } from "@/types/collection";
 
 export const APP_STORE_VERSION = 2;
-export const DEFAULT_MIXED_ENABLED_SOURCES: readonly SourceType[] = [
-	"bgm",
-	"vndb",
-];
+export const DEFAULT_MIXED_ENABLED_SOURCES: readonly SourceType[] =
+	DEFAULT_MIXED_SOURCE_KEYS;
 
 type AppStorePersistedState = {
 	mixedEnabledSources?: SourceType[];
@@ -30,9 +29,9 @@ function normalizeMixedEnabledSources(
 	if (!sources) return [...DEFAULT_MIXED_ENABLED_SOURCES];
 
 	const enabled = new Set(
-		sources.filter((source) => SOURCE_KEYS.includes(source)),
+		sources.filter((source) => MIXED_SOURCE_KEYS.includes(source)),
 	);
-	const filtered = SOURCE_KEYS.filter((source) => enabled.has(source));
+	const filtered = MIXED_SOURCE_KEYS.filter((source) => enabled.has(source));
 	return filtered.length >= DEFAULT_MIXED_ENABLED_SOURCES.length
 		? filtered
 		: [...DEFAULT_MIXED_ENABLED_SOURCES];

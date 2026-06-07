@@ -1,0 +1,62 @@
+import { fetchYmById, fetchYmByName } from "@/api/ymgal";
+import type { GameCandidateData, YmgalData } from "@/types";
+import type { MetadataSourceAdapter } from "../sourceAdapter";
+import {
+	getSourceCandidateFromGame,
+	mergeCandidateWithDetails,
+	type SourceCandidate,
+	type SourceDisplayFields,
+} from "../sourceCandidate";
+
+const YMGAL_MIXED_SEARCH_LIMIT = 20;
+
+function toYmgalCandidate(game: GameCandidateData): SourceCandidate<YmgalData> {
+	return getSourceCandidateFromGame<YmgalData>(
+		game,
+		ymgalAdapter,
+		ymgalAdapter.toDisplayFields(game.ymgal_data as YmgalData),
+	);
+}
+
+export const ymgalAdapter: MetadataSourceAdapter<YmgalData> = {
+	key: "ymgal",
+	label: "YMGal",
+	idKey: "ymgal_id",
+	dataKey: "ymgal_data",
+	participatesInMixed: true,
+	defaultMixedEnabled: false,
+	mixedSearchLimit: YMGAL_MIXED_SEARCH_LIMIT,
+	validateId: (id) => /^(ga)?\d+$/i.test(id),
+	async fetchById(id, ctx) {
+		const game = await fetchYmById(id, ctx.signal);
+		return toYmgalCandidate(game);
+	},
+	async searchByName(name, ctx) {
+		const games = await fetchYmByName(
+			name,
+			1,
+			ctx.limit ?? YMGAL_MIXED_SEARCH_LIMIT,
+			false,
+			ctx.signal,
+		);
+		return games.map(toYmgalCandidate);
+	},
+	async enrichOnSelect(candidate, ctx) {
+		if (!candidate.externalId) {
+			return candidate;
+		}
+
+		const game = await fetchYmById(candidate.externalId, ctx.signal);
+		return toYmgalCandidate(mergeCandidateWithDetails(candidate, game));
+	},
+	toDisplayFields: (data): SourceDisplayFields => ({
+		image: data.image,
+		name: data.name,
+		name_cn: data.name_cn,
+		summary: data.summary,
+		developer: data.developer,
+		aliases: data.aliases ?? [],
+		nsfw: data.nsfw,
+		date: data.date,
+	}),
+};
