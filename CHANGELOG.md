@@ -1,3 +1,42 @@
+## [0.22.0](https://github.com/huoshen80/ReinaManager/compare/v0.21.7...v0.22.0) (2026-06-07)
+
+<details>
+<summary>查看中文版本</summary>
+
+### ✨ 新功能
+
+- *(backup)* 添加退出时自动备份及保留策略 ([1cdabfb](https://github.com/huoshen80/ReinaManager/commit/1cdabfbbb87c334a2d52731ad1568086e9c3329e))
+- *(cover)* 为混合数据源游戏添加封面源选择 ([caa20fe](https://github.com/huoshen80/ReinaManager/commit/caa20fe4de9d5be90f563f94cd9e8785ca8036ea))
+
+### 🐛 Bug 修复
+
+- *(kun)* 处理包装过的 API 响应格式 ([3f70932](https://github.com/huoshen80/ReinaManager/commit/3f7093205eced3e130d52f0fcc0f537881b8c37e))
+
+### 🚜 重构
+
+- *(cards)* 移除长按和双击启动设置 ([86a14f1](https://github.com/huoshen80/ReinaManager/commit/86a14f17c5e20d9619a9094b92d573d619af6008))
+- *(collection)* 用可选链简化空值检查 ([580abd8](https://github.com/huoshen80/ReinaManager/commit/580abd89a7311eb7c0ee93eb03fe803eacca62b7))
+- *(data)* 调整数据源合并优先级并移除 ymgal 标签 ([6b9d440](https://github.com/huoshen80/ReinaManager/commit/6b9d4408317093c4730923009ecd7ceb985ce50a))
+- *(metadata)* 引入数据源适配器注册表模式 ([4579a64](https://github.com/huoshen80/ReinaManager/commit/4579a644026dfceabdb5a220556931197ad995e0))
+
+</details>
+
+### ✨ Features
+
+- *(backup)* Add auto backup on exit with retention policy ([1cdabfb](https://github.com/huoshen80/ReinaManager/commit/1cdabfbbb87c334a2d52731ad1568086e9c3329e))
+- *(cover)* Add source cover selection for mixed games ([caa20fe](https://github.com/huoshen80/ReinaManager/commit/caa20fe4de9d5be90f563f94cd9e8785ca8036ea))
+
+### 🐛 Bug Fixes
+
+- *(kun)* Handle wrapped API responses ([3f70932](https://github.com/huoshen80/ReinaManager/commit/3f7093205eced3e130d52f0fcc0f537881b8c37e))
+
+### 🚜 Refactor
+
+- *(cards)* Remove long-press and double-click launch settings ([86a14f1](https://github.com/huoshen80/ReinaManager/commit/86a14f17c5e20d9619a9094b92d573d619af6008))
+- *(collection)* Simplify null check with optional chaining ([580abd8](https://github.com/huoshen80/ReinaManager/commit/580abd89a7311eb7c0ee93eb03fe803eacca62b7))
+- *(data)* Adjust data source merge priority and drop ymgal tags ([6b9d440](https://github.com/huoshen80/ReinaManager/commit/6b9d4408317093c4730923009ecd7ceb985ce50a))
+- *(metadata)* Introduce source adapter registry pattern ([4579a64](https://github.com/huoshen80/ReinaManager/commit/4579a644026dfceabdb5a220556931197ad995e0))
+
 ## [0.21.7](https://github.com/huoshen80/ReinaManager/compare/v0.21.6...v0.21.7) (2026-06-03)
 
 ### ⚠️注意：Bangumi 已经被墙，如果没有梯子，更新后请主动前往设置 Mixed 搜索源关闭 Bangumi 源以提升 Mixed 源的搜索速度。

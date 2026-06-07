@@ -41,7 +41,6 @@ interface GameIndex {
   sourceAvailabilityById: Map<number, SourceAvailability>;
   developerCategories: Category[];
   developerGameIdsByName: Map<string, number[]>;
-  developerGameIdsByCategoryId: Map<number, number[]>;
 }
 ```
 
