@@ -1,3 +1,19 @@
+## [0.22.1](https://github.com/huoshen80/ReinaManager/compare/v0.22.0...v0.22.1) (2026-06-08)
+
+<details>
+<summary>查看中文版本</summary>
+
+### 🐛 Bug 修复
+
+- *(cover)* 添加缓存代数，防止过期下载写入 ([a58561a](https://github.com/huoshen80/ReinaManager/commit/a58561aa1f2fff8e0e79b0cdf92e1b5546796c47))
+
+</details>
+
+### 🐛 Bug Fixes
+
+- *(cover)* Add cache generation to prevent stale download writes ([a58561a](https://github.com/huoshen80/ReinaManager/commit/a58561aa1f2fff8e0e79b0cdf92e1b5546796c47))
+
+
 ## [0.22.0](https://github.com/huoshen80/ReinaManager/compare/v0.21.7...v0.22.0) (2026-06-07)
 
 <details>
