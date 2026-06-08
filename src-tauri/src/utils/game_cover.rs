@@ -30,23 +30,52 @@ const COVER_USER_AGENT: &str = concat!(
 
 static COVER_HTTP_CLIENT: OnceLock<Client> = OnceLock::new();
 
-/// 正在下载中的任务表：key=game_id，value=watch sender（false=进行中，true=已结束）
-type DownloadingMap = Arc<Mutex<HashMap<u32, Arc<watch::Sender<bool>>>>>;
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+struct DownloadKey {
+    game_id: u32,
+    generation: u64,
+}
+
+/// 正在下载中的任务表：key=(game_id, generation)，value=watch sender（false=进行中，true=已结束）
+type DownloadingMap = Arc<Mutex<HashMap<DownloadKey, Arc<watch::Sender<bool>>>>>;
 
 pub struct DownloadState {
     semaphore: Arc<Semaphore>,
     /// 内存中已确认缓存完毕的 game_id 集合，避免每次请求都扫描磁盘
     cached_ids: Arc<RwLock<HashSet<u32>>>,
+    /// 缓存代数：删缓存时递增，使旧下载任务失去写盘资格
+    cache_generations: Arc<RwLock<HashMap<u32, u64>>>,
     /// 删除墓碑：记录已删除游戏，阻止下载任务继续写入封面
     tombstoned_ids: Arc<RwLock<HashSet<u32>>>,
-    /// 正在下载中的任务；同 game_id 的后续请求订阅 watch channel 等待其完成
+    /// 正在下载中的任务；同 game_id + generation 的后续请求订阅 watch channel 等待其完成
     downloading: DownloadingMap,
 }
 
 impl DownloadState {
     pub async fn mark_game_deleted(&self, game_id: u32) {
+        self.bump_cache_generation(game_id).await;
         self.cached_ids.write().await.remove(&game_id);
         self.tombstoned_ids.write().await.insert(game_id);
+    }
+
+    async fn cache_generation(&self, game_id: u32) -> u64 {
+        self.cache_generations
+            .read()
+            .await
+            .get(&game_id)
+            .copied()
+            .unwrap_or(0)
+    }
+
+    async fn bump_cache_generation(&self, game_id: u32) -> u64 {
+        let mut generations = self.cache_generations.write().await;
+        let generation = generations.entry(game_id).or_insert(0);
+        *generation = generation.saturating_add(1);
+        *generation
+    }
+
+    async fn is_cache_generation_current(&self, game_id: u32, generation: u64) -> bool {
+        self.cache_generation(game_id).await == generation
     }
 
     async fn clear_game_deleted(&self, game_id: u32) {
@@ -61,7 +90,7 @@ impl DownloadState {
 /// RAII guard：下载结束时（无论成功/失败/panic/取消）自动唤醒等待者，并清理 downloading 表
 struct DownloadCleanupGuard {
     downloading: DownloadingMap,
-    game_id: u32,
+    key: DownloadKey,
     sender: Arc<watch::Sender<bool>>,
 }
 
@@ -72,7 +101,7 @@ impl Drop for DownloadCleanupGuard {
         self.downloading
             .lock()
             .unwrap_or_else(|e| e.into_inner())
-            .remove(&self.game_id);
+            .remove(&self.key);
     }
 }
 
@@ -203,6 +232,7 @@ async fn remove_file_if_exists(path: &Path) {
 enum CoverDownloadError {
     Retryable(String),
     GameDeleted(String),
+    Stale(String),
     NonRetryable(String),
 }
 
@@ -266,7 +296,8 @@ pub async fn delete_cloud_cache(
     let game_cover_dir = get_game_cover_dir(game_id)?;
     let expected_prefix = format!("{}.", cloud_cover_file_stem(game_id));
 
-    // 同步清理内存缓存标记
+    // 先递增缓存代数，阻止已在途的旧下载继续写回云端缓存。
+    state.bump_cache_generation(game_id).await;
     state.cached_ids.write().await.remove(&game_id);
 
     if !game_cover_dir.exists() {
@@ -305,6 +336,7 @@ async fn try_download_once(
     url: &str,
     game_cover_dir: &Path,
     game_id: u32,
+    generation: u64,
     db: &DatabaseConnection,
     state: &DownloadState,
 ) -> Result<Vec<u8>, CoverDownloadError> {
@@ -332,12 +364,26 @@ async fn try_download_once(
         .to_vec();
 
     ensure_game_cover_writable(state, db, game_id).await?;
+    if !state.is_cache_generation_current(game_id, generation).await {
+        return Err(CoverDownloadError::Stale(format!(
+            "封面下载已过期 game_id={} generation={}",
+            game_id, generation
+        )));
+    }
 
     if let Err(e) = tokio::fs::write(&temp_path, &bytes).await {
         remove_file_if_exists(&temp_path).await;
         return Err(CoverDownloadError::NonRetryable(format!(
             "写入临时文件失败: {}",
             e
+        )));
+    }
+
+    if !state.is_cache_generation_current(game_id, generation).await {
+        remove_file_if_exists(&temp_path).await;
+        return Err(CoverDownloadError::Stale(format!(
+            "封面下载写盘前已过期 game_id={} generation={}",
+            game_id, generation
         )));
     }
 
@@ -351,6 +397,14 @@ async fn try_download_once(
         );
     }
 
+    if !state.is_cache_generation_current(game_id, generation).await {
+        remove_file_if_exists(&cache_path).await;
+        return Err(CoverDownloadError::Stale(format!(
+            "封面下载写盘后已过期 game_id={} generation={}",
+            game_id, generation
+        )));
+    }
+
     Ok(bytes)
 }
 
@@ -358,6 +412,7 @@ async fn try_download_once(
 /// 成功时返回图片字节，并已写入磁盘缓存
 async fn fetch_and_cache_cover(
     game_id: u32,
+    generation: u64,
     url: &str,
     game_cover_dir: &Path,
     db: &DatabaseConnection,
@@ -372,6 +427,13 @@ async fn fetch_and_cache_cover(
         .map_err(|e| CoverDownloadError::NonRetryable(format!("创建缓存目录失败: {}", e)))?;
 
     for attempt in 0..=COVER_MAX_RETRIES {
+        if !state.is_cache_generation_current(game_id, generation).await {
+            return Err(CoverDownloadError::Stale(format!(
+                "封面下载重试前已过期 game_id={} generation={}",
+                game_id, generation
+            )));
+        }
+
         if attempt > 0 {
             let delay_ms = COVER_RETRY_BASE_DELAY_MS * (1u64 << (attempt - 1));
             log::debug!(
@@ -384,9 +446,20 @@ async fn fetch_and_cache_cover(
             tokio::time::sleep(Duration::from_millis(delay_ms)).await;
         }
 
-        match try_download_once(url, game_cover_dir, game_id, db, state).await {
+        match try_download_once(url, game_cover_dir, game_id, generation, db, state).await {
             Ok(bytes) => {
-                log::debug!("封面缓存完成 game_id={} attempt={}", game_id, attempt);
+                if !state.is_cache_generation_current(game_id, generation).await {
+                    return Err(CoverDownloadError::Stale(format!(
+                        "封面下载返回前已过期 game_id={} generation={}",
+                        game_id, generation
+                    )));
+                }
+                log::debug!(
+                    "封面缓存完成 game_id={} generation={} attempt={}",
+                    game_id,
+                    generation,
+                    attempt
+                );
                 return Ok(bytes);
             }
             Err(CoverDownloadError::Retryable(e)) => {
@@ -408,6 +481,16 @@ async fn fetch_and_cache_cover(
                     e
                 );
                 return Err(CoverDownloadError::GameDeleted(e));
+            }
+            Err(CoverDownloadError::Stale(e)) => {
+                log::debug!(
+                    "封面下载终止（已过期） game_id={} attempt={}/{}: {}",
+                    game_id,
+                    attempt,
+                    COVER_MAX_RETRIES,
+                    e
+                );
+                return Err(CoverDownloadError::Stale(e));
             }
             Err(CoverDownloadError::NonRetryable(e)) => {
                 log::warn!(
@@ -435,6 +518,7 @@ pub fn register_game_cover_protocol<R: tauri::Runtime>(
         .manage(DownloadState {
             semaphore: Arc::new(Semaphore::new(MAX_CONCURRENT_COVER_DOWNLOADS)),
             cached_ids: Arc::new(RwLock::new(HashSet::new())),
+            cache_generations: Arc::new(RwLock::new(HashMap::new())),
             tombstoned_ids: Arc::new(RwLock::new(HashSet::new())),
             downloading: Arc::new(Mutex::new(HashMap::new())),
         })
@@ -490,6 +574,7 @@ pub fn register_game_cover_protocol<R: tauri::Runtime>(
                             return;
                         }
                         Err(CoverDownloadError::Retryable(_)) => unreachable!(),
+                        Err(CoverDownloadError::Stale(_)) => unreachable!(),
                     }
                 }
 
@@ -529,17 +614,40 @@ pub fn register_game_cover_protocol<R: tauri::Runtime>(
                     return;
                 };
 
-                // 检查是否已有相同 game_id 的下载正在进行
-                // 在持有锁期间订阅 watch channel，避免"通知已发但还未订阅"的竞态
+                let generation = state.cache_generation(game_id).await;
+                let download_key = DownloadKey {
+                    game_id,
+                    generation,
+                };
+
+                // 检查是否已有相同 game_id + generation 的下载正在进行。
+                // generation 不同表示缓存已被更新/切源操作失效，不能等待旧任务。
+                let (tx, _) = watch::channel(false);
+                let tx = Arc::new(tx);
                 let existing_rx = {
-                    let downloading = state.downloading.lock().unwrap_or_else(|e| e.into_inner());
-                    downloading.get(&game_id).map(|tx| tx.subscribe())
+                    let mut downloading =
+                        state.downloading.lock().unwrap_or_else(|e| e.into_inner());
+                    if let Some(existing_tx) = downloading.get(&download_key) {
+                        Some(existing_tx.subscribe())
+                    } else {
+                        downloading.insert(download_key, tx.clone());
+                        None
+                    }
                 };
 
                 if let Some(mut rx) = existing_rx {
-                    // 有下载在进行，等待其完成（watch channel 当前值已是 true 时立即返回）
-                    log::debug!("等待已有下载任务完成 game_id={}", game_id);
+                    // 有同代下载在进行，等待其完成（watch channel 当前值已是 true 时立即返回）
+                    log::debug!(
+                        "等待已有下载任务完成 game_id={} generation={}",
+                        game_id,
+                        generation
+                    );
                     let _ = rx.wait_for(|done| *done).await;
+
+                    if !state.is_cache_generation_current(game_id, generation).await {
+                        responder.respond(make_status_response(StatusCode::CONFLICT));
+                        return;
+                    }
 
                     // 下载结束后尝试读取磁盘缓存
                     if let Some(cache_path) = get_cached_cloud_cover(&game_cover_dir, game_id).await
@@ -560,18 +668,10 @@ pub fn register_game_cover_protocol<R: tauri::Runtime>(
                 }
 
                 // ── 步骤 4：成为本次下载的执行者 ────────────────────────
-                let (tx, _) = watch::channel(false);
-                let tx = Arc::new(tx);
-                {
-                    let mut downloading =
-                        state.downloading.lock().unwrap_or_else(|e| e.into_inner());
-                    downloading.insert(game_id, tx.clone());
-                }
-
                 // RAII guard：超出作用域时自动通知等待者并清理 downloading 表
                 let _cleanup = DownloadCleanupGuard {
                     downloading: state.downloading.clone(),
-                    game_id,
+                    key: download_key,
                     sender: tx,
                 };
 
@@ -586,8 +686,15 @@ pub fn register_game_cover_protocol<R: tauri::Runtime>(
                 };
 
                 // 执行下载（含指数退避重试）
-                let fetch_result =
-                    fetch_and_cache_cover(game_id, &url, &game_cover_dir, db.inner(), &state).await;
+                let fetch_result = fetch_and_cache_cover(
+                    game_id,
+                    generation,
+                    &url,
+                    &game_cover_dir,
+                    db.inner(),
+                    &state,
+                )
+                .await;
                 match fetch_result {
                     Ok(bytes) => {
                         // 回填内存缓存集合
@@ -598,6 +705,9 @@ pub fn register_game_cover_protocol<R: tauri::Runtime>(
                     Err(CoverDownloadError::GameDeleted(e)) => {
                         log::debug!("封面下载终止 game_id={}: {}", game_id, e);
                         responder.respond(make_status_response(StatusCode::NOT_FOUND));
+                    }
+                    Err(CoverDownloadError::Stale(_)) => {
+                        responder.respond(make_status_response(StatusCode::CONFLICT));
                     }
                     Err(CoverDownloadError::NonRetryable(e)) => {
                         log::warn!("封面下载终止 game_id={}: {}", game_id, e);

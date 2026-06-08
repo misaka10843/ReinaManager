@@ -41,7 +41,11 @@ export const getGameCover = (game: GameData): string => {
 			type() === "windows"
 				? "http://reina-cover.localhost"
 				: "reina-cover://localhost";
-		return `${base}/${game.id}?url=${game.image}`;
+		const params = new URLSearchParams({
+			url: game.image,
+			v: String(game.updated_at ?? ""),
+		});
+		return `${base}/${game.id}?${params.toString()}`;
 	}
 
 	return "/images/default.png";
