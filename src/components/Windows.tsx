@@ -23,6 +23,7 @@ import { marked } from "marked";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
+import { snackbar } from "@/providers/snackBar";
 import { fileService } from "@/services/invoke";
 import {
 	checkForUpdates,
@@ -349,33 +350,31 @@ const WindowsHandler: React.FC = () => {
 	// 应用启动时静默检查更新
 	useEffect(() => {
 		const performSilentUpdateCheck = async () => {
-			try {
-				const result = await silentCheckForUpdates();
-				if (result.hasUpdate) {
-					// 静默检查到更新，但不立即显示，等用户空闲时提醒
-					setTimeout(() => {
-						// 再次检查更新以获取增强的Update对象
-						checkForUpdates({
-							onUpdateFound: (update) => {
-								useStore.getState().setPendingUpdate(update);
-								useStore.getState().setShowUpdateModal(true);
-							},
-							onNoUpdate: () => {
-								// 静默忽略
-							},
-							onError: () => {
-								// 静默忽略错误
-							},
-						});
-					}, 5000); // 5秒后显示更新提醒
-				}
-			} catch (error) {
-				console.error("检查更新失败", error);
+			const result = await silentCheckForUpdates();
+			if (result.hasUpdate) {
+				// 检查到更新，立即显示提醒
+				checkForUpdates({
+					onUpdateFound: (update) => {
+						useStore.getState().setPendingUpdate(update);
+						useStore.getState().setShowUpdateModal(true);
+					},
+					onError: (error) => {
+						snackbar.warning(
+							t(
+								"components.Window.UpdateModal.checkFailed",
+								"检查更新失败：{{error}}",
+								{
+									error: getUserErrorMessage(error, t),
+								},
+							),
+						);
+					},
+				});
 			}
 		};
 
 		performSilentUpdateCheck();
-	}, []);
+	}, [t]);
 
 	const handleCancel = () => {
 		setSkipCloseRemind(false);

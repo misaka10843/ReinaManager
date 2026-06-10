@@ -324,6 +324,7 @@
 			"UpdateModal": {
 				"cancel": "キャンセル",
 				"changelog": "変更履歴",
+				"checkFailed": "アップデートの確認に失敗しました: {{error}}",
 				"downloading": "アップデートをダウンロード中...",
 				"manualUpdate": "手動アップデート",
 				"newVersion": "新しいバージョン",

@@ -336,6 +336,7 @@
 			"UpdateModal": {
 				"cancel": "Cancel",
 				"changelog": "Changelog",
+				"checkFailed": "Failed to check for updates: {{error}}",
 				"downloading": "Downloading update...",
 				"manualUpdate": "Manual Update",
 				"newVersion": "New Version",

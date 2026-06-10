@@ -324,6 +324,7 @@
 			"UpdateModal": {
 				"cancel": "取消",
 				"changelog": "更新說明",
+				"checkFailed": "檢查更新失敗：{{error}}",
 				"downloading": "正在下載更新...",
 				"manualUpdate": "手動更新",
 				"newVersion": "新版本",
