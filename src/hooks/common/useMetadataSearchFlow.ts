@@ -35,7 +35,6 @@ interface MetadataSearchFlowOptions {
 	t: TFunction;
 	onResolved: (gameData: GameCandidateData) => void | Promise<void>;
 	onError: (message: string) => void;
-	getNoResultsMessage?: (source: apiSourceType) => string;
 }
 
 const EMPTY_MIXED_CANDIDATES: MixedSourceCandidates = {
@@ -65,6 +64,34 @@ function getDefaultNoResultsMessage(
 		return t("components.AddModal.noResultsMixed", "所有数据源均未找到该游戏");
 	}
 
+	if (source === "bgm") {
+		return t(
+			"components.AddModal.noResultsBgm",
+			"未在 Bangumi 找到该游戏，请尝试其他名称或检查 ID",
+		);
+	}
+
+	if (source === "vndb") {
+		return t(
+			"components.AddModal.noResultsVndb",
+			"未在 VNDB 找到该游戏，请尝试其他名称或检查 ID",
+		);
+	}
+
+	if (source === "ymgal") {
+		return t(
+			"components.AddModal.noResultsYmgal",
+			"未在 YMGal 找到该游戏，请尝试其他名称或检查 ID",
+		);
+	}
+
+	if (source === "kun") {
+		return t(
+			"components.AddModal.noResultsKun",
+			"未在 Kungal 找到该游戏，请尝试其他名称或检查 ID",
+		);
+	}
+
 	return t("components.AddModal.noResults", "没有找到结果");
 }
 
@@ -73,7 +100,6 @@ export function useMetadataSearchFlow({
 	t,
 	onResolved,
 	onError,
-	getNoResultsMessage,
 }: MetadataSearchFlowOptions) {
 	const [searchResultState, setSearchResultState] = useState<SearchResultState>(
 		initialSearchResultState,
@@ -89,9 +115,8 @@ export function useMetadataSearchFlow({
 	>();
 
 	const getNoResultsText = useCallback(
-		(source: apiSourceType) =>
-			getNoResultsMessage?.(source) ?? getDefaultNoResultsMessage(t, source),
-		[getNoResultsMessage, t],
+		(source: apiSourceType) => getDefaultNoResultsMessage(t, source),
+		[t],
 	);
 
 	const closeSearchResult = useCallback(() => {

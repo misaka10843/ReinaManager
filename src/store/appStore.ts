@@ -14,14 +14,13 @@
  * - zustand/middleware
  * - @/types
  * - @/utils/settingsConfig
- * - @tauri-apps/api/core
  * - @/store/gamePlayStore
  */
-import { invoke } from "@tauri-apps/api/core";
 import type { Update } from "@tauri-apps/plugin-updater";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { MIXED_SOURCE_KEYS } from "@/metadata";
+import { type ProxyConfig, settingsService } from "@/services/invoke";
 import type { GameType, SortOption, SortOrder } from "@/services/invoke/types";
 import type { apiSourceType, SourceType } from "@/types";
 import type { PlayStatusFilter } from "@/types/collection";
@@ -37,10 +36,6 @@ export type SelectedCategory =
 	| { type: "real"; id: number }
 	| { type: "developer"; key: string }
 	| null;
-
-export interface ProxyConfig {
-	url: string;
-}
 
 /**
  * AppState 全局状态类型定义
@@ -413,7 +408,7 @@ export const useStore = create<AppState>()(
 			},
 			setProxyConfig: (config: ProxyConfig) => {
 				set({ proxyConfig: config });
-				invoke("update_proxy_config", { config }).catch(console.error);
+				settingsService.updateProxyConfig(config).catch(console.error);
 			},
 
 			// 初始化方法
@@ -423,9 +418,7 @@ export const useStore = create<AppState>()(
 
 				// 启动时同步代理设置到后端
 				const { proxyConfig } = get();
-				invoke("update_proxy_config", { config: proxyConfig }).catch(
-					console.error,
-				);
+				settingsService.updateProxyConfig(proxyConfig).catch(console.error);
 			},
 		}),
 		{

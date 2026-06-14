@@ -15,6 +15,10 @@ export interface UserSettings {
 	magpie_path?: string | null;
 }
 
+export interface ProxyConfig {
+	url: string;
+}
+
 class SettingsService extends BaseService {
 	/**
 	 * 动态设置日志输出级别（不持久化）
@@ -44,6 +48,10 @@ class SettingsService extends BaseService {
 		return this.invoke<void>("update_settings", {
 			data: updates,
 		});
+	}
+
+	async updateProxyConfig(config: ProxyConfig): Promise<void> {
+		return this.invoke<void>("update_proxy_config", { config });
 	}
 
 	async bgmOAuthStartLogin(): Promise<string> {
