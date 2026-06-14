@@ -1,8 +1,6 @@
 import { Breadcrumbs, Link, Typography } from "@mui/material";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import Divider from "@mui/material/Divider";
-import InputLabel from "@mui/material/InputLabel";
 import { PageContainer } from "@toolpad/core/PageContainer";
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
@@ -27,6 +25,7 @@ import {
 	NsfwSettings,
 } from "./GeneralSettings";
 import { DatabaseBackupSettings } from "./MaintenanceSettings";
+import { SettingsDivider, SettingsGroup, SettingsItem } from "./SettingsLayout";
 import {
 	AutoStartSettings,
 	CloseBtnSettings,
@@ -102,9 +101,9 @@ export const Settings: React.FC = () => {
 				content: (
 					<>
 						<BgmTokenSettings />
-						<Divider className="my-6" />
+						<SettingsDivider />
 						<VndbTokenSettings />
-						<Divider className="my-6" />
+						<SettingsDivider />
 						<CollectionSyncSettings />
 					</>
 				),
@@ -119,9 +118,9 @@ export const Settings: React.FC = () => {
 				content: (
 					<>
 						<MixedSearchSourceSettings />
-						<Divider className="my-6" />
+						<SettingsDivider />
 						<VndbDataSettings />
-						<Divider className="my-6" />
+						<SettingsDivider />
 						<DevSettings />
 					</>
 				),
@@ -134,13 +133,12 @@ export const Settings: React.FC = () => {
 					"调整语言、内容过滤和游戏卡片交互方式。",
 				),
 				content: (
-					<>
+					<Box className="space-y-5">
 						<LanguageSelect />
-						<Divider className="my-6" />
 						<NsfwSettings />
-						<Divider className="my-6" />
+						<SettingsDivider />
 						<CardClickModeSettings />
-					</>
+					</Box>
 				),
 			},
 			{
@@ -151,23 +149,23 @@ export const Settings: React.FC = () => {
 					"管理启动、日志、关闭行为和计时模式。",
 				),
 				content: (
-					<>
+					<Box className="space-y-5">
 						<AutoStartSettings />
-						<Divider className="my-6" />
+						<SettingsDivider />
 						<LogLevelSettings />
-						<Divider className="my-6" />
+						<SettingsDivider />
 						<ProxySettings />
-						<Divider className="my-6" />
+						<SettingsDivider />
 						<CloseBtnSettings />
-						<Divider className="my-6" />
+						<SettingsDivider />
 						<TimeTrackingModeSettings />
 						{import.meta.env.TAURI_ENV_PLATFORM === "linux" && (
 							<>
-								<Divider className="my-6" />
+								<SettingsDivider />
 								<LinuxLaunchCommandSettings />
 							</>
 						)}
-					</>
+					</Box>
 				),
 			},
 			{
@@ -179,11 +177,20 @@ export const Settings: React.FC = () => {
 				),
 				content: (
 					<>
-						<Box className="mb-6">
-							<InputLabel className="font-semibold mb-4">
-								{t("pages.Settings.pathSettings.title", "路径设置")}
-							</InputLabel>
-							<Box className="pl-2">
+						<SettingsGroup
+							title={t("pages.Settings.pathSettings.title", "路径设置")}
+						>
+							<SettingsItem
+								stacked
+								title={t(
+									"pages.Settings.pathSettings.openModal",
+									"打开路径设置",
+								)}
+								description={t(
+									"pages.Settings.pathSettings.note",
+									"配置游戏存档备份、LE转区软件、Magpie软件、数据库备份等路径",
+								)}
+							>
 								<Button
 									variant="outlined"
 									onClick={() => setPathSettingsModalOpen(true)}
@@ -191,19 +198,9 @@ export const Settings: React.FC = () => {
 								>
 									{t("pages.Settings.pathSettings.openModal", "打开路径设置")}
 								</Button>
-								<Typography
-									variant="caption"
-									color="text.secondary"
-									className="block mt-2"
-								>
-									{t(
-										"pages.Settings.pathSettings.note",
-										"配置游戏存档备份、LE转区软件、Magpie软件、数据库备份等路径",
-									)}
-								</Typography>
-							</Box>
-						</Box>
-						<Divider className="my-6" />
+							</SettingsItem>
+						</SettingsGroup>
+						<SettingsDivider />
 						<DatabaseBackupSettings />
 					</>
 				),

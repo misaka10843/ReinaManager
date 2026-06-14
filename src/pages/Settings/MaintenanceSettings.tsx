@@ -2,17 +2,9 @@ import BackupIcon from "@mui/icons-material/Backup";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import ImageIcon from "@mui/icons-material/Image";
 import RestoreIcon from "@mui/icons-material/Restore";
-import {
-	Checkbox,
-	CircularProgress,
-	FormControlLabel,
-	Switch,
-	TextField,
-	Typography,
-} from "@mui/material";
+import { CircularProgress, Switch, TextField, Typography } from "@mui/material";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import InputLabel from "@mui/material/InputLabel";
 import Stack from "@mui/material/Stack";
 import { useQueryClient } from "@tanstack/react-query";
 import { relaunch } from "@tauri-apps/plugin-process";
@@ -29,6 +21,7 @@ import {
 	importDatabase,
 } from "@/utils/fs/dataMaintenance";
 import { openDatabaseBackupFolder } from "@/utils/fs/savedataBackup";
+import { SettingsGroup, SettingsItem } from "./SettingsLayout";
 
 export const DatabaseBackupSettings = () => {
 	const { t } = useTranslation();
@@ -247,188 +240,169 @@ export const DatabaseBackupSettings = () => {
 	};
 
 	return (
-		<Box className="mb-6">
-			<InputLabel className="font-semibold mb-4">
-				{t("pages.Settings.databaseBackup.title", "数据备份与恢复")}
-			</InputLabel>
-
-			<Box className="pl-2">
-				<Stack
-					direction="row"
-					spacing={2}
-					useFlexGap
-					alignItems="center"
-					flexWrap="wrap"
+		<SettingsGroup
+			title={t("pages.Settings.databaseBackup.title", "数据备份与恢复")}
+			description={t(
+				"pages.Settings.databaseBackup.restoreWarning",
+				"恢复数据库将覆盖现有数据，并会先备份自定义封面、清空封面缓存以避免封面错配。导入后应用将自动重启。",
+			)}
+		>
+			<Stack
+				direction="row"
+				spacing={2}
+				useFlexGap
+				alignItems="center"
+				flexWrap="wrap"
+			>
+				<Button
+					variant="contained"
+					color="primary"
+					onClick={handleBackupDatabase}
+					disabled={isBackingUp}
+					startIcon={
+						isBackingUp ? (
+							<CircularProgress size={16} color="inherit" />
+						) : (
+							<BackupIcon />
+						)
+					}
+					className="px-6 py-2"
 				>
-					<Button
-						variant="contained"
-						color="primary"
-						onClick={handleBackupDatabase}
-						disabled={isBackingUp}
-						startIcon={
-							isBackingUp ? (
-								<CircularProgress size={16} color="inherit" />
-							) : (
-								<BackupIcon />
-							)
-						}
-						className="px-6 py-2"
-					>
-						{isBackingUp
-							? t("pages.Settings.databaseBackup.backing", "备份中...")
-							: t("pages.Settings.databaseBackup.backup", "备份数据库")}
-					</Button>
+					{isBackingUp
+						? t("pages.Settings.databaseBackup.backing", "备份中...")
+						: t("pages.Settings.databaseBackup.backup", "备份数据库")}
+				</Button>
 
-					<Button
-						variant="outlined"
-						color="primary"
-						onClick={handleBackupCustomCovers}
-						disabled={isBackingCovers}
-						startIcon={
-							isBackingCovers ? (
-								<CircularProgress size={16} color="inherit" />
-							) : (
-								<ImageIcon />
-							)
-						}
-						className="px-6 py-2"
-					>
-						{isBackingCovers
-							? t(
-									"pages.Settings.databaseBackup.backingCovers",
-									"备份封面中...",
-								)
-							: t(
-									"pages.Settings.databaseBackup.backupCovers",
-									"备份自定义封面",
-								)}
-					</Button>
+				<Button
+					variant="outlined"
+					color="primary"
+					onClick={handleBackupCustomCovers}
+					disabled={isBackingCovers}
+					startIcon={
+						isBackingCovers ? (
+							<CircularProgress size={16} color="inherit" />
+						) : (
+							<ImageIcon />
+						)
+					}
+					className="px-6 py-2"
+				>
+					{isBackingCovers
+						? t("pages.Settings.databaseBackup.backingCovers", "备份封面中...")
+						: t("pages.Settings.databaseBackup.backupCovers", "备份自定义封面")}
+				</Button>
 
-					<Button
-						variant="outlined"
-						color="primary"
-						onClick={handleOpenBackupFolder}
-						startIcon={<FolderOpenIcon />}
-						className="px-6 py-2"
-					>
-						{t("pages.Settings.databaseBackup.openFolder", "打开备份文件夹")}
-					</Button>
+				<Button
+					variant="outlined"
+					color="primary"
+					onClick={handleOpenBackupFolder}
+					startIcon={<FolderOpenIcon />}
+					className="px-6 py-2"
+				>
+					{t("pages.Settings.databaseBackup.openFolder", "打开备份文件夹")}
+				</Button>
 
-					<Button
-						variant="outlined"
-						color="warning"
-						onClick={handleImportDatabase}
-						disabled={isImporting}
-						startIcon={
-							isImporting ? (
-								<CircularProgress size={16} color="inherit" />
-							) : (
-								<RestoreIcon />
-							)
-						}
-						className="px-6 py-2"
-					>
-						{isImporting
-							? t("pages.Settings.databaseBackup.importing", "导入中...")
-							: t("pages.Settings.databaseBackup.restore", "恢复数据库")}
-					</Button>
+				<Button
+					variant="outlined"
+					color="warning"
+					onClick={handleImportDatabase}
+					disabled={isImporting}
+					startIcon={
+						isImporting ? (
+							<CircularProgress size={16} color="inherit" />
+						) : (
+							<RestoreIcon />
+						)
+					}
+					className="px-6 py-2"
+				>
+					{isImporting
+						? t("pages.Settings.databaseBackup.importing", "导入中...")
+						: t("pages.Settings.databaseBackup.restore", "恢复数据库")}
+				</Button>
+			</Stack>
+
+			<SettingsItem
+				title={t(
+					"pages.Settings.databaseBackup.autoBackupOnExit",
+					"退出时自动备份",
+				)}
+				description={t(
+					"pages.Settings.databaseBackup.autoBackupOnExitDescription",
+					"开启后，软件正常退出时会自动备份数据库；如果同时启用自定义封面备份，可能会延长退出时间。",
+				)}
+			>
+				<Switch
+					checked={autoBackupOnExit}
+					onChange={(event) => setAutoBackupOnExit(event.target.checked)}
+					color="primary"
+				/>
+			</SettingsItem>
+			<Box className="space-y-3">
+				<Stack direction="row" spacing={2} useFlexGap flexWrap="wrap">
+					<TextField
+						label={t(
+							"pages.Settings.databaseBackup.autoMinIntervalHours",
+							"最小间隔（小时）",
+						)}
+						type="number"
+						size="small"
+						value={autoBackupMinIntervalHours}
+						onChange={handleMinIntervalChange}
+						disabled={!autoBackupOnExit}
+						helperText={t(
+							"pages.Settings.databaseBackup.autoMinIntervalHelp",
+							"填 0 表示每次退出都备份",
+						)}
+						slotProps={{ htmlInput: { min: 0 } }}
+					/>
+					<TextField
+						label={t(
+							"pages.Settings.databaseBackup.autoRetentionCount",
+							"最多保留自动备份（份）",
+						)}
+						type="number"
+						size="small"
+						value={autoBackupRetentionCount}
+						onChange={handleRetentionCountChange}
+						disabled={!autoBackupOnExit}
+						slotProps={{ htmlInput: { min: 1 } }}
+					/>
 				</Stack>
-				<Typography
-					variant="caption"
-					color="text.secondary"
-					className="block mt-2"
+
+				<SettingsItem
+					title={t(
+						"pages.Settings.databaseBackup.autoIncludeCovers",
+						"同时备份自定义封面",
+					)}
 				>
+					<Switch
+						checked={autoBackupIncludeCovers}
+						onChange={(event) =>
+							setAutoBackupIncludeCovers(event.target.checked)
+						}
+						disabled={!autoBackupOnExit}
+						color="primary"
+					/>
+				</SettingsItem>
+
+				<Typography variant="caption" color="text.secondary" className="block">
 					{t(
-						"pages.Settings.databaseBackup.restoreWarning",
-						"恢复数据库将覆盖现有数据，并会先备份自定义封面、清空封面缓存以避免封面错配。导入后应用将自动重启。",
+						"pages.Settings.databaseBackup.lastAutoBackup",
+						"上次自动备份：{{time}}",
+						{ time: lastAutoBackupText },
 					)}
 				</Typography>
-
-				<Box className="mt-5">
-					<Stack direction="row" alignItems="center" className="mb-2">
-						<Typography variant="body2">
-							{t(
-								"pages.Settings.databaseBackup.autoBackupOnExit",
-								"退出时自动备份",
-							)}
-						</Typography>
-						<Switch
-							checked={autoBackupOnExit}
-							onChange={(event) => setAutoBackupOnExit(event.target.checked)}
-							color="primary"
-						/>
-					</Stack>
-
-					<Stack direction="row" spacing={2} useFlexGap flexWrap="wrap">
-						<TextField
-							label={t(
-								"pages.Settings.databaseBackup.autoMinIntervalHours",
-								"最小间隔（小时）",
-							)}
-							type="number"
-							size="small"
-							value={autoBackupMinIntervalHours}
-							onChange={handleMinIntervalChange}
-							disabled={!autoBackupOnExit}
-							helperText={t(
-								"pages.Settings.databaseBackup.autoMinIntervalHelp",
-								"填 0 表示每次退出都备份",
-							)}
-							slotProps={{ htmlInput: { min: 0 } }}
-						/>
-						<TextField
-							label={t(
-								"pages.Settings.databaseBackup.autoRetentionCount",
-								"最多保留自动备份（份）",
-							)}
-							type="number"
-							size="small"
-							value={autoBackupRetentionCount}
-							onChange={handleRetentionCountChange}
-							disabled={!autoBackupOnExit}
-							slotProps={{ htmlInput: { min: 1 } }}
-						/>
-					</Stack>
-
-					<FormControlLabel
-						control={
-							<Checkbox
-								checked={autoBackupIncludeCovers}
-								onChange={(event) =>
-									setAutoBackupIncludeCovers(event.target.checked)
-								}
-								disabled={!autoBackupOnExit}
-								color="primary"
-							/>
-						}
-						label={t(
-							"pages.Settings.databaseBackup.autoIncludeCovers",
-							"同时备份自定义封面",
-						)}
-					/>
-
-					<Typography
-						variant="caption"
-						color="text.secondary"
-						className="block"
-					>
+				{autoBackupLastError && (
+					<Typography variant="caption" color="error" className="block mt-1">
 						{t(
-							"pages.Settings.databaseBackup.lastAutoBackup",
-							"上次自动备份：{{time}}",
-							{ time: lastAutoBackupText },
+							"pages.Settings.databaseBackup.lastAutoBackupError",
+							"上次自动备份失败：{{error}}",
+							{ error: autoBackupLastError },
 						)}
 					</Typography>
-					{autoBackupLastError && (
-						<Typography variant="caption" color="error" className="block mt-1">
-							{t(
-								"pages.Settings.databaseBackup.lastAutoBackupError",
-								"上次自动备份失败：{{error}}",
-								{ error: autoBackupLastError },
-							)}
-						</Typography>
-					)}
-				</Box>
+				)}
 			</Box>
-		</Box>
+		</SettingsGroup>
 	);
 };

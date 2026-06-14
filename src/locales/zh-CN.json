@@ -600,13 +600,17 @@
 				"userInfo": "用户信息"
 			},
 			"cardClickMode": {
+				"description": "仓库与收藏夹游戏卡片单击的行为（两种模式下均可双击游戏卡片启动游戏）。",
 				"navigate": "导航模式（单击跳转详情页）",
 				"select": "选择模式（单击选择游戏）",
 				"title": "卡片点击模式"
 			},
 			"closeApp": "直接退出应用",
+			"closeAppDescription": "关闭窗口后结束应用进程。",
 			"closeSettings": "关闭设置",
+			"closeSettingsDescription": "点击关闭按钮是否显示关闭确认弹窗，并选择跳过确认弹窗后的默认行为。",
 			"closeToTray": "最小化到托盘",
+			"closeToTrayDescription": "关闭窗口后应用继续在系统托盘中运行。",
 			"collectionSync": {
 				"bgmDescription": "添加游戏时尝试读取 BGM 收藏状态，本地修改状态时同步回 BGM。",
 				"bgmTitle": "启用 Bangumi 收藏同步",
@@ -617,6 +621,7 @@
 			},
 			"databaseBackup": {
 				"autoBackupOnExit": "退出时自动备份",
+				"autoBackupOnExitDescription": "开启后，软件正常退出时会自动备份数据库；如果同时启用自定义封面备份，可能会延长退出时间。",
 				"autoIncludeCovers": "同时备份自定义封面",
 				"autoMinIntervalHelp": "填 0 表示每次退出都备份",
 				"autoMinIntervalHours": "最小间隔（小时）",
@@ -710,6 +715,7 @@
 				"systemDescription": "管理启动、日志、关闭行为和计时模式。"
 			},
 			"skipCloseRemind": "不再提醒",
+			"skipCloseRemindDescription": "开启后不再显示关闭确认弹窗，直接执行下方选择的默认行为。",
 			"spoilerLevel": {
 				"description": "选择剧透等级以获取合适的标签内容",
 				"level0": "0 - 无剧透",

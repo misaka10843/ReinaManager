@@ -600,13 +600,17 @@
 				"userInfo": "使用者資訊"
 			},
 			"cardClickMode": {
+				"description": "遊戲庫與收藏夾遊戲卡片單擊時的行為（兩種模式下皆可雙擊遊戲卡片啟動遊戲）。",
 				"navigate": "導航模式（單擊跳轉詳情頁）",
 				"select": "選擇模式（單擊選擇遊戲）",
 				"title": "卡片點擊模式"
 			},
 			"closeApp": "直接退出應用",
+			"closeAppDescription": "關閉視窗後結束應用程式行程。",
 			"closeSettings": "關閉設定",
+			"closeSettingsDescription": "點擊關閉按鈕時是否顯示關閉確認彈窗，並選擇略過確認彈窗後的預設行為。",
 			"closeToTray": "最小化到系統匣",
+			"closeToTrayDescription": "關閉視窗後應用程式繼續在系統匣中執行。",
 			"collectionSync": {
 				"bgmDescription": "新增遊戲時會嘗試讀取 BGM 收藏狀態，本地修改狀態時會同步回 BGM。",
 				"bgmTitle": "啟用 Bangumi 收藏同步",
@@ -617,6 +621,7 @@
 			},
 			"databaseBackup": {
 				"autoBackupOnExit": "退出時自動備份",
+				"autoBackupOnExitDescription": "開啟後，軟體正常退出時會自動備份資料庫；如果同時啟用自訂封面備份，可能會延長退出時間。",
 				"autoIncludeCovers": "同時備份自訂封面",
 				"autoMinIntervalHelp": "填 0 表示每次退出都備份",
 				"autoMinIntervalHours": "最小間隔（小時）",
@@ -710,6 +715,7 @@
 				"systemDescription": "管理啟動、日誌、關閉行為與計時模式。"
 			},
 			"skipCloseRemind": "不再提醒",
+			"skipCloseRemindDescription": "開啟後不再顯示關閉確認彈窗，直接執行下方選擇的預設行為。",
 			"spoilerLevel": {
 				"description": "選擇劇透等級以獲取適當的標籤內容",
 				"level0": "0 - 無劇透",

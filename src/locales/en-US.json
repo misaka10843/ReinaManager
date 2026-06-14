@@ -613,13 +613,17 @@
 				"userInfo": "User info"
 			},
 			"cardClickMode": {
+				"description": "Controls single-click behavior for game cards in the library and collections. Double-click always launches the game.",
 				"navigate": "Navigation Mode (Single click to view details)",
 				"select": "Selection Mode (Single click to select game)",
 				"title": "Card Click Mode"
 			},
 			"closeApp": "Exit application",
+			"closeAppDescription": "Close the window and end the application process.",
 			"closeSettings": "Close Settings",
+			"closeSettingsDescription": "Choose whether closing the window asks for confirmation and what happens when confirmation is skipped.",
 			"closeToTray": "Minimize to tray",
+			"closeToTrayDescription": "Keep the application running in the system tray after closing the window.",
 			"collectionSync": {
 				"bgmDescription": "Try to read the BGM collection status when adding a game, and sync local status changes back to BGM.",
 				"bgmTitle": "Enable Bangumi collection sync",
@@ -630,6 +634,7 @@
 			},
 			"databaseBackup": {
 				"autoBackupOnExit": "Auto backup on exit",
+				"autoBackupOnExitDescription": "When enabled, the database is backed up when the application exits normally. Also backing up custom covers may delay exit.",
 				"autoIncludeCovers": "Also back up custom covers",
 				"autoMinIntervalHelp": "Use 0 to back up every time you exit",
 				"autoMinIntervalHours": "Minimum interval (hours)",
@@ -723,6 +728,7 @@
 				"systemDescription": "Manage startup, logs, close behavior, and time tracking mode."
 			},
 			"skipCloseRemind": "Don't remind again",
+			"skipCloseRemindDescription": "Skip the close confirmation and immediately perform the selected default action.",
 			"spoilerLevel": {
 				"description": "Select spoiler level to get appropriate tag content",
 				"level0": "0 - No Spoiler",

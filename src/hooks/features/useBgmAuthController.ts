@@ -1,6 +1,6 @@
 import { listen } from "@tauri-apps/api/event";
 import { open as openurl } from "@tauri-apps/plugin-shell";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { buildManualBgmAuth, completeBgmAuth } from "@/api/bgm";
 import { useAllSettings, useUpdateSettings } from "@/hooks/queries/useSettings";
@@ -36,6 +36,7 @@ export function useBgmAuthController() {
 	const [isOAuthLoading, setIsOAuthLoading] = useState(isBgmOAuthRunning);
 	const [isCompletingAuth, setIsCompletingAuth] = useState(false);
 	const [isSavingToken, setIsSavingToken] = useState(false);
+	const isSavingTokenRef = useRef(false);
 
 	useEffect(() => {
 		setInputToken(bgmToken);
@@ -55,8 +56,16 @@ export function useBgmAuthController() {
 
 	const handleSaveToken = async () => {
 		const accessToken = inputToken.trim();
+		if (accessToken === bgmToken || isSavingTokenRef.current) return;
+
 		try {
+			isSavingTokenRef.current = true;
 			setIsSavingToken(true);
+			if (!accessToken) {
+				await logoutBgmAuth();
+				return;
+			}
+
 			const auth = await buildManualBgmAuth(accessToken);
 
 			await updateSettingsMutation.mutateAsync({
@@ -75,12 +84,32 @@ export function useBgmAuthController() {
 				),
 			);
 		} finally {
+			isSavingTokenRef.current = false;
 			setIsSavingToken(false);
 		}
 	};
 
-	const handleClearToken = () => {
+	const handleClearToken = async () => {
 		setInputToken("");
+		if (!bgmToken || isSavingTokenRef.current) return;
+
+		try {
+			isSavingTokenRef.current = true;
+			setIsSavingToken(true);
+			await logoutBgmAuth();
+			snackbar.success(
+				t("pages.Settings.bgmTokenSettings.logoutSuccess", "已退出 BGM 登录"),
+			);
+		} catch (error) {
+			console.error(error);
+			setInputToken(bgmToken);
+			snackbar.error(
+				t("pages.Settings.bgmTokenSettings.logoutError", "退出登录失败"),
+			);
+		} finally {
+			isSavingTokenRef.current = false;
+			setIsSavingToken(false);
+		}
 	};
 
 	const handleOAuthLogin = useCallback(async () => {

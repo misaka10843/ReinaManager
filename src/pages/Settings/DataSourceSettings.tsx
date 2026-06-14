@@ -6,15 +6,12 @@ import {
 	AccordionSummary,
 	Checkbox,
 	CircularProgress,
-	Divider,
 	FormControlLabel,
 	Switch,
 	Tooltip,
 	Typography,
 } from "@mui/material";
-import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select from "@mui/material/Select";
 import Stack from "@mui/material/Stack";
@@ -31,6 +28,7 @@ import { snackbar } from "@/providers/snackBar";
 import { useStore } from "@/store/appStore";
 import { isBgmAuthExpiredError } from "@/utils/bgmAuthSession";
 import { getUserErrorMessage } from "@/utils/errors";
+import { SettingsGroup, SettingsItem } from "./SettingsLayout";
 
 export const MixedSearchSourceSettings = () => {
 	const { t } = useTranslation();
@@ -43,47 +41,41 @@ export const MixedSearchSourceSettings = () => {
 	const enabledCount = mixedEnabledSources.length;
 
 	return (
-		<Box className="mb-6">
-			<InputLabel className="font-semibold mb-4">
-				{t("pages.Settings.mixedSearchSources.title", "Mixed 搜索源")}
-			</InputLabel>
-			<Box className="pl-2 space-y-4">
-				<Typography variant="caption" color="text.secondary" className="block">
-					{t(
-						"pages.Settings.mixedSearchSources.description",
-						"该设置影响添加游戏、批量导入和详情页 mixed 数据源更新。BGM 与 VNDB 默认启用，YMGal 与 Kungal 可按需开启，至少保留两个源。",
-					)}
-				</Typography>
-				<Stack
-					direction="row"
-					spacing={2}
-					useFlexGap
-					flexWrap="wrap"
-					alignItems="center"
-				>
-					{MIXED_SOURCE_KEYS.map((source) => {
-						const checked = mixedEnabledSources.includes(source);
-						return (
-							<FormControlLabel
-								key={source}
-								control={
-									<Checkbox
-										checked={checked}
-										onChange={() => toggleMixedSource(source)}
-										color="primary"
-										disabled={
-											checked &&
-											enabledCount <= DEFAULT_MIXED_SOURCE_KEYS.length
-										}
-									/>
-								}
-								label={getRuntimeSourceAdapter(source).label}
-							/>
-						);
-					})}
-				</Stack>
-			</Box>
-		</Box>
+		<SettingsGroup
+			title={t("pages.Settings.mixedSearchSources.title", "Mixed 搜索源")}
+			description={t(
+				"pages.Settings.mixedSearchSources.description",
+				"该设置影响添加游戏、批量导入和详情页 mixed 数据源更新。BGM 与 VNDB 默认启用，YMGal 与 Kungal 可按需开启，至少保留两个源。",
+			)}
+		>
+			<Stack
+				direction="row"
+				spacing={2}
+				useFlexGap
+				flexWrap="wrap"
+				alignItems="center"
+			>
+				{MIXED_SOURCE_KEYS.map((source) => {
+					const checked = mixedEnabledSources.includes(source);
+					return (
+						<FormControlLabel
+							key={source}
+							control={
+								<Checkbox
+									checked={checked}
+									onChange={() => toggleMixedSource(source)}
+									color="primary"
+									disabled={
+										checked && enabledCount <= DEFAULT_MIXED_SOURCE_KEYS.length
+									}
+								/>
+							}
+							label={getRuntimeSourceAdapter(source).label}
+						/>
+					);
+				})}
+			</Stack>
+		</SettingsGroup>
 	);
 };
 
@@ -91,16 +83,10 @@ export const VndbDataSettings = () => {
 	const { t } = useTranslation();
 
 	return (
-		<Box className="mb-6">
-			<InputLabel className="font-semibold mb-4">
-				{t("pages.Settings.vndbData.title", "VNDB 数据设置")}
-			</InputLabel>
-			<Box className="pl-2 space-y-4">
-				<TagTranslationSettings />
-				<Divider sx={{ my: 2 }} />
-				<SpoilerLevelSettings />
-			</Box>
-		</Box>
+		<SettingsGroup title={t("pages.Settings.vndbData.title", "VNDB 数据设置")}>
+			<TagTranslationSettings />
+			<SpoilerLevelSettings />
+		</SettingsGroup>
 	);
 };
 
@@ -110,26 +96,19 @@ const TagTranslationSettings = () => {
 	const setTagTranslation = useStore((s) => s.setTagTranslation);
 
 	return (
-		<Box className="mb-6">
-			<Stack direction="row" alignItems="center" className="min-w-60">
-				<Box>
-					<InputLabel className="font-semibold mb-1">
-						{t("pages.Settings.tagTranslation.title", "TAG翻译")}
-					</InputLabel>
-					<Typography variant="caption" color="text.secondary">
-						{t(
-							"pages.Settings.tagTranslation.description",
-							"开启后将使用中文翻译显示游戏标签",
-						)}
-					</Typography>
-				</Box>
-				<Switch
-					checked={tagTranslation}
-					onChange={(e) => setTagTranslation(e.target.checked)}
-					color="primary"
-				/>
-			</Stack>
-		</Box>
+		<SettingsItem
+			title={t("pages.Settings.tagTranslation.title", "TAG翻译")}
+			description={t(
+				"pages.Settings.tagTranslation.description",
+				"开启后将使用中文翻译显示游戏标签",
+			)}
+		>
+			<Switch
+				checked={tagTranslation}
+				onChange={(e) => setTagTranslation(e.target.checked)}
+				color="primary"
+			/>
+		</SettingsItem>
 	);
 };
 
@@ -139,37 +118,30 @@ const SpoilerLevelSettings = () => {
 	const setSpoilerLevel = useStore((s) => s.setSpoilerLevel);
 
 	return (
-		<Box className="mb-6">
-			<Stack direction="row" alignItems="center" spacing={1}>
-				<Box>
-					<InputLabel className="font-semibold mb-1">
-						{t("pages.Settings.spoilerLevel.title", "TAG剧透等级")}
-					</InputLabel>
-					<Typography variant="caption" color="text.secondary">
-						{t(
-							"pages.Settings.spoilerLevel.description",
-							"选择剧透等级以获取合适的标签内容",
-						)}
-					</Typography>
-				</Box>
-				<Select
-					value={spoilerLevel}
-					onChange={(event) => setSpoilerLevel(event.target.value as number)}
-					className="min-w-40"
-					size="small"
-				>
-					<MenuItem value={0}>
-						{t("pages.Settings.spoilerLevel.level0", "0 - 无剧透")}
-					</MenuItem>
-					<MenuItem value={1}>
-						{t("pages.Settings.spoilerLevel.level1", "1 - 轻微剧透")}
-					</MenuItem>
-					<MenuItem value={2}>
-						{t("pages.Settings.spoilerLevel.level2", "2 - 严重剧透")}
-					</MenuItem>
-				</Select>
-			</Stack>
-		</Box>
+		<SettingsItem
+			title={t("pages.Settings.spoilerLevel.title", "TAG剧透等级")}
+			description={t(
+				"pages.Settings.spoilerLevel.description",
+				"选择剧透等级以获取合适的标签内容",
+			)}
+		>
+			<Select
+				value={spoilerLevel}
+				onChange={(event) => setSpoilerLevel(event.target.value as number)}
+				className="min-w-40"
+				size="small"
+			>
+				<MenuItem value={0}>
+					{t("pages.Settings.spoilerLevel.level0", "0 - 无剧透")}
+				</MenuItem>
+				<MenuItem value={1}>
+					{t("pages.Settings.spoilerLevel.level1", "1 - 轻微剧透")}
+				</MenuItem>
+				<MenuItem value={2}>
+					{t("pages.Settings.spoilerLevel.level2", "2 - 严重剧透")}
+				</MenuItem>
+			</Select>
+		</SettingsItem>
 	);
 };
 
@@ -346,85 +318,75 @@ const BatchUpdateSettings: React.FC = () => {
 	const isUpdating = isUpdatingVndb || isUpdatingBgm;
 
 	return (
-		<Box className="mb-6">
-			<InputLabel className="font-semibold mb-4">
-				{t("pages.Settings.batchUpdate.title", "批量更新数据")}
-			</InputLabel>
-
-			<Stack direction="column" spacing={2}>
-				<Typography variant="caption" className="mb-2">
-					{t(
-						"pages.Settings.batchUpdate.description",
-						"批量更新功能可用于更新已存在游戏的 BGM/VNDB 数据。当游戏的元数据发生变化时，您可以使用此功能来同步最新的信息。一旦点击更新按钮请耐心等待，更新过程可能需要一些时间。推荐软件更新数据源获取字段时使用。",
-					)}
-				</Typography>
-				<Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
-					<Button
-						variant="contained"
-						color="info"
-						onClick={handleBatchUpdateBgm}
-						disabled={isUpdating}
-						startIcon={
-							isUpdatingBgm ? (
-								<CircularProgress size={16} color="inherit" />
-							) : (
-								<UpdateIcon />
+		<SettingsGroup
+			title={t("pages.Settings.batchUpdate.title", "批量更新数据")}
+			description={t(
+				"pages.Settings.batchUpdate.description",
+				"批量更新功能可用于更新已存在游戏的 BGM/VNDB 数据。当游戏的元数据发生变化时，您可以使用此功能来同步最新的信息。一旦点击更新按钮请耐心等待，更新过程可能需要一些时间。推荐软件更新数据源获取字段时使用。",
+			)}
+		>
+			<Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+				<Button
+					variant="contained"
+					color="info"
+					onClick={handleBatchUpdateBgm}
+					disabled={isUpdating}
+					startIcon={
+						isUpdatingBgm ? (
+							<CircularProgress size={16} color="inherit" />
+						) : (
+							<UpdateIcon />
+						)
+					}
+					className="px-6 py-2"
+				>
+					{isUpdatingBgm
+						? t(
+								"pages.Settings.batchUpdate.updatingBgm",
+								"正在批量更新 BGM 数据...",
 							)
-						}
-						className="px-6 py-2"
-					>
-						{isUpdatingBgm
-							? t(
-									"pages.Settings.batchUpdate.updatingBgm",
-									"正在批量更新 BGM 数据...",
-								)
-							: t("pages.Settings.batchUpdate.updateBgm", "批量更新 BGM 数据")}
-					</Button>
+						: t("pages.Settings.batchUpdate.updateBgm", "批量更新 BGM 数据")}
+				</Button>
 
-					<Button
-						variant="contained"
-						color="primary"
-						onClick={handleBatchUpdateVndb}
-						disabled={isUpdating}
-						startIcon={
-							isUpdatingVndb ? (
-								<CircularProgress size={16} color="inherit" />
-							) : (
-								<UpdateIcon />
+				<Button
+					variant="contained"
+					color="primary"
+					onClick={handleBatchUpdateVndb}
+					disabled={isUpdating}
+					startIcon={
+						isUpdatingVndb ? (
+							<CircularProgress size={16} color="inherit" />
+						) : (
+							<UpdateIcon />
+						)
+					}
+					className="px-6 py-2"
+				>
+					{isUpdatingVndb
+						? t(
+								"pages.Settings.batchUpdate.updatingVndb",
+								"正在批量更新 VNDB 数据...",
 							)
-						}
-						className="px-6 py-2"
-					>
-						{isUpdatingVndb
-							? t(
-									"pages.Settings.batchUpdate.updatingVndb",
-									"正在批量更新 VNDB 数据...",
-								)
-							: t(
-									"pages.Settings.batchUpdate.updateVndb",
-									"批量更新 VNDB 数据",
-								)}
-					</Button>
-				</Stack>
-
-				{/* 更新状态显示 */}
-				{updateStatus && (
-					<Typography
-						variant="body2"
-						color={
-							updateStatus.includes("失败") ||
-							updateStatus.includes("fail") ||
-							updateStatus.includes("错误") ||
-							updateStatus.includes("error")
-								? "error"
-								: "primary"
-						}
-						className="whitespace-pre-line"
-					>
-						{updateStatus}
-					</Typography>
-				)}
+						: t("pages.Settings.batchUpdate.updateVndb", "批量更新 VNDB 数据")}
+				</Button>
 			</Stack>
-		</Box>
+			{/* 更新状态显示 */}
+			{updateStatus && (
+				<Typography
+					variant="body2"
+					color={
+						updateStatus.includes("失败") ||
+						updateStatus.includes("fail") ||
+						updateStatus.includes("错误") ||
+						updateStatus.includes("error")
+							? "error"
+							: "primary"
+					}
+					className="whitespace-pre-line"
+				>
+					{updateStatus}
+				</Typography>
+			)}
+		</SettingsGroup>
 	);
 };

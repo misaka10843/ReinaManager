@@ -7,6 +7,7 @@ import {
 	AccordionSummary,
 	Avatar,
 	Chip,
+	CircularProgress,
 	IconButton,
 	InputAdornment,
 	Switch,
@@ -14,7 +15,6 @@ import {
 } from "@mui/material";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import InputLabel from "@mui/material/InputLabel";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import { open as openurl } from "@tauri-apps/plugin-shell";
@@ -31,6 +31,7 @@ import {
 import { snackbar } from "@/providers/snackBar";
 import { useStore } from "@/store/appStore";
 import type { BgmAuth } from "@/types";
+import { SettingsGroup, SettingsItem } from "./SettingsLayout";
 
 // ==================== BGM Token 设置 ====================
 
@@ -118,9 +119,9 @@ const BgmAccountSummary = ({
 					<Avatar
 						src={getBgmAvatarUrl(username)}
 						alt={displayName}
-						sx={{ width: 56, height: 56 }}
+						sx={{ width: 48, height: 48 }}
 					/>
-					<Box className="flex-1 min-w-0">
+					<Box className="min-w-0 flex-1">
 						<Stack
 							direction="row"
 							spacing={1}
@@ -209,7 +210,7 @@ type BgmTokenLoginPanelProps = {
 	inputToken: string;
 	isSavingToken: boolean;
 	onInputTokenChange: (value: string) => void;
-	onSaveToken: () => void;
+	onCommitToken: () => void;
 	onClearToken: () => void;
 	onOpenTokenPage: () => void;
 };
@@ -218,7 +219,7 @@ const BgmTokenLoginPanel = ({
 	inputToken,
 	isSavingToken,
 	onInputTokenChange,
-	onSaveToken,
+	onCommitToken,
 	onClearToken,
 	onOpenTokenPage,
 }: BgmTokenLoginPanelProps) => {
@@ -232,7 +233,7 @@ const BgmTokenLoginPanel = ({
 				</Typography>
 			</AccordionSummary>
 			<AccordionDetails>
-				<Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+				<Stack spacing={1.5}>
 					<TextField
 						autoComplete="off"
 						placeholder={t(
@@ -241,9 +242,17 @@ const BgmTokenLoginPanel = ({
 						)}
 						value={inputToken}
 						onChange={(e) => onInputTokenChange(e.target.value)}
+						onBlur={onCommitToken}
+						onKeyDown={(event) => {
+							if (event.key === "Enter") {
+								event.preventDefault();
+								(event.target as HTMLInputElement).blur();
+							}
+						}}
 						variant="outlined"
-						size="medium"
-						className="min-w-60"
+						size="small"
+						fullWidth
+						disabled={isSavingToken}
 						slotProps={{
 							htmlInput: {
 								style: {
@@ -252,10 +261,15 @@ const BgmTokenLoginPanel = ({
 								},
 							},
 							input: {
-								endAdornment: inputToken && (
+								endAdornment: isSavingToken ? (
+									<InputAdornment position="end">
+										<CircularProgress size={18} />
+									</InputAdornment>
+								) : inputToken ? (
 									<InputAdornment position="end">
 										<IconButton
 											onClick={onClearToken}
+											onMouseDown={(event) => event.preventDefault()}
 											edge="end"
 											size="small"
 											aria-label={t(
@@ -266,32 +280,21 @@ const BgmTokenLoginPanel = ({
 											<ClearIcon />
 										</IconButton>
 									</InputAdornment>
-								),
+								) : null,
 							},
 						}}
 					/>
-					<Button
-						variant="contained"
-						color="primary"
-						onClick={onSaveToken}
-						disabled={isSavingToken}
-						className="px-6 py-2"
-					>
-						{isSavingToken
-							? t(
-									"pages.Settings.bgmTokenSettings.queryingTokenStatus",
-									"正在查询 Token 状态...",
-								)
-							: t("pages.Settings.bgmTokenSettings.saveToken", "保存")}
-					</Button>
-					<Button
-						variant="outlined"
-						color="primary"
-						onClick={onOpenTokenPage}
-						className="px-6 py-2"
-					>
-						{t("pages.Settings.getToken", "获取令牌")}
-					</Button>
+					<Box>
+						<Button
+							variant="outlined"
+							color="primary"
+							onMouseDown={(event) => event.preventDefault()}
+							onClick={onOpenTokenPage}
+							size="small"
+						>
+							{t("pages.Settings.getToken", "获取令牌")}
+						</Button>
+					</Box>
 				</Stack>
 			</AccordionDetails>
 		</Accordion>
@@ -316,15 +319,12 @@ export const BgmTokenSettings = () => {
 	} = useBgmAuthController();
 
 	return (
-		<Box className="mb-8">
-			<InputLabel className="font-semibold mb-4">
-				{t("pages.Settings.bgmToken", "BGM 令牌")}
-			</InputLabel>
-			<Box className="pl-2 space-y-6">
-				<Box>
-					<InputLabel className="font-semibold mb-2">
-						{t("pages.Settings.bgmTokenSettings.userInfo", "用户信息")}
-					</InputLabel>
+		<SettingsGroup title={t("pages.Settings.bgmToken", "BGM 令牌")}>
+			<Box className="space-y-5">
+				<SettingsItem
+					stacked
+					title={t("pages.Settings.bgmTokenSettings.userInfo", "用户信息")}
+				>
 					<BgmAccountSummary
 						bgmAuth={bgmAuth}
 						isCompletingAuth={isCompletingAuth}
@@ -339,35 +339,33 @@ export const BgmTokenSettings = () => {
 							)}
 						</Typography>
 					)}
-				</Box>
+				</SettingsItem>
 
-				<Stack spacing={2}>
-					<Box>
-						<InputLabel className="font-semibold mb-2">
-							{t("pages.Settings.bgmTokenSettings.loginMethods", "登录方式")}
-						</InputLabel>
-						<Typography variant="caption" color="text.secondary">
-							{t(
-								"pages.Settings.bgmTokenSettings.loginMethodsHint",
-								"请任选一种登录方式，推荐 OAuth 快捷登录。",
-							)}
-						</Typography>
-					</Box>
-					<BgmOAuthLoginButton
-						isLoading={isOAuthLoading}
-						onLogin={handleOAuthLogin}
-					/>
-					<BgmTokenLoginPanel
-						inputToken={inputToken}
-						isSavingToken={isSavingToken}
-						onInputTokenChange={setInputToken}
-						onSaveToken={handleSaveToken}
-						onClearToken={handleClearToken}
-						onOpenTokenPage={handleOpenTokenPage}
-					/>
-				</Stack>
+				<SettingsItem
+					stacked
+					title={t("pages.Settings.bgmTokenSettings.loginMethods", "登录方式")}
+					description={t(
+						"pages.Settings.bgmTokenSettings.loginMethodsHint",
+						"请任选一种登录方式，推荐 OAuth 快捷登录。",
+					)}
+				>
+					<Stack spacing={2}>
+						<BgmOAuthLoginButton
+							isLoading={isOAuthLoading}
+							onLogin={handleOAuthLogin}
+						/>
+						<BgmTokenLoginPanel
+							inputToken={inputToken}
+							isSavingToken={isSavingToken}
+							onInputTokenChange={setInputToken}
+							onCommitToken={handleSaveToken}
+							onClearToken={handleClearToken}
+							onOpenTokenPage={handleOpenTokenPage}
+						/>
+					</Stack>
+				</SettingsItem>
 			</Box>
-		</Box>
+		</SettingsGroup>
 	);
 };
 
@@ -391,10 +389,14 @@ export const VndbTokenSettings = () => {
 	};
 
 	const handleSaveToken = async () => {
+		const nextToken = inputToken.trim();
+		if (nextToken === vndbToken || updateSettingsMutation.isPending) return;
+
 		try {
 			await updateSettingsMutation.mutateAsync({
-				vndbToken: inputToken,
+				vndbToken: nextToken,
 			});
+			setInputToken(nextToken);
 			snackbar.success(
 				t(
 					"pages.Settings.vndbTokenSettings.saveSuccess",
@@ -409,17 +411,25 @@ export const VndbTokenSettings = () => {
 		}
 	};
 
-	const handleClearToken = () => {
+	const handleClearToken = async () => {
 		setInputToken("");
+		if (!vndbToken || updateSettingsMutation.isPending) return;
+
+		try {
+			await updateSettingsMutation.mutateAsync({ vndbToken: "" });
+		} catch (error) {
+			console.error(error);
+			setInputToken(vndbToken);
+			snackbar.error(
+				t("pages.Settings.vndbTokenSettings.saveError", "VNDB Token 保存失败"),
+			);
+		}
 	};
 
 	return (
-		<Box className="mb-8">
-			<InputLabel className="font-semibold mb-4">
-				{t("pages.Settings.vndbToken", "VNDB 令牌")}
-			</InputLabel>
+		<SettingsGroup title={t("pages.Settings.vndbToken", "VNDB 令牌")}>
 			{vndbToken && (
-				<Box className="mb-4">
+				<Box>
 					{isVndbProfileLoading ? (
 						<Typography variant="caption" color="text.secondary">
 							{t(
@@ -464,7 +474,7 @@ export const VndbTokenSettings = () => {
 				</Box>
 			)}
 
-			<Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
+			<Stack spacing={1.5}>
 				<TextField
 					autoComplete="off"
 					placeholder={t(
@@ -473,9 +483,21 @@ export const VndbTokenSettings = () => {
 					)}
 					value={inputToken}
 					onChange={(e) => setInputToken(e.target.value)}
+					onBlur={handleSaveToken}
+					onKeyDown={(event) => {
+						if (event.key === "Enter") {
+							event.preventDefault();
+							(event.target as HTMLInputElement).blur();
+						}
+						if (event.key === "Escape") {
+							event.preventDefault();
+							setInputToken(vndbToken);
+						}
+					}}
 					variant="outlined"
-					size="medium"
-					className="min-w-60"
+					size="small"
+					fullWidth
+					disabled={updateSettingsMutation.isPending}
 					slotProps={{
 						htmlInput: {
 							style: {
@@ -484,10 +506,15 @@ export const VndbTokenSettings = () => {
 							},
 						},
 						input: {
-							endAdornment: inputToken && (
+							endAdornment: updateSettingsMutation.isPending ? (
+								<InputAdornment position="end">
+									<CircularProgress size={18} />
+								</InputAdornment>
+							) : inputToken ? (
 								<InputAdornment position="end">
 									<IconButton
 										onClick={handleClearToken}
+										onMouseDown={(event) => event.preventDefault()}
 										edge="end"
 										size="small"
 										aria-label={t(
@@ -498,29 +525,23 @@ export const VndbTokenSettings = () => {
 										<ClearIcon />
 									</IconButton>
 								</InputAdornment>
-							),
+							) : null,
 						},
 					}}
 				/>
-				<Button
-					variant="contained"
-					color="primary"
-					onClick={handleSaveToken}
-					disabled={updateSettingsMutation.isPending}
-					className="px-6 py-2"
-				>
-					{t("pages.Settings.saveBtn", "保存")}
-				</Button>
-				<Button
-					variant="outlined"
-					color="primary"
-					onClick={handleOpen}
-					className="px-6 py-2"
-				>
-					{t("pages.Settings.getToken", "获取令牌")}
-				</Button>
+				<Box>
+					<Button
+						variant="outlined"
+						color="primary"
+						onMouseDown={(event) => event.preventDefault()}
+						onClick={handleOpen}
+						size="small"
+					>
+						{t("pages.Settings.getToken", "获取令牌")}
+					</Button>
+				</Box>
 			</Stack>
-		</Box>
+		</SettingsGroup>
 	);
 };
 
@@ -543,54 +564,41 @@ export const CollectionSyncSettings = () => {
 	);
 
 	return (
-		<Box className="mb-6">
-			<InputLabel className="font-semibold mb-4">
-				{t("pages.Settings.collectionSync.title", "收藏状态同步")}
-			</InputLabel>
-			<Box className="pl-2 space-y-4">
-				<Stack direction="row" alignItems="center" className="min-w-60">
-					<Box>
-						<InputLabel className="font-semibold mb-1">
-							{t(
-								"pages.Settings.collectionSync.bgmTitle",
-								"启用 Bangumi 收藏同步",
-							)}
-						</InputLabel>
-						<Typography variant="caption" color="text.secondary">
-							{t(
-								"pages.Settings.collectionSync.bgmDescription",
-								"添加游戏时尝试读取 BGM 收藏状态，本地修改状态时同步回 BGM。",
-							)}
-						</Typography>
-					</Box>
-					<Switch
-						checked={syncBgmCollection}
-						onChange={(e) => setSyncBgmCollection(e.target.checked)}
-						color="primary"
-					/>
-				</Stack>
-				<Stack direction="row" alignItems="center" className="min-w-60">
-					<Box>
-						<InputLabel className="font-semibold mb-1">
-							{t(
-								"pages.Settings.collectionSync.vndbTitle",
-								"启用 VNDB 收藏同步",
-							)}
-						</InputLabel>
-						<Typography variant="caption" color="text.secondary">
-							{t(
-								"pages.Settings.collectionSync.vndbDescription",
-								"添加游戏时尝试读取 VNDB 收藏状态，本地修改状态时同步回 VNDB。",
-							)}
-						</Typography>
-					</Box>
-					<Switch
-						checked={syncVndbCollection}
-						onChange={(e) => setSyncVndbCollection(e.target.checked)}
-						color="primary"
-					/>
-				</Stack>
-			</Box>
-		</Box>
+		<SettingsGroup
+			title={t("pages.Settings.collectionSync.title", "收藏状态同步")}
+		>
+			<SettingsItem
+				title={t(
+					"pages.Settings.collectionSync.bgmTitle",
+					"启用 Bangumi 收藏同步",
+				)}
+				description={t(
+					"pages.Settings.collectionSync.bgmDescription",
+					"添加游戏时尝试读取 BGM 收藏状态，本地修改状态时同步回 BGM。",
+				)}
+			>
+				<Switch
+					checked={syncBgmCollection}
+					onChange={(e) => setSyncBgmCollection(e.target.checked)}
+					color="primary"
+				/>
+			</SettingsItem>
+			<SettingsItem
+				title={t(
+					"pages.Settings.collectionSync.vndbTitle",
+					"启用 VNDB 收藏同步",
+				)}
+				description={t(
+					"pages.Settings.collectionSync.vndbDescription",
+					"添加游戏时尝试读取 VNDB 收藏状态，本地修改状态时同步回 VNDB。",
+				)}
+			>
+				<Switch
+					checked={syncVndbCollection}
+					onChange={(e) => setSyncVndbCollection(e.target.checked)}
+					color="primary"
+				/>
+			</SettingsItem>
+		</SettingsGroup>
 	);
 };

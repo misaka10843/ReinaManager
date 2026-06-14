@@ -1,11 +1,11 @@
 import { FormControlLabel, Radio, RadioGroup, Switch } from "@mui/material";
 import Box from "@mui/material/Box";
-import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select, { type SelectChangeEvent } from "@mui/material/Select";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { useStore } from "@/store/appStore";
+import { SettingsGroup, SettingsItem } from "./SettingsLayout";
 
 export const LanguageSelect = () => {
 	const { t, i18n } = useTranslation(); // 使用i18n实例和翻译函数
@@ -28,16 +28,13 @@ export const LanguageSelect = () => {
 	};
 
 	return (
-		<Box className="min-w-30 mb-6">
-			<InputLabel id="language-select-label" className="mb-2 font-semibold">
-				{t("pages.Settings.language", "语言")}
-			</InputLabel>
+		<SettingsItem title={t("pages.Settings.language", "语言")}>
 			<Select
-				labelId="language-select-label"
 				id="language-select"
 				value={i18n.language}
 				onChange={handleChange}
-				className="w-60"
+				className="w-60 max-w-full"
+				size="small"
 				renderValue={(value) =>
 					languageNames[value as keyof typeof languageNames]
 				}
@@ -47,7 +44,7 @@ export const LanguageSelect = () => {
 				<MenuItem value="en-US">English(en-US)</MenuItem>
 				<MenuItem value="ja-JP">日本語(ja-JP)</MenuItem>
 			</Select>
-		</Box>
+		</SettingsItem>
 	);
 };
 
@@ -64,35 +61,24 @@ export const NsfwSettings = () => {
 		);
 
 	return (
-		<Box className="mb-6">
-			<InputLabel className="font-semibold mb-4">
-				{t("pages.Settings.nsfw.title", "NSFW 设置")}
-			</InputLabel>
-
-			<Box className="pl-2">
-				<FormControlLabel
-					control={
-						<Switch
-							checked={nsfwFilter}
-							onChange={(e) => setNsfwFilter(e.target.checked)}
-							color="primary"
-						/>
-					}
-					label={t("pages.Settings.nsfw.filter", "过滤 NSFW 内容")}
+		<SettingsGroup title={t("pages.Settings.nsfw.title", "NSFW 设置")}>
+			<SettingsItem title={t("pages.Settings.nsfw.filter", "过滤 NSFW 内容")}>
+				<Switch
+					checked={nsfwFilter}
+					onChange={(e) => setNsfwFilter(e.target.checked)}
+					color="primary"
 				/>
-
-				<FormControlLabel
-					control={
-						<Switch
-							checked={nsfwCoverReplace}
-							onChange={(e) => setNsfwCoverReplace(e.target.checked)}
-							color="primary"
-						/>
-					}
-					label={t("pages.Settings.nsfw.coverReplace", "NSFW 封面替换")}
+			</SettingsItem>
+			<SettingsItem
+				title={t("pages.Settings.nsfw.coverReplace", "NSFW 封面替换")}
+			>
+				<Switch
+					checked={nsfwCoverReplace}
+					onChange={(e) => setNsfwCoverReplace(e.target.checked)}
+					color="primary"
 				/>
-			</Box>
-		</Box>
+			</SettingsItem>
+		</SettingsGroup>
 	);
 };
 
@@ -106,17 +92,19 @@ export const CardClickModeSettings = () => {
 	);
 
 	return (
-		<Box className="mb-6">
-			<InputLabel className="font-semibold mb-4">
-				{t("pages.Settings.cardClickMode.title", "卡片点击模式")}
-			</InputLabel>
-			<Box className="pl-2">
+		<SettingsGroup
+			title={t("pages.Settings.cardClickMode.title", "卡片点击模式")}
+			description={t(
+				"pages.Settings.cardClickMode.description",
+				"仓库与收藏夹游戏卡片单击的行为（两种模式下均可双击游戏卡片启动游戏）。",
+			)}
+		>
+			<Box>
 				<RadioGroup
 					value={cardClickMode}
 					onChange={(e) =>
 						setCardClickMode(e.target.value as "navigate" | "select")
 					}
-					className="pl-2"
 				>
 					<FormControlLabel
 						value="navigate"
@@ -138,6 +126,6 @@ export const CardClickModeSettings = () => {
 					/>
 				</RadioGroup>
 			</Box>
-		</Box>
+		</SettingsGroup>
 	);
 };

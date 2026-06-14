@@ -1,8 +1,6 @@
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import RestorePageIcon from "@mui/icons-material/RestorePage";
-import SaveIcon from "@mui/icons-material/Save";
 import {
-	Checkbox,
 	FormControlLabel,
 	IconButton,
 	Radio,
@@ -13,7 +11,6 @@ import {
 } from "@mui/material";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import InputLabel from "@mui/material/InputLabel";
 import MenuItem from "@mui/material/MenuItem";
 import Select, { type SelectChangeEvent } from "@mui/material/Select";
 import Stack from "@mui/material/Stack";
@@ -31,6 +28,7 @@ import { fileService } from "@/services/invoke";
 import { toggleAutostart } from "@/services/plugins/autoStartService";
 import { useStore } from "@/store/appStore";
 import { getUserErrorMessage } from "@/utils/errors";
+import { SettingsGroup, SettingsItem } from "./SettingsLayout";
 
 export const AutoStartSettings = () => {
 	const { t } = useTranslation();
@@ -44,23 +42,16 @@ export const AutoStartSettings = () => {
 	}, []);
 
 	return (
-		<Box className="mb-6">
-			<Stack direction="row" alignItems="center" className="min-w-60">
-				<Box>
-					<InputLabel className="font-semibold mb-1">
-						{t("pages.Settings.autoStart", "开机自启")}
-					</InputLabel>
-				</Box>
-				<Switch
-					checked={autoStart}
-					onChange={() => {
-						setAutoStart(!autoStart);
-						toggleAutostart();
-					}}
-					color="primary"
-				/>
-			</Stack>
-		</Box>
+		<SettingsItem title={t("pages.Settings.autoStart", "开机自启")}>
+			<Switch
+				checked={autoStart}
+				onChange={() => {
+					setAutoStart(!autoStart);
+					toggleAutostart();
+				}}
+				color="primary"
+			/>
+		</SettingsItem>
 	);
 };
 
@@ -107,50 +98,41 @@ export const LogLevelSettings = () => {
 	};
 
 	return (
-		<Box className="mb-6">
-			<InputLabel className="font-semibold mb-4">
-				{t("pages.Settings.logLevel.title", "日志设置")}
-			</InputLabel>
-			<Box className="pl-2 space-y-4">
-				<Box>
-					<InputLabel className="mb-2 text-sm">
-						{t("pages.Settings.logLevel.levelLabel", "日志输出级别")}
-					</InputLabel>
-					<Typography
-						variant="caption"
-						color="text.secondary"
-						className="block mb-2"
-					>
-						{t(
-							"pages.Settings.logLevel.description",
-							"仅当前会话有效，不会保存。用于临时调整后端日志输出详尽程度。",
-						)}
-					</Typography>
-					<Select
-						value={logLevel}
-						onChange={handleChange}
-						className="min-w-40"
-						size="small"
-					>
-						<MenuItem value="error">Error</MenuItem>
-						<MenuItem value="warn">Warn</MenuItem>
-						<MenuItem value="info">Info</MenuItem>
-						<MenuItem value="debug">Debug</MenuItem>
-					</Select>
-				</Box>
-				<Box>
-					<Button
-						variant="outlined"
-						color="primary"
-						onClick={handleOpenLogFolder}
-						startIcon={<FolderOpenIcon />}
-						className="px-6 py-2"
-					>
-						{t("pages.Settings.logLevel.openFolder", "打开日志文件夹")}
-					</Button>
-				</Box>
-			</Box>
-		</Box>
+		<SettingsGroup title={t("pages.Settings.logLevel.title", "日志设置")}>
+			<SettingsItem
+				title={t("pages.Settings.logLevel.levelLabel", "日志输出级别")}
+				description={t(
+					"pages.Settings.logLevel.description",
+					"仅当前会话有效，不会保存。用于临时调整后端日志输出详尽程度。",
+				)}
+			>
+				<Select
+					value={logLevel}
+					onChange={handleChange}
+					className="min-w-40"
+					size="small"
+				>
+					<MenuItem value="error">Error</MenuItem>
+					<MenuItem value="warn">Warn</MenuItem>
+					<MenuItem value="info">Info</MenuItem>
+					<MenuItem value="debug">Debug</MenuItem>
+				</Select>
+			</SettingsItem>
+			<SettingsItem
+				stacked
+				title={t("pages.Settings.logLevel.openFolder", "打开日志文件夹")}
+			>
+				<Button
+					variant="outlined"
+					color="primary"
+					onClick={handleOpenLogFolder}
+					startIcon={<FolderOpenIcon />}
+					className="px-6 py-2"
+				>
+					{t("pages.Settings.logLevel.openFolder", "打开日志文件夹")}
+				</Button>
+			</SettingsItem>
+		</SettingsGroup>
 	);
 };
 
@@ -170,34 +152,51 @@ export const CloseBtnSettings = () => {
 		})),
 	);
 	return (
-		<Box className="mb-6">
-			<InputLabel className="font-semibold mb-4">
-				{t("pages.Settings.closeSettings", "关闭设置")}
-			</InputLabel>
-			<Box className="pl-2">
-				<FormControlLabel
-					control={
-						<Checkbox
-							checked={skipCloseRemind}
-							onChange={(e) => setSkipCloseRemind(e.target.checked)}
-							color="primary"
-						/>
-					}
-					label={t("pages.Settings.skipCloseRemind", "不再提醒")}
-					className="mb-2"
+		<SettingsGroup
+			title={t("pages.Settings.closeSettings", "关闭设置")}
+			description={t(
+				"pages.Settings.closeSettingsDescription",
+				"点击关闭按钮是否显示关闭确认弹窗，并选择跳过确认弹窗后的默认行为。",
+			)}
+		>
+			<SettingsItem
+				title={t("pages.Settings.skipCloseRemind", "不再提醒")}
+				description={t(
+					"pages.Settings.skipCloseRemindDescription",
+					"开启后不再显示关闭确认弹窗，直接执行下方选择的默认行为。",
+				)}
+			>
+				<Switch
+					checked={skipCloseRemind}
+					onChange={(e) => setSkipCloseRemind(e.target.checked)}
+					color="primary"
 				/>
+			</SettingsItem>
+			<Box>
 				<RadioGroup
 					value={defaultCloseAction}
 					onChange={(e) =>
 						setDefaultCloseAction(e.target.value as "hide" | "close")
 					}
-					className="pl-4"
 				>
 					<FormControlLabel
 						value="hide"
 						control={<Radio color="primary" />}
-						label={t("pages.Settings.closeToTray", "最小化到托盘")}
+						label={
+							<Box>
+								<Typography variant="body2">
+									{t("pages.Settings.closeToTray", "最小化到托盘")}
+								</Typography>
+								<Typography variant="caption" color="text.secondary">
+									{t(
+										"pages.Settings.closeToTrayDescription",
+										"关闭窗口后应用继续在系统托盘中运行。",
+									)}
+								</Typography>
+							</Box>
+						}
 						disabled={!skipCloseRemind}
+						sx={{ alignItems: "flex-start" }}
 						className={
 							!skipCloseRemind
 								? "opacity-50 transition-opacity duration-200"
@@ -207,8 +206,21 @@ export const CloseBtnSettings = () => {
 					<FormControlLabel
 						value="close"
 						control={<Radio color="primary" />}
-						label={t("pages.Settings.closeApp", "直接退出应用")}
+						label={
+							<Box>
+								<Typography variant="body2">
+									{t("pages.Settings.closeApp", "直接退出应用")}
+								</Typography>
+								<Typography variant="caption" color="text.secondary">
+									{t(
+										"pages.Settings.closeAppDescription",
+										"关闭窗口后结束应用进程。",
+									)}
+								</Typography>
+							</Box>
+						}
 						disabled={!skipCloseRemind}
+						sx={{ alignItems: "flex-start" }}
 						className={
 							!skipCloseRemind
 								? "opacity-50 transition-opacity duration-200"
@@ -217,7 +229,7 @@ export const CloseBtnSettings = () => {
 					/>
 				</RadioGroup>
 			</Box>
-		</Box>
+		</SettingsGroup>
 	);
 };
 
@@ -227,27 +239,19 @@ export const TimeTrackingModeSettings = () => {
 	const setTimeTrackingMode = useStore((s) => s.setTimeTrackingMode);
 
 	return (
-		<Box className="mb-6">
-			<InputLabel className="font-semibold mb-4">
-				{t("pages.Settings.timeTrackingMode.title", "游戏计时模式")}
-			</InputLabel>
-			<Box className="pl-2">
-				<Typography
-					variant="caption"
-					color="text.secondary"
-					className="block mb-3"
-				>
-					{t(
-						"pages.Settings.timeTrackingMode.description",
-						"选择游戏时间的计算方式，影响游戏运行时的时间显示和统计记录。",
-					)}
-				</Typography>
+		<SettingsGroup
+			title={t("pages.Settings.timeTrackingMode.title", "游戏计时模式")}
+			description={t(
+				"pages.Settings.timeTrackingMode.description",
+				"选择游戏时间的计算方式，影响游戏运行时的时间显示和统计记录。",
+			)}
+		>
+			<Box>
 				<RadioGroup
 					value={timeTrackingMode}
 					onChange={(e) =>
 						setTimeTrackingMode(e.target.value as "playtime" | "elapsed")
 					}
-					className="pl-2"
 				>
 					<FormControlLabel
 						value="playtime"
@@ -290,7 +294,7 @@ export const TimeTrackingModeSettings = () => {
 					/>
 				</RadioGroup>
 			</Box>
-		</Box>
+		</SettingsGroup>
 	);
 };
 
@@ -329,14 +333,18 @@ export const LinuxLaunchCommandSettings = () => {
 		loadLaunchCommand();
 	}, []);
 
-	const handleSaveCommand = async () => {
+	const saveLaunchCommand = async (value = launchCommand) => {
+		const nextCommand = value.trim() || "wine";
+		if (isLoading || nextCommand === originalCommand) return;
+
 		setIsLoading(true);
 
 		try {
 			const store = await load(STORE_PATH, { autoSave: false, defaults: {} });
-			await store.set(STORE_KEY, launchCommand.trim() || "wine");
+			await store.set(STORE_KEY, nextCommand);
 			await store.save();
-			setOriginalCommand(launchCommand.trim() || "wine");
+			setLaunchCommand(nextCommand);
+			setOriginalCommand(nextCommand);
 			snackbar.success(
 				t(
 					"pages.Settings.linuxLaunchCommand.saveSuccess",
@@ -355,26 +363,18 @@ export const LinuxLaunchCommandSettings = () => {
 
 	const handleReset = () => {
 		setLaunchCommand("wine");
+		void saveLaunchCommand("wine");
 	};
 
 	return (
-		<Box className="mb-6">
-			<InputLabel className="font-semibold mb-4">
-				{t("pages.Settings.linuxLaunchCommand.title", "Linux 启动命令")}
-			</InputLabel>
-
-			<Typography
-				variant="caption"
-				color="text.secondary"
-				className="block mb-3"
-			>
-				{t(
-					"pages.Settings.linuxLaunchCommand.description",
-					"设置 Linux 上启动 Windows 可执行文件（.exe）时使用的命令。支持 wine、proton 或其他兼容层命令，也可以是 PATH 中的可执行文件或脚本的完整路径。",
-				)}
-			</Typography>
-
-			<Stack direction="row" spacing={2} alignItems="center" className="mb-2">
+		<SettingsGroup
+			title={t("pages.Settings.linuxLaunchCommand.title", "Linux 启动命令")}
+			description={t(
+				"pages.Settings.linuxLaunchCommand.description",
+				"设置 Linux 上启动 Windows 可执行文件（.exe）时使用的命令。支持 wine、proton 或其他兼容层命令，也可以是 PATH 中的可执行文件或脚本的完整路径。",
+			)}
+		>
+			<Stack direction="row" spacing={1} alignItems="flex-start">
 				<TextField
 					label={t(
 						"pages.Settings.linuxLaunchCommand.commandLabel",
@@ -383,7 +383,18 @@ export const LinuxLaunchCommandSettings = () => {
 					variant="outlined"
 					value={launchCommand}
 					onChange={(e) => setLaunchCommand(e.target.value)}
-					className="min-w-60 flex-grow"
+					onBlur={() => void saveLaunchCommand()}
+					onKeyDown={(event) => {
+						if (event.key === "Enter") {
+							event.preventDefault();
+							(event.target as HTMLInputElement).blur();
+						}
+						if (event.key === "Escape") {
+							event.preventDefault();
+							setLaunchCommand(originalCommand);
+						}
+					}}
+					className="min-w-0 flex-grow"
 					placeholder="wine"
 					disabled={isLoading}
 					size="small"
@@ -407,17 +418,6 @@ export const LinuxLaunchCommandSettings = () => {
 						<RestorePageIcon />
 					</IconButton>
 				</Tooltip>
-
-				<Button
-					variant="contained"
-					color="primary"
-					onClick={handleSaveCommand}
-					disabled={isLoading || launchCommand === originalCommand}
-					startIcon={<SaveIcon />}
-					className="px-4 py-2"
-				>
-					{t("pages.Settings.linuxLaunchCommand.saveBtn", "保存")}
-				</Button>
 			</Stack>
 
 			<Typography
@@ -430,7 +430,7 @@ export const LinuxLaunchCommandSettings = () => {
 					"注意：更改此设置后，需要重新启动游戏才能生效。",
 				)}
 			</Typography>
-		</Box>
+		</SettingsGroup>
 	);
 };
 
@@ -499,18 +499,14 @@ export const ProxySettings = () => {
 	};
 
 	return (
-		<Box className="mb-6">
-			<InputLabel className="font-semibold mb-1">
-				{t("pages.Settings.proxy.title", "网络代理设置")}
-			</InputLabel>
-			<Typography variant="caption" color="text.secondary" className="block">
-				{t(
-					"pages.Settings.proxy.description",
-					"填写代理地址后应用网络请求将使用该代理；留空则使用系统网络设置。",
-				)}
-			</Typography>
-
-			<Box className="pl-2 mt-4">
+		<SettingsGroup
+			title={t("pages.Settings.proxy.title", "网络代理设置")}
+			description={t(
+				"pages.Settings.proxy.description",
+				"填写代理地址后应用网络请求将使用该代理；留空则使用系统网络设置。",
+			)}
+		>
+			<Box>
 				<TextField
 					label={t("pages.Settings.proxy.url", "代理服务器地址")}
 					variant="outlined"
@@ -534,6 +530,6 @@ export const ProxySettings = () => {
 					placeholder="http://127.0.0.1:7890"
 				/>
 			</Box>
-		</Box>
+		</SettingsGroup>
 	);
 };

@@ -600,13 +600,17 @@
 				"userInfo": "ユーザー情報"
 			},
 			"cardClickMode": {
+				"description": "ライブラリとコレクションのゲームカードをシングルクリックしたときの動作です。どちらのモードでもダブルクリックでゲームを起動できます。",
 				"navigate": "ナビゲーションモード（シングルクリックで詳細表示）",
 				"select": "選択モード（シングルクリックでゲーム選択）",
 				"title": "カードクリックモード"
 			},
 			"closeApp": "アプリを終了",
+			"closeAppDescription": "ウィンドウを閉じてアプリケーションを終了します。",
 			"closeSettings": "終了設定",
+			"closeSettingsDescription": "ウィンドウを閉じる際の確認表示と、確認を省略した場合の既定動作を設定します。",
 			"closeToTray": "トレイに最小化",
+			"closeToTrayDescription": "ウィンドウを閉じた後もシステムトレイでアプリを実行します。",
 			"collectionSync": {
 				"bgmDescription": "ゲーム追加時に BGM のコレクション状態を読み取り、ローカルで状態を変更したときに BGM に同期します。",
 				"bgmTitle": "Bangumi コレクション同期を有効化",
@@ -617,6 +621,7 @@
 			},
 			"databaseBackup": {
 				"autoBackupOnExit": "終了時に自動バックアップ",
+				"autoBackupOnExitDescription": "有効にすると、アプリが正常終了する際にデータベースを自動でバックアップします。カスタムカバーも同時にバックアップすると、終了に時間がかかる場合があります。",
 				"autoIncludeCovers": "カスタムカバーもバックアップ",
 				"autoMinIntervalHelp": "0 にすると終了ごとにバックアップします",
 				"autoMinIntervalHours": "最小間隔（時間）",
@@ -710,6 +715,7 @@
 				"systemDescription": "起動、ログ、終了動作、時間計測モードを管理します。"
 			},
 			"skipCloseRemind": "再度確認しない",
+			"skipCloseRemindDescription": "終了確認を表示せず、下で選択した既定動作をすぐに実行します。",
 			"spoilerLevel": {
 				"description": "ネタバレレベルを選択して、適切なタグコンテンツを取得する",
 				"level0": "0 - ネタバレなし",
