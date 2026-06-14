@@ -17,6 +17,7 @@
 
 import { version } from "@pkg";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
+import { useStore } from "@/store/appStore";
 import {
 	ApiRateLimitError,
 	AppError,
@@ -32,6 +33,8 @@ import {
 } from "./rateLimit";
 
 export const USER_AGENT = `huoshen80/ReinaManager/${version} (https://github.com/huoshen80/ReinaManager)`;
+const LOCAL_PROXY_BYPASS =
+	"localhost,127.0.0.0/8,::1,0.0.0.0,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,169.254.0.0/16,fc00::/7,fe80::/10,.local";
 
 export interface TauriHttpOptions {
 	headers?: Record<string, string>;
@@ -103,10 +106,21 @@ async function requestTauriHttp<T>(
 		options?.rateLimit?.source ?? inferRateLimitSource(url);
 
 	const fetchResponse = () => {
+		const { proxyConfig } = useStore.getState();
+		const proxyOption = proxyConfig.url
+			? {
+					all: {
+						url: proxyConfig.url,
+						noProxy: LOCAL_PROXY_BYPASS,
+					},
+				}
+			: undefined;
+
 		if (import.meta.env.DEV) {
 			console.log(`[TauriHTTP] ${method} ${fullUrl}`, {
 				headers: options?.headers,
 				body: data,
+				proxy: proxyOption,
 			});
 		}
 
@@ -121,6 +135,7 @@ async function requestTauriHttp<T>(
 					? undefined
 					: JSON.stringify(data),
 			signal: options?.signal,
+			proxy: proxyOption,
 		});
 	};
 

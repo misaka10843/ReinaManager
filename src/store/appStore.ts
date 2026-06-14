@@ -17,7 +17,7 @@
  * - @tauri-apps/api/core
  * - @/store/gamePlayStore
  */
-
+import { invoke } from "@tauri-apps/api/core";
 import type { Update } from "@tauri-apps/plugin-updater";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
@@ -37,6 +37,10 @@ export type SelectedCategory =
 	| { type: "real"; id: number }
 	| { type: "developer"; key: string }
 	| null;
+
+export interface ProxyConfig {
+	url: string;
+}
 
 /**
  * AppState 全局状态类型定义
@@ -141,8 +145,10 @@ export interface AppState {
 	// 更新窗口状态管理
 	showUpdateModal: boolean;
 	pendingUpdate: Update | null;
+	skippedUpdateVersion: string | null;
 	setShowUpdateModal: (show: boolean) => void;
 	setPendingUpdate: (update: Update | null) => void;
+	setSkippedUpdateVersion: (version: string | null) => void;
 	triggerUpdateModal: (update: Update) => void;
 
 	// 分组分类选择状态
@@ -150,6 +156,10 @@ export interface AppState {
 	selectedCategory: SelectedCategory; // 当前选中的分类
 	setCurrentGroup: (groupId: string | null) => void; // 设置当前分组
 	setSelectedCategory: (category: SelectedCategory) => void; // 设置当前选中的分类
+
+	// 代理设置
+	proxyConfig: ProxyConfig;
+	setProxyConfig: (config: ProxyConfig) => void;
 }
 
 // 创建持久化的全局状态
@@ -363,11 +373,15 @@ export const useStore = create<AppState>()(
 			// 更新窗口状态管理
 			showUpdateModal: false,
 			pendingUpdate: null,
+			skippedUpdateVersion: null,
 			setShowUpdateModal: (show: boolean) => {
 				set({ showUpdateModal: show });
 			},
 			setPendingUpdate: (update: Update | null) => {
 				set({ pendingUpdate: update });
+			},
+			setSkippedUpdateVersion: (version: string | null) => {
+				set({ skippedUpdateVersion: version });
 			},
 			triggerUpdateModal: (update: Update) => {
 				set({
@@ -393,10 +407,25 @@ export const useStore = create<AppState>()(
 				set({ selectedCategory: category });
 			},
 
+			// 代理设置
+			proxyConfig: {
+				url: "",
+			},
+			setProxyConfig: (config: ProxyConfig) => {
+				set({ proxyConfig: config });
+				invoke("update_proxy_config", { config }).catch(console.error);
+			},
+
 			// 初始化方法
 			initialize: async () => {
 				// 初始化游戏时间跟踪（数据获取由 React Query 自动触发）
 				initializeGamePlayTracking();
+
+				// 启动时同步代理设置到后端
+				const { proxyConfig } = get();
+				invoke("update_proxy_config", { config: proxyConfig }).catch(
+					console.error,
+				);
 			},
 		}),
 		{
@@ -435,9 +464,13 @@ export const useStore = create<AppState>()(
 				spoilerLevel: state.spoilerLevel,
 				// 计时模式：playtime 或 elapsed
 				timeTrackingMode: state.timeTrackingMode,
+				// 跳过的更新版本
+				skippedUpdateVersion: state.skippedUpdateVersion,
 				// 分组分类选择状态
 				currentGroupId: state.currentGroupId,
 				selectedCategory: state.selectedCategory,
+				// 代理设置
+				proxyConfig: { url: state.proxyConfig.url },
 			}),
 			version: APP_STORE_VERSION,
 			migrate: migrateAppStorePersistedState,

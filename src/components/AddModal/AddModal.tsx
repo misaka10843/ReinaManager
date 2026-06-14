@@ -164,12 +164,6 @@ const AddModal: React.FC = () => {
 				);
 			}
 			if (source === "bgm") {
-				if (!hasBgmAuth) {
-					return t(
-						"components.AddModal.noBgmToken",
-						"缺少 BGM Token，无法获取数据",
-					);
-				}
 				return t(
 					"components.AddModal.noResultsBgm",
 					"未在 Bangumi 找到该游戏，请尝试其他名称或检查 ID",
@@ -419,6 +413,17 @@ const AddModal: React.FC = () => {
 								onChange={setApiSource}
 								disabled={isBusy}
 							/>
+							{!hasBgmAuth &&
+								(apiSource === "bgm" ||
+									(apiSource === "mixed" &&
+										mixedEnabledSources.includes("bgm"))) && (
+									<Alert severity="info" sx={{ py: 0, px: 1.5 }}>
+										{t(
+											"components.AddModal.bgmNotLoggedInHint",
+											"未登录 Bangumi 账号，部分隐藏条目（如 R18）可能无法被搜索到。",
+										)}
+									</Alert>
+								)}
 						</Stack>
 						{/* 游戏名称输入框 */}
 						<TextField

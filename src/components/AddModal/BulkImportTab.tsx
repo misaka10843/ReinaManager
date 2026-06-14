@@ -1,6 +1,7 @@
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import SearchIcon from "@mui/icons-material/Search";
 import {
+	Alert,
 	Button,
 	CircularProgress,
 	Dialog,
@@ -126,8 +127,15 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 		t,
 		onResolved: handleResolvedEditMetadata,
 		onError: (message) => snackbar.error(message),
-		getNoResultsMessage: () =>
-			t("components.AddModal.noResults", "没有找到结果"),
+		getNoResultsMessage: (source) => {
+			if (source === "bgm") {
+				return t(
+					"components.AddModal.noResultsBgm",
+					"未在 Bangumi 找到该游戏，请尝试其他名称或检查 ID",
+				);
+			}
+			return t("components.AddModal.noResults", "没有找到结果");
+		},
 	});
 	const searchResultLoading = metadataSearchFlow.isSearching;
 
@@ -228,17 +236,15 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 				try {
 					const matchedData =
 						bulkApiSource === "bgm"
-							? await withBgmAuth(
-									(token) =>
-										withAbort(
-											gameMetadataService.searchBestMatch({
-												query: nextItems[index].name,
-												source: bulkApiSource,
-												bgmToken: token,
-												signal: controller.signal,
-											}),
-										),
-									{ required: true },
+							? await withBgmAuth((token) =>
+									withAbort(
+										gameMetadataService.searchBestMatch({
+											query: nextItems[index].name,
+											source: bulkApiSource,
+											bgmToken: token,
+											signal: controller.signal,
+										}),
+									),
 								)
 							: await withAbort(
 									gameMetadataService.searchBestMatch({
@@ -662,12 +668,23 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 								}
 							}}
 						/>
-						<FormControl component="fieldset">
+						<FormControl component="fieldset" className="gap-2">
 							<ApiSourceRadioGroup
 								value={editApiSource}
 								onChange={setEditApiSource}
 								disabled={searchResultLoading}
 							/>
+							{!hasBgmAuth &&
+								(editApiSource === "bgm" ||
+									(editApiSource === "mixed" &&
+										mixedEnabledSources.includes("bgm"))) && (
+									<Alert severity="info" sx={{ py: 0, px: 1.5 }}>
+										{t(
+											"components.AddModal.bgmNotLoggedInHint",
+											"未登录 Bangumi 账号，部分隐藏条目（如 R18）可能无法被搜索到。",
+										)}
+									</Alert>
+								)}
 						</FormControl>
 					</Stack>
 				</DialogContent>

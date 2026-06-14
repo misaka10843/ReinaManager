@@ -433,3 +433,107 @@ export const LinuxLaunchCommandSettings = () => {
 		</Box>
 	);
 };
+
+export const ProxySettings = () => {
+	const { t } = useTranslation();
+	const proxyConfig = useStore((state) => state.proxyConfig);
+	const setProxyConfig = useStore((state) => state.setProxyConfig);
+	const [proxyUrl, setProxyUrl] = useState(proxyConfig.url);
+	const [proxyUrlError, setProxyUrlError] = useState("");
+
+	useEffect(() => {
+		setProxyUrl(proxyConfig.url);
+	}, [proxyConfig.url]);
+
+	const validateProxyUrl = (value: string) => {
+		if (!/^https?:\/\//i.test(value)) {
+			return false;
+		}
+
+		try {
+			const parsed = new URL(value);
+			return (
+				(parsed.protocol === "http:" || parsed.protocol === "https:") &&
+				Boolean(parsed.hostname)
+			);
+		} catch {
+			return false;
+		}
+	};
+
+	const saveProxyUrl = () => {
+		const value = proxyUrl.trim();
+		const currentConfig = useStore.getState().proxyConfig;
+		if (!value) {
+			setProxyUrl("");
+			setProxyUrlError("");
+			if (currentConfig.url) {
+				setProxyConfig({ url: "" });
+			}
+			return true;
+		}
+
+		if (!validateProxyUrl(value)) {
+			setProxyUrlError(
+				t(
+					"pages.Settings.proxy.invalidUrl",
+					"请输入以 http:// 或 https:// 开头的有效代理地址",
+				),
+			);
+			return false;
+		}
+
+		setProxyUrl(value);
+		setProxyUrlError("");
+		if (value !== currentConfig.url) {
+			setProxyConfig({ url: value });
+		}
+		return true;
+	};
+
+	const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		setProxyUrl(e.target.value);
+		if (proxyUrlError) {
+			setProxyUrlError("");
+		}
+	};
+
+	return (
+		<Box className="mb-6">
+			<InputLabel className="font-semibold mb-1">
+				{t("pages.Settings.proxy.title", "网络代理设置")}
+			</InputLabel>
+			<Typography variant="caption" color="text.secondary" className="block">
+				{t(
+					"pages.Settings.proxy.description",
+					"填写代理地址后应用网络请求将使用该代理；留空则使用系统网络设置。",
+				)}
+			</Typography>
+
+			<Box className="pl-2 mt-4">
+				<TextField
+					label={t("pages.Settings.proxy.url", "代理服务器地址")}
+					variant="outlined"
+					value={proxyUrl}
+					onChange={handleUrlChange}
+					onBlur={saveProxyUrl}
+					onKeyDown={(event) => {
+						if (event.key === "Enter") {
+							event.preventDefault();
+							saveProxyUrl();
+						}
+						if (event.key === "Escape") {
+							setProxyUrl(proxyConfig.url);
+							setProxyUrlError("");
+						}
+					}}
+					error={Boolean(proxyUrlError)}
+					helperText={proxyUrlError}
+					className="w-full"
+					size="small"
+					placeholder="http://127.0.0.1:7890"
+				/>
+			</Box>
+		</Box>
+	);
+};

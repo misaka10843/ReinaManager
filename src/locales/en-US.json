@@ -27,6 +27,7 @@
 	"components": {
 		"AddModal": {
 			"addGame": "Add Game",
+			"bgmNotLoggedInHint": "Not logged into Bangumi account, some hidden items (such as R18) may not be searchable.",
 			"bulkTab": "Bulk Import",
 			"cancel": "Cancel",
 			"confirm": "Confirm",
@@ -39,7 +40,6 @@
 			"gameIDTips": "Game ID",
 			"gameName": "Game Name",
 			"invalidFile": "Please drag a valid executable file (.exe/.bat/.cmd) or folder",
-			"noBgmToken": "BGM Token is missing, unable to fetch data",
 			"noExecutableSelected": "No executable selected",
 			"noResults": "No results found",
 			"noResultsBgm": "Game not found on Bangumi, please try another name or check the ID",
@@ -341,6 +341,7 @@
 				"newVersion": "New Version",
 				"portableWarning": "You are using the portable version, automatic updates may not work properly. It is recommended to click \"Manual Update\" to go to GitHub and download the latest zip file for replacement.",
 				"releaseDate": "Release Date",
+				"skipVersion": "Skip this version",
 				"title": "New Version Available",
 				"update": "Update Now"
 			}
@@ -350,7 +351,6 @@
 		"authFailed": "Authentication failed. Please check your credentials or permissions",
 		"badRequest": "The request parameters are invalid. Please review and try again",
 		"bgmRateLimited": "Bangumi requests are rate limited. The current task has stopped. Please retry manually after 1 hour",
-		"bgmTokenRequired": "BGM Token is required. Please configure it first",
 		"invalidGameId": "The game ID format is invalid",
 		"invokeFailed": "The application command failed. Please try again later",
 		"metadataNotFound": "No matching metadata was found",
@@ -699,6 +699,12 @@
 				"note": "Configure paths for game save backups, LE region software, Magpie software, database backups, etc.",
 				"openModal": "Open Path Settings",
 				"title": "Path Settings"
+			},
+			"proxy": {
+				"description": "Enter a proxy address to use it for app network requests, or leave it blank to use system network settings.",
+				"invalidUrl": "Enter a valid proxy address starting with http:// or https://",
+				"title": "Network Proxy Settings",
+				"url": "Proxy Server Address"
 			},
 			"saveBtn": "Save",
 			"sections": {
