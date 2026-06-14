@@ -264,6 +264,17 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ open, onClose, update }) => {
 			</DialogContent>
 
 			<DialogActions>
+				<Button
+					onClick={() => {
+						useStore.getState().setSkippedUpdateVersion(update.version);
+						handleCancel();
+					}}
+					disabled={isDownloading}
+					color="inherit"
+					sx={{ mr: "auto" }}
+				>
+					{t("components.Window.UpdateModal.skipVersion", "跳过此版本")}
+				</Button>
 				<Button onClick={handleCancel} disabled={isDownloading} color="inherit">
 					{t("components.Window.UpdateModal.cancel", "取消")}
 				</Button>
@@ -352,6 +363,10 @@ const WindowsHandler: React.FC = () => {
 		const performSilentUpdateCheck = async () => {
 			const result = await silentCheckForUpdates();
 			if (result.hasUpdate) {
+				const skippedVersion = useStore.getState().skippedUpdateVersion;
+				if (result.version === skippedVersion) {
+					return;
+				}
 				// 检查到更新，立即显示提醒
 				checkForUpdates({
 					onUpdateFound: (update) => {

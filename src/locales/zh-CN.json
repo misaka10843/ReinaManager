@@ -27,6 +27,7 @@
 	"components": {
 		"AddModal": {
 			"addGame": "添加游戏",
+			"bgmNotLoggedInHint": "未登录 Bangumi 账号，部分隐藏条目（如 R18）可能无法被搜索到。",
 			"bulkTab": "批量导入",
 			"cancel": "取消",
 			"confirm": "确认",
@@ -39,7 +40,6 @@
 			"gameIDTips": "游戏ID",
 			"gameName": "游戏名称",
 			"invalidFile": "请拖入有效的可执行文件（.exe/.bat/.cmd）或文件夹",
-			"noBgmToken": "缺少 BGM Token，无法获取数据",
 			"noExecutableSelected": "未选择可执行程序",
 			"noResults": "没有找到结果",
 			"noResultsBgm": "未在 Bangumi 找到该游戏，请尝试其他名称或检查 ID",
@@ -330,6 +330,7 @@
 				"newVersion": "新版本",
 				"portableWarning": "您正在使用便携版，自动更新可能无法正常工作。建议点击“手动更新”前往 GitHub 下载最新版本的压缩包进行替换。",
 				"releaseDate": "发布日期",
+				"skipVersion": "跳过此版本",
 				"title": "发现新版本",
 				"update": "立即更新"
 			}
@@ -339,7 +340,6 @@
 		"authFailed": "认证失败，请检查凭证或权限",
 		"badRequest": "请求参数有误，请检查后重试",
 		"bgmRateLimited": "Bangumi 请求被限速，当前任务已停止，请 1 小时后手动重试",
-		"bgmTokenRequired": "缺少 BGM Token，请先配置后重试",
 		"invalidGameId": "游戏 ID 格式无效",
 		"invokeFailed": "应用内部调用失败，请稍后重试",
 		"metadataNotFound": "未找到对应的元数据",
@@ -687,6 +687,12 @@
 				"note": "配置游戏存档备份、LE转区软件、Magpie软件、数据库备份等路径",
 				"openModal": "打开路径设置",
 				"title": "路径设置"
+			},
+			"proxy": {
+				"description": "填写代理地址后应用网络请求将使用该代理；留空则使用系统网络设置。",
+				"invalidUrl": "请输入以 http:// 或 https:// 开头的有效代理地址",
+				"title": "网络代理设置",
+				"url": "代理服务器地址"
 			},
 			"saveBtn": "保存",
 			"sections": {
