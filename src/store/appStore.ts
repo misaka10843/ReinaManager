@@ -24,7 +24,7 @@ import { type ProxyConfig, settingsService } from "@/services/invoke";
 import type { GameType, SortOption, SortOrder } from "@/services/invoke/types";
 import type { apiSourceType, SourceType } from "@/types";
 import type { PlayStatusFilter } from "@/types/collection";
-import { normalizeTagFilters } from "@/utils/tagFilter";
+import { normalizeTagFilters } from "@/utils/game/tagFilter";
 import {
 	APP_STORE_VERSION,
 	DEFAULT_MIXED_ENABLED_SOURCES,

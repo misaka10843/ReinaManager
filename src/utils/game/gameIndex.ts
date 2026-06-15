@@ -1,7 +1,7 @@
 import { getRuntimeSourceAdapter, REGISTERED_SOURCE_KEYS } from "@/metadata";
+import { getDisplayGameData } from "@/metadata/data/dataTransform";
 import type { FullGameData, GameData, SourceType } from "@/types";
 import type { Category } from "@/types/collection";
-import { getDisplayGameData } from "@/utils/gameData/dataTransform";
 
 export type SourceAvailability = Record<SourceType, boolean>;
 

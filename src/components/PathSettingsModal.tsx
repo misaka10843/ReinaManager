@@ -35,10 +35,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAllSettings, useUpdateSettings } from "@/hooks/queries/useSettings";
 import { snackbar } from "@/providers/snackBar";
+import { handleExeFile, handleFolder } from "@/services/fs/fileDialog";
+import { getAppDataDirPath } from "@/services/fs/pathCache";
+import { moveBackupFolder } from "@/services/fs/savedataBackup";
 import { getUserErrorMessage } from "@/utils/errors";
-import { handleExeFile, handleFolder } from "@/utils/fs/fileDialog";
-import { getAppDataDirPath } from "@/utils/fs/pathCache";
-import { moveBackupFolder } from "@/utils/fs/savedataBackup";
 
 /**
  * 路径设置弹窗组件属性

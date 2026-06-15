@@ -13,14 +13,14 @@ import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { settingsKeys } from "@/hooks/queries/useSettings";
 import { snackbar } from "@/providers/snackBar";
-import { useStore } from "@/store/appStore";
-import { getUserErrorMessage } from "@/utils/errors";
 import {
 	backupCustomCovers,
 	backupDatabase,
 	importDatabase,
-} from "@/utils/fs/dataMaintenance";
-import { openDatabaseBackupFolder } from "@/utils/fs/savedataBackup";
+} from "@/services/fs/dataMaintenance";
+import { openDatabaseBackupFolder } from "@/services/fs/savedataBackup";
+import { useStore } from "@/store/appStore";
+import { getUserErrorMessage } from "@/utils/errors";
 import { SettingsGroup, SettingsItem } from "./SettingsLayout";
 
 export const DatabaseBackupSettings = () => {

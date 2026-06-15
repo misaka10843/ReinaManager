@@ -1,6 +1,6 @@
 import type { LinkProps, To } from "react-router-dom";
 import { useLocation, useNavigate } from "react-router-dom";
-import { saveScrollPosition } from "@/utils/scroll";
+import { saveScrollPosition } from "@/hooks/common/useScrollRestore";
 
 export const LinkWithScrollSave: React.FC<LinkProps> = (props) => {
 	const { to, onClick, children, ...rest } = props as LinkProps &

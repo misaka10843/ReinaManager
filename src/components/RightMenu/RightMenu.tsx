@@ -37,12 +37,11 @@ import { useGameById } from "@/hooks/features/games/useGameFacade";
 import { useGameStatusActions } from "@/hooks/features/games/useGameStatusActions";
 import { useDeleteGame } from "@/hooks/queries/useGames";
 import { snackbar } from "@/providers/snackBar";
+import { handleOpenFolder } from "@/services/fs/fileDialog";
 import { useStore } from "@/store/appStore";
 import { useGamePlayStore } from "@/store/gamePlayStore";
-
 import type { PlayStatus } from "@/types/collection";
 import { getUserErrorMessage } from "@/utils/errors";
-import { handleOpenFolder } from "@/utils/fs/fileDialog";
 import { BaseRightMenu } from "./BaseRightMenu";
 import { PlayStatusSubmenu } from "./PlayStatusSubmenu";
 

@@ -16,7 +16,7 @@ import {
 	useNavigate,
 	useSearchParams,
 } from "react-router-dom";
-import { saveScrollPosition } from "@/utils/scroll";
+import { saveScrollPosition } from "@/hooks/common/useScrollRestore";
 
 interface ToolpadLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
 	href: string;

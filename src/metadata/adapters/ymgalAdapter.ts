@@ -1,5 +1,5 @@
-import { fetchYmById, fetchYmByName } from "@/api/ymgal";
 import type { GameCandidateData, YmgalData } from "@/types";
+import { fetchYmById, fetchYmByName } from "../api/ymgal";
 import type { MetadataSourceAdapter } from "../sourceAdapter";
 import {
 	getSourceCandidateFromGame,

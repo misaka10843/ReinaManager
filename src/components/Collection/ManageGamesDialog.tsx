@@ -34,8 +34,11 @@ import {
 } from "@/hooks/queries/useCollections";
 import { snackbar } from "@/providers/snackBar";
 import type { GameData } from "@/types";
-import { createSearchIndex, searchWithIndex } from "@/utils/enhancedSearch";
 import { getGameDisplayName } from "@/utils/game";
+import {
+	createSearchIndex,
+	searchWithIndex,
+} from "@/utils/game/enhancedSearch";
 
 interface ManageGamesDialogProps {
 	open: boolean;

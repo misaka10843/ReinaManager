@@ -1,8 +1,8 @@
-import type { fetchVndbUserCollection } from "@/api/vndb";
 import {
 	fetchAllSettings,
 	fetchBgmCurrentUserProfile,
 } from "@/hooks/queries/useSettings";
+import type { fetchVndbUserCollection } from "@/metadata/api/vndb";
 import { queryClient } from "@/providers/queryClient";
 import type { FullGameData } from "@/types";
 import { PlayStatus } from "@/types/collection";

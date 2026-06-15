@@ -1,5 +1,8 @@
-import { getRuntimeSourceAdapter, REGISTERED_SOURCE_KEYS } from "@/metadata";
 import type { FullGameData, SourceDataKey, SourceType } from "@/types";
+import {
+	getRuntimeSourceAdapter,
+	REGISTERED_SOURCE_KEYS,
+} from "../sourceRegistry";
 import { SOURCE_COVER_PRIORITY } from "./displayMergeRules";
 
 type SourceImageData = Partial<

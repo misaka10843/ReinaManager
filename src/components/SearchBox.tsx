@@ -24,7 +24,7 @@ import { useStore } from "@/store/appStore";
 import {
 	getSearchSuggestionsFromData,
 	preprocessSuggestionData,
-} from "@/utils/enhancedSearch";
+} from "@/utils/game/enhancedSearch";
 
 // 配置常量
 const DEBOUNCE_SEARCH = 250;

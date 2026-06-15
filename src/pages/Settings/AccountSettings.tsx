@@ -21,7 +21,6 @@ import { open as openurl } from "@tauri-apps/plugin-shell";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
-import { getBgmAvatarUrl } from "@/api/bgm";
 import { useProxyImageUrlResolver } from "@/hooks/common/useProxyImageUrlResolver";
 import { useBgmAuthController } from "@/hooks/features/useBgmAuthController";
 import {
@@ -29,6 +28,7 @@ import {
 	useUpdateSettings,
 	useVndbCurrentUserProfile,
 } from "@/hooks/queries/useSettings";
+import { getBgmAvatarUrl } from "@/metadata/api/bgm";
 import { snackbar } from "@/providers/snackBar";
 import { useStore } from "@/store/appStore";
 import type { BgmAuth } from "@/types";

@@ -25,8 +25,8 @@ import {
 	MIXED_SOURCE_KEYS,
 } from "@/metadata";
 import { snackbar } from "@/providers/snackBar";
+import { isBgmAuthExpiredError } from "@/services/bgmAuthSession";
 import { useStore } from "@/store/appStore";
-import { isBgmAuthExpiredError } from "@/utils/bgmAuthSession";
 import { getUserErrorMessage } from "@/utils/errors";
 import { SettingsGroup, SettingsItem } from "./SettingsLayout";
 
@@ -186,7 +186,7 @@ const BatchUpdateSettings: React.FC = () => {
 		try {
 			// 动态导入批量更新函数
 			const { batchUpdateVndbData } = await import(
-				"@/utils/gameData/metadataBatchUpdate"
+				"@/metadata/data/metadataBatchUpdate"
 			);
 
 			snackbar.info(
@@ -254,7 +254,7 @@ const BatchUpdateSettings: React.FC = () => {
 		try {
 			// 动态导入批量更新函数
 			const { batchUpdateBgmData } = await import(
-				"@/utils/gameData/metadataBatchUpdate"
+				"@/metadata/data/metadataBatchUpdate"
 			);
 
 			snackbar.info(

@@ -1,9 +1,8 @@
-import { gameMetadataService } from "@/api/gameMetadataService";
+import i18n from "@/providers/i18n";
 import {
-	getRuntimeSourceAdapter,
-	MIXED_SOURCE_KEYS,
-	REGISTERED_SOURCE_KEYS,
-} from "@/metadata";
+	type CloudPlayStatusContext,
+	resolveCloudPlayStatus,
+} from "@/services/cloudPlayStatus";
 import type {
 	CustomData,
 	GameCandidateData,
@@ -14,13 +13,14 @@ import type {
 	UpdateGameParams,
 } from "@/types";
 import { isSourceType } from "@/types";
-import {
-	type CloudPlayStatusContext,
-	resolveCloudPlayStatus,
-} from "@/utils/cloudPlayStatus";
 import { getArrayDiff, getBoolDiff, getDiff } from "@/utils/diff";
 import { getGameDisplayName, getGameNsfwStatus } from "@/utils/game";
-import i18n from "@/utils/i18n";
+import {
+	getRuntimeSourceAdapter,
+	MIXED_SOURCE_KEYS,
+	REGISTERED_SOURCE_KEYS,
+} from "../sourceRegistry";
+import { gameMetadataService } from "./gameMetadataService";
 
 export interface GameInfoUpdateDraft {
 	newLocalPath: string;

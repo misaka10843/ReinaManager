@@ -1,7 +1,7 @@
 /**
  * @file YMGal 月幕Galgame API 封装
  * @description 提供与 YMGal API 交互的函数和类型定义，用于获取游戏信息，返回结构化数据，便于前端统一处理。
- * @module src/api/ym
+ * @module src/metadata/api/ymgal
  * @author ReinaManager
  * @copyright AGPL-3.0
  *
@@ -14,10 +14,10 @@
  * - http: 封装的 HTTP 请求工具
  */
 // 注意认证失败重试机制未生效
+
 import type { GameCandidateData, YmgalData } from "@/types";
 import { AppError, isHttpStatus, toError } from "@/utils/errors";
-import type { TauriHttpOptions } from "./http";
-import http, { USER_AGENT } from "./http";
+import http, { type TauriHttpOptions, USER_AGENT } from "./http";
 
 /**
  * YMGal API 全局配置

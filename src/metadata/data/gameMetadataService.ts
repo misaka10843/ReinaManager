@@ -1,21 +1,18 @@
 /**
  * @file 游戏元数据服务层
  * @description 统一管理所有游戏数据源的搜索和获取逻辑，封装 API 调用细节
- * @module src/api/gameMetadataService
+ * @module src/metadata/data/gameMetadataService
  * @author ReinaManager
  * @copyright AGPL-3.0
  */
 
-import { fetchMixedData } from "@/api/mixed";
-import type { MetadataSourceContext } from "@/metadata";
-import {
-	getRuntimeSourceAdapter,
-	getSourceAdapter,
-	getSourceCandidateFromGame,
-	resolveAutoSelectedSourceCandidate,
-} from "@/metadata";
 import type { apiSourceType, GameCandidateData, SourceType } from "@/types";
 import { AppError, toError } from "@/utils/errors";
+import { fetchMixedData } from "../api/mixed";
+import type { MetadataSourceContext } from "../sourceAdapter";
+import { resolveAutoSelectedSourceCandidate } from "../sourceAutoResolve";
+import { getSourceCandidateFromGame } from "../sourceCandidate";
+import { getRuntimeSourceAdapter, getSourceAdapter } from "../sourceRegistry";
 import {
 	buildGameFromMixedSelection,
 	type MixedSourceCandidates,
@@ -23,7 +20,7 @@ import {
 	type MixedSourceSelection,
 	mergeMixedResult,
 	pickFirstMixedResult,
-} from "@/utils/gameData/metadata";
+} from "./metadata";
 
 const mixedIdTypePriority: readonly SourceType[] = [
 	"kun",

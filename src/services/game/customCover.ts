@@ -6,8 +6,8 @@
 import { open } from "@tauri-apps/plugin-dialog";
 import { basename, join } from "pathe";
 import { fileService } from "@/services/invoke";
+import { toError } from "@/utils/errors";
 import { getcustomCoverFolder } from "@/utils/game";
-import { toError } from "./errors";
 
 /**
  * 获取文件扩展名

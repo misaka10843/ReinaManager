@@ -15,12 +15,12 @@ import { ViewGameBox } from "@/components/AlertBox";
 import { SelectedGameGuard } from "@/components/SelectedGameGuard";
 import { useGameIndex } from "@/hooks/features/games/useGameListFacade";
 import { useUpdateGame } from "@/hooks/queries/useGames";
+import { buildMetadataUpdatePayload } from "@/metadata/data/metadata";
 import { snackbar } from "@/providers/snackBar";
 import { fileService } from "@/services/invoke";
 import type { GameCandidateData, GameData, UpdateGameParams } from "@/types";
 import { getUserErrorMessage } from "@/utils/errors";
 import { EMPTY_SOURCE_AVAILABILITY } from "@/utils/game/gameIndex";
-import { buildMetadataUpdatePayload } from "@/utils/gameData/metadata";
 import { DataSourceUpdate } from "./DataSourceUpdate";
 import { GameInfoEdit } from "./GameInfoEdit";
 

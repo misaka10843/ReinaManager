@@ -31,11 +31,11 @@ import { useShallow } from "zustand/react/shallow";
 import { SelectedGameGuard } from "@/components/SelectedGameGuard";
 import { useUpdateGame } from "@/hooks/queries/useGames";
 import { snackbar } from "@/providers/snackBar";
+import { handleExeFile } from "@/services/fs/fileDialog";
 import { useStore } from "@/store/appStore";
 import { useGamePlayStore } from "@/store/gamePlayStore";
 import type { GameData, UpdateGameParams } from "@/types";
 import { getUserErrorMessage } from "@/utils/errors";
-import { handleExeFile } from "@/utils/fs/fileDialog";
 
 /**
  * 格式化游戏时长显示

@@ -1,7 +1,7 @@
 /**
  * @file 多数据源混合获取 API 封装
  * @description 同时从 Bangumi、VNDB、YMGal 和 Kungal 获取游戏信息，返回各源原始数据
- * @module src/api/mixed
+ * @module src/metadata/api/mixed
  * @author ReinaManager
  * @copyright AGPL-3.0
  *
@@ -18,20 +18,20 @@
  * - fetchMultiSourceData：多数据源搜索和获取的统一接口
  */
 
-import {
-	getEnabledMixedAdapters,
-	getRuntimeSourceAdapter,
-	type RuntimeSourceAdapter,
-	resolveAutoSelectedSourceCandidate,
-	type SourceCandidate,
-} from "@/metadata";
+import type { GameCandidateData, SourceDataKey, SourceType } from "@/types";
 import {
 	AppError,
 	isApiRateLimitError,
 	isHttpStatus,
 	toError,
 } from "@/utils/errors";
-import type { GameCandidateData, SourceDataKey, SourceType } from "../types";
+import { resolveAutoSelectedSourceCandidate } from "../sourceAutoResolve";
+import type { SourceCandidate } from "../sourceCandidate";
+import {
+	getEnabledMixedAdapters,
+	getRuntimeSourceAdapter,
+	type RuntimeSourceAdapter,
+} from "../sourceRegistry";
 
 interface SafeFetchResult {
 	source: SourceType;

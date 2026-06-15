@@ -1,7 +1,7 @@
 /**
  * @file Bangumi 游戏信息 API 封装
  * @description 提供与 Bangumi API 交互的函数，包括通过名称或 ID 获取游戏条目，并对标签进行敏感词过滤。
- * @module src/api/bgm
+ * @module src/metadata/api/bgm
  * @author ReinaManager
  * @copyright AGPL-3.0
  *

@@ -1,7 +1,7 @@
 /**
  * @file HTTP 请求工具
  * @description 基于 Axios 和 Tauri HTTP 的请求工具，支持浏览器和 Tauri 环境的 HTTP 请求。
- * @module src/api/http
+ * @module src/metadata/api/http
  * @author ReinaManager
  * @copyright AGPL-3.0
  *

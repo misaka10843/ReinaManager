@@ -16,7 +16,10 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import AddModal from "@/components/AddModal";
 import { SearchBox } from "@/components/SearchBox";
 import { Toolbars } from "@/components/Toolbar";
-import { saveScrollPosition, scrollToTop } from "@/utils/scroll";
+import {
+	saveScrollPosition,
+	scrollToTop,
+} from "@/hooks/common/useScrollRestore";
 
 /**
  * 侧边栏底部信息组件

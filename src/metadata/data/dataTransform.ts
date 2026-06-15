@@ -8,9 +8,9 @@
  * - 转换时将 null 值转换为 undefined（展示层不需要 null）
  */
 
-import { getRuntimeSourceAdapter } from "@/metadata";
 import type { FullGameData, GameData } from "@/types";
 import { isSourceType } from "@/types";
+import { getRuntimeSourceAdapter } from "../sourceRegistry";
 import {
 	applyCustomDataOverride,
 	applyCustomSourceDisplay,

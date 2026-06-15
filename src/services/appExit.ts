@@ -2,10 +2,10 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { ask } from "@tauri-apps/plugin-dialog";
 import { StateFlags, saveWindowState } from "@tauri-apps/plugin-window-state";
 import i18n from "i18next";
+import { createAutoBackup } from "@/services/fs/dataMaintenance";
 import { useStore } from "@/store/appStore";
 import { useGamePlayStore } from "@/store/gamePlayStore";
 import { toError } from "@/utils/errors";
-import { createAutoBackup } from "@/utils/fs/dataMaintenance";
 
 const HOUR_MS = 60 * 60 * 1000;
 let exitAutoBackupPromise: Promise<void> | null = null;

@@ -13,7 +13,7 @@
  * - @mui/icons-material
  * - @/store
  * - @/store/gamePlayStore
- * - @/utils/game/gameStats
+ * - @/services/game/gameStats
  * - @/utils
  * - @/types
  * - react-i18next

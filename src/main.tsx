@@ -13,15 +13,15 @@
 import { QueryClientProvider } from "@tanstack/react-query";
 import { createRoot } from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
-import { routers } from "@/routes/router";
+import { routers } from "@/providers/router";
 import "virtual:uno.css";
 import createCache from "@emotion/cache";
 import { CacheProvider } from "@emotion/react";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { isTauri } from "@tauri-apps/api/core";
 import { queryClient } from "@/providers/queryClient";
+import { initPathCache } from "@/services/fs/pathCache";
 import { initTray } from "@/services/plugins/trayService";
-import { initPathCache } from "@/utils/fs/pathCache";
 import { initializeStores } from "./store/appStore";
 
 // 创建 Emotion 缓存,确保样式注入顺序正确

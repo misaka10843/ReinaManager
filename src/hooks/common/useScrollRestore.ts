@@ -21,6 +21,27 @@ export const setScrollPosition = (path: string, position: number): void => {
 	}
 };
 
+export const saveScrollPosition = (path: string) => {
+	const container = document.querySelector<HTMLElement>(
+		VIRTUAL_SCROLL_CONTAINER_SELECTOR,
+	);
+
+	if (container && container.scrollHeight > container.clientHeight) {
+		setScrollPosition(path, container.scrollTop);
+	}
+};
+
+export const scrollToTop = (path: string) => {
+	const container = document.querySelector<HTMLElement>(
+		VIRTUAL_SCROLL_CONTAINER_SELECTOR,
+	);
+
+	if (!container) return;
+
+	setScrollPosition(path, 0);
+	container.scrollTo({ top: 0, behavior: "smooth" });
+};
+
 interface UseScrollRestoreOptions {
 	/** 滚动容器选择器，默认 'main' */
 	containerSelector?: string;

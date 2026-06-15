@@ -5,21 +5,21 @@ import {
 	useAllGames,
 	useBatchAddGames,
 } from "@/hooks/queries/useGames";
+import {
+	type BatchImportGameCandidate,
+	buildBulkImportGameData,
+	buildInsertGameData,
+	getGameIdentityKeys,
+} from "@/metadata/data/metadata";
+import i18n from "@/providers/i18n";
+import { createCloudPlayStatusContext } from "@/services/cloudPlayStatus";
 import type {
 	BatchOperationResult,
 	GameCandidateData,
 	InsertGameParams,
 	SourceIdType,
 } from "@/types";
-import { createCloudPlayStatusContext } from "@/utils/cloudPlayStatus";
 import { getUserErrorMessage } from "@/utils/errors";
-import {
-	type BatchImportGameCandidate,
-	buildBulkImportGameData,
-	buildInsertGameData,
-	getGameIdentityKeys,
-} from "@/utils/gameData/metadata";
-import i18n from "@/utils/i18n";
 
 export interface BulkImportActionInput extends BatchImportGameCandidate {
 	status?: string;

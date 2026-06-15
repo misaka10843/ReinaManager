@@ -5,13 +5,16 @@ import { gameKeys, useAllGames, useGameIdList } from "@/hooks/queries/useGames";
 import { useStore } from "@/store/appStore";
 import type { GameData } from "@/types";
 import { PlayStatus } from "@/types/collection";
-import { createSearchIndex, searchWithIndex } from "@/utils/enhancedSearch";
 import { getGameNsfwStatus } from "@/utils/game";
+import {
+	createSearchIndex,
+	searchWithIndex,
+} from "@/utils/game/enhancedSearch";
 import { type GameIndex, getGameIndex } from "@/utils/game/gameIndex";
 import {
 	buildNormalizedTagSet,
 	matchesAllNormalizedTagFilters,
-} from "@/utils/tagFilter";
+} from "@/utils/game/tagFilter";
 
 const EMPTY_IDS: number[] = [];
 const EMPTY_GAMES: GameData[] = [];

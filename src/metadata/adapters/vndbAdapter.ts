@@ -1,5 +1,5 @@
-import { fetchVndbById, fetchVndbByName } from "@/api/vndb";
 import type { GameCandidateData, VndbData } from "@/types";
+import { fetchVndbById, fetchVndbByName } from "../api/vndb";
 import type { MetadataSourceAdapter } from "../sourceAdapter";
 import {
 	getSourceCandidateFromGame,

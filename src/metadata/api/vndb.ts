@@ -1,7 +1,7 @@
 /**
  * @file VNDB 游戏信息 API 封装
  * @description 提供与 VNDB API 交互的函数和类型定义，用于获取视觉小说信息，返回结构化数据，便于前端统一处理。
- * @module src/api/vndb
+ * @module src/metadata/api/vndb
  * @author ReinaManager
  * @copyright AGPL-3.0
  *

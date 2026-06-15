@@ -1,13 +1,13 @@
 import i18next from "i18next";
-import { fetchBgmByIds } from "@/api/bgm";
-import { fetchVNDBByIds } from "@/api/vndb";
 import { patchManyGameCaches } from "@/hooks/queries/gameCachePatch";
 import { gameKeys } from "@/hooks/queries/useGames";
 import { queryClient } from "@/providers/queryClient";
+import { withBgmAuth } from "@/services/bgmAuthSession";
 import { gameService } from "@/services/invoke";
 import type { BgmData, VndbData } from "@/types";
-import { withBgmAuth } from "@/utils/bgmAuthSession";
 import { toError } from "@/utils/errors";
+import { fetchBgmByIds } from "../api/bgm";
+import { fetchVNDBByIds } from "../api/vndb";
 
 async function batchUpdateCommon(
 	type: "vndb" | "bgm",

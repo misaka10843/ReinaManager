@@ -67,10 +67,10 @@ import { useGameStatusActions } from "@/hooks/features/games/useGameStatusAction
 import { useDeleteGame, useUpdateGame } from "@/hooks/queries/useGames";
 import { useAllSettings } from "@/hooks/queries/useSettings";
 import { snackbar } from "@/providers/snackBar";
+import { handleOpenFolder } from "@/services/fs/fileDialog";
 import { useStore } from "@/store/appStore";
 import type { GameData, SourceType } from "@/types";
 import type { PlayStatus } from "@/types/collection";
-import { handleOpenFolder } from "@/utils/fs/fileDialog";
 import { CollectionToolbar } from "./Collection";
 
 type ThemeMode = "light" | "dark" | "system";

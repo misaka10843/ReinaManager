@@ -5,7 +5,7 @@ import type { TrayIconEvent } from "@tauri-apps/api/tray";
 import { TrayIcon } from "@tauri-apps/api/tray";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import i18n from "i18next";
-import { exitCurrentWindowFromTray } from "@/utils/appExit";
+import { exitCurrentWindowFromTray } from "@/services/appExit";
 
 let trayInstance: TrayIcon | null = null;
 let trayInitPromise: Promise<TrayIcon | null> | null = null;

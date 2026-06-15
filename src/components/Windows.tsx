@@ -25,6 +25,7 @@ import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { useProxyImageUrlResolver } from "@/hooks/common/useProxyImageUrlResolver";
 import { snackbar } from "@/providers/snackBar";
+import { destroyCurrentWindow, getRunningGameCount } from "@/services/appExit";
 import { fileService } from "@/services/invoke";
 import {
 	checkForUpdates,
@@ -33,7 +34,6 @@ import {
 	type UpdateProgress,
 } from "@/services/plugins/updateService";
 import { useStore } from "@/store/appStore";
-import { destroyCurrentWindow, getRunningGameCount } from "@/utils/appExit";
 import { getUserErrorMessage } from "@/utils/errors";
 
 // 配置 marked 支持 GFM 和换行

@@ -19,20 +19,23 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
-import { gameMetadataService } from "@/api";
 import { AlertBox } from "@/components/AlertBox";
 import { useMetadataSearchFlow } from "@/hooks/common/useMetadataSearchFlow";
 import { useBulkGameAddActions } from "@/hooks/features/games/useGameMetadataFacade";
 import { useAllSettings } from "@/hooks/queries/useSettings";
-import { getRuntimeSourceAdapter, REGISTERED_SOURCE_KEYS } from "@/metadata";
+import {
+	gameMetadataService,
+	getRuntimeSourceAdapter,
+	REGISTERED_SOURCE_KEYS,
+} from "@/metadata";
 import { snackbar } from "@/providers/snackBar";
+import { isBgmAuthExpiredError, withBgmAuth } from "@/services/bgmAuthSession";
+import { handleFolder } from "@/services/fs/fileDialog";
 import { fileService } from "@/services/invoke";
 import { useStore } from "@/store/appStore";
 import type { apiSourceType, GameCandidateData, SourceType } from "@/types";
 import { createAbortableRunner, isAbortError } from "@/utils/async";
-import { isBgmAuthExpiredError, withBgmAuth } from "@/utils/bgmAuthSession";
 import { getUserErrorMessage, isApiRateLimitError } from "@/utils/errors";
-import { handleFolder } from "@/utils/fs/fileDialog";
 import { ApiSourceRadioGroup } from "./ApiSourceRadioGroup";
 import BulkImportResultTable, {
 	type BulkImportItem,

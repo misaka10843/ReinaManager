@@ -6,12 +6,12 @@ import {
 	type UpdatePlayStatusParams,
 	useUpdatePlayStatus,
 } from "@/hooks/queries/usePlayStatus";
+import { getDisplayGameData } from "@/metadata/data/dataTransform";
 import { snackbar } from "@/providers/snackBar";
+import { syncPlayStatusToCloud } from "@/services/cloudPlayStatus";
 import type { FullGameData, GameData } from "@/types";
-import { syncPlayStatusToCloud } from "@/utils/cloudPlayStatus";
 import { getUserErrorMessage } from "@/utils/errors";
 import type { GameIndex } from "@/utils/game/gameIndex";
-import { getDisplayGameData } from "@/utils/gameData/dataTransform";
 
 interface UpdatePlayStatusOptions {
 	invalidateScope?: "game" | "all";

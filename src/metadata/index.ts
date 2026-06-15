@@ -1,3 +1,5 @@
+export type { GameSearchParams } from "./data/gameMetadataService";
+export { gameMetadataService } from "./data/gameMetadataService";
 export type {
 	MetadataSourceAdapter,
 	MetadataSourceContext,

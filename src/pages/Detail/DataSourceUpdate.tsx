@@ -14,13 +14,13 @@ import {
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getRuntimeSourceAdapter } from "@/metadata";
+import { fetchMetadataForUpdate } from "@/metadata/data/metadata";
 import { snackbar } from "@/providers/snackBar";
+import { isBgmAuthExpiredError, withBgmAuth } from "@/services/bgmAuthSession";
 import { useStore } from "@/store/appStore";
 import type { GameCandidateData, GameData, SourceType } from "@/types";
 import { isSourceType } from "@/types";
-import { isBgmAuthExpiredError, withBgmAuth } from "@/utils/bgmAuthSession";
 import { getUserErrorMessage } from "@/utils/errors";
-import { fetchMetadataForUpdate } from "@/utils/gameData/metadata";
 
 interface DataSourceUpdateProps {
 	selectedGame: GameData;

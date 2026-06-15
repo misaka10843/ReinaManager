@@ -1,7 +1,7 @@
 /**
  * @file Kungal 游戏信息 API 封装
  * @description 提供与 Kungal API 交互的函数，包括搜索游戏和获取详细信息。
- * @module src/api/kun
+ * @module src/metadata/api/kun
  * @author ReinaManager
  * @copyright AGPL-3.0
  */

@@ -1,9 +1,3 @@
-import {
-	getRuntimeSourceAdapter,
-	REGISTERED_SOURCE_KEYS,
-	type RuntimeSourceAdapter,
-} from "@/metadata";
-import type { SourceDisplayFields } from "@/metadata/sourceCandidate";
 import type {
 	CustomData,
 	FullGameData,
@@ -11,6 +5,12 @@ import type {
 	SourceDataKey,
 	SourceType,
 } from "@/types";
+import type { SourceDisplayFields } from "../sourceCandidate";
+import {
+	getRuntimeSourceAdapter,
+	REGISTERED_SOURCE_KEYS,
+	type RuntimeSourceAdapter,
+} from "../sourceRegistry";
 
 export const SOURCE_COVER_PRIORITY: readonly SourceType[] = [
 	"bgm",

@@ -11,8 +11,8 @@ import {
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
-import { fetchCurrentUserProfile } from "@/api/bgm";
-import { fetchVndbCurrentUserProfile } from "@/api/vndb";
+import { fetchCurrentUserProfile } from "@/metadata/api/bgm";
+import { fetchVndbCurrentUserProfile } from "@/metadata/api/vndb";
 import { remoteQueryOptions } from "@/providers/queryClient";
 import { settingsService } from "@/services/invoke";
 import type { LogLevel, UpdateSettingsParams } from "@/types";

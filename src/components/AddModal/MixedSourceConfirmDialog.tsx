@@ -12,12 +12,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useProxyImageUrlResolver } from "@/hooks/common/useProxyImageUrlResolver";
 import { getRuntimeSourceAdapter, MIXED_SOURCE_KEYS } from "@/metadata";
-import type { SourceType } from "@/types";
 import type {
 	MixedSourceCandidates,
 	MixedSourceEnabled,
 	MixedSourceSelection,
-} from "@/utils/gameData/metadata";
+} from "@/metadata/data/metadata";
+import type { SourceType } from "@/types";
 import GameSelectDialog, { extractDisplayInfo } from "./GameSelectDialog";
 
 interface MixedSourceConfirmDialogProps {

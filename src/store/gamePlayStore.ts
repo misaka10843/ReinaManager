@@ -12,7 +12,7 @@
  * 依赖：
  * - zustand
  * - @tauri-apps/api/core
- * - @/utils/game/gameStats
+ * - @/services/game/gameStats
  * - @/store
  * - @/types
  * - @/utils
@@ -22,11 +22,14 @@ import { create } from "zustand";
 import { gameKeys } from "@/hooks/queries/useGames";
 import { settingsKeys } from "@/hooks/queries/useSettings";
 import { queryClient } from "@/providers/queryClient";
+import {
+	launchGameWithTracking,
+	stopGameWithTracking,
+} from "@/services/game/gameRuntime";
+import { initGameTimeTracking } from "@/services/game/gameStats";
 import { useStore } from "@/store/appStore";
 import type { StopGameResult } from "@/types";
 import { toError } from "@/utils/errors";
-import { launchGameWithTracking, stopGameWithTracking } from "@/utils/game";
-import { initGameTimeTracking } from "@/utils/game/gameStats";
 
 /**
  * 游戏启动结果类型

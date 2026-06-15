@@ -46,7 +46,7 @@ import { useGameIndex } from "@/hooks/features/games/useGameListFacade";
 import { useStore } from "@/store/appStore";
 import { DefaultGroup } from "@/types/collection";
 import { getGameCover, getGameDisplayName } from "@/utils/game";
-import { getTagDisplayName } from "@/utils/tagTranslation";
+import { getTagDisplayName } from "@/utils/game/tagTranslation";
 import { Backup } from "./Backup";
 import { Edit } from "./Edit";
 import { InfoBox } from "./InfoBox";

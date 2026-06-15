@@ -40,7 +40,7 @@ import {
 	filterTagSuggestions,
 	findTagByInput,
 	normalizeTagFilters,
-} from "@/utils/tagFilter";
+} from "@/utils/game/tagFilter";
 
 const filterTypeOptions: Array<{ value: GameType; labelKey: string }> = [
 	{ value: "all", labelKey: "allGames" },

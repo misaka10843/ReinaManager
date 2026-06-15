@@ -1,9 +1,12 @@
-import { fetchUserCollection, updateUserCollection } from "@/api/bgm";
-import { fetchVndbUserCollection, updateVndbUserCollection } from "@/api/vndb";
+import { fetchUserCollection, updateUserCollection } from "@/metadata/api/bgm";
+import {
+	fetchVndbUserCollection,
+	updateVndbUserCollection,
+} from "@/metadata/api/vndb";
+import { withBgmAuth } from "@/services/bgmAuthSession";
 import { useStore } from "@/store/appStore";
 import type { FullGameData, GameData } from "@/types";
 import type { PlayStatus } from "@/types/collection";
-import { withBgmAuth } from "@/utils/bgmAuthSession";
 import {
 	type CloudPlayStatusContext,
 	getBgmUsername,

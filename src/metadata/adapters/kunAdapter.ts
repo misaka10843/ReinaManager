@@ -1,5 +1,5 @@
-import { fetchGalgameById, searchGalgame } from "@/api/kun";
 import type { GameCandidateData, KunData } from "@/types";
+import { fetchGalgameById, searchGalgame } from "../api/kun";
 import type { MetadataSourceAdapter } from "../sourceAdapter";
 import {
 	getSourceCandidateFromGame,

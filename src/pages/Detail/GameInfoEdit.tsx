@@ -34,7 +34,20 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useImagePreview } from "@/hooks/common/useImagePreview";
 import { useProxyImageUrlResolver } from "@/hooks/common/useProxyImageUrlResolver";
+import { buildGameInfoUpdatePayload } from "@/metadata/data/metadata";
+import {
+	getSourceImageMap,
+	getSourceImageOptions,
+	resolveSourceImage,
+	type SourceImageOption,
+} from "@/metadata/data/sourceImage";
 import { snackbar } from "@/providers/snackBar";
+import { handleExeFile } from "@/services/fs/fileDialog";
+import {
+	deleteGameCustomCovers,
+	selectImageFile,
+	uploadSelectedImage,
+} from "@/services/game/customCover";
 import { fileService } from "@/services/invoke";
 import type {
 	FullGameData,
@@ -42,25 +55,12 @@ import type {
 	SourceType,
 	UpdateGameParams,
 } from "@/types";
-import {
-	deleteGameCustomCovers,
-	selectImageFile,
-	uploadSelectedImage,
-} from "@/utils/customCover";
 import { getUserErrorMessage, toError } from "@/utils/errors";
-import { handleExeFile } from "@/utils/fs/fileDialog";
 import {
 	getGameCover,
 	getGameDisplayName,
 	getGameNsfwStatus,
 } from "@/utils/game";
-import { buildGameInfoUpdatePayload } from "@/utils/gameData/metadata";
-import {
-	getSourceImageMap,
-	getSourceImageOptions,
-	resolveSourceImage,
-	type SourceImageOption,
-} from "@/utils/gameData/sourceImage";
 
 // 公共样式常量
 const CHIP_INPUT_BOX_SX = {

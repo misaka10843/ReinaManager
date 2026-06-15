@@ -2,11 +2,11 @@ import { listen } from "@tauri-apps/api/event";
 import { open as openurl } from "@tauri-apps/plugin-shell";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { buildManualBgmAuth, completeBgmAuth } from "@/api/bgm";
 import { useAllSettings, useUpdateSettings } from "@/hooks/queries/useSettings";
+import { buildManualBgmAuth, completeBgmAuth } from "@/metadata/api/bgm";
 import { snackbar } from "@/providers/snackBar";
+import { logoutBgmAuth } from "@/services/bgmAuthSession";
 import { settingsService } from "@/services/invoke";
-import { logoutBgmAuth } from "@/utils/bgmAuthSession";
 import { toError } from "@/utils/errors";
 
 let isBgmOAuthRunning = false;

@@ -1,15 +1,15 @@
 import "./App.css";
-import "@/utils/i18n";
+import "@/providers/i18n";
 import { isTauri } from "@tauri-apps/api/core";
 import { SnackbarProvider } from "notistack";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet } from "react-router-dom";
 import WindowsHandler from "@/components/Windows";
+import { appRoutes } from "@/providers/router"; // 引入新的统一配置
 import { SnackbarUtilsConfigurator } from "@/providers/snackBar";
 import { ToolpadReactRouterAppProvider } from "@/providers/ToolpadReactRouterAppProvider";
-import { appRoutes } from "@/routes/router"; // 引入新的统一配置
-import { initBgmAuthRefresh } from "@/utils/bgmAuthSession";
+import { initBgmAuthRefresh } from "@/services/bgmAuthSession";
 
 const App: React.FC = () => {
 	const { t } = useTranslation();

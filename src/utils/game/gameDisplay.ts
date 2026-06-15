@@ -1,8 +1,8 @@
 import { convertFileSrc } from "@tauri-apps/api/core";
 import i18next from "i18next";
 import { join } from "pathe";
+import { getAppDataDirPath } from "@/services/fs/pathCache";
 import type { GameData } from "@/types";
-import { getAppDataDirPath } from "@/utils/fs/pathCache";
 import { buildTauriProtocolUrl } from "@/utils/tauriProtocol";
 
 export const getGameDisplayName = (game: GameData): string => {
