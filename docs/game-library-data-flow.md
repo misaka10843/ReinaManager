@@ -17,7 +17,7 @@
 
 ### GameData
 
-`GameData` 是展示层数据，由 `getDisplayGameData(fullData)` 从 `FullGameData` 派生。
+`GameData` 是展示层数据，由 `getDisplayGameData(fullData)` 从 `FullGameData` 派生（定义在 `src/metadata/data/dataTransform.ts`）。
 
 特点：
 

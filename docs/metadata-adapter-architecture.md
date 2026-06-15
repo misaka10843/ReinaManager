@@ -11,11 +11,26 @@ src/metadata/
 ├── sourceRegistry.ts       # 注册表 + 派生常量/函数
 ├── sourceAutoResolve.ts    # 单源自动解析（search(1) + enrichOnSelect）
 ├── index.ts                # barrel export
-└── adapters/
-    ├── bgmAdapter.ts
-    ├── vndbAdapter.ts
-    ├── ymgalAdapter.ts
-    └── kunAdapter.ts
+├── adapters/
+│   ├── bgmAdapter.ts
+│   ├── vndbAdapter.ts
+│   ├── ymgalAdapter.ts
+│   └── kunAdapter.ts
+├── api/                    # API 客户端
+│   ├── bgm.ts
+│   ├── http.ts
+│   ├── kun.ts
+│   ├── mixed.ts
+│   ├── rateLimit.ts
+│   ├── vndb.ts
+│   └── ymgal.ts
+└── data/                   # 数据处理
+    ├── dataTransform.ts
+    ├── displayMergeRules.ts
+    ├── gameMetadataService.ts
+    ├── metadata.ts
+    ├── metadataBatchUpdate.ts
+    └── sourceImage.ts
 ```
 
 ### 1.1 sourceAdapter.ts — 接口定义
@@ -116,18 +131,18 @@ resolveAutoSelectedSourceCandidate({ query, source, bgmToken })
 BulkImportTab / AddModal
   → gameMetadataService.searchGames({ source: "mixed", query })
     → searchMixed() → getMixedGameByName()
-      → fetchMixedData({ name, bgmToken, enabledSources })        [mixed.ts:160]
+      → fetchMixedData({ name, bgmToken, enabledSources })        [api/mixed.ts:160]
         → getEnabledMixedAdapters(enabledSources)                  [sourceRegistry.ts:49]
         → Promise.all(adapters.map(a =>
             canUseAdapter(a, { bgmToken })
               ? fetchAdapterSafely(a, () => a.searchByName(name, { bgmToken, signal }))
               : createEmptyResult(a)
-          ))                                                        [mixed.ts:222]
+          ))                                                        [api/mixed.ts:222]
         → assertNotAllAttemptedSourcesFailed(results)
-        → toLegacyResult(results)                                   [mixed.ts:110]
+        → toLegacyResult(results)                                   [api/mixed.ts:110]
           → { bgm_data: [...], vndb_data: [...], ... }
-      → pickFirstMixedResult(result)                                [metadata.ts:140]
-      → mergeMixedResult(firstResults)                              [metadata.ts:116]
+      → pickFirstMixedResult(result)                                [data/metadata.ts:140]
+      → mergeMixedResult(firstResults)                              [data/metadata.ts:116]
         → mergeSourceIntoGame() per source
           → getRuntimeSourceAdapter(source) → { idKey, dataKey }
       → GameCandidateData[]
@@ -139,10 +154,10 @@ BulkImportTab / AddModal
 AddModal → gameMetadataService.searchGames({ source: "bgm", query })
   → searchSingleSource()
     → shouldUseIdSearch(query, source)
-      → getSourceAdapter(source).validateId(query)                 [gameMetadataService.ts:142]
-    → searchByName() → getSourceAdapter(source).searchByName()    [gameMetadataService.ts:414]
+      → getSourceAdapter(source).validateId(query)                 [data/gameMetadataService.ts:142]
+    → searchByName() → getSourceAdapter(source).searchByName()    [data/gameMetadataService.ts:414]
       → bgmAdapter.searchByName() → fetchBgmByName()
-    → candidates.map(c => c.raw)                                   [gameMetadataService.ts:419]
+    → candidates.map(c => c.raw)                                   [data/gameMetadataService.ts:419]
     → GameCandidateData[]
 ```
 
@@ -150,7 +165,7 @@ AddModal → gameMetadataService.searchGames({ source: "bgm", query })
 
 ```
 用户选择一项 → useMetadataSearchFlow.selectGame()
-  → gameMetadataService.enrichSelectedGameDetails({ selectedGame, source })  [gameMetadataService.ts:294]
+  → gameMetadataService.enrichSelectedGameDetails({ selectedGame, source })  [data/gameMetadataService.ts:294]
     → getSourceAdapter(source)
     → adapter.enrichOnSelect?
       ├─ ymgal: fetchYmById(id) → mergeCandidateWithDetails()
@@ -162,8 +177,8 @@ AddModal → gameMetadataService.searchGames({ source: "bgm", query })
 ### 2.4 混合单 ID 查找
 
 ```
-fetchMixedData({ bgm_id: "12345", bgmToken })                   [mixed.ts:160]
-  → getProvidedSourceIds() → [{ adapter: bgmAdapter, id }]      [mixed.ts:131]
+fetchMixedData({ bgm_id: "12345", bgmToken })                   [api/mixed.ts:160]
+  → getProvidedSourceIds() → [{ adapter: bgmAdapter, id }]      [api/mixed.ts:131]
   → providedIds === 1
   → bgmAdapter.fetchById("12345", { bgmToken, enrichCrossSource: false })
     → fetchBgmById()
@@ -177,9 +192,9 @@ fetchMixedData({ bgm_id: "12345", bgmToken })                   [mixed.ts:160]
 ### 2.5 混合多 ID 查找（数据更新场景）
 
 ```
-fetchMetadataForUpdate({ idType: "mixed", bgmId, vndbId, ... }) [metadata.ts:216]
+fetchMetadataForUpdate({ idType: "mixed", bgmId, vndbId, ... }) [data/metadata.ts:216]
   → gameMetadataService.getGameByIds()
-    → 并行 getSourceAdapter(source).fetchById(id, { bgmToken })  [gameMetadataService.ts:274]
+    → 并行 getSourceAdapter(source).fetchById(id, { bgmToken })  [data/gameMetadataService.ts:274]
     → mergeMixedResult(combinedResults)
 ```
 
@@ -187,8 +202,8 @@ fetchMetadataForUpdate({ idType: "mixed", bgmId, vndbId, ... }) [metadata.ts:216
 
 ```
 FullGameData (数据库)
-  → getDisplayGameData(fullData)                                  [dataTransform.ts:35]
-    → getSourceDataMap(fullData)                                   [displayMergeRules.ts:65]
+  → getDisplayGameData(fullData)                                  [data/dataTransform.ts:35]
+    → getSourceDataMap(fullData)                                   [data/displayMergeRules.ts:65]
       → REGISTERED_SOURCE_KEYS.map(source => {
           adapter = getRuntimeSourceAdapter(source)
           game[adapter.dataKey]
@@ -247,7 +262,7 @@ BulkImportTab.handleEditRowSearch()
 
 ```
 DataSourceUpdate.handleFetchAndPreview()                          [DataSourceUpdate.tsx:128]
-  → fetchMetadataForUpdate({ selectedGame, idType, ... })         [metadata.ts:216]
+  → fetchMetadataForUpdate({ selectedGame, idType, ... })         [data/metadata.ts:216]
     ├─ mixed: gameMetadataService.getGameByIds() → fetchMixedData 或逐源 fetchById
     └─ 单源: gameMetadataService.getGameById()
         → getSourceAdapter(source).fetchById(id, { bgmToken })
@@ -257,7 +272,7 @@ DataSourceUpdate.handleFetchAndPreview()                          [DataSourceUpd
 
 ```
 MixedSourceConfirmDialog → 用户确认选择
-  → gameMetadataService.enrichMixedSourceSelection({ selection, enabled })  [gameMetadataService.ts:337]
+  → gameMetadataService.enrichMixedSourceSelection({ selection, enabled })  [data/gameMetadataService.ts:337]
     → Promise.all(MIXED_SOURCE_KEYS.map(source => {
         adapter = getRuntimeSourceAdapter(source)
         if (!adapter.enrichOnSelect) return
@@ -273,12 +288,12 @@ MixedSourceConfirmDialog → 用户确认选择
 
 | 文件 | 导入内容 | 用途 |
 |------|---------|------|
-| `src/api/gameMetadataService.ts` | `getSourceAdapter`, `getRuntimeSourceAdapter`, `getSourceCandidateFromGame`, `resolveAutoSelectedSourceCandidate` | 核心搜索/补全逻辑 |
-| `src/api/mixed.ts` | `getEnabledMixedAdapters`, `getRuntimeSourceAdapter`, `resolveAutoSelectedSourceCandidate`, `SourceCandidate` | 混合并行搜索 |
-| `src/utils/gameData/metadata.ts` | `getRuntimeSourceAdapter`, `MIXED_SOURCE_KEYS`, `REGISTERED_SOURCE_KEYS` | 合并/更新/build helpers |
-| `src/utils/gameData/dataTransform.ts` | `getRuntimeSourceAdapter` | `getDisplayGameData` 中取 dataKey |
-| `src/utils/gameData/displayMergeRules.ts` | `getRuntimeSourceAdapter`, `REGISTERED_SOURCE_KEYS` | 展示合并规则 |
-| `src/utils/gameData/sourceImage.ts` | `getRuntimeSourceAdapter`, `REGISTERED_SOURCE_KEYS` | 封面图解析 |
+| `src/metadata/data/gameMetadataService.ts` | `getSourceAdapter`, `getRuntimeSourceAdapter`, `getSourceCandidateFromGame`, `resolveAutoSelectedSourceCandidate` | 核心搜索/补全逻辑 |
+| `src/metadata/api/mixed.ts` | `getEnabledMixedAdapters`, `getRuntimeSourceAdapter`, `resolveAutoSelectedSourceCandidate`, `SourceCandidate` | 混合并行搜索 |
+| `src/metadata/data/metadata.ts` | `getRuntimeSourceAdapter`, `MIXED_SOURCE_KEYS`, `REGISTERED_SOURCE_KEYS` | 合并/更新/build helpers |
+| `src/metadata/data/dataTransform.ts` | `getRuntimeSourceAdapter` | `getDisplayGameData` 中取 dataKey |
+| `src/metadata/data/displayMergeRules.ts` | `getRuntimeSourceAdapter`, `REGISTERED_SOURCE_KEYS` | 展示合并规则 |
+| `src/metadata/data/sourceImage.ts` | `getRuntimeSourceAdapter`, `REGISTERED_SOURCE_KEYS` | 封面图解析 |
 | `src/utils/game/gameIndex.ts` | `getRuntimeSourceAdapter`, `REGISTERED_SOURCE_KEYS` | 数据源可用性检查 |
 | `src/store/appStore.ts` | `MIXED_SOURCE_KEYS` | toggleMixedSource |
 | `src/store/appStoreMigrations.ts` | `DEFAULT_MIXED_SOURCE_KEYS`, `MIXED_SOURCE_KEYS` | 迁移：默认启用源 |
@@ -314,7 +329,7 @@ MixedSourceConfirmDialog → 用户确认选择
 1. **定义类型**：`src/types/types.ts` 中添加 `ExampleData`、扩展 `SourceType` / `SourceIdType` / `SourceDataKey` / `SOURCE_FIELD_KEYS`
 2. **创建 adapter**：`src/metadata/adapters/exampleAdapter.ts`，实现 `MetadataSourceAdapter<ExampleData>`
 3. **注册**：`src/metadata/sourceRegistry.ts` 的 `SOURCE_ADAPTERS` 中添加 `example: exampleAdapter`
-4. **API 层**：`src/api/example.ts` 实现 `fetchExampleById` / `fetchExampleByName`
+4. **API 层**：`src/metadata/api/example.ts` 实现 `fetchExampleById` / `fetchExampleByName`
 
 以上 4 步完成后，以下场景自动支持（无需额外修改）：
 - 混合搜索 / 单源搜索 / 批量导入
