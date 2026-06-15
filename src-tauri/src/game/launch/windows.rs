@@ -1,8 +1,8 @@
 use crate::database::dto::UpdateSettingsData;
 use crate::database::repository::games_repository::GamesRepository;
 use crate::database::repository::settings_repository::{DbSettingsExt, SettingsRepository};
+use crate::game::monitor::{monitor_game, stop_game_session};
 use crate::utils::command_ext::CommandGuiExt;
-use crate::utils::game_monitor::{monitor_game, stop_game_session};
 use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 use std::path::Path;

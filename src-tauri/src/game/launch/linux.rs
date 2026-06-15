@@ -1,5 +1,5 @@
 use crate::database::repository::games_repository::GamesRepository;
-use crate::utils::game_monitor::{monitor_game, stop_game_session};
+use crate::game::monitor::{monitor_game, stop_game_session};
 use log::{debug, info};
 use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
@@ -162,7 +162,7 @@ fn expand_path<R: Runtime>(app_handle: &AppHandle<R>, path: &str) -> String {
 /// # Returns
 /// bool - 如果 scope 已存在则返回 true，否则返回 false
 async fn check_scope_or_reset_failed(systemd_unit_name: &str) -> Result<bool, String> {
-    use crate::utils::game_monitor::{get_connection, get_manager_proxy};
+    use crate::game::monitor::{get_connection, get_manager_proxy};
     let proxy = get_manager_proxy().await.map_err(|e| {
         format!(
             "连接到 systemd 失败，无法检查或重置单元 {}: {}",

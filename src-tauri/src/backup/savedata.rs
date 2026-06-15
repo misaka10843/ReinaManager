@@ -5,7 +5,7 @@ use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
-use tauri::State;
+use tauri::{State, command};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct BackupInfo {
@@ -118,6 +118,85 @@ pub async fn restore_savedata_backup(
             .unwrap_or("<unknown>")
     );
     log::debug!("存档备份恢复目标路径: {}", target_path.display());
+
+    Ok(())
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MoveResult {
+    pub success: bool,
+    pub message: String,
+}
+
+/// 移动存档备份文件夹到新位置
+#[command]
+pub async fn move_backup_folder(old_path: String, new_path: String) -> Result<MoveResult, String> {
+    let old_backup_path = Path::new(&old_path);
+    let new_backup_path = Path::new(&new_path);
+
+    if !old_backup_path.exists() {
+        return Ok(MoveResult {
+            success: true,
+            message: "旧备份文件夹不存在，无需移动".to_string(),
+        });
+    }
+
+    if let Some(parent) = new_backup_path.parent()
+        && !parent.exists()
+        && let Err(e) = fs::create_dir_all(parent)
+    {
+        return Ok(MoveResult {
+            success: false,
+            message: format!("无法创建目标目录: {}", e),
+        });
+    }
+
+    if new_backup_path.exists() {
+        return Ok(MoveResult {
+            success: false,
+            message: "目标位置已存在备份文件夹，请手动处理".to_string(),
+        });
+    }
+
+    match fs::rename(old_backup_path, new_backup_path) {
+        Ok(_) => Ok(MoveResult {
+            success: true,
+            message: "备份文件夹移动成功".to_string(),
+        }),
+        Err(_) => match copy_dir_recursive(old_backup_path, new_backup_path) {
+            Ok(_) => match fs::remove_dir_all(old_backup_path) {
+                Ok(_) => Ok(MoveResult {
+                    success: true,
+                    message: "备份文件夹移动成功（通过复制）".to_string(),
+                }),
+                Err(e) => Ok(MoveResult {
+                    success: false,
+                    message: format!("文件夹已复制到新位置，但删除旧文件夹失败: {}", e),
+                }),
+            },
+            Err(e) => Ok(MoveResult {
+                success: false,
+                message: format!("移动文件夹失败: {}", e),
+            }),
+        },
+    }
+}
+
+fn copy_dir_recursive(src: &Path, dst: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    fs::create_dir_all(dst)?;
+
+    for entry in fs::read_dir(src)? {
+        let entry = entry?;
+        let ty = entry.file_type()?;
+        let src_path = entry.path();
+        let dst_path = dst.join(entry.file_name());
+
+        if ty.is_dir() {
+            copy_dir_recursive(&src_path, &dst_path)?;
+        } else {
+            fs::copy(&src_path, &dst_path)?;
+        }
+    }
 
     Ok(())
 }

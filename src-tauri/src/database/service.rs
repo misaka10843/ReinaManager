@@ -12,8 +12,7 @@ use crate::database::repository::{
     settings_repository::SettingsRepository,
 };
 use crate::entity::{games, savedata, user};
-use crate::utils::fs::delete_game_cover_dir;
-use crate::utils::game_cover::DownloadState;
+use crate::game::cover::{DownloadState, delete_game_cover_dir};
 
 // ==================== 游戏数据相关 ====================
 

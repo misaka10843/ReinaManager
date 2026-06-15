@@ -1,27 +1,29 @@
 mod backup;
 mod database;
 mod entity;
+mod game;
 mod utils;
 
-use backup::savedata::{create_savedata_backup, delete_savedata_backup, restore_savedata_backup};
-use database::db::{backup_database, import_database};
+use backup::covers::backup_custom_covers;
+use backup::database::{backup_database, import_database};
+use backup::savedata::{
+    create_savedata_backup, delete_savedata_backup, move_backup_folder, restore_savedata_backup,
+};
 use database::*;
+use game::cover::custom::{delete_game_covers, import_clipboard_image_to_temp};
+use game::cover::{delete_cloud_cache, register_game_cover_protocol};
+use game::launch::{launch_game, stop_game};
+use game::scan::scan_directory_for_games;
 use migration::MigratorTrait;
 use tauri::Manager;
 use tauri_plugin_log::{RotationStrategy, Target, TargetKind, TimezoneStrategy};
 use utils::{
     bgm_auth::{bgm_oauth_exchange_code, bgm_oauth_refresh_token, bgm_oauth_start_login},
-    fs::{
-        backup_custom_covers, copy_file, delete_file, delete_game_covers,
-        import_clipboard_image_to_temp, is_portable_mode, move_backup_folder, open_directory,
-    },
-    game_cover::{delete_cloud_cache, register_game_cover_protocol},
+    fs::{copy_file, delete_file, is_portable_mode, open_directory},
     http::update_proxy_config,
-    image_proxy::register_image_proxy_protocol,
-    launch::{launch_game, stop_game},
+    image::register_image_proxy_protocol,
     legacy_migration::run_startup_migrations,
     logs::{get_reina_log_level, set_reina_log_level},
-    scan::scan_directory_for_games,
 };
 
 const LOG_MAX_FILE_SIZE: u128 = 1_000_000;
