@@ -1,9 +1,9 @@
 import { convertFileSrc } from "@tauri-apps/api/core";
-import { type } from "@tauri-apps/plugin-os";
 import i18next from "i18next";
 import { join } from "pathe";
 import type { GameData } from "@/types";
 import { getAppDataDirPath } from "@/utils/fs/pathCache";
+import { buildTauriProtocolUrl } from "@/utils/tauriProtocol";
 
 export const getGameDisplayName = (game: GameData): string => {
 	if (game.custom_data?.name) {
@@ -37,15 +37,11 @@ export const getGameCover = (game: GameData): string => {
 	}
 
 	if (game.image) {
-		const base =
-			type() === "windows"
-				? "http://reina-cover.localhost"
-				: "reina-cover://localhost";
 		const params = new URLSearchParams({
 			url: game.image,
 			v: String(game.updated_at ?? ""),
 		});
-		return `${base}/${game.id}?${params.toString()}`;
+		return buildTauriProtocolUrl("reina-cover", String(game.id), params);
 	}
 
 	return "/images/default.png";

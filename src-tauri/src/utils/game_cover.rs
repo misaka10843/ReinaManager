@@ -7,10 +7,14 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use sea_orm::{DatabaseConnection, EntityTrait};
 use tauri::Manager;
 use tauri::command;
-use tauri::http::{Response, StatusCode};
+use tauri::http::StatusCode;
 use tokio::sync::{RwLock, Semaphore, watch};
 
 use crate::entity::prelude::Games;
+use crate::utils::image::{
+    content_type_for_extension, content_type_for_file, infer_image_extension, make_image_response,
+    make_status_response,
+};
 use reina_path::get_base_data_dir;
 
 const DEFAULT_COVER_EXTENSION: &str = "jpg";
@@ -96,17 +100,7 @@ impl Drop for DownloadCleanupGuard {
 }
 
 fn infer_cache_extension(cloud_url: &str) -> String {
-    let url_without_suffix = cloud_url.split(['?', '#']).next().unwrap_or(cloud_url);
-    let file_name = url_without_suffix
-        .rsplit('/')
-        .next()
-        .unwrap_or(url_without_suffix);
-
-    file_name
-        .rsplit_once('.')
-        .map(|(_, ext)| ext.trim().to_ascii_lowercase())
-        .filter(|ext| !ext.is_empty())
-        .unwrap_or_else(|| DEFAULT_COVER_EXTENSION.to_string())
+    infer_image_extension(cloud_url).unwrap_or_else(|| DEFAULT_COVER_EXTENSION.to_string())
 }
 
 fn cloud_cover_file_stem(game_id: u32) -> String {
@@ -165,28 +159,6 @@ async fn get_cached_cloud_cover(game_cover_dir: &Path, game_id: u32) -> Option<P
     }
 
     None
-}
-
-fn content_type_for_extension(ext: &str) -> &'static str {
-    match ext {
-        "jpg" | "jpeg" => "image/jpeg",
-        "png" => "image/png",
-        "gif" => "image/gif",
-        "bmp" => "image/bmp",
-        "webp" => "image/webp",
-        "avif" => "image/avif",
-        _ => "application/octet-stream",
-    }
-}
-
-fn content_type_for_file(path: &Path) -> &'static str {
-    content_type_for_extension(
-        path.extension()
-            .and_then(|ext| ext.to_str())
-            .map(|ext| ext.to_ascii_lowercase())
-            .as_deref()
-            .unwrap_or(""),
-    )
 }
 
 fn parse_game_id_from_uri(parsed: &url::Url) -> Option<u32> {
@@ -250,21 +222,8 @@ async fn ensure_game_cover_writable(
     }
 }
 
-fn make_ok_response(bytes: Vec<u8>, content_type: &'static str) -> Response<Vec<u8>> {
-    Response::builder()
-        .status(StatusCode::OK)
-        .header("Content-Type", content_type)
-        .header("Cache-Control", "max-age=31536000, immutable")
-        .header("Access-Control-Allow-Origin", "*")
-        .body(bytes)
-        .expect("failed to build ok response")
-}
-
-fn make_status_response(status: StatusCode) -> Response<Vec<u8>> {
-    Response::builder()
-        .status(status)
-        .body(Vec::new())
-        .expect("failed to build status response")
+fn make_ok_response(bytes: Vec<u8>, content_type: &str) -> tauri::http::Response<Vec<u8>> {
+    make_image_response(bytes, content_type, "max-age=31536000, immutable")
 }
 
 #[command]

@@ -17,6 +17,7 @@ use utils::{
     },
     game_cover::{delete_cloud_cache, register_game_cover_protocol},
     http::update_proxy_config,
+    image_proxy::register_image_proxy_protocol,
     launch::{launch_game, stop_game},
     legacy_migration::run_startup_migrations,
     logs::{get_reina_log_level, set_reina_log_level},
@@ -28,7 +29,9 @@ const LOG_KEEP_FILE_COUNT: usize = 5;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    register_game_cover_protocol(tauri::Builder::default().plugin(tauri_plugin_os::init()))
+    register_image_proxy_protocol(register_game_cover_protocol(
+        tauri::Builder::default().plugin(tauri_plugin_os::init()),
+    ))
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_window_state::Builder::new().build())
@@ -143,6 +146,10 @@ pub fn run() {
                     tauri_plugin_log::Builder::default()
                         .timezone_strategy(TimezoneStrategy::UseLocal)
                         .level(log::LevelFilter::Debug)
+                        .level_for("reqwest::connect", log::LevelFilter::Warn)
+                        .level_for("hyper", log::LevelFilter::Warn)
+                        .level_for("hyper_util", log::LevelFilter::Warn)
+                        .level_for("h2", log::LevelFilter::Warn)
                         .max_file_size(LOG_MAX_FILE_SIZE)
                         .rotation_strategy(RotationStrategy::KeepSome(LOG_KEEP_FILE_COUNT))
                         .targets([
@@ -160,6 +167,10 @@ pub fn run() {
                     tauri_plugin_log::Builder::default()
                         .timezone_strategy(TimezoneStrategy::UseLocal)
                         .level(log::LevelFilter::Debug)
+                        .level_for("reqwest::connect", log::LevelFilter::Warn)
+                        .level_for("hyper", log::LevelFilter::Warn)
+                        .level_for("hyper_util", log::LevelFilter::Warn)
+                        .level_for("h2", log::LevelFilter::Warn)
                         .max_file_size(LOG_MAX_FILE_SIZE)
                         .rotation_strategy(RotationStrategy::KeepSome(LOG_KEEP_FILE_COUNT))
                         .build(),
