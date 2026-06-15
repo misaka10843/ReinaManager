@@ -135,6 +135,7 @@ export const Settings: React.FC = () => {
 				content: (
 					<Box className="space-y-5">
 						<LanguageSelect />
+						<SettingsDivider />
 						<NsfwSettings />
 						<SettingsDivider />
 						<CardClickModeSettings />

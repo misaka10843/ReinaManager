@@ -270,6 +270,7 @@ export function useMetadataSearchFlow({
 				await onResolved(gameData);
 				closeMixedCandidates();
 			} catch (error) {
+				closeMixedCandidates();
 				onError(getUserErrorMessage(error, t));
 			} finally {
 				setIsSearching(false);

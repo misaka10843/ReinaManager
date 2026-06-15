@@ -418,7 +418,9 @@ export const useStore = create<AppState>()(
 
 				// 启动时同步代理设置到后端
 				const { proxyConfig } = get();
-				settingsService.updateProxyConfig(proxyConfig).catch(console.error);
+				await settingsService
+					.updateProxyConfig(proxyConfig)
+					.catch(console.error);
 			},
 		}),
 		{
