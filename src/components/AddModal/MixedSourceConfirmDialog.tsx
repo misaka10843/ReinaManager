@@ -10,6 +10,7 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import Typography from "@mui/material/Typography";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useProxyImageUrlResolver } from "@/hooks/common/useProxyImageUrlResolver";
 import { getRuntimeSourceAdapter, MIXED_SOURCE_KEYS } from "@/metadata";
 import type { SourceType } from "@/types";
 import type {
@@ -86,6 +87,7 @@ const MixedSourceConfirmDialog: React.FC<MixedSourceConfirmDialogProps> = ({
 	title,
 }) => {
 	const { t } = useTranslation();
+	const resolveImageUrl = useProxyImageUrlResolver();
 	const [selection, setSelection] = useState<MixedSourceSelection>({});
 	const [enabled, setEnabled] = useState<MixedSourceEnabled>({});
 	const [activeSource, setActiveSource] = useState<SourceType | null>(null);
@@ -168,7 +170,7 @@ const MixedSourceConfirmDialog: React.FC<MixedSourceConfirmDialogProps> = ({
 												{displayInfo.image ? (
 													<Box
 														component="img"
-														src={displayInfo.image}
+														src={resolveImageUrl(displayInfo.image)}
 														alt={displayInfo.name}
 														className={`${coverClassName} flex-shrink-0 rounded object-cover`}
 													/>

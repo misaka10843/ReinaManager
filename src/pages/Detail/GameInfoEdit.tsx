@@ -33,6 +33,7 @@ import { basename, dirname } from "pathe";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useImagePreview } from "@/hooks/common/useImagePreview";
+import { useProxyImageUrlResolver } from "@/hooks/common/useProxyImageUrlResolver";
 import { snackbar } from "@/providers/snackBar";
 import { fileService } from "@/services/invoke";
 import type {
@@ -157,6 +158,7 @@ function SourceCoverDialog({
 	onReset,
 	t,
 }: SourceCoverDialogProps) {
+	const resolveImageUrl = useProxyImageUrlResolver();
 	const statusText = currentSource
 		? t(
 				"pages.Detail.GameInfoEdit.sourceCoverSelected",
@@ -220,7 +222,7 @@ function SourceCoverDialog({
 								>
 									<Box
 										component="img"
-										src={option.image}
+										src={resolveImageUrl(option.image)}
 										alt={SOURCE_LABELS[option.source]}
 										className="block w-full aspect-[3/4] object-cover bg-gray-100"
 									/>
@@ -289,6 +291,7 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 	disabled = false,
 }) => {
 	const { t } = useTranslation();
+	const resolveImageUrl = useProxyImageUrlResolver();
 	const sourceImageMap = useMemo(
 		() => (rawGame ? getSourceImageMap(rawGame) : {}),
 		[rawGame],
@@ -568,14 +571,16 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 					selectedGame.image)
 				: selectedGame.image;
 
-		return getCoverPreviewUrl({
-			selectedGame,
-			shouldDeleteImage,
-			tempCoverUrl,
-			previewUrl,
-			sourceCoverImage,
-			sourceCoverChanged: hasSourceCoverChanged(),
-		});
+		return resolveImageUrl(
+			getCoverPreviewUrl({
+				selectedGame,
+				shouldDeleteImage,
+				tempCoverUrl,
+				previewUrl,
+				sourceCoverImage,
+				sourceCoverChanged: hasSourceCoverChanged(),
+			}),
+		);
 	};
 
 	// 处理删除自定义封面（标记删除，不立即提交）

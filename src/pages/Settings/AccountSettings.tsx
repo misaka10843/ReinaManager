@@ -22,6 +22,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { getBgmAvatarUrl } from "@/api/bgm";
+import { useProxyImageUrlResolver } from "@/hooks/common/useProxyImageUrlResolver";
 import { useBgmAuthController } from "@/hooks/features/useBgmAuthController";
 import {
 	useAllSettings,
@@ -91,6 +92,7 @@ const BgmAccountSummary = ({
 	onLogout,
 }: BgmAccountSummaryProps) => {
 	const { t } = useTranslation();
+	const resolveImageUrl = useProxyImageUrlResolver();
 	if (!bgmAuth?.access_token) return null;
 
 	const isOAuth = Boolean(bgmAuth.refresh_token);
@@ -117,7 +119,7 @@ const BgmAccountSummary = ({
 			{username ? (
 				<Stack direction="row" spacing={2} alignItems="flex-start">
 					<Avatar
-						src={getBgmAvatarUrl(username)}
+						src={resolveImageUrl(getBgmAvatarUrl(username))}
 						alt={displayName}
 						sx={{ width: 48, height: 48 }}
 					/>

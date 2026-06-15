@@ -17,6 +17,7 @@ import ListItemButton from "@mui/material/ListItemButton";
 import ListItemText from "@mui/material/ListItemText";
 import Typography from "@mui/material/Typography";
 import { useTranslation } from "react-i18next";
+import { useProxyImageUrlResolver } from "@/hooks/common/useProxyImageUrlResolver";
 import { getRuntimeSourceAdapter } from "@/metadata";
 import type { GameCandidateData, SourceType } from "@/types";
 
@@ -75,6 +76,7 @@ const GameSelectDialog: React.FC<GameSelectDialogProps> = ({
 	apiSource,
 }) => {
 	const { t } = useTranslation();
+	const resolveImageUrl = useProxyImageUrlResolver();
 
 	return (
 		<Dialog
@@ -113,7 +115,7 @@ const GameSelectDialog: React.FC<GameSelectDialogProps> = ({
 										{displayInfo.image ? (
 											<Box
 												component="img"
-												src={displayInfo.image}
+												src={resolveImageUrl(displayInfo.image)}
 												alt={displayInfo.name}
 												className="w-[60px] h-[80px] object-cover rounded mr-2"
 											/>

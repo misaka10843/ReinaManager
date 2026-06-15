@@ -25,6 +25,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import Typography from "@mui/material/Typography";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { useProxyImageUrlResolver } from "@/hooks/common/useProxyImageUrlResolver";
 import type { GameCandidateData } from "@/types";
 
 interface ViewGameSourceItem {
@@ -238,6 +239,7 @@ export const ViewGameBox: React.FC<ViewGameBoxProps> = ({
 	isLoading = false,
 }) => {
 	const { t } = useTranslation();
+	const resolveImageUrl = useProxyImageUrlResolver();
 	// 1. 定义配置项
 	const sourceConfigs = [
 		{
@@ -300,7 +302,7 @@ export const ViewGameBox: React.FC<ViewGameBoxProps> = ({
 							</Typography>
 							{source.image && (
 								<img
-									src={source.image}
+									src={resolveImageUrl(source.image)}
 									alt={source.alt}
 									className="w-full h-auto max-h-64 object-contain rounded"
 								/>

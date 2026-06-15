@@ -62,6 +62,7 @@ import { LaunchModal } from "@/components/LaunchModal";
 import { PathSettingsModal } from "@/components/PathSettingsModal";
 import { PlayStatusSubmenu } from "@/components/RightMenu/PlayStatusSubmenu";
 import { SelectedGameGuard } from "@/components/SelectedGameGuard";
+import { useProxyImageUrlResolver } from "@/hooks/common/useProxyImageUrlResolver";
 import { useGameStatusActions } from "@/hooks/features/games/useGameStatusActions";
 import { useDeleteGame, useUpdateGame } from "@/hooks/queries/useGames";
 import { useAllSettings } from "@/hooks/queries/useSettings";
@@ -84,18 +85,20 @@ const SOURCE_ICON_URLS: Record<SourceType, string> = {
 };
 
 const SourceLinkIcon = ({ source }: { source: SourceType }) => {
-	const [failed, setFailed] = useState(false);
+	const [failedUrl, setFailedUrl] = useState<string>();
+	const resolveImageUrl = useProxyImageUrlResolver();
+	const imageUrl = resolveImageUrl(SOURCE_ICON_URLS[source]);
 
-	if (failed) {
+	if (failedUrl === imageUrl) {
 		return <CloseIcon fontSize="small" sx={{ color: "error.main" }} />;
 	}
 
 	return (
 		<Box
 			component="img"
-			src={SOURCE_ICON_URLS[source]}
+			src={imageUrl}
 			alt={`${source} favicon`}
-			onError={() => setFailed(true)}
+			onError={() => setFailedUrl(imageUrl)}
 			sx={{
 				width: 16,
 				height: 16,

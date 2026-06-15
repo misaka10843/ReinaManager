@@ -23,6 +23,7 @@ import { marked } from "marked";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
+import { useProxyImageUrlResolver } from "@/hooks/common/useProxyImageUrlResolver";
 import { snackbar } from "@/providers/snackBar";
 import { fileService } from "@/services/invoke";
 import {
@@ -52,6 +53,7 @@ interface UpdateModalProps {
 
 const UpdateModal: React.FC<UpdateModalProps> = ({ open, onClose, update }) => {
 	const { t } = useTranslation();
+	const resolveImageUrl = useProxyImageUrlResolver();
 	const [isDownloading, setIsDownloading] = useState(false);
 	const [progress, setProgress] = useState<UpdateProgress | null>(null);
 	const [downloadError, setDownloadError] = useState<string>("");
@@ -83,6 +85,17 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ open, onClose, update }) => {
 		// 使用 html-react-parser 将 HTML 转为 React 元素，并自定义链接行为
 		return parse(htmlContent, {
 			replace(domNode) {
+				if (
+					domNode instanceof Element &&
+					domNode.type === "tag" &&
+					domNode.name === "img" &&
+					domNode.attribs?.src
+				) {
+					domNode.attribs.src =
+						resolveImageUrl(domNode.attribs.src) ?? domNode.attribs.src;
+					return domNode;
+				}
+
 				// 只处理 <a> 标签
 				if (
 					domNode instanceof Element &&
@@ -116,7 +129,7 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ open, onClose, update }) => {
 				return domNode;
 			},
 		});
-	}, [update?.body]);
+	}, [resolveImageUrl, update?.body]);
 
 	const handleUpdate = async () => {
 		if (!update) return;
