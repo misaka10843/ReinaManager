@@ -182,6 +182,13 @@ export const CloseBtnSettings = () => {
 					<FormControlLabel
 						value="hide"
 						control={<Radio color="primary" />}
+						disabled={!skipCloseRemind}
+						sx={{ alignItems: "flex-start" }}
+						className={
+							!skipCloseRemind
+								? "mb-2 opacity-50 transition-opacity duration-200"
+								: "mb-2"
+						}
 						label={
 							<Box>
 								<Typography variant="body2">
@@ -195,17 +202,17 @@ export const CloseBtnSettings = () => {
 								</Typography>
 							</Box>
 						}
-						disabled={!skipCloseRemind}
-						sx={{ alignItems: "flex-start" }}
-						className={
-							!skipCloseRemind
-								? "opacity-50 transition-opacity duration-200"
-								: ""
-						}
 					/>
 					<FormControlLabel
 						value="close"
 						control={<Radio color="primary" />}
+						disabled={!skipCloseRemind}
+						sx={{ alignItems: "flex-start" }}
+						className={
+							!skipCloseRemind
+								? "mb-1 opacity-50 transition-opacity duration-200"
+								: "mb-1"
+						}
 						label={
 							<Box>
 								<Typography variant="body2">
@@ -218,13 +225,6 @@ export const CloseBtnSettings = () => {
 									)}
 								</Typography>
 							</Box>
-						}
-						disabled={!skipCloseRemind}
-						sx={{ alignItems: "flex-start" }}
-						className={
-							!skipCloseRemind
-								? "opacity-50 transition-opacity duration-200"
-								: ""
 						}
 					/>
 				</RadioGroup>
@@ -256,6 +256,7 @@ export const TimeTrackingModeSettings = () => {
 					<FormControlLabel
 						value="playtime"
 						control={<Radio color="primary" />}
+						className="mb-2"
 						label={
 							<Box>
 								<Typography variant="body2">
@@ -272,11 +273,11 @@ export const TimeTrackingModeSettings = () => {
 								</Typography>
 							</Box>
 						}
-						className="mb-2"
 					/>
 					<FormControlLabel
 						value="elapsed"
 						control={<Radio color="primary" />}
+						className="mb-1"
 						label={
 							<Box>
 								<Typography variant="body2">
@@ -290,7 +291,6 @@ export const TimeTrackingModeSettings = () => {
 								</Typography>
 							</Box>
 						}
-						className="mb-1"
 					/>
 				</RadioGroup>
 			</Box>

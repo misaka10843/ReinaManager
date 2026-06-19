@@ -1,5 +1,5 @@
+import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import ClearIcon from "@mui/icons-material/Clear";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import LoginIcon from "@mui/icons-material/Login";
 import {
 	Accordion,
@@ -228,78 +228,83 @@ const BgmTokenLoginPanel = ({
 	const { t } = useTranslation();
 
 	return (
-		<Accordion className="w-full">
-			<AccordionSummary expandIcon={<ExpandMoreIcon />}>
-				<Typography variant="body2">
-					{t("pages.Settings.bgmTokenSettings.tokenLogin", "Access Token 登录")}
-				</Typography>
-			</AccordionSummary>
-			<AccordionDetails>
-				<Stack spacing={1.5}>
-					<TextField
-						autoComplete="off"
-						placeholder={t(
-							"pages.Settings.tokenPlaceholder",
-							"请填写你的BGM TOKEN",
+		<Box>
+			<Accordion>
+				<AccordionSummary expandIcon={<ArrowDropDownIcon />}>
+					<Typography variant="body2">
+						{t(
+							"pages.Settings.bgmTokenSettings.tokenLogin",
+							"Access Token 登录",
 						)}
-						value={inputToken}
-						onChange={(e) => onInputTokenChange(e.target.value)}
-						onBlur={onCommitToken}
-						onKeyDown={(event) => {
-							if (event.key === "Enter") {
-								event.preventDefault();
-								(event.target as HTMLInputElement).blur();
-							}
-						}}
-						variant="outlined"
-						size="small"
-						fullWidth
-						disabled={isSavingToken}
-						slotProps={{
-							htmlInput: {
-								style: {
-									WebkitTextSecurity: "disc",
-									textSecurity: "disc",
-								},
-							},
-							input: {
-								endAdornment: isSavingToken ? (
-									<InputAdornment position="end">
-										<CircularProgress size={18} />
-									</InputAdornment>
-								) : inputToken ? (
-									<InputAdornment position="end">
-										<IconButton
-											onClick={onClearToken}
-											onMouseDown={(event) => event.preventDefault()}
-											edge="end"
-											size="small"
-											aria-label={t(
-												"pages.Settings.bgmTokenSettings.clearToken",
-												"清除令牌",
-											)}
-										>
-											<ClearIcon />
-										</IconButton>
-									</InputAdornment>
-								) : null,
-							},
-						}}
-					/>
-					<Box>
-						<Button
+					</Typography>
+				</AccordionSummary>
+				<AccordionDetails>
+					<Stack spacing={1.5}>
+						<TextField
+							autoComplete="off"
+							placeholder={t(
+								"pages.Settings.tokenPlaceholder",
+								"请填写你的BGM TOKEN",
+							)}
+							value={inputToken}
+							onChange={(e) => onInputTokenChange(e.target.value)}
+							onBlur={onCommitToken}
+							onKeyDown={(event) => {
+								if (event.key === "Enter") {
+									event.preventDefault();
+									(event.target as HTMLInputElement).blur();
+								}
+							}}
 							variant="outlined"
-							color="primary"
-							onMouseDown={(event) => event.preventDefault()}
-							onClick={onOpenTokenPage}
 							size="small"
-						>
-							{t("pages.Settings.getToken", "获取令牌")}
-						</Button>
-					</Box>
-				</Stack>
-			</AccordionDetails>
-		</Accordion>
+							fullWidth
+							disabled={isSavingToken}
+							slotProps={{
+								htmlInput: {
+									style: {
+										WebkitTextSecurity: "disc",
+										textSecurity: "disc",
+									},
+								},
+								input: {
+									endAdornment: isSavingToken ? (
+										<InputAdornment position="end">
+											<CircularProgress size={18} />
+										</InputAdornment>
+									) : inputToken ? (
+										<InputAdornment position="end">
+											<IconButton
+												onClick={onClearToken}
+												onMouseDown={(event) => event.preventDefault()}
+												edge="end"
+												size="small"
+												aria-label={t(
+													"pages.Settings.bgmTokenSettings.clearToken",
+													"清除令牌",
+												)}
+											>
+												<ClearIcon />
+											</IconButton>
+										</InputAdornment>
+									) : null,
+								},
+							}}
+						/>
+						<Box>
+							<Button
+								variant="outlined"
+								color="primary"
+								onMouseDown={(event) => event.preventDefault()}
+								onClick={onOpenTokenPage}
+								size="small"
+							>
+								{t("pages.Settings.getToken", "获取令牌")}
+							</Button>
+						</Box>
+					</Stack>
+				</AccordionDetails>
+			</Accordion>
+		</Box>
 	);
 };
 

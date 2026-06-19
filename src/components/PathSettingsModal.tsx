@@ -19,6 +19,7 @@
  * - react-i18next
  */
 
+import FileOpenIcon from "@mui/icons-material/FileOpen";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -26,9 +27,11 @@ import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
+import IconButton from "@mui/material/IconButton";
+import InputAdornment from "@mui/material/InputAdornment";
 import InputLabel from "@mui/material/InputLabel";
-import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
+import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import { dirname } from "pathe";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -270,31 +273,26 @@ export const PathSettingsModal: React.FC<PathSettingsModalProps> = ({
 			</DialogTitle>
 			<DialogContent>
 				<Box className="space-y-6">
-					{/* 游戏存档备份路径设置 */}
 					{inSettingsPage && (
-						<Box>
-							<InputLabel className="font-semibold mb-4">
-								{t(
-									"components.PathSettingsModal.savePath.title",
-									"游戏存档备份路径",
-								)}
-							</InputLabel>
-							<Typography
-								variant="caption"
-								color="text.secondary"
-								className="block mb-3"
-							>
-								{t(
-									"components.PathSettingsModal.savePath.note",
-									"设置游戏存档的备份根目录路径，留空将使用默认路径",
-								)}
-							</Typography>
-							<Stack
-								direction="row"
-								spacing={2}
-								alignItems="center"
-								className="mb-2"
-							>
+						<>
+							{/* 游戏存档备份路径设置 */}
+							<Box>
+								<InputLabel className="font-semibold mb-4">
+									{t(
+										"components.PathSettingsModal.savePath.title",
+										"游戏存档备份路径",
+									)}
+								</InputLabel>
+								<Typography
+									variant="caption"
+									color="text.secondary"
+									className="block mb-3"
+								>
+									{t(
+										"components.PathSettingsModal.savePath.note",
+										"设置游戏存档的备份根目录路径，留空将使用默认路径",
+									)}
+								</Typography>
 								<TextField
 									label={t(
 										"components.PathSettingsModal.savePath.pathLabel",
@@ -305,29 +303,102 @@ export const PathSettingsModal: React.FC<PathSettingsModalProps> = ({
 									onChange={(e) => updateDraft("savePath", e.target.value)}
 									onBlur={() => void saveDraft(draft)}
 									onKeyDown={(event) => handlePathKeyDown(event, "savePath")}
-									className="min-w-60 flex-grow"
+									fullWidth
+									className="mb-2"
 									placeholder={t(
 										"components.PathSettingsModal.savePath.pathPlaceholder",
 										"留空使用默认路径",
 									)}
 									disabled={isLoading}
 									size="small"
+									InputProps={{
+										endAdornment: (
+											<InputAdornment position="end">
+												<Tooltip
+													title={t(
+														"components.PathSettingsModal.savePath.selectBtn",
+														"选择目录",
+													)}
+												>
+													<IconButton
+														onMouseDown={(event) => event.preventDefault()}
+														onClick={() => handleSelectFolder("savePath")}
+														disabled={isLoading}
+														edge="end"
+														size="small"
+													>
+														<FolderOpenIcon fontSize="small" />
+													</IconButton>
+												</Tooltip>
+											</InputAdornment>
+										),
+									}}
 								/>
-								<Button
-									variant="outlined"
-									onMouseDown={(event) => event.preventDefault()}
-									onClick={() => handleSelectFolder("savePath")}
-									disabled={isLoading}
-									startIcon={<FolderOpenIcon />}
-									size="small"
+							</Box>
+
+							{/* 数据库备份路径设置 */}
+							<Box>
+								<InputLabel className="font-semibold mb-4">
+									{t(
+										"components.PathSettingsModal.dbBackupPath.title",
+										"数据库备份路径",
+									)}
+								</InputLabel>
+								<Typography
+									variant="caption"
+									color="text.secondary"
+									className="block mb-3"
 								>
 									{t(
-										"components.PathSettingsModal.savePath.selectBtn",
-										"选择目录",
+										"components.PathSettingsModal.dbBackupPath.note",
+										"设置数据库备份文件的保存路径，留空将使用默认路径（AppData/data/backups），或便携模式下的程序目录",
 									)}
-								</Button>
-							</Stack>
-						</Box>
+								</Typography>
+								<TextField
+									label={t(
+										"components.PathSettingsModal.dbBackupPath.pathLabel",
+										"备份保存路径",
+									)}
+									variant="outlined"
+									value={draft.dbBackupPath}
+									onChange={(e) => updateDraft("dbBackupPath", e.target.value)}
+									onBlur={() => void saveDraft(draft)}
+									onKeyDown={(event) =>
+										handlePathKeyDown(event, "dbBackupPath")
+									}
+									fullWidth
+									className="mb-2"
+									placeholder={t(
+										"components.PathSettingsModal.dbBackupPath.pathPlaceholder",
+										"留空使用默认路径",
+									)}
+									disabled={isLoading}
+									size="small"
+									InputProps={{
+										endAdornment: (
+											<InputAdornment position="end">
+												<Tooltip
+													title={t(
+														"components.PathSettingsModal.dbBackupPath.selectBtn",
+														"选择目录",
+													)}
+												>
+													<IconButton
+														onMouseDown={(event) => event.preventDefault()}
+														onClick={() => handleSelectFolder("dbBackupPath")}
+														disabled={isLoading}
+														edge="end"
+														size="small"
+													>
+														<FolderOpenIcon fontSize="small" />
+													</IconButton>
+												</Tooltip>
+											</InputAdornment>
+										),
+									}}
+								/>
+							</Box>
+						</>
 					)}
 
 					{/* LE转区软件路径设置 */}
@@ -345,41 +416,47 @@ export const PathSettingsModal: React.FC<PathSettingsModalProps> = ({
 								"设置LE转区软件的可执行文件路径，用于游戏启动时的转区功能",
 							)}
 						</Typography>
-						<Stack
-							direction="row"
-							spacing={2}
-							alignItems="center"
+						<TextField
+							label={t(
+								"components.PathSettingsModal.lePath.pathLabel",
+								"LE转区软件路径",
+							)}
+							variant="outlined"
+							value={draft.lePath}
+							onChange={(e) => updateDraft("lePath", e.target.value)}
+							onBlur={() => void saveDraft(draft)}
+							onKeyDown={(event) => handlePathKeyDown(event, "lePath")}
+							fullWidth
 							className="mb-2"
-						>
-							<TextField
-								label={t(
-									"components.PathSettingsModal.lePath.pathLabel",
-									"LE转区软件路径",
-								)}
-								variant="outlined"
-								value={draft.lePath}
-								onChange={(e) => updateDraft("lePath", e.target.value)}
-								onBlur={() => void saveDraft(draft)}
-								onKeyDown={(event) => handlePathKeyDown(event, "lePath")}
-								className="min-w-60 flex-grow"
-								placeholder={t(
-									"components.PathSettingsModal.lePath.pathPlaceholder",
-									"选择LE转区软件的可执行文件",
-								)}
-								disabled={isLoading}
-								size="small"
-							/>
-							<Button
-								variant="outlined"
-								onMouseDown={(event) => event.preventDefault()}
-								onClick={() => handleSelectExeFile("lePath")}
-								disabled={isLoading}
-								startIcon={<FolderOpenIcon />}
-								size="small"
-							>
-								{t("components.PathSettingsModal.lePath.selectBtn", "选择文件")}
-							</Button>
-						</Stack>
+							placeholder={t(
+								"components.PathSettingsModal.lePath.pathPlaceholder",
+								"选择LE转区软件的可执行文件",
+							)}
+							disabled={isLoading}
+							size="small"
+							InputProps={{
+								endAdornment: (
+									<InputAdornment position="end">
+										<Tooltip
+											title={t(
+												"components.PathSettingsModal.lePath.selectBtn",
+												"选择文件",
+											)}
+										>
+											<IconButton
+												onMouseDown={(event) => event.preventDefault()}
+												onClick={() => handleSelectExeFile("lePath")}
+												disabled={isLoading}
+												edge="end"
+												size="small"
+											>
+												<FileOpenIcon fontSize="small" />
+											</IconButton>
+										</Tooltip>
+									</InputAdornment>
+								),
+							}}
+						/>
 					</Box>
 
 					{/* Magpie软件路径设置 */}
@@ -400,107 +477,48 @@ export const PathSettingsModal: React.FC<PathSettingsModalProps> = ({
 								"设置Magpie软件的可执行文件路径，用于游戏画面的放大功能",
 							)}
 						</Typography>
-						<Stack
-							direction="row"
-							spacing={2}
-							alignItems="center"
+						<TextField
+							label={t(
+								"components.PathSettingsModal.magpiePath.pathLabel",
+								"Magpie软件路径",
+							)}
+							variant="outlined"
+							value={draft.magpiePath}
+							onChange={(e) => updateDraft("magpiePath", e.target.value)}
+							onBlur={() => void saveDraft(draft)}
+							onKeyDown={(event) => handlePathKeyDown(event, "magpiePath")}
+							fullWidth
 							className="mb-2"
-						>
-							<TextField
-								label={t(
-									"components.PathSettingsModal.magpiePath.pathLabel",
-									"Magpie软件路径",
-								)}
-								variant="outlined"
-								value={draft.magpiePath}
-								onChange={(e) => updateDraft("magpiePath", e.target.value)}
-								onBlur={() => void saveDraft(draft)}
-								onKeyDown={(event) => handlePathKeyDown(event, "magpiePath")}
-								className="min-w-60 flex-grow"
-								placeholder={t(
-									"components.PathSettingsModal.magpiePath.pathPlaceholder",
-									"选择Magpie软件的可执行文件",
-								)}
-								disabled={isLoading}
-								size="small"
-							/>
-							<Button
-								variant="outlined"
-								onMouseDown={(event) => event.preventDefault()}
-								onClick={() => handleSelectExeFile("magpiePath")}
-								disabled={isLoading}
-								startIcon={<FolderOpenIcon />}
-								size="small"
-							>
-								{t(
-									"components.PathSettingsModal.magpiePath.selectBtn",
-									"选择文件",
-								)}
-							</Button>
-						</Stack>
+							placeholder={t(
+								"components.PathSettingsModal.magpiePath.pathPlaceholder",
+								"选择Magpie软件的可执行文件",
+							)}
+							disabled={isLoading}
+							size="small"
+							InputProps={{
+								endAdornment: (
+									<InputAdornment position="end">
+										<Tooltip
+											title={t(
+												"components.PathSettingsModal.magpiePath.selectBtn",
+												"选择文件",
+											)}
+										>
+											<IconButton
+												onMouseDown={(event) => event.preventDefault()}
+												onClick={() => handleSelectExeFile("magpiePath")}
+												disabled={isLoading}
+												edge="end"
+												size="small"
+											>
+												<FileOpenIcon fontSize="small" />
+											</IconButton>
+										</Tooltip>
+									</InputAdornment>
+								),
+							}}
+						/>
 					</Box>
-
-					{/* 数据库备份路径设置 */}
-					{inSettingsPage && (
-						<Box>
-							<InputLabel className="font-semibold mb-4">
-								{t(
-									"components.PathSettingsModal.dbBackupPath.title",
-									"数据库备份路径",
-								)}
-							</InputLabel>
-							<Typography
-								variant="caption"
-								color="text.secondary"
-								className="block mb-3"
-							>
-								{t(
-									"components.PathSettingsModal.dbBackupPath.note",
-									"设置数据库备份文件的保存路径，留空将使用默认路径（AppData/data/backups），或便携模式下的程序目录",
-								)}
-							</Typography>
-							<Stack
-								direction="row"
-								spacing={2}
-								alignItems="center"
-								className="mb-2"
-							>
-								<TextField
-									label={t(
-										"components.PathSettingsModal.dbBackupPath.pathLabel",
-										"备份保存路径",
-									)}
-									variant="outlined"
-									value={draft.dbBackupPath}
-									onChange={(e) => updateDraft("dbBackupPath", e.target.value)}
-									onBlur={() => void saveDraft(draft)}
-									onKeyDown={(event) =>
-										handlePathKeyDown(event, "dbBackupPath")
-									}
-									className="min-w-60 flex-grow"
-									placeholder={t(
-										"components.PathSettingsModal.dbBackupPath.pathPlaceholder",
-										"留空使用默认路径",
-									)}
-									disabled={isLoading}
-									size="small"
-								/>
-								<Button
-									variant="outlined"
-									onMouseDown={(event) => event.preventDefault()}
-									onClick={() => handleSelectFolder("dbBackupPath")}
-									disabled={isLoading}
-									startIcon={<FolderOpenIcon />}
-									size="small"
-								>
-									{t(
-										"components.PathSettingsModal.dbBackupPath.selectBtn",
-										"选择目录",
-									)}
-								</Button>
-							</Stack>
-						</Box>
-					)}
 				</Box>
 			</DialogContent>
 			<DialogActions>

@@ -4,17 +4,18 @@ import {
 	Accordion,
 	AccordionDetails,
 	AccordionSummary,
+	Box,
 	Checkbox,
 	CircularProgress,
 	FormControlLabel,
+	MenuItem,
+	Select,
+	Stack,
 	Switch,
 	Tooltip,
 	Typography,
 } from "@mui/material";
 import Button from "@mui/material/Button";
-import MenuItem from "@mui/material/MenuItem";
-import Select from "@mui/material/Select";
-import Stack from "@mui/material/Stack";
 import type React from "react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -149,27 +150,29 @@ export const DevSettings: React.FC = () => {
 	const { t } = useTranslation();
 
 	return (
-		<Accordion>
-			<AccordionSummary
-				expandIcon={<ArrowDropDownIcon />}
-				aria-controls="panel2-content"
-				id="panel2-header"
-			>
-				<Tooltip
-					title={t(
-						"pages.Settings.dev.tooltip",
-						"以下功能为实验性功能，请谨慎使用",
-					)}
+		<Box>
+			<Accordion>
+				<AccordionSummary
+					expandIcon={<ArrowDropDownIcon />}
+					aria-controls="panel2-content"
+					id="panel2-header"
 				>
-					<Typography component="span">
-						{t("pages.Settings.dev.title", "实验性功能")}
-					</Typography>
-				</Tooltip>
-			</AccordionSummary>
-			<AccordionDetails>
-				<BatchUpdateSettings />
-			</AccordionDetails>
-		</Accordion>
+					<Tooltip
+						title={t(
+							"pages.Settings.dev.tooltip",
+							"以下功能为实验性功能，请谨慎使用",
+						)}
+					>
+						<Typography component="span">
+							{t("pages.Settings.dev.title", "实验性功能")}
+						</Typography>
+					</Tooltip>
+				</AccordionSummary>
+				<AccordionDetails>
+					<BatchUpdateSettings />
+				</AccordionDetails>
+			</Accordion>
+		</Box>
 	);
 };
 
