@@ -405,6 +405,7 @@ export const Detail: React.FC = () => {
 								<Button
 									size="small"
 									variant="text"
+									color="inherit"
 									startIcon={<ClearIcon />}
 									disabled={selectedTags.length === 0}
 									onClick={handleClearSelectedTags}
@@ -421,10 +422,19 @@ export const Detail: React.FC = () => {
 											label={getTagDisplayName(tag, tagTranslation)}
 											size="small"
 											color={selectedTags.includes(tag) ? "primary" : "default"}
-											variant={
-												selectedTags.includes(tag) ? "filled" : "outlined"
-											}
+											variant="outlined"
 											onClick={() => handleTagClick(tag)}
+											sx={
+												selectedTags.includes(tag)
+													? {
+															backgroundColor: "primary.main",
+															color: "primary.contrastText",
+															"&&:hover": {
+																backgroundColor: "primary.dark",
+															},
+														}
+													: {}
+											}
 										/>
 									))}
 							</Stack>
@@ -495,9 +505,6 @@ export const Detail: React.FC = () => {
 						{tabIndex === 1 && (
 							/* 游戏简介 */
 							<Box>
-								<Typography variant="h6" fontWeight="bold" component="div">
-									{t("pages.Detail.introduction", "简介")}
-								</Typography>
 								<Typography
 									className="mt-1 whitespace-pre-line"
 									component="div"
