@@ -309,9 +309,6 @@ export const InfoBox: React.FC<InfoBoxProps> = ({ gameID }: InfoBoxProps) => {
 		<>
 			{/* 统计信息卡片 */}
 			<Box className="mb-4">
-				<Typography variant="h6" fontWeight="bold" gutterBottom component="div">
-					{t("pages.Detail.gameStats", "游戏统计")}
-				</Typography>
 				<div className="grid grid-cols-4 gap-4">
 					{statItems.map((item) => (
 						<Paper

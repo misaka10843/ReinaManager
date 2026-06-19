@@ -267,7 +267,7 @@ function LaunchModalContent({ selectedGame }: LaunchModalContentProps) {
 			<Button
 				startIcon={<StopIcon />}
 				onClick={handleStopGame}
-				className="rounded"
+				className="rounded-2xl"
 				color="error"
 				variant="outlined"
 			>
@@ -278,6 +278,7 @@ function LaunchModalContent({ selectedGame }: LaunchModalContentProps) {
 					variant="button"
 					component="span"
 					color="textDisabled"
+					sx={{ fontVariantNumeric: "tabular-nums" }}
 				>
 					{timeTrackingMode === "elapsed"
 						? elapsedInitialDisplay

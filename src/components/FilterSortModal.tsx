@@ -254,7 +254,8 @@ export const FilterSortModal: React.FC = () => {
 			>
 				<DialogTitle
 					id="filter-sort-dialog-title"
-					className="flex items-center gap-2 border-b border-black/8 px-5 py-4 dark:border-white/10"
+					className="flex items-center gap-2 px-5 py-4"
+					sx={{ borderBottom: 1, borderColor: "divider" }}
 				>
 					<FilterAlt fontSize="small" className="text-primary" />
 					<span className="text-base font-600">
@@ -263,7 +264,7 @@ export const FilterSortModal: React.FC = () => {
 				</DialogTitle>
 				<DialogContent className="overflow-x-auto px-5 py-4">
 					<div className="w-max min-w-88 flex flex-col gap-4">
-						<section className="rounded-2 border border-black/8 bg-black/[0.02] p-3 dark:border-white/10 dark:bg-white/[0.04]">
+						<Box component="section" className="rounded-2 p-1">
 							<div className="mb-2 flex items-center gap-2">
 								<FilterListIcon fontSize="small" className="text-primary" />
 								<Typography variant="body2" className="font-600">
@@ -408,9 +409,9 @@ export const FilterSortModal: React.FC = () => {
 									/>
 								</div>
 							</div>
-						</section>
+						</Box>
 
-						<section className="rounded-2 border border-black/8 bg-black/[0.02] p-3 dark:border-white/10 dark:bg-white/[0.04]">
+						<Box component="section" className="rounded-2 p-1">
 							<div className="mb-2 flex items-center gap-2">
 								<SortIcon fontSize="small" className="text-primary" />
 								<Typography variant="body2" className="font-600">
@@ -457,10 +458,13 @@ export const FilterSortModal: React.FC = () => {
 									</ToggleButton>
 								</ToggleButtonGroup>
 							</div>
-						</section>
+						</Box>
 					</div>
 				</DialogContent>
-				<DialogActions className="border-t border-black/8 px-5 py-3 dark:border-white/10">
+				<DialogActions
+					className="px-5 py-3"
+					sx={{ borderTop: 1, borderColor: "divider" }}
+				>
 					<Button onClick={handleClose}>
 						{t("components.FilterSortModal.cancel", "取消")}
 					</Button>

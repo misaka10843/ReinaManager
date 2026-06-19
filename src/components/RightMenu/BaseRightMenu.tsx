@@ -96,7 +96,7 @@ export const BaseRightMenu: React.FC<PropsWithChildren<BaseRightMenuProps>> = ({
 				elevation={8}
 				sx={{
 					minWidth: "200px",
-					borderRadius: 2,
+					borderRadius: 0.5,
 					textAlign: "left",
 				}}
 			>

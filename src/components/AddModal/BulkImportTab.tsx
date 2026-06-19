@@ -580,6 +580,7 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 					justifyContent="space-between"
 					alignItems={{ xs: "stretch", md: "center" }}
 					spacing={1.5}
+					className="pb-6 pt-4"
 				>
 					<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
 						<Button

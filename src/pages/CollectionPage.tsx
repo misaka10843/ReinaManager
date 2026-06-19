@@ -593,7 +593,7 @@ export const Collection: React.FC = () => {
 			{/* 面包屑导航或标题 */}
 			<Box
 				className="sticky top-0 z-10 pt-4 mb-2"
-				sx={{ backgroundColor: "background.paper", borderColor: "divider" }}
+				sx={{ backgroundColor: "background.default", borderColor: "divider" }}
 			>
 				{showLevel === "groups" ? (
 					<Typography variant="h4">

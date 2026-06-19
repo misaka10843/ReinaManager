@@ -214,17 +214,22 @@ function SourceCoverDialog({
 									key={option.source}
 									onClick={() => onSelect(option.source)}
 									disabled={disabled}
-									className={`block w-30 flex-none overflow-hidden rounded text-left border-2 ${
-										selected
-											? "border-[#1976d2] bg-[rgba(25,118,210,0.08)]"
-											: "border-solid border-gray-200 bg-white dark:bg-transparent"
-									}`}
+									className="block w-30 flex-none overflow-hidden rounded text-left"
+									sx={{
+										border: 2,
+										borderStyle: "solid",
+										borderColor: selected ? "primary.main" : "divider",
+										backgroundColor: selected
+											? "action.selected"
+											: "transparent",
+									}}
 								>
 									<Box
 										component="img"
 										src={resolveImageUrl(option.image)}
 										alt={SOURCE_LABELS[option.source]}
-										className="block w-full aspect-[3/4] object-cover bg-gray-100"
+										className="block w-full aspect-[3/4] object-cover"
+										sx={{ bgcolor: "action.hover" }}
 									/>
 									<Box className="p-1">
 										<Typography variant="caption" component="div">

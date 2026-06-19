@@ -17,6 +17,7 @@ import {
 	useSearchParams,
 } from "react-router-dom";
 import { saveScrollPosition } from "@/hooks/common/useScrollRestore";
+import { reinaTheme } from "@/providers/reinaTheme";
 
 interface ToolpadLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
 	href: string;
@@ -84,7 +85,7 @@ export const ToolpadReactRouterAppProvider = (props: AppProviderProps) => {
 		[pathname, searchParams, navigateImpl],
 	);
 
-	return <AppProvider router={router} {...props} />;
+	return <AppProvider router={router} theme={reinaTheme} {...props} />;
 };
 
 export default ToolpadReactRouterAppProvider;

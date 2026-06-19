@@ -19,6 +19,7 @@ import {
 	ListItemText,
 	MenuItem,
 	Paper,
+	Portal,
 } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -287,36 +288,39 @@ export const PlayStatusSubmenu: React.FC<PlayStatusSubmenuProps> = ({
 			</MenuItem>
 
 			{/* 二级菜单 - 使用自定义 div + Paper 避免 MUI Menu 的焦点问题 */}
-			<div
-				role="menu"
-				ref={submenuRef}
-				style={{
-					position: "fixed",
-					top: positionInfo.top,
-					left: positionInfo.left,
-					display: submenuOpen ? "block" : "none",
-				}}
-			>
-				<Paper
-					elevation={8}
-					sx={{
-						minWidth: 120,
-						borderRadius: 2,
-						py: 0.5,
+			<Portal>
+				<div
+					role="menu"
+					ref={submenuRef}
+					style={{
+						position: "fixed",
+						top: positionInfo.top,
+						left: positionInfo.left,
+						display: submenuOpen ? "block" : "none",
+						zIndex: 9999,
 					}}
 				>
-					{ALL_PLAY_STATUSES.map((status) => (
-						<MenuItem
-							key={status}
-							onClick={() => handleStatusClick(status)}
-							selected={currentStatus === status}
-						>
-							<ListItemIcon>{getPlayStatusIcon(status)}</ListItemIcon>
-							<ListItemText primary={t(PLAY_STATUS_I18N_KEYS[status])} />
-						</MenuItem>
-					))}
-				</Paper>
-			</div>
+					<Paper
+						elevation={8}
+						sx={{
+							minWidth: 120,
+							borderRadius: "8px",
+							py: 0.5,
+						}}
+					>
+						{ALL_PLAY_STATUSES.map((status) => (
+							<MenuItem
+								key={status}
+								onClick={() => handleStatusClick(status)}
+								selected={currentStatus === status}
+							>
+								<ListItemIcon>{getPlayStatusIcon(status)}</ListItemIcon>
+								<ListItemText primary={t(PLAY_STATUS_I18N_KEYS[status])} />
+							</MenuItem>
+						))}
+					</Paper>
+				</div>
+			</Portal>
 		</Box>
 	);
 };

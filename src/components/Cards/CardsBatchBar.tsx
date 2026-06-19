@@ -145,6 +145,7 @@ export const CardsBatchBar: React.FC<CardsBatchBarProps> = ({
 								startIcon={<ClearIcon />}
 								onClick={onSelectionClear}
 								disabled={selectedCount === 0 || isMutating}
+								color="inherit"
 							>
 								{t("components.Toolbar.Batch.clearSelection", "清空")}
 							</Button>

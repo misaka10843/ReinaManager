@@ -327,7 +327,7 @@ export const Home: React.FC = () => {
 						key={card.title}
 						className="col-span-12 sm:col-span-6 md:col-span-4 lg:col-span-2"
 					>
-						<Card className="h-full shadow-md hover:shadow-lg transition-shadow">
+						<Card className="h-full flex flex-col group transition-transform hover:-translate-y-1">
 							<CardContent className="relative flex flex-col items-center text-center">
 								{"action" in card ? card.action : null}
 								{card.icon}
@@ -354,7 +354,7 @@ export const Home: React.FC = () => {
 
 			{/* 详细信息卡片 */}
 			{isLibraryEmpty ? (
-				<Card className="shadow-md">
+				<Card>
 					<CardContent className="min-h-[220px] flex flex-col items-center justify-center gap-4 text-center">
 						<RepositoryIcon className="text-amber-500 text-5xl" />
 						<Typography variant="h6" className="font-bold">
@@ -373,7 +373,7 @@ export const Home: React.FC = () => {
 				<Box className="grid grid-cols-12 gap-6 flex-1 min-h-0 auto-rows-fr">
 					{/* 游戏仓库 */}
 					<Box className="col-span-12 md:col-span-6 lg:col-span-3 min-h-0">
-						<Card className="h-full shadow-md">
+						<Card className="h-full">
 							<CardContent className="h-full min-h-0 flex flex-col">
 								<Box
 									component={Link}
