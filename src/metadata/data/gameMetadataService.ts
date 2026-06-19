@@ -502,7 +502,7 @@ class GameMetadataService {
 
 			const promises: Promise<GameCandidateData | null>[] = [];
 
-			if (bgm_id && bgmToken) {
+			if (bgm_id) {
 				promises.push(this.getGameById(bgm_id, "bgm", bgmToken));
 			} else {
 				promises.push(Promise.resolve(null));
