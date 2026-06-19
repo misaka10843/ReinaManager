@@ -1,3 +1,65 @@
+## [0.23.0](https://github.com/huoshen80/ReinaManager/compare/v0.22.1...v0.23.0) (2026-06-19)
+
+<details>
+<summary>查看中文版本</summary>
+
+### ✨ 新功能
+
+- *(updater)* 为静默更新检查失败添加 snackbar 警告 ([a8c7392](https://github.com/huoshen80/ReinaManager/commit/a8c7392de205f95a4c128c75962e63d5e9d73fa3))
+- 添加代理设置并让 BGM token 变为可选 (#60) ([43206c2](https://github.com/huoshen80/ReinaManager/commit/43206c2c9f41d7b1001ba5609d4cd7178df6527b))
+- *(image)* 添加图片代理协议和工具函数 ([1209c57](https://github.com/huoshen80/ReinaManager/commit/1209c5779c9fa91562b9490f878445e71e000dad))
+- *(ui)* 将图片代理接入组件 ([1ec73ec](https://github.com/huoshen80/ReinaManager/commit/1ec73ec06baf7fdcdbd2e682c6dfb70763bbff31))
+- *(theme)* 全局 MUI 样式、滚动条和头像修复 ([153e8ee](https://github.com/huoshen80/ReinaManager/commit/153e8ee16d49d2fc7910d794634c5f354aa4a69e))
+
+### 🐛 Bug 修复
+
+- 改进错误处理和异步初始化 ([4033782](https://github.com/huoshen80/ReinaManager/commit/4033782718234c578feeb80e787d683a15d8f374))
+- *(ui)* 修复 DetailPage chip 抖动和悬停可见性 ([1bc6362](https://github.com/huoshen80/ReinaManager/commit/1bc6362076d43e86691146ed602c56f124006aa1))
+- *(metadata)* 允许匿名 BGM 混合更新 ([4513b6b](https://github.com/huoshen80/ReinaManager/commit/4513b6b65427f2411ae7471514aa2a6de9d6936e))
+
+### 📚 文档
+
+- 更新文档中的文件路径 [skip ci] ([4d1d744](https://github.com/huoshen80/ReinaManager/commit/4d1d744ab41498279e80f80e60009dfba98e60c0))
+
+### 🚜 重构
+
+- 集中管理 noResultsMessage，并使用 settingsService 处理代理 ([a4c457f](https://github.com/huoshen80/ReinaManager/commit/a4c457f02abe55ed626b2644fdf68505963a6931))
+- 引入 SettingsGroup/SettingsItem 布局组件，并为文本字段添加自动保存 ([0af8551](https://github.com/huoshen80/ReinaManager/commit/0af855170fcdbb92cbef1f5109d38549dc8a0b37))
+- 重组项目文件结构 ([d168379](https://github.com/huoshen80/ReinaManager/commit/d16837992a9ab405998feac6b969d96843e7ab1b))
+- *(backend)* 重组 utils 和 game 模块 ([1809849](https://github.com/huoshen80/ReinaManager/commit/180984954d378af036ae2a0c7bb34fd687d20211))
+- *(ui)* 重新设计设置布局和路径输入 ([ee9a1a0](https://github.com/huoshen80/ReinaManager/commit/ee9a1a0591f0bcab0c06da8f737ddafe38a12b0d))
+- *(ui)* 用渐变遮罩和排版重新设计游戏卡片 UI ([6db71fb](https://github.com/huoshen80/ReinaManager/commit/6db71fb78e73fa0b5bccfc508df07480723dee3f))
+
+</details>
+
+### ✨ Features
+
+- *(updater)* Add snackbar warning for silent update check failure ([a8c7392](https://github.com/huoshen80/ReinaManager/commit/a8c7392de205f95a4c128c75962e63d5e9d73fa3))
+- Add proxy settings and make BGM token optional (#60) ([43206c2](https://github.com/huoshen80/ReinaManager/commit/43206c2c9f41d7b1001ba5609d4cd7178df6527b))
+- *(image)* Add image proxy protocol and utilities ([1209c57](https://github.com/huoshen80/ReinaManager/commit/1209c5779c9fa91562b9490f878445e71e000dad))
+- *(ui)* Integrate image proxy into components ([1ec73ec](https://github.com/huoshen80/ReinaManager/commit/1ec73ec06baf7fdcdbd2e682c6dfb70763bbff31))
+- *(theme)* Global MUI styling, scrollbars, and avatar fixes ([153e8ee](https://github.com/huoshen80/ReinaManager/commit/153e8ee16d49d2fc7910d794634c5f354aa4a69e))
+
+### 🐛 Bug Fixes
+
+- Improve error handling and async initialization ([4033782](https://github.com/huoshen80/ReinaManager/commit/4033782718234c578feeb80e787d683a15d8f374))
+- *(ui)* Resolve DetailPage chip jitter and hover visibility ([1bc6362](https://github.com/huoshen80/ReinaManager/commit/1bc6362076d43e86691146ed602c56f124006aa1))
+- *(metadata)* Allow anonymous BGM mixed updates ([4513b6b](https://github.com/huoshen80/ReinaManager/commit/4513b6b65427f2411ae7471514aa2a6de9d6936e))
+
+### 📚 Documentation
+
+- Update file paths in documentation [skip ci] ([4d1d744](https://github.com/huoshen80/ReinaManager/commit/4d1d744ab41498279e80f80e60009dfba98e60c0))
+
+### 🚜 Refactor
+
+- Centralize noResultsMessage and use settingsService for proxy ([a4c457f](https://github.com/huoshen80/ReinaManager/commit/a4c457f02abe55ed626b2644fdf68505963a6931))
+- Introduce SettingsGroup/SettingsItem layout components and auto-save for text fields ([0af8551](https://github.com/huoshen80/ReinaManager/commit/0af855170fcdbb92cbef1f5109d38549dc8a0b37))
+- Reorganize project file structure ([d168379](https://github.com/huoshen80/ReinaManager/commit/d16837992a9ab405998feac6b969d96843e7ab1b))
+- *(backend)* Reorganize utils and game modules ([1809849](https://github.com/huoshen80/ReinaManager/commit/180984954d378af036ae2a0c7bb34fd687d20211))
+- *(ui)* Redesign settings layout and path inputs ([ee9a1a0](https://github.com/huoshen80/ReinaManager/commit/ee9a1a0591f0bcab0c06da8f737ddafe38a12b0d))
+- *(ui)* Redesign game card UI with gradient overlay and typography ([6db71fb](https://github.com/huoshen80/ReinaManager/commit/6db71fb78e73fa0b5bccfc508df07480723dee3f))
+
+
 ## [0.22.1](https://github.com/huoshen80/ReinaManager/compare/v0.22.0...v0.22.1) (2026-06-08)
 
 <details>

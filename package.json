@@ -1,7 +1,7 @@
 {
 	"name": "reinamanager",
 	"private": true,
-	"version": "0.22.1",
+	"version": "0.23.0",
 	"type": "module",
 	"scripts": {
 		"dev": "vite",
@@ -46,8 +46,8 @@
 		"@tauri-apps/plugin-updater": "~2.10.1",
 		"@tauri-apps/plugin-window-state": "=2.2.3",
 		"@toolpad/core": "^0.16.0",
-		"@typescript/native-preview": "7.0.0-dev.20260521.1",
-		"fuse.js": "^7.4.1",
+		"@typescript/native-preview": "7.0.0-dev.20260616.1",
+		"fuse.js": "^7.4.2",
 		"html-react-parser": "^5.2.17",
 		"i18next": "^26.3.1",
 		"i18next-browser-languagedetector": "^8.2.1",
@@ -64,7 +64,7 @@
 		"zustand": "^5.0.14"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^2.4.16",
+		"@biomejs/biome": "^2.5.0",
 		"@tauri-apps/cli": "~2.11.2",
 		"@types/node": "^24.12.4",
 		"@types/react": "^18.3.29",
@@ -73,8 +73,8 @@
 		"git-cliff": "^2.13.1",
 		"i18next-cli": "=1.58.3",
 		"typescript": "^6.0.3",
-		"unocss": "^66.7.0",
+		"unocss": "^66.7.2",
 		"vite": "^8.0.16"
 	},
-	"packageManager": "pnpm@11.5.2+sha512.71c631e382066efc25625d5cf029075de07b61b37f6e27350fbd84b1bda5864c8c1967adc280776b45c30a715c0359a3be08fef42d5bb09e2b99029979692916"
+	"packageManager": "pnpm@11.8.0+sha512.c1f5e7c4cb241c8f174b743851d82f42b802324afc8b0f116b96adb15aa06664948dde36960a3ba1079ba5b4b29dd0140135b94b5b5f5263592249d68e555f26"
 }
