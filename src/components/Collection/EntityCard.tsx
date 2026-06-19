@@ -133,7 +133,7 @@ export const EntityCard = memo<EntityCardProps>(
 								position: "absolute",
 								top: 8,
 								right: 8,
-								bgcolor: "background.paper",
+								zIndex: 2,
 								"&:hover": {
 									bgcolor: "error.light",
 									color: "error.contrastText",

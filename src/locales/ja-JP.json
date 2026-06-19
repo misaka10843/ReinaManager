@@ -201,7 +201,6 @@
 				"selectBtn": "ファイルを選択",
 				"title": "Magpieソフトウェアパス"
 			},
-			"saveBtn": "保存",
 			"saveError": "パス設定の保存に失敗しました：{{error}}",
 			"savePath": {
 				"moveBackupWarning": "バックアップパスは保存されましたが、古いバックアップの移行に失敗しました：{{error}}",
@@ -211,8 +210,6 @@
 				"selectBtn": "ディレクトリを選択",
 				"title": "ゲームセーブバックアップパス"
 			},
-			"saveSuccess": "パス設定を保存しました",
-			"saving": "保存中...",
 			"selectFileError": "ファイルの選択に失敗しました：{{error}}",
 			"selectFolderError": "ディレクトリの選択に失敗しました：{{error}}",
 			"title": "パス設定"
@@ -591,7 +588,6 @@
 				"reloginRequired": "Bangumi のログインが無効になりました。再度ログインしてください。",
 				"saveErrorWithDetail": "BGM Token の保存に失敗しました: {{error}}",
 				"saveSuccess": "BGM Token の保存が成功しました",
-				"saveToken": "保存",
 				"tokenExpiresAt": "Token 有効期限: {{date}}",
 				"tokenExpiryUnknown": "Token 有効期限不明",
 				"tokenLogin": "Access Token ログイン",
@@ -663,7 +659,6 @@
 				"helperText": "例: wine, /usr/bin/wine, ~/scripts/run-game.sh",
 				"note": "注意: この設定を変更した後は、ゲームを再起動すると有効になります。",
 				"resetTooltip": "デフォルト値 (wine) にリセット",
-				"saveBtn": "保存",
 				"saveError": "保存に失敗しました",
 				"saveSuccess": "Linux 起動コマンドを保存しました",
 				"title": "Linux 起動コマンド"
@@ -689,7 +684,7 @@
 				"title": "NSFWセット"
 			},
 			"pathSettings": {
-				"note": "ゲームセーブバックアップ、LE地域ソフトウェア、Magpieソフトウェア、データベースバックアップなどのパスを設定します",
+				"note": "ゲームセーブバックアップ、データベースバックアップ、LE地域ソフトウェア、Magpieソフトウェアなどのパスを設定します",
 				"openModal": "パス設定を開く",
 				"title": "パス設定"
 			},
@@ -699,7 +694,6 @@
 				"title": "ネットワークプロキシ設定",
 				"url": "プロキシサーバーアドレス"
 			},
-			"saveBtn": "保存",
 			"sections": {
 				"about": "について",
 				"aboutDescription": "バージョン、更新状態、ドキュメント、フィードバックリンクを確認します。",

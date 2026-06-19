@@ -201,7 +201,6 @@
 				"selectBtn": "選擇文件",
 				"title": "Magpie軟體路徑"
 			},
-			"saveBtn": "儲存",
 			"saveError": "儲存路徑設定失敗：{{error}}",
 			"savePath": {
 				"moveBackupWarning": "備份路徑已儲存，但遷移舊備份失敗：{{error}}",
@@ -211,8 +210,6 @@
 				"selectBtn": "選擇目錄",
 				"title": "遊戲存檔備份路徑"
 			},
-			"saveSuccess": "路徑設定已儲存",
-			"saving": "保存中...",
 			"selectFileError": "選擇文件失敗：{{error}}",
 			"selectFolderError": "選擇目錄失敗：{{error}}",
 			"title": "路徑設置"
@@ -591,7 +588,6 @@
 				"reloginRequired": "Bangumi 登入已失效，請重新登入。",
 				"saveErrorWithDetail": "BGM Token 儲存失敗: {{error}}",
 				"saveSuccess": "BGM Token 儲存成功",
-				"saveToken": "儲存",
 				"tokenExpiresAt": "Token 有效期至: {{date}}",
 				"tokenExpiryUnknown": "Token 有效期未知",
 				"tokenLogin": "Access Token 登入",
@@ -663,7 +659,6 @@
 				"helperText": "例如: wine, /usr/bin/wine, ~/scripts/run-game.sh",
 				"note": "注意：變更此設定後，需要重新啟動遊戲才能生效。",
 				"resetTooltip": "重設為預設值 (wine)",
-				"saveBtn": "儲存",
 				"saveError": "儲存失敗",
 				"saveSuccess": "Linux 啟動命令已儲存",
 				"title": "Linux 啟動命令"
@@ -689,7 +684,7 @@
 				"title": "NSFW設定"
 			},
 			"pathSettings": {
-				"note": "配置遊戲存檔備份、LE轉區軟體、Magpie軟體、數據庫備份等路徑",
+				"note": "配置遊戲存檔備份、數據庫備份、LE轉區軟體、Magpie軟體等路徑",
 				"openModal": "打開路徑設置",
 				"title": "路徑設置"
 			},
@@ -699,7 +694,6 @@
 				"title": "網路代理設定",
 				"url": "代理伺服器位址"
 			},
-			"saveBtn": "儲存",
 			"sections": {
 				"about": "關於",
 				"aboutDescription": "查看版本、更新狀態、文件與回饋入口。",

@@ -201,7 +201,6 @@
 				"selectBtn": "选择文件",
 				"title": "Magpie软件路径"
 			},
-			"saveBtn": "保存",
 			"saveError": "保存路径设置失败：{{error}}",
 			"savePath": {
 				"moveBackupWarning": "备份路径已保存，但迁移旧备份失败：{{error}}",
@@ -211,8 +210,6 @@
 				"selectBtn": "选择目录",
 				"title": "游戏存档备份路径"
 			},
-			"saveSuccess": "路径设置已保存",
-			"saving": "保存中...",
 			"selectFileError": "选择文件失败：{{error}}",
 			"selectFolderError": "选择目录失败：{{error}}",
 			"title": "路径设置"
@@ -591,7 +588,6 @@
 				"reloginRequired": "Bangumi 登录已失效，请重新登录。",
 				"saveErrorWithDetail": "BGM Token 保存失败: {{error}}",
 				"saveSuccess": "BGM Token 保存成功",
-				"saveToken": "保存",
 				"tokenExpiresAt": "Token 有效期至: {{date}}",
 				"tokenExpiryUnknown": "Token 有效期未知",
 				"tokenLogin": "Access Token 登录",
@@ -663,7 +659,6 @@
 				"helperText": "例如: wine, /usr/bin/wine, ~/scripts/run-game.sh",
 				"note": "注意：更改此设置后，需要重新启动游戏才能生效。",
 				"resetTooltip": "重置为默认值 (wine)",
-				"saveBtn": "保存",
 				"saveError": "保存失败",
 				"saveSuccess": "Linux 启动命令已保存",
 				"title": "Linux 启动命令"
@@ -689,7 +684,7 @@
 				"title": "NSFW 设置"
 			},
 			"pathSettings": {
-				"note": "配置游戏存档备份、LE转区软件、Magpie软件、数据库备份等路径",
+				"note": "配置游戏存档备份、数据库备份、LE转区软件、Magpie软件等路径",
 				"openModal": "打开路径设置",
 				"title": "路径设置"
 			},
@@ -699,7 +694,6 @@
 				"title": "网络代理设置",
 				"url": "代理服务器地址"
 			},
-			"saveBtn": "保存",
 			"sections": {
 				"about": "关于",
 				"aboutDescription": "查看版本、更新状态、文档和反馈入口。",

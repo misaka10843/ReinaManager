@@ -3,9 +3,9 @@ import RemoveCircleIcon from "@mui/icons-material/RemoveCircle";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
 import CardActionArea from "@mui/material/CardActionArea";
-import CardMedia from "@mui/material/CardMedia";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
+import Typography from "@mui/material/Typography";
 import { forwardRef, memo } from "react";
 import { useStore } from "@/store/appStore";
 import { getGameCover, getGameNsfwStatus } from "@/utils/game";
@@ -90,26 +90,50 @@ export const CardItem = memo(
 						{...handlers}
 						className={`
 							duration-100
-							hover:shadow-lg hover:scale-105
+							hover:shadow-lg
 							active:shadow-sm active:scale-95
 							${isOverlay ? "shadow-lg scale-105" : ""}
 						`}
 					>
-						<CardMedia
-							component="img"
-							className="h-auto aspect-[3/4] object-cover"
-							image={coverImage}
-							alt="Card Image"
-							draggable="false"
-							loading="lazy"
-						/>
-						<div
-							className={`flex items-center justify-center h-8 px-1 w-full ${isActive ? "font-semibold text-[--mui-palette-primary-main]" : ""}`}
-						>
-							<span className="text-base truncate max-w-full">
-								{displayName}
-							</span>
-						</div>
+						<Box className="relative aspect-[3/4] overflow-hidden">
+							<Box
+								component="img"
+								src={coverImage}
+								alt={displayName}
+								draggable="false"
+								loading="lazy"
+								className="h-full w-full object-cover"
+								sx={{
+									filter: "saturate(0.92) contrast(0.98)",
+								}}
+							/>
+							{/* 未来悬浮文本（例如游玩时间、日期等）的占位符 */}
+							{/*<Box
+								className="absolute inset-x-0 bottom-0 px-2.5 pt-6 pb-1.5"
+								sx={{
+									background:
+										"linear-gradient(to bottom, transparent 0%, rgba(15,23,32,0.3) 50%, rgba(15,23,32,0.85) 100%)",
+									color: "white",
+								}}
+							/>*/}
+						</Box>
+						<Box className="px-3 py-2.5 text-center">
+							<Tooltip title={displayName} placement="top" arrow>
+								<Typography
+									variant="subtitle2"
+									sx={{
+										fontWeight: 700,
+										color: isActive ? "primary.main" : "text.primary",
+										overflow: "hidden",
+										textOverflow: "ellipsis",
+										whiteSpace: "nowrap",
+										textAlign: "center",
+									}}
+								>
+									{displayName}
+								</Typography>
+							</Tooltip>
+						</Box>
 					</CardActionArea>
 				</Card>
 			);

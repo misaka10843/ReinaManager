@@ -208,7 +208,6 @@
 				"selectBtn": "Select File",
 				"title": "Magpie Software Path"
 			},
-			"saveBtn": "Save",
 			"saveError": "Failed to save path settings: {{error}}",
 			"savePath": {
 				"moveBackupWarning": "Backup path saved, but failed to migrate old backups: {{error}}",
@@ -218,8 +217,6 @@
 				"selectBtn": "Select Directory",
 				"title": "Game Save Backup Path"
 			},
-			"saveSuccess": "Path settings saved",
-			"saving": "Saving...",
 			"selectFileError": "Failed to select file: {{error}}",
 			"selectFolderError": "Failed to select directory: {{error}}",
 			"title": "Path Settings"
@@ -604,7 +601,6 @@
 				"reloginRequired": "Bangumi login has expired. Please log in again.",
 				"saveErrorWithDetail": "Failed to save BGM Token: {{error}}",
 				"saveSuccess": "BGM Token saved successfully",
-				"saveToken": "Save",
 				"tokenExpiresAt": "Token expires at: {{date}}",
 				"tokenExpiryUnknown": "Token expiry unknown",
 				"tokenLogin": "Access Token login",
@@ -676,7 +672,6 @@
 				"helperText": "For example: wine, /usr/bin/wine, ~/scripts/run-game.sh",
 				"note": "Note: You need to restart the game for this setting to take effect.",
 				"resetTooltip": "Reset to default (wine)",
-				"saveBtn": "Save",
 				"saveError": "Save failed",
 				"saveSuccess": "Linux launch command saved",
 				"title": "Linux Launch Command"
@@ -702,7 +697,7 @@
 				"title": "NSFW Settings"
 			},
 			"pathSettings": {
-				"note": "Configure paths for game save backups, LE region software, Magpie software, database backups, etc.",
+				"note": "Configure paths for game save backups, database backups, LE region software, Magpie software, etc.",
 				"openModal": "Open Path Settings",
 				"title": "Path Settings"
 			},
@@ -712,7 +707,6 @@
 				"title": "Network Proxy Settings",
 				"url": "Proxy Server Address"
 			},
-			"saveBtn": "Save",
 			"sections": {
 				"about": "About",
 				"aboutDescription": "View version, update status, documentation, and feedback links.",
