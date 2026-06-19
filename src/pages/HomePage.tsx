@@ -327,7 +327,7 @@ export const Home: React.FC = () => {
 						key={card.title}
 						className="col-span-12 sm:col-span-6 md:col-span-4 lg:col-span-2"
 					>
-						<Card className="h-full flex flex-col group transition-transform hover:-translate-y-1">
+						<Card className="h-full flex flex-col group transition-transform">
 							<CardContent className="relative flex flex-col items-center text-center">
 								{"action" in card ? card.action : null}
 								{card.icon}

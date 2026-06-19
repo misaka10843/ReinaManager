@@ -7,7 +7,6 @@ import TodayIcon from "@mui/icons-material/Today";
 import {
 	Box,
 	IconButton,
-	Paper,
 	ToggleButton,
 	ToggleButtonGroup,
 	Typography,
@@ -311,13 +310,7 @@ export const InfoBox: React.FC<InfoBoxProps> = ({ gameID }: InfoBoxProps) => {
 			<Box className="mb-4">
 				<div className="grid grid-cols-4 gap-4">
 					{statItems.map((item) => (
-						<Paper
-							key={item.title}
-							elevation={0}
-							className={
-								"p-4 rounded-lg overflow-hidden hover:shadow-md hover:scale-[1.02]"
-							}
-						>
+						<Box key={item.title} className="p-4 overflow-hidden">
 							<div className="flex items-center space-x-2 mb-2">
 								<span className="text-[#1976d2] flex-shrink-0 flex items-center">
 									{item.icon}
@@ -334,7 +327,7 @@ export const InfoBox: React.FC<InfoBoxProps> = ({ gameID }: InfoBoxProps) => {
 							<Typography variant="h6" className="font-bold" component="div">
 								{item.value}
 							</Typography>
-						</Paper>
+						</Box>
 					))}
 				</div>
 			</Box>

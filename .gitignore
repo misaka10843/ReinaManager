@@ -2,8 +2,6 @@
 node_modules
 dist
 target
-.ai_cli
-.rust-skills
 docs-local
 others
 

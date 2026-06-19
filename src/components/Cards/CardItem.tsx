@@ -90,7 +90,7 @@ export const CardItem = memo(
 						{...handlers}
 						className={`
 							duration-100
-							hover:shadow-lg
+							hover:shadow-lg hover:scale-105
 							active:shadow-sm active:scale-95
 							${isOverlay ? "shadow-lg scale-105" : ""}
 						`}
@@ -122,13 +122,9 @@ export const CardItem = memo(
 								<Typography
 									variant="subtitle2"
 									sx={{
-										fontWeight: 700,
 										color: isActive ? "primary.main" : "text.primary",
-										overflow: "hidden",
-										textOverflow: "ellipsis",
-										whiteSpace: "nowrap",
-										textAlign: "center",
 									}}
+									className="text-base truncate"
 								>
 									{displayName}
 								</Typography>
