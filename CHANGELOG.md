@@ -1,3 +1,14 @@
+## [0.23.1](https://github.com/huoshen80/ReinaManager/compare/v0.23.0...v0.23.0) (2026-06-20)
+
+<details>
+<summary>查看中文版本</summary>
+
+- 移除静态元素上的悬停效果，恢复一些之前的样式([a8c7392](https://github.com/huoshen80/ReinaManager/commit/096cec249c3f0c668d178856778923cf90f5c426)）
+
+</details>
+
+- remove the hover effect on static elements,restore some of the previous style([a8c7392](https://github.com/huoshen80/ReinaManager/commit/096cec249c3f0c668d178856778923cf90f5c426)）
+
 ## [0.23.0](https://github.com/huoshen80/ReinaManager/compare/v0.22.1...v0.23.0) (2026-06-19)
 
 <details>
