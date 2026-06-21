@@ -320,23 +320,10 @@ const AddModal: React.FC = () => {
 					/>
 				</Tabs>
 				<DialogContent
-					sx={
-						activeTab === "bulk"
-							? {
-									pt: 2,
-									display: "flex",
-									flex: "1 1 auto",
-									minHeight: 0,
-									overflow: "hidden",
-								}
-							: { pt: 2 }
-					}
+					sx={{ pt: 2, display: activeTab === "single" ? undefined : "none" }}
 				>
 					{/* single tab 内容：通过 display 控制显隐，避免切换 tab 时卸载 */}
-					<Stack
-						spacing={2}
-						sx={{ pt: 1, display: activeTab === "single" ? undefined : "none" }}
-					>
+					<Stack spacing={2} sx={{ pt: 1 }}>
 						{/* 选择本地可执行文件 */}
 						<Button
 							fullWidth
@@ -417,12 +404,12 @@ const AddModal: React.FC = () => {
 							onChange={(event) => setFormText(event.target.value)}
 						/>
 					</Stack>
-					{/* bulk tab：始终挂载，通过 hidden prop 控制显隐，保持状态在 tab 切换时不丢失 */}
-					<BulkImportTab
-						hidden={activeTab !== "bulk"}
-						onClose={handleCloseModal}
-					/>
 				</DialogContent>
+				{/* bulk tab：始终挂载，通过 hidden prop 控制显隐，保持状态在 tab 切换时不丢失 */}
+				<BulkImportTab
+					hidden={activeTab !== "bulk"}
+					onClose={handleCloseModal}
+				/>
 				{activeTab === "single" && (
 					<DialogActions>
 						{/* 取消按钮 */}

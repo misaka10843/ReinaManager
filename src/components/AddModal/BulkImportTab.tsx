@@ -2,6 +2,7 @@ import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import SearchIcon from "@mui/icons-material/Search";
 import {
 	Alert,
+	Box,
 	Button,
 	CircularProgress,
 	Dialog,
@@ -461,176 +462,193 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 
 	return (
 		<>
-			<Stack
-				spacing={2}
-				className="pt-2 w-full flex-1 self-stretch h-full min-h-0 overflow-hidden"
-				sx={{ display: hidden ? "none" : undefined }}
+			<DialogContent
+				className={
+					hidden ? "hidden" : "flex flex-1 min-h-0 overflow-hidden pt-4"
+				}
 			>
-				<Stack direction="row" spacing={1.5} alignItems="flex-start">
-					<Stack
-						direction="row"
-						spacing={1.5}
-						alignItems="center"
-						flexWrap="wrap"
-						useFlexGap
-						className="flex-[1_1_auto] min-w-0"
-					>
-						<Button
-							variant="contained"
-							startIcon={<FolderOpenIcon />}
-							onClick={scanFolder}
-							disabled={loading}
-							className="shrink-0"
-						>
-							{t("components.BulkImportModal.selectRootFolder", "选择根文件夹")}
-						</Button>
-						<Typography
-							variant="body2"
-							className="flex-[1_1_220px] min-w-40"
-							noWrap
-						>
-							{rootPath ||
-								t(
-									"components.BulkImportModal.noFolderSelected",
-									"未选择文件夹",
-								)}
-						</Typography>
-						<FormControl
-							size="small"
-							disabled={loading}
-							className="flex-[0_0_160px]"
-						>
-							<InputLabel id="bulk-import-api-source-label">
-								{t("components.BulkImportModal.apiSource", "匹配数据源")}
-							</InputLabel>
-							<Select
-								labelId="bulk-import-api-source-label"
-								value={bulkApiSource}
-								label={t("components.BulkImportModal.apiSource", "匹配数据源")}
-								onChange={(event) =>
-									setBulkApiSource(event.target.value as SourceType)
-								}
-							>
-								{BULK_API_SOURCE_OPTIONS.map((option) => (
-									<MenuItem
-										key={option.value}
-										value={option.value}
-										disabled={option.value === "bgm" && !hasBgmAuth}
-									>
-										{option.label}
-									</MenuItem>
-								))}
-							</Select>
-						</FormControl>
-						<FormControl
-							size="small"
-							disabled={loading}
-							className="flex-[0_0_140px]"
-						>
-							<InputLabel id="bulk-import-scan-depth-label">
-								{t("components.BulkImportModal.scanDepth", "扫描深度")}
-							</InputLabel>
-							<Select
-								labelId="bulk-import-scan-depth-label"
-								value={scanMaxDepth}
-								label={t("components.BulkImportModal.scanDepth", "扫描深度")}
-								onChange={(event) =>
-									setScanMaxDepth(Number(event.target.value))
-								}
-							>
-								{SCAN_DEPTH_OPTIONS.map((depth) => (
-									<MenuItem key={depth} value={depth}>
-										{t(
-											"components.BulkImportModal.scanDepthValue",
-											"{{depth}} 层",
-											{ depth },
-										)}
-									</MenuItem>
-								))}
-							</Select>
-						</FormControl>
-					</Stack>
-					{items.length > 0 && (
-						<Typography
-							variant="body2"
-							color="text.secondary"
-							className="whitespace-nowrap shrink-0 pt-2"
-						>
-							{t(
-								"components.BulkImportModal.gamesCount",
-								"共 {{count}} 个游戏",
-								{
-									count: items.length,
-								},
-							)}
-						</Typography>
-					)}
-				</Stack>
-
-				<BulkImportResultTable
-					items={items.filter(isVisibleBulkImportItem)}
-					loading={loading}
-					onDeleteItem={handleDeleteItem}
-					onEditItem={handleEditItem}
-					onExecutableChange={handleExecutableChange}
-				/>
-
 				<Stack
-					direction={{ xs: "column", md: "row" }}
-					justifyContent="space-between"
-					alignItems={{ xs: "stretch", md: "center" }}
-					spacing={1.5}
-					className="pb-6 pt-4"
+					spacing={2}
+					className="pt-2 w-full flex-1 self-stretch h-full min-h-0 overflow-hidden"
 				>
-					<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-						<Button
-							onClick={resetState}
-							disabled={loading || items.length === 0}
+					<Stack direction="row" spacing={1.5} alignItems="flex-start">
+						<Stack
+							direction="row"
+							spacing={1.5}
+							alignItems="center"
+							flexWrap="wrap"
+							useFlexGap
+							className="flex-[1_1_auto] min-w-0"
 						>
-							{t("components.BulkImportModal.reset", "重置")}
-						</Button>
+							<Button
+								variant="contained"
+								startIcon={<FolderOpenIcon />}
+								onClick={scanFolder}
+								disabled={loading}
+								className="shrink-0"
+							>
+								{t(
+									"components.BulkImportModal.selectRootFolder",
+									"选择根文件夹",
+								)}
+							</Button>
+							<Typography
+								variant="body2"
+								className="flex-[1_1_220px] min-w-40"
+								noWrap
+							>
+								{rootPath ||
+									t(
+										"components.BulkImportModal.noFolderSelected",
+										"未选择文件夹",
+									)}
+							</Typography>
+							<FormControl
+								size="small"
+								disabled={loading}
+								className="flex-[0_0_160px]"
+							>
+								<InputLabel id="bulk-import-api-source-label">
+									{t("components.BulkImportModal.apiSource", "匹配数据源")}
+								</InputLabel>
+								<Select
+									labelId="bulk-import-api-source-label"
+									value={bulkApiSource}
+									label={t(
+										"components.BulkImportModal.apiSource",
+										"匹配数据源",
+									)}
+									onChange={(event) =>
+										setBulkApiSource(event.target.value as SourceType)
+									}
+								>
+									{BULK_API_SOURCE_OPTIONS.map((option) => (
+										<MenuItem
+											key={option.value}
+											value={option.value}
+											disabled={option.value === "bgm" && !hasBgmAuth}
+										>
+											{option.label}
+										</MenuItem>
+									))}
+								</Select>
+							</FormControl>
+							<FormControl
+								size="small"
+								disabled={loading}
+								className="flex-[0_0_140px]"
+							>
+								<InputLabel id="bulk-import-scan-depth-label">
+									{t("components.BulkImportModal.scanDepth", "扫描深度")}
+								</InputLabel>
+								<Select
+									labelId="bulk-import-scan-depth-label"
+									value={scanMaxDepth}
+									label={t("components.BulkImportModal.scanDepth", "扫描深度")}
+									onChange={(event) =>
+										setScanMaxDepth(Number(event.target.value))
+									}
+								>
+									{SCAN_DEPTH_OPTIONS.map((depth) => (
+										<MenuItem key={depth} value={depth}>
+											{t(
+												"components.BulkImportModal.scanDepthValue",
+												"{{depth}} 层",
+												{ depth },
+											)}
+										</MenuItem>
+									))}
+								</Select>
+							</FormControl>
+						</Stack>
+						{items.length > 0 && (
+							<Typography
+								variant="body2"
+								color="text.secondary"
+								className="whitespace-nowrap shrink-0 pt-2"
+							>
+								{t(
+									"components.BulkImportModal.gamesCount",
+									"共 {{count}} 个游戏",
+									{
+										count: items.length,
+									},
+								)}
+							</Typography>
+						)}
 					</Stack>
-					<Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-						<Button variant="outlined" onClick={handleCancel}>
-							{t("components.BulkImportModal.cancel", "取消")}
-						</Button>
-						<Button
-							startIcon={<SearchIcon />}
-							onClick={handleMatchMetadata}
-							disabled={
-								items.length === 0 ||
-								loading ||
-								(bulkApiSource === "bgm" && !hasBgmAuth)
-							}
-						>
-							{t("components.BulkImportModal.matchMetadata", "匹配元数据")}
-						</Button>
-						<Button
-							variant="contained"
-							onClick={handleImportMatched}
-							disabled={matchedImportCount === 0 || loading}
-							startIcon={loading ? <CircularProgress size={20} /> : undefined}
-						>
-							{t(
-								"components.BulkImportModal.importMatched",
-								"导入已匹配（{{count}}）",
-								{ count: matchedImportCount },
-							)}
-						</Button>
-						<Button
-							variant="outlined"
-							onClick={() => setCustomImportConfirmOpen(true)}
-							disabled={customImportCount === 0 || loading}
-						>
-							{t(
-								"components.BulkImportModal.importAsCustom",
-								"导入为自定义（{{count}}）",
-								{ count: customImportCount },
-							)}
-						</Button>
-					</Stack>
+
+					<BulkImportResultTable
+						items={items.filter(isVisibleBulkImportItem)}
+						loading={loading}
+						onDeleteItem={handleDeleteItem}
+						onEditItem={handleEditItem}
+						onExecutableChange={handleExecutableChange}
+					/>
 				</Stack>
-			</Stack>
+			</DialogContent>
+
+			<DialogActions
+				disableSpacing
+				className={
+					hidden
+						? "hidden"
+						: "flex flex-wrap items-stretch justify-end gap-2 md:items-center"
+				}
+			>
+				<Box className="flex w-full grow md:w-auto">
+					<Button onClick={resetState} disabled={loading || items.length === 0}>
+						{t("components.BulkImportModal.reset", "重置")}
+					</Button>
+				</Box>
+				<Stack
+					direction="row"
+					spacing={1}
+					flexWrap="wrap"
+					useFlexGap
+					justifyContent="flex-end"
+				>
+					<Button variant="outlined" onClick={handleCancel}>
+						{t("components.BulkImportModal.cancel", "取消")}
+					</Button>
+					<Button
+						startIcon={<SearchIcon />}
+						onClick={handleMatchMetadata}
+						disabled={
+							items.length === 0 ||
+							loading ||
+							(bulkApiSource === "bgm" && !hasBgmAuth)
+						}
+					>
+						{t("components.BulkImportModal.matchMetadata", "匹配元数据")}
+					</Button>
+					<Button
+						variant="contained"
+						onClick={handleImportMatched}
+						disabled={matchedImportCount === 0 || loading}
+						startIcon={loading ? <CircularProgress size={20} /> : undefined}
+					>
+						{t(
+							"components.BulkImportModal.importMatched",
+							"导入已匹配（{{count}}）",
+							{
+								count: matchedImportCount,
+							},
+						)}
+					</Button>
+					<Button
+						variant="outlined"
+						onClick={() => setCustomImportConfirmOpen(true)}
+						disabled={customImportCount === 0 || loading}
+					>
+						{t(
+							"components.BulkImportModal.importAsCustom",
+							"导入为自定义（{{count}}）",
+							{ count: customImportCount },
+						)}
+					</Button>
+				</Stack>
+			</DialogActions>
 
 			<Dialog
 				open={!!editItemPath}
