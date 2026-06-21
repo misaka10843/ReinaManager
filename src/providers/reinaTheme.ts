@@ -125,6 +125,13 @@ export const reinaTheme = createTheme({
 		MuiDialog: {
 			styleOverrides: {
 				paper: ({ theme }) => ({
+					outline: 0,
+					"&:focus": {
+						outline: 0,
+					},
+					"&:focus-visible": {
+						outline: 0,
+					},
 					borderRadius: 24,
 					backgroundImage: "none",
 					backgroundColor: "var(--mui-palette-background-paper)",

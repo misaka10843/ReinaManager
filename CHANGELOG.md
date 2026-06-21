@@ -1,4 +1,4 @@
-## [0.23.1](https://github.com/huoshen80/ReinaManager/compare/v0.23.0...v0.23.0) (2026-06-20)
+## [0.23.1](https://github.com/huoshen80/ReinaManager/compare/v0.23.1...v0.23.0) (2026-06-20)
 
 <details>
 <summary>查看中文版本</summary>
