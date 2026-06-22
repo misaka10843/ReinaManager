@@ -12,6 +12,7 @@ import {
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { Virtuoso } from "react-virtuoso";
+import { getRuntimeSourceAdapter, REGISTERED_SOURCE_KEYS } from "@/metadata";
 import type { GameCandidateData, ScanResult } from "@/types";
 
 export interface BulkImportItem extends ScanResult {
@@ -60,19 +61,18 @@ function getMatchedGameName(
 	}
 
 	const useChineseName = language === "zh-CN";
-	return (
-		(useChineseName
-			? gameData.bgm_data?.name_cn ||
-				gameData.vndb_data?.name_cn ||
-				gameData.ymgal_data?.name_cn ||
-				gameData.kun_data?.name_cn
-			: undefined) ||
-		gameData.bgm_data?.name ||
-		gameData.vndb_data?.name ||
-		gameData.ymgal_data?.name ||
-		gameData.kun_data?.name ||
-		""
-	);
+	const displays = REGISTERED_SOURCE_KEYS.map((source) => {
+		const adapter = getRuntimeSourceAdapter(source);
+		const data = gameData[adapter.dataKey];
+		return data ? adapter.toDisplayFields(data) : null;
+	});
+
+	if (useChineseName) {
+		const chineseName = displays.find((display) => display?.name_cn)?.name_cn;
+		if (chineseName) return chineseName;
+	}
+
+	return displays.find((display) => display?.name)?.name ?? "";
 }
 
 function getStatusLabel(

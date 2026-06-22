@@ -2,6 +2,7 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import Radio from "@mui/material/Radio";
 import RadioGroup from "@mui/material/RadioGroup";
 import type { SxProps, Theme } from "@mui/material/styles";
+import { getRuntimeSourceAdapter, REGISTERED_SOURCE_KEYS } from "@/metadata";
 import type { apiSourceType } from "@/types";
 
 interface ApiSourceRadioGroupProps {
@@ -13,10 +14,10 @@ interface ApiSourceRadioGroupProps {
 }
 
 const API_SOURCE_OPTIONS: { value: apiSourceType; label: string }[] = [
-	{ value: "bgm", label: "Bangumi" },
-	{ value: "vndb", label: "VNDB" },
-	{ value: "ymgal", label: "YMGal" },
-	{ value: "kun", label: "Kun" },
+	...REGISTERED_SOURCE_KEYS.map((source) => ({
+		value: source,
+		label: getRuntimeSourceAdapter(source).label,
+	})),
 	{ value: "mixed", label: "Mixed" },
 ];
 

@@ -23,10 +23,12 @@ export const ymgalAdapter: MetadataSourceAdapter<YmgalData> = {
 	label: "YMGal",
 	idKey: "ymgal_id",
 	dataKey: "ymgal_data",
+	iconUrl: "https://www.ymgal.games/favicon.ico",
 	participatesInMixed: true,
 	defaultMixedEnabled: false,
 	mixedSearchLimit: YMGAL_MIXED_SEARCH_LIMIT,
 	validateId: (id) => /^(ga)?\d+$/i.test(id),
+	getExternalUrl: (id) => `https://www.ymgal.games/ga${id}`,
 	async fetchById(id, ctx) {
 		const game = await fetchYmById(id, ctx.signal);
 		return toYmgalCandidate(game);

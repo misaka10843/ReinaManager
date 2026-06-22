@@ -22,10 +22,12 @@ export const vndbAdapter: MetadataSourceAdapter<VndbData> = {
 	label: "VNDB",
 	idKey: "vndb_id",
 	dataKey: "vndb_data",
+	iconUrl: "https://vndb.org/favicon.ico",
 	participatesInMixed: true,
 	defaultMixedEnabled: true,
 	mixedSearchLimit: VNDB_MIXED_SEARCH_LIMIT,
 	validateId: (id) => /^v\d+$/i.test(id),
+	getExternalUrl: (id) => `https://vndb.org/${id}`,
 	async fetchById(id, ctx) {
 		const game = await fetchVndbById(id, ctx.signal);
 		return toVndbCandidate(game);

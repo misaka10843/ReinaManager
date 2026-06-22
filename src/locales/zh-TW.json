@@ -42,11 +42,8 @@
 			"invalidFile": "請拖入有效的可執行文件（.exe/.bat/.cmd）或文件夾",
 			"noExecutableSelected": "未選擇可執行程序",
 			"noResults": "沒有找到結果",
-			"noResultsBgm": "未在 Bangumi 找到該遊戲，請嘗試其他名稱或檢查 ID",
-			"noResultsKun": "未在 Kungal 找到該遊戲，請嘗試其他名稱或檢查 ID",
 			"noResultsMixed": "所有數據源均未找到該遊戲",
-			"noResultsVndb": "未在 VNDB 找到該遊戲，請嘗試其他名稱或檢查 ID",
-			"noResultsYmgal": "未在 YMGal 找到該遊戲，請嘗試其他名稱或檢查 ID",
+			"noResultsSource": "未在 {{source}} 找到該遊戲，請嘗試其他名稱或檢查 ID",
 			"processing": "處理中...",
 			"selectFromFolder": "文件夾中有多個可執行文件，請選擇一個",
 			"selectGame": "選擇遊戲",
@@ -56,7 +53,6 @@
 			"viewMore": "查看更多"
 		},
 		"AlertBox": {
-			"bgmData": "BGM 資料",
 			"cancel": "取消",
 			"confirm": "確認",
 			"confirmAddTitle": "確認添加遊戲",
@@ -66,10 +62,8 @@
 			"deleteGameMessage": "確定要刪除該遊戲嗎？",
 			"deleteGameTitle": "刪除遊戲",
 			"gameName": "遊戲名稱",
-			"kunData": "Kungal 資料",
 			"processing": "處理中...",
-			"vndbData": "VNDB 資料",
-			"ymgalData": "Ymgal 資料"
+			"sourceData": "{{source}} 資料"
 		},
 		"AppLayout": {
 			"back": "返回",
@@ -260,7 +254,6 @@
 				"selectedCount_other": "已選 {{count}}",
 				"start": "批量操作"
 			},
-			"bgmlink": "查看Bangumi頁面",
 			"Category": {
 				"availableGames": "可用遊戲",
 				"gamesInCategory": "分類中的遊戲",
@@ -287,19 +280,17 @@
 			},
 			"deleteGame": "刪除遊戲",
 			"deleting": "刪除中...",
-			"kunlink": "查看Kungal頁面",
 			"leLaunch": "LE轉區啟動",
 			"lePathNotSet": "未設定LE轉區軟體路徑，請先配置路徑",
 			"magpiePathNotSet": "未設定Magpie軟體路徑，請先配置路徑",
 			"magpieZoom": "Magpie放大",
 			"more": "更多",
 			"openGameFolder": "開啟遊戲目錄",
+			"sourceLink": "查看{{source}}頁面",
 			"theme": "主題",
 			"themeDark": "深色",
 			"themeLight": "淺色",
-			"themeSystem": "跟隨系統",
-			"vndblink": "查看Vndb頁面",
-			"ymgallink": "查看Ymgal頁面"
+			"themeSystem": "跟隨系統"
 		},
 		"Tray": {
 			"exit": "退出",
@@ -513,7 +504,7 @@
 				"selectPathFailed": "選擇路徑失敗",
 				"selectSourceCover": "資料來源封面",
 				"sourceCoverAuto": "資料來源封面：自動",
-				"sourceCoverAutoRule": "自動規則：Bangumi > VNDB > Kungal > YMGal",
+				"sourceCoverAutoRule": "自動規則：{{rule}}",
 				"sourceCoverCustomCoverNotice": "目前本地自定封面優先顯示，移除後才會顯示資料來源封面。",
 				"sourceCoverDialogTitle": "選擇資料來源封面",
 				"sourceCoverSelected": "資料來源封面：{{source}}",

@@ -16,12 +16,9 @@ export interface GameIndex {
 	developerGameIdsByName: Map<string, number[]>;
 }
 
-export const EMPTY_SOURCE_AVAILABILITY: SourceAvailability = {
-	bgm: false,
-	vndb: false,
-	ymgal: false,
-	kun: false,
-};
+export const EMPTY_SOURCE_AVAILABILITY = Object.fromEntries(
+	REGISTERED_SOURCE_KEYS.map((source) => [source, false]),
+) as SourceAvailability;
 
 export const EMPTY_GAME_INDEX: GameIndex = {
 	rawList: [],

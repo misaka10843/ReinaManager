@@ -42,11 +42,8 @@
 			"invalidFile": "有効な実行ファイル（.exe/.bat/.cmd）またはフォルダをドラッグしてください",
 			"noExecutableSelected": "実行ファイルが選択されていません",
 			"noResults": "結果が見つかりませんでした",
-			"noResultsBgm": "Bangumiでゲームが見つかりません、別の名前を試すかIDを確認してください",
-			"noResultsKun": "Kungalでゲームが見つかりません、別の名前を試すかIDを確認してください",
 			"noResultsMixed": "いずれのデータソースでもゲームが見つかりませんでした",
-			"noResultsVndb": "VNDBでゲームが見つかりません、別の名前を試すかIDを確認してください",
-			"noResultsYmgal": "YMGalでゲームが見つかりません、別の名前を試すかIDを確認してください",
+			"noResultsSource": "{{source}}でゲームが見つかりません、別の名前を試すかIDを確認してください",
 			"processing": "処理中...",
 			"selectFromFolder": "フォルダ内に複数の実行ファイルがあります、1つ選択してください",
 			"selectGame": "ゲームを選択",
@@ -56,7 +53,6 @@
 			"viewMore": "もっと見る"
 		},
 		"AlertBox": {
-			"bgmData": "BGM データ",
 			"cancel": "キャンセル",
 			"confirm": "確認",
 			"confirmAddTitle": "ゲームの追加を確認",
@@ -66,10 +62,8 @@
 			"deleteGameMessage": "このゲームを削除してもよろしいですか？",
 			"deleteGameTitle": "ゲームを削除",
 			"gameName": "ゲーム名",
-			"kunData": "Kungal データ",
 			"processing": "処理中...",
-			"vndbData": "VNDB データ",
-			"ymgalData": "Ymgal データ"
+			"sourceData": "{{source}} データ"
 		},
 		"AppLayout": {
 			"back": "戻る",
@@ -260,7 +254,6 @@
 				"selectedCount_other": "{{count}} 個選択中",
 				"start": "一括操作"
 			},
-			"bgmlink": "Bangumiページを見る",
 			"Category": {
 				"availableGames": "利用可能なゲーム",
 				"gamesInCategory": "カテゴリ内のゲーム",
@@ -287,19 +280,17 @@
 			},
 			"deleteGame": "ゲームを削除",
 			"deleting": "削除中...",
-			"kunlink": "Kungalページを見る",
 			"leLaunch": "LE地域起動",
 			"lePathNotSet": "LE地域切り替えソフトウェアのパスが設定されていません、まずパスを設定してください",
 			"magpiePathNotSet": "Magpieソフトウェアのパスが設定されていません、まずパスを設定してください",
 			"magpieZoom": "Magpieズーム",
 			"more": "その他",
 			"openGameFolder": "ゲームフォルダを開く",
+			"sourceLink": "{{source}}ページを見る",
 			"theme": "テーマ",
 			"themeDark": "ダーク",
 			"themeLight": "ライト",
-			"themeSystem": "システムに従う",
-			"vndblink": "Vndbページを見る",
-			"ymgallink": "Ymgalページを見る"
+			"themeSystem": "システムに従う"
 		},
 		"Tray": {
 			"exit": "終了",
@@ -513,7 +504,7 @@
 				"selectPathFailed": "パスの選択に失敗しました",
 				"selectSourceCover": "データソースカバー",
 				"sourceCoverAuto": "データソースカバー：自動",
-				"sourceCoverAutoRule": "自動ルール：Bangumi > VNDB > Kungal > YMGal",
+				"sourceCoverAutoRule": "自動ルール：{{rule}}",
 				"sourceCoverCustomCoverNotice": "現在のローカルカスタムカバーが優先表示されます。削除するとデータソースカバーが表示されます。",
 				"sourceCoverDialogTitle": "データソースカバーを選択",
 				"sourceCoverSelected": "データソースカバー：{{source}}",

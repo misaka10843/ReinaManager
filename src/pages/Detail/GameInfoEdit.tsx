@@ -34,6 +34,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useImagePreview } from "@/hooks/common/useImagePreview";
 import { useProxyImageUrlResolver } from "@/hooks/common/useProxyImageUrlResolver";
+import { getRuntimeSourceAdapter, REGISTERED_SOURCE_KEYS } from "@/metadata";
+import { SOURCE_COVER_PRIORITY } from "@/metadata/data/displayMergeRules";
 import { buildGameInfoUpdatePayload } from "@/metadata/data/metadata";
 import {
 	getSourceImageMap,
@@ -89,12 +91,9 @@ const CHIP_INPUT_STYLE = {
 	color: "inherit",
 } as const;
 
-const SOURCE_LABELS: Record<SourceType, string> = {
-	bgm: "Bangumi",
-	vndb: "VNDB",
-	ymgal: "YMGal",
-	kun: "Kungal",
-};
+function getSourceLabel(source: SourceType): string {
+	return getRuntimeSourceAdapter(source).label;
+}
 
 interface CoverPreviewParams {
 	selectedGame: GameData;
@@ -159,12 +158,14 @@ function SourceCoverDialog({
 	t,
 }: SourceCoverDialogProps) {
 	const resolveImageUrl = useProxyImageUrlResolver();
+	const sourceCoverAutoRule =
+		SOURCE_COVER_PRIORITY.map(getSourceLabel).join(" > ");
 	const statusText = currentSource
 		? t(
 				"pages.Detail.GameInfoEdit.sourceCoverSelected",
 				"数据源封面：{{source}}",
 				{
-					source: SOURCE_LABELS[currentSource],
+					source: getSourceLabel(currentSource),
 				},
 			)
 		: t("pages.Detail.GameInfoEdit.sourceCoverAuto", "数据源封面：自动");
@@ -192,7 +193,8 @@ function SourceCoverDialog({
 					<Typography variant="caption" color="textSecondary">
 						{t(
 							"pages.Detail.GameInfoEdit.sourceCoverAutoRule",
-							"自动规则：Bangumi > VNDB > Kungal > YMGal",
+							"自动规则：{{rule}}",
+							{ rule: sourceCoverAutoRule },
 						)}
 					</Typography>
 
@@ -227,13 +229,13 @@ function SourceCoverDialog({
 									<Box
 										component="img"
 										src={resolveImageUrl(option.image)}
-										alt={SOURCE_LABELS[option.source]}
+										alt={getSourceLabel(option.source)}
 										className="block w-full aspect-[3/4] object-cover"
 										sx={{ bgcolor: "action.hover" }}
 									/>
 									<Box className="p-1">
 										<Typography variant="caption" component="div">
-											{SOURCE_LABELS[option.source]}
+											{getSourceLabel(option.source)}
 										</Typography>
 										{selected && (
 											<Typography
@@ -305,6 +307,9 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 		() => (rawGame ? getSourceImageOptions(rawGame) : []),
 		[rawGame],
 	);
+	const selectedGameSourceIdSignature = REGISTERED_SOURCE_KEYS.map(
+		(source) => selectedGame[getRuntimeSourceAdapter(source).idKey] ?? "",
+	).join("\0");
 
 	// 游戏信息编辑相关状态
 	const [localPath, setLocalPath] = useState<string>("");
@@ -393,10 +398,7 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 		// 1. 切换游戏必重置
 		selectedGame.id,
 		// 2. 只有当这些"静态属性"被保存更新后，才触发重置
-		selectedGame.bgm_id,
-		selectedGame.vndb_id,
-		selectedGame.ymgal_id,
-		selectedGame.kun_id,
+		selectedGameSourceIdSignature,
 		selectedGame.id_type,
 		selectedGame.localpath,
 		// 3. 对于对象类型，使用 JSON 字符串化进行"值比较"

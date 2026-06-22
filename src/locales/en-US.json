@@ -42,11 +42,8 @@
 			"invalidFile": "Please drag a valid executable file (.exe/.bat/.cmd) or folder",
 			"noExecutableSelected": "No executable selected",
 			"noResults": "No results found",
-			"noResultsBgm": "Game not found on Bangumi, please try another name or check the ID",
-			"noResultsKun": "Game not found on Kungal, please try another name or check the ID",
 			"noResultsMixed": "Game not found on any data source",
-			"noResultsVndb": "Game not found on VNDB, please try another name or check the ID",
-			"noResultsYmgal": "Game not found on YMGal, please try another name or check the ID",
+			"noResultsSource": "Game not found on {{source}}, please try another name or check the ID",
 			"processing": "Processing...",
 			"selectFromFolder": "Multiple executables found in folder, please select one",
 			"selectGame": "Select Game",
@@ -56,7 +53,6 @@
 			"viewMore": "View More"
 		},
 		"AlertBox": {
-			"bgmData": "BGM Data",
 			"cancel": "Cancel",
 			"confirm": "Confirm",
 			"confirmAddTitle": "Confirm Add Game",
@@ -66,10 +62,8 @@
 			"deleteGameMessage": "Are you sure you want to delete this game?",
 			"deleteGameTitle": "Delete Game",
 			"gameName": "Game Name",
-			"kunData": "Kungal Data",
 			"processing": "Processing...",
-			"vndbData": "VNDB Data",
-			"ymgalData": "Ymgal Data"
+			"sourceData": "{{source}} Data"
 		},
 		"AppLayout": {
 			"back": "Back",
@@ -271,7 +265,6 @@
 				"selectedCount_other": "{{count}} selected",
 				"start": "Batch Actions"
 			},
-			"bgmlink": "View Bangumi Page",
 			"Category": {
 				"availableGames": "Available Games",
 				"gamesInCategory": "Games in Category",
@@ -298,19 +291,17 @@
 			},
 			"deleteGame": "Delete Game",
 			"deleting": "Deleting...",
-			"kunlink": "View Kungal Page",
 			"leLaunch": "LE Region Launch",
 			"lePathNotSet": "LE region switching software path not set, please configure the path first",
 			"magpiePathNotSet": "Magpie software path not set, please configure the path first",
 			"magpieZoom": "Magpie Zoom",
 			"more": "More",
 			"openGameFolder": "Open Game Folder",
+			"sourceLink": "View {{source}} Page",
 			"theme": "Theme",
 			"themeDark": "Dark",
 			"themeLight": "Light",
-			"themeSystem": "System",
-			"vndblink": "View Vndb Page",
-			"ymgallink": "View Ymgal Page"
+			"themeSystem": "System"
 		},
 		"Tray": {
 			"exit": "Exit",
@@ -525,7 +516,7 @@
 				"selectPathFailed": "Failed to select path",
 				"selectSourceCover": "Source Cover",
 				"sourceCoverAuto": "Source cover: Auto",
-				"sourceCoverAutoRule": "Auto rule: Bangumi > VNDB > Kungal > YMGal",
+				"sourceCoverAutoRule": "Auto rule: {{rule}}",
 				"sourceCoverCustomCoverNotice": "The current custom local cover has display priority. Remove it to show the source cover.",
 				"sourceCoverDialogTitle": "Select Source Cover",
 				"sourceCoverSelected": "Source cover: {{source}}",

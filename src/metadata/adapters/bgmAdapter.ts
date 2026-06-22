@@ -25,10 +25,12 @@ export const bgmAdapter: MetadataSourceAdapter<BgmData> = {
 	label: "Bangumi",
 	idKey: "bgm_id",
 	dataKey: "bgm_data",
+	iconUrl: "https://bgm.tv/img/favicon.ico",
 	participatesInMixed: true,
 	defaultMixedEnabled: true,
 	mixedSearchLimit: BGM_MIXED_SEARCH_LIMIT,
 	validateId: (id) => /^\d+$/.test(id),
+	getExternalUrl: (id) => `https://bgm.tv/subject/${id}`,
 	async fetchById(id, ctx) {
 		const game = await fetchBgmById(id, ctx.bgmToken, ctx.signal);
 		return toBgmCandidate(game);

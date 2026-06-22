@@ -15,10 +15,12 @@ export interface MetadataSourceAdapter<TData = unknown> {
 	label: string;
 	idKey: SourceIdType;
 	dataKey: SourceDataKey;
+	iconUrl: string;
 	participatesInMixed: boolean;
 	defaultMixedEnabled: boolean;
 	mixedSearchLimit: number;
 	validateId: (id: string) => boolean;
+	getExternalUrl(id: string): string;
 	fetchById(
 		id: string,
 		ctx: MetadataSourceContext,

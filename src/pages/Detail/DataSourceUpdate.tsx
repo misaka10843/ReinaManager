@@ -57,7 +57,7 @@ function getSourceIdState(game: GameData): SourceIdState {
 
 /**
  * DataSourceUpdate 组件
- * 负责从外部数据源(BGM, VNDB, YMGal, Mixed)更新游戏信息 已知缺少重复游戏检测
+ * 负责从外部数据源更新游戏信息，已知缺少重复游戏检测
  */
 export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 	selectedGame,

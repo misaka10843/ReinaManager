@@ -66,6 +66,7 @@ import { useProxyImageUrlResolver } from "@/hooks/common/useProxyImageUrlResolve
 import { useGameStatusActions } from "@/hooks/features/games/useGameStatusActions";
 import { useDeleteGame, useUpdateGame } from "@/hooks/queries/useGames";
 import { useAllSettings } from "@/hooks/queries/useSettings";
+import { getRuntimeSourceAdapter, REGISTERED_SOURCE_KEYS } from "@/metadata";
 import { snackbar } from "@/providers/snackBar";
 import { handleOpenFolder } from "@/services/fs/fileDialog";
 import { useStore } from "@/store/appStore";
@@ -77,17 +78,11 @@ type ThemeMode = "light" | "dark" | "system";
 
 let lastAppliedWindowTheme: ThemeMode | null = null;
 
-const SOURCE_ICON_URLS: Record<SourceType, string> = {
-	bgm: "https://bgm.tv/img/favicon.ico",
-	kun: "https://www.kungal.com/favicon.ico",
-	vndb: "https://vndb.org/favicon.ico",
-	ymgal: "https://www.ymgal.games/favicon.ico",
-};
-
 const SourceLinkIcon = ({ source }: { source: SourceType }) => {
 	const [failedUrl, setFailedUrl] = useState<string>();
 	const resolveImageUrl = useProxyImageUrlResolver();
-	const imageUrl = resolveImageUrl(SOURCE_ICON_URLS[source]);
+	const adapter = getRuntimeSourceAdapter(source);
+	const imageUrl = resolveImageUrl(adapter.iconUrl);
 
 	if (failedUrl === imageUrl) {
 		return <CloseIcon fontSize="small" sx={{ color: "error.main" }} />;
@@ -97,7 +92,7 @@ const SourceLinkIcon = ({ source }: { source: SourceType }) => {
 		<Box
 			component="img"
 			src={imageUrl}
-			alt={`${source} favicon`}
+			alt={`${adapter.label} favicon`}
 			onError={() => setFailedUrl(imageUrl)}
 			sx={{
 				width: 16,
@@ -355,22 +350,19 @@ const MoreButton = ({ selectedGame }: { selectedGame: GameData }) => {
 	const handleClose = () => {
 		setAnchorEl(null);
 	};
-
-	/**
-	 * 跳转到外部链接
-	 * @param {string} type 链接类型（bgm/vndb/ymgal/kun）
-	 */
-	const handleView = (type: string) => {
-		if (type === "bgm") {
-			openurl(`https://bgm.tv/subject/${selectedGame.bgm_id}`);
-		} else if (type === "vndb") {
-			openurl(`https://vndb.org/${selectedGame.vndb_id}`);
-		} else if (type === "ymgal") {
-			openurl(`https://www.ymgal.games/ga${selectedGame.ymgal_id}`);
-		} else if (type === "kun") {
-			openurl(`https://www.kungal.com/galgame/${selectedGame.kun_id}`);
-		}
-	};
+	const sourceLinks = REGISTERED_SOURCE_KEYS.flatMap((source) => {
+		const adapter = getRuntimeSourceAdapter(source);
+		const sourceId = selectedGame[adapter.idKey];
+		return sourceId
+			? [
+					{
+						source,
+						label: adapter.label,
+						url: adapter.getExternalUrl(sourceId),
+					},
+				]
+			: [];
+	});
 
 	/**
 	 * 更新游戏状态
@@ -450,66 +442,24 @@ const MoreButton = ({ selectedGame }: { selectedGame: GameData }) => {
 				onClose={handleClose}
 				transitionDuration={0}
 			>
-				{selectedGame.bgm_id ? (
+				{sourceLinks.map((link) => (
 					<MenuItem
+						key={link.source}
 						onClick={() => {
-							handleView("bgm");
+							void openurl(link.url);
 							handleClose();
 						}}
 					>
 						<ListItemIcon>
-							<SourceLinkIcon source="bgm" />
+							<SourceLinkIcon source={link.source} />
 						</ListItemIcon>
 						<ListItemText>
-							{t("components.Toolbar.bgmlink", "查看Bangumi页面")}
+							{t("components.Toolbar.sourceLink", "查看{{source}}页面", {
+								source: link.label,
+							})}
 						</ListItemText>
 					</MenuItem>
-				) : null}
-				{selectedGame.vndb_id ? (
-					<MenuItem
-						onClick={() => {
-							handleView("vndb");
-							handleClose();
-						}}
-					>
-						<ListItemIcon>
-							<SourceLinkIcon source="vndb" />
-						</ListItemIcon>
-						<ListItemText>
-							{t("components.Toolbar.vndblink", "查看Vndb页面")}
-						</ListItemText>
-					</MenuItem>
-				) : null}
-				{selectedGame.ymgal_id ? (
-					<MenuItem
-						onClick={() => {
-							handleView("ymgal");
-							handleClose();
-						}}
-					>
-						<ListItemIcon>
-							<SourceLinkIcon source="ymgal" />
-						</ListItemIcon>
-						<ListItemText>
-							{t("components.Toolbar.ymgallink", "查看月幕Gal页面")}
-						</ListItemText>
-					</MenuItem>
-				) : null}
-				{selectedGame.kun_id ? (
-					<MenuItem
-						onClick={() => {
-							handleView("kun");
-							handleClose();
-						}}
-					>
-						<ListItemIcon>
-							<SourceLinkIcon source="kun" />
-						</ListItemIcon>
-						<ListItemText>
-							{t("components.Toolbar.kunlink", "查看Kungal页面")}
-						</ListItemText>
-					</MenuItem>
-				) : null}
+				))}
 				<MenuItem onClick={handleToggleLeLaunch}>
 					<ListItemIcon>
 						<TurnRightIcon fontSize="small" />

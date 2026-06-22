@@ -26,10 +26,11 @@ import Typography from "@mui/material/Typography";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useProxyImageUrlResolver } from "@/hooks/common/useProxyImageUrlResolver";
-import type { GameCandidateData } from "@/types";
+import { getRuntimeSourceAdapter, REGISTERED_SOURCE_KEYS } from "@/metadata";
+import type { GameCandidateData, SourceType } from "@/types";
 
 interface ViewGameSourceItem {
-	key: "bgm_data" | "vndb_data" | "ymgal_data" | "kun_data";
+	key: SourceType;
 	label: string;
 	name: string | undefined;
 	image?: string;
@@ -240,46 +241,21 @@ export const ViewGameBox: React.FC<ViewGameBoxProps> = ({
 }) => {
 	const { t } = useTranslation();
 	const resolveImageUrl = useProxyImageUrlResolver();
-	// 1. 定义配置项
-	const sourceConfigs = [
-		{
-			id: "bgm_data",
-			labelKey: "bgmData",
-			fallback: "BGM 数据",
-			prefix: "BGM",
-		},
-		{
-			id: "vndb_data",
-			labelKey: "vndbData",
-			fallback: "VNDB 数据",
-			prefix: "VNDB",
-		},
-		{
-			id: "ymgal_data",
-			labelKey: "ymgalData",
-			fallback: "YMGal 数据",
-			prefix: "YMGal",
-		},
-		{
-			id: "kun_data",
-			labelKey: "kunData",
-			fallback: "Kungal 数据",
-			prefix: "Kungal",
-		},
-	] as const;
-
-	// 2. 遍历并执行逻辑
 	const viewGameSources: ViewGameSourceItem[] = [];
 
-	sourceConfigs.forEach(({ id, labelKey, fallback, prefix }) => {
-		const data = fullgame[id]; // 获取对应的属性数据
+	REGISTERED_SOURCE_KEYS.forEach((source) => {
+		const adapter = getRuntimeSourceAdapter(source);
+		const data = fullgame[adapter.dataKey];
 		if (data) {
+			const display = adapter.toDisplayFields(data);
 			viewGameSources.push({
-				key: id,
-				label: t(`components.AlertBox.${labelKey}`, fallback),
-				name: data.name,
-				image: data.image,
-				alt: `${prefix} ${data.name}`,
+				key: source,
+				label: t("components.AlertBox.sourceData", "{{source}} 数据", {
+					source: adapter.label,
+				}),
+				name: display.name,
+				image: display.image,
+				alt: `${adapter.label} ${display.name ?? ""}`,
 			});
 		}
 	});

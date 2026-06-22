@@ -23,10 +23,12 @@ export const kunAdapter: MetadataSourceAdapter<KunData> = {
 	label: "Kungal",
 	idKey: "kun_id",
 	dataKey: "kun_data",
+	iconUrl: "https://www.kungal.com/favicon.ico",
 	participatesInMixed: true,
 	defaultMixedEnabled: false,
 	mixedSearchLimit: KUN_MIXED_SEARCH_LIMIT,
 	validateId: (id) => /^\d+$/.test(id),
+	getExternalUrl: (id) => `https://www.kungal.com/galgame/${id}`,
 	async fetchById(id, ctx) {
 		const game = await fetchGalgameById(id, {
 			enrichVndb: ctx.enrichCrossSource ?? true,

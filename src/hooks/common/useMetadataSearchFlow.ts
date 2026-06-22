@@ -1,6 +1,10 @@
 import type { TFunction } from "i18next";
 import { useCallback, useMemo, useState } from "react";
-import { gameMetadataService } from "@/metadata";
+import {
+	gameMetadataService,
+	getRuntimeSourceAdapter,
+	REGISTERED_SOURCE_KEYS,
+} from "@/metadata";
 import type {
 	MixedSourceCandidates,
 	MixedSourceEnabled,
@@ -37,17 +41,18 @@ interface MetadataSearchFlowOptions {
 	onError: (message: string) => void;
 }
 
-const EMPTY_MIXED_CANDIDATES: MixedSourceCandidates = {
-	bgm: [],
-	vndb: [],
-	ymgal: [],
-	kun: [],
-};
+const EMPTY_MIXED_CANDIDATES = REGISTERED_SOURCE_KEYS.reduce(
+	(candidates, source) => {
+		candidates[source] = [];
+		return candidates;
+	},
+	{} as MixedSourceCandidates,
+);
 
 const initialSearchResultState: SearchResultState = {
 	open: false,
 	results: [],
-	apiSource: "bgm",
+	apiSource: REGISTERED_SOURCE_KEYS[0] as SourceType,
 };
 
 function hasAnyMixedCandidate(candidates: MixedSourceCandidates): boolean {
@@ -64,35 +69,11 @@ function getDefaultNoResultsMessage(
 		return t("components.AddModal.noResultsMixed", "所有数据源均未找到该游戏");
 	}
 
-	if (source === "bgm") {
-		return t(
-			"components.AddModal.noResultsBgm",
-			"未在 Bangumi 找到该游戏，请尝试其他名称或检查 ID",
-		);
-	}
-
-	if (source === "vndb") {
-		return t(
-			"components.AddModal.noResultsVndb",
-			"未在 VNDB 找到该游戏，请尝试其他名称或检查 ID",
-		);
-	}
-
-	if (source === "ymgal") {
-		return t(
-			"components.AddModal.noResultsYmgal",
-			"未在 YMGal 找到该游戏，请尝试其他名称或检查 ID",
-		);
-	}
-
-	if (source === "kun") {
-		return t(
-			"components.AddModal.noResultsKun",
-			"未在 Kungal 找到该游戏，请尝试其他名称或检查 ID",
-		);
-	}
-
-	return t("components.AddModal.noResults", "没有找到结果");
+	return t(
+		"components.AddModal.noResultsSource",
+		"未在 {{source}} 找到该游戏，请尝试其他名称或检查 ID",
+		{ source: getRuntimeSourceAdapter(source).label },
+	);
 }
 
 export function useMetadataSearchFlow({
