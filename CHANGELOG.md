@@ -1,4 +1,38 @@
-## [0.23.1](https://github.com/huoshen80/ReinaManager/compare/v0.23.1...v0.23.0) (2026-06-20)
+## [0.23.2](https://github.com/huoshen80/ReinaManager/compare/v0.23.1...v0.23.2) (2026-06-22)
+
+<details>
+<summary>查看中文版本</summary>
+
+### ✨ 新功能
+
+- *(detail)* 添加名称搜索模式，简化来源元数据更新 ([695695f](https://github.com/huoshen80/ReinaManager/commit/695695f557d8acc8bf6dc0730c611e3aceb1b21d))
+
+### 🐛 Bug 修复
+
+- *(ui)* 抑制对话框焦点轮廓 ([c8e7a34](https://github.com/huoshen80/ReinaManager/commit/c8e7a34a830df49df4e8cff1895a8f8fa087292f))
+- *(add-modal)* 分离批量操作页脚 ([8fe25fa](https://github.com/huoshen80/ReinaManager/commit/8fe25fa6a2f50dd9ca29eeef18b42d6a366b6659))
+
+### 🚜 重构
+
+- *(metadata)* 从适配器派生来源 UI ([521d6c0](https://github.com/huoshen80/ReinaManager/commit/521d6c0546f10e10d8bb41d66afe06cae4088610))
+
+</details>
+
+### ✨ Features
+
+- *(detail)* Add name search mode to streamline source metadata updates ([695695f](https://github.com/huoshen80/ReinaManager/commit/695695f557d8acc8bf6dc0730c611e3aceb1b21d))
+
+### 🐛 Bug Fixes
+
+- *(ui)* Suppress dialog focus outline ([c8e7a34](https://github.com/huoshen80/ReinaManager/commit/c8e7a34a830df49df4e8cff1895a8f8fa087292f))
+- *(add-modal)* Separate bulk action footer ([8fe25fa](https://github.com/huoshen80/ReinaManager/commit/8fe25fa6a2f50dd9ca29eeef18b42d6a366b6659))
+
+### 🚜 Refactor
+
+- *(metadata)* Derive source UI from adapters ([521d6c0](https://github.com/huoshen80/ReinaManager/commit/521d6c0546f10e10d8bb41d66afe06cae4088610))
+
+
+## [0.23.1](https://github.com/huoshen80/ReinaManager/compare/v0.23.0...v0.23.1) (2026-06-20)
 
 <details>
 <summary>查看中文版本</summary>
@@ -926,7 +960,8 @@ tags if needed([f62983f(https://github.com/huoshen80/ReinaManager/commit/f62983f
 
 
 
-## [0.18.2] - 2026-04-02
+## [0.18.2](https://github.com/huoshen80/ReinaManager/compare/v0.18.1...v0.18.2) (2026-04-02)
+
 
 <details>
 <summary>查看中文版本</summary>
@@ -1455,7 +1490,7 @@ with JSON columns (bgm_data, vndb_data, ymgal_data, custom_data).
 
 
 
-## [0.12.0](https://github.com/huoshen80/ReinaManager/compare/v0.10.0...v0.12.0) (2025-12-06)
+## [0.12.0](https://github.com/huoshen80/ReinaManager/compare/v0.11.0...v0.12.0) (2025-12-06)
 
 <details>
 <summary>查看中文版本</summary>
