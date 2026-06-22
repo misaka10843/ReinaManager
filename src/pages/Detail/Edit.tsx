@@ -52,14 +52,18 @@ function EditContent({ selectedGame }: { selectedGame: GameData }) {
 		gameIndex.sourceAvailabilityById.get(id) ?? EMPTY_SOURCE_AVAILABILITY;
 	const rawGame = gameIndex.rawById.get(id);
 
+	const updateGameFromMetadata = async (data: GameCandidateData) => {
+		await fileService.deleteCloudCoverCache(id);
+		const updateData: UpdateGameParams = buildMetadataUpdatePayload(data);
+		await updateGameMutation.mutateAsync({ gameId: id, updates: updateData });
+		snackbar.success(t("pages.Detail.Edit.updateSuccess", "游戏信息已更新"));
+	};
+
 	// 确认更新游戏数据（从数据源）
 	const handleConfirmGameUpdate = async () => {
 		if (gameData) {
-			await fileService.deleteCloudCoverCache(id);
-			const updateData: UpdateGameParams = buildMetadataUpdatePayload(gameData);
-			await updateGameMutation.mutateAsync({ gameId: id, updates: updateData });
+			await updateGameFromMetadata(gameData);
 			setOpenViewBox(false);
-			snackbar.success(t("pages.Detail.Edit.updateSuccess", "游戏信息已更新"));
 		}
 	};
 
@@ -126,6 +130,7 @@ function EditContent({ selectedGame }: { selectedGame: GameData }) {
 							selectedGame={selectedGame}
 							sourceAvailability={sourceAvailability}
 							onDataFetched={handleDataSourceFetched}
+							onDirectDataUpdate={updateGameFromMetadata}
 							onSourceSwitch={handleSourceSwitch}
 							disabled={isGameIndexLoading}
 						/>

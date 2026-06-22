@@ -37,6 +37,8 @@ export type SelectedCategory =
 	| { type: "developer"; key: string }
 	| null;
 
+export type DataSourceUpdateMode = "search" | "manualId";
+
 /**
  * AppState 全局状态类型定义
  */
@@ -108,6 +110,8 @@ export interface AppState {
 	setApiSource: (source: apiSourceType) => void;
 	mixedEnabledSources: SourceType[];
 	toggleMixedSource: (source: SourceType) => void;
+	dataSourceUpdateMode: DataSourceUpdateMode;
+	setDataSourceUpdateMode: (mode: DataSourceUpdateMode) => void;
 
 	// NSFW相关
 	nsfwFilter: boolean;
@@ -237,6 +241,10 @@ export const useStore = create<AppState>()(
 						? { mixedEnabledSources: nextSources }
 						: {};
 				});
+			},
+			dataSourceUpdateMode: "search",
+			setDataSourceUpdateMode: (mode: DataSourceUpdateMode) => {
+				set({ dataSourceUpdateMode: mode });
 			},
 
 			openAddModal: (path?: string) => {
@@ -445,6 +453,7 @@ export const useStore = create<AppState>()(
 				// 数据来源选择
 				apiSource: state.apiSource,
 				mixedEnabledSources: state.mixedEnabledSources,
+				dataSourceUpdateMode: state.dataSourceUpdateMode,
 				// nsfw相关
 				nsfwFilter: state.nsfwFilter,
 				nsfwCoverReplace: state.nsfwCoverReplace,

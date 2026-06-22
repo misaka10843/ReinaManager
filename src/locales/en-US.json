@@ -463,20 +463,23 @@
 			"clearSelectedTags": "Clear",
 			"collapseTags": "Collapse Tags",
 			"DataSourceUpdate": {
-				"bgmId": "Bangumi ID",
+				"confirmUpdateTitle": "Confirm Data Source Update",
 				"customModeWarning": "Custom mode cannot update from data source.",
 				"dataSource": "Data Source",
 				"invalidIdType": "Invalid ID type",
-				"kunId": "Kungal ID",
 				"loading": "Loading...",
+				"manualIdMode": "Manual ID",
 				"noDataFetched": "No data fetched or data source invalid.",
 				"noGameSelected": "No game selected",
+				"search": "Search",
+				"searching": "Searching...",
+				"searchMode": "Name Search",
+				"searchName": "Search Name",
+				"selectAndUpdateGame": "Select and Update Game",
 				"sourceSwitchUnavailable": "This game has no local data for that source, so only the display source cannot be switched.",
 				"switchDisplaySource": "Switch display source",
 				"switchingSource": "Switching...",
-				"updateFromSource": "Update from data source",
-				"vndbId": "VNDB ID",
-				"ymgalId": "Ymgal ID"
+				"updateFromSource": "Update from data source"
 			},
 			"Edit": {
 				"dataSourceEditAndUpdate": "Data Source Edit and Update",

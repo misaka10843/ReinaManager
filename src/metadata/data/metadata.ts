@@ -15,6 +15,7 @@ import type {
 import { isSourceType } from "@/types";
 import { getArrayDiff, getBoolDiff, getDiff } from "@/utils/diff";
 import { getGameDisplayName, getGameNsfwStatus } from "@/utils/game";
+import type { SourceIdMap } from "../sourceAdapter";
 import {
 	getRuntimeSourceAdapter,
 	MIXED_SOURCE_KEYS,
@@ -45,10 +46,7 @@ export interface BatchImportGameCandidate {
 interface SourceUpdateParams {
 	selectedGame: GameData | null;
 	idType: string;
-	bgm_id?: string;
-	vndb_id?: string;
-	ymgal_id?: string;
-	kun_id?: string;
+	sourceIds?: SourceIdMap;
 	enabledSources?: readonly SourceType[];
 	bgmToken?: string;
 }
@@ -184,17 +182,6 @@ export function buildGameFromMixedSelection(params: {
 	return defaults ? { ...defaults, ...mixedResult } : mixedResult;
 }
 
-function getSourceUpdateId(
-	params: Pick<
-		SourceUpdateParams,
-		"bgm_id" | "vndb_id" | "ymgal_id" | "kun_id"
-	>,
-	source: SourceType,
-): string | undefined {
-	const { idKey } = getRuntimeSourceAdapter(source);
-	return params[idKey];
-}
-
 function clearMetadataSource(
 	updateData: UpdateGameParams,
 	source: SourceType,
@@ -209,10 +196,7 @@ function clearMetadataSource(
 export async function fetchMetadataForUpdate({
 	selectedGame,
 	idType,
-	bgm_id,
-	vndb_id,
-	ymgal_id,
-	kun_id,
+	sourceIds,
 	enabledSources,
 	bgmToken,
 }: SourceUpdateParams): Promise<GameCandidateData> {
@@ -236,18 +220,12 @@ export async function fetchMetadataForUpdate({
 	if (idType === "mixed") {
 		const enabled = new Set(enabledSources ?? MIXED_SOURCE_KEYS);
 		apiData = await gameMetadataService.getGameByIds({
-			bgm_id: enabled.has("bgm") ? bgm_id : undefined,
-			vndb_id: enabled.has("vndb") ? vndb_id : undefined,
-			ymgal_id: enabled.has("ymgal") ? ymgal_id : undefined,
-			kun_id: enabled.has("kun") ? kun_id : undefined,
+			sourceIds,
 			bgmToken: enabled.has("bgm") ? bgmToken : undefined,
 			enabledSources,
 		});
 	} else if (isSourceType(idType)) {
-		const sourceId = getSourceUpdateId(
-			{ bgm_id, vndb_id, ymgal_id, kun_id },
-			idType,
-		);
+		const sourceId = sourceIds?.[idType];
 		if (!sourceId) {
 			throw new Error(
 				i18n.t("pages.Detail.DataSourceUpdate.invalidIdType", "无效的ID类型"),

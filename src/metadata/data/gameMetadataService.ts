@@ -6,13 +6,23 @@
  * @copyright AGPL-3.0
  */
 
-import type { apiSourceType, GameCandidateData, SourceType } from "@/types";
+import type {
+	apiSourceType,
+	GameCandidateData,
+	SourceDataKey,
+	SourceIdType,
+	SourceType,
+} from "@/types";
 import { AppError, toError } from "@/utils/errors";
 import { fetchMixedData } from "../api/mixed";
-import type { MetadataSourceContext } from "../sourceAdapter";
+import type { MetadataSourceContext, SourceIdMap } from "../sourceAdapter";
 import { resolveAutoSelectedSourceCandidate } from "../sourceAutoResolve";
 import { getSourceCandidateFromGame } from "../sourceCandidate";
-import { getRuntimeSourceAdapter, getSourceAdapter } from "../sourceRegistry";
+import {
+	getRuntimeSourceAdapter,
+	getSourceAdapter,
+	REGISTERED_SOURCE_KEYS,
+} from "../sourceRegistry";
 import {
 	buildGameFromMixedSelection,
 	type MixedSourceCandidates,
@@ -29,12 +39,56 @@ const mixedIdTypePriority: readonly SourceType[] = [
 	"bgm",
 ];
 
+type MixedSourceIdParams = Partial<Record<SourceIdType, string>>;
+
 function hasSourceId(
 	game: Partial<GameCandidateData>,
 	source: SourceType,
 ): boolean {
 	const { idKey } = getSourceAdapter(source);
 	return Boolean(game[idKey]);
+}
+
+function getSourceId(sourceIds: SourceIdMap | undefined, source: SourceType) {
+	return sourceIds?.[source]?.trim();
+}
+
+function getEnabledSourceIds(
+	sourceIds: SourceIdMap | undefined,
+	enabledSources?: readonly SourceType[],
+): SourceIdMap {
+	const enabled = enabledSources ? new Set(enabledSources) : undefined;
+
+	return Object.fromEntries(
+		REGISTERED_SOURCE_KEYS.map((source) => {
+			const id =
+				!enabled || enabled.has(source) ? getSourceId(sourceIds, source) : "";
+			return [source, id || undefined];
+		}),
+	) as SourceIdMap;
+}
+
+function toMixedSourceIdParams(sourceIds: SourceIdMap): MixedSourceIdParams {
+	return Object.fromEntries(
+		REGISTERED_SOURCE_KEYS.map((source) => {
+			const { idKey } = getRuntimeSourceAdapter(source);
+			return [idKey, getSourceId(sourceIds, source)];
+		}),
+	) as MixedSourceIdParams;
+}
+
+function mergeSourceFields(
+	target: GameCandidateData,
+	sourceGame: GameCandidateData,
+	source: SourceType,
+) {
+	const adapter = getRuntimeSourceAdapter(source);
+	const writableTarget = target as Record<
+		SourceIdType | SourceDataKey,
+		unknown
+	>;
+	writableTarget[adapter.idKey] = sourceGame[adapter.idKey];
+	writableTarget[adapter.dataKey] = sourceGame[adapter.dataKey];
 }
 
 function createMetadataError(
@@ -454,28 +508,18 @@ class GameMetadataService {
 	 * 根据多个 ID 获取游戏数据（用于更新场景）
 	 */
 	async getGameByIds(params: {
-		bgm_id?: string;
-		vndb_id?: string;
-		ymgal_id?: string;
-		kun_id?: string;
+		sourceIds?: SourceIdMap;
 		bgmToken?: string;
 		enabledSources?: readonly SourceType[];
 		defaults?: Partial<GameCandidateData>;
 	}): Promise<GameCandidateData> {
-		const {
-			bgm_id,
-			vndb_id,
-			ymgal_id,
-			kun_id,
-			bgmToken,
-			enabledSources,
-			defaults,
-		} = params;
-		const providedIds = [bgm_id, vndb_id, ymgal_id, kun_id].filter(
-			Boolean,
-		).length;
+		const { sourceIds, bgmToken, enabledSources, defaults } = params;
+		const enabledSourceIds = getEnabledSourceIds(sourceIds, enabledSources);
+		const providedSources = REGISTERED_SOURCE_KEYS.filter((source) =>
+			getSourceId(enabledSourceIds, source),
+		);
 
-		if (providedIds === 0) {
+		if (providedSources.length === 0) {
 			throw createStableError(
 				"invalid_game_id",
 				"At least one metadata source id is required",
@@ -483,12 +527,9 @@ class GameMetadataService {
 		}
 
 		try {
-			if (providedIds === 1) {
+			if (providedSources.length === 1) {
 				const result = await fetchMixedData({
-					bgm_id,
-					vndb_id,
-					ymgal_id,
-					kun_id,
+					...toMixedSourceIdParams(enabledSourceIds),
 					bgmToken,
 					enabledSources,
 				});
@@ -500,58 +541,33 @@ class GameMetadataService {
 				return this.applyDefaults(mergedResult, defaults);
 			}
 
-			const promises: Promise<GameCandidateData | null>[] = [];
-
-			if (bgm_id) {
-				promises.push(this.getGameById(bgm_id, "bgm", bgmToken));
-			} else {
-				promises.push(Promise.resolve(null));
-			}
-
-			if (vndb_id) {
-				promises.push(this.getGameById(vndb_id, "vndb"));
-			} else {
-				promises.push(Promise.resolve(null));
-			}
-
-			if (ymgal_id) {
-				promises.push(this.getGameById(ymgal_id, "ymgal"));
-			} else {
-				promises.push(Promise.resolve(null));
-			}
-
-			if (kun_id) {
-				promises.push(this.getGameById(kun_id, "kun"));
-			} else {
-				promises.push(Promise.resolve(null));
-			}
-
-			const [bgm, vndb, ymgal, kun] = await Promise.all(promises);
+			const results = await Promise.all(
+				REGISTERED_SOURCE_KEYS.map((source) => {
+					const sourceId = getSourceId(enabledSourceIds, source);
+					return sourceId
+						? this.getGameById(
+								sourceId,
+								source,
+								source === "bgm" ? bgmToken : undefined,
+							)
+						: Promise.resolve(null);
+				}),
+			);
 
 			const mergedGame: GameCandidateData = { ...defaults, id_type: "mixed" };
 
-			if (bgm) {
-				mergedGame.bgm_id = bgm.bgm_id;
-				mergedGame.bgm_data = bgm.bgm_data;
-			}
-			if (vndb) {
-				mergedGame.vndb_id = vndb.vndb_id;
-				mergedGame.vndb_data = vndb.vndb_data;
-			}
-			if (ymgal) {
-				mergedGame.ymgal_id = ymgal.ymgal_id;
-				mergedGame.ymgal_data = ymgal.ymgal_data;
-			}
-			if (kun) {
-				mergedGame.kun_id = kun.kun_id;
-				mergedGame.kun_data = kun.kun_data;
-			}
+			REGISTERED_SOURCE_KEYS.forEach((source, index) => {
+				const game = results[index];
+				if (!game) {
+					return;
+				}
+				mergeSourceFields(mergedGame, game, source);
+			});
 
 			if (
-				!mergedGame.bgm_id &&
-				!mergedGame.vndb_id &&
-				!mergedGame.ymgal_id &&
-				!mergedGame.kun_id
+				!REGISTERED_SOURCE_KEYS.some((source) =>
+					hasSourceId(mergedGame, source),
+				)
 			) {
 				throw new AppError({
 					code: "metadata_not_found",

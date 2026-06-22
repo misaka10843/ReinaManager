@@ -3,6 +3,7 @@ export { gameMetadataService } from "./data/gameMetadataService";
 export type {
 	MetadataSourceAdapter,
 	MetadataSourceContext,
+	SourceIdMap,
 } from "./sourceAdapter";
 export type { AutoResolveSourceCandidateParams } from "./sourceAutoResolve";
 export { resolveAutoSelectedSourceCandidate } from "./sourceAutoResolve";

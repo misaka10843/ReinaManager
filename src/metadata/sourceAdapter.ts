@@ -1,6 +1,8 @@
 import type { SourceDataKey, SourceIdType, SourceType } from "@/types";
 import type { SourceCandidate, SourceDisplayFields } from "./sourceCandidate";
 
+export type SourceIdMap = Partial<Record<SourceType, string>>;
+
 export interface MetadataSourceContext {
 	bgmToken?: string;
 	enrichCrossSource?: boolean;

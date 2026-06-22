@@ -451,20 +451,23 @@
 			"clearSelectedTags": "クリア",
 			"collapseTags": "タグを折りたたむ",
 			"DataSourceUpdate": {
-				"bgmId": "Bangumi ID",
+				"confirmUpdateTitle": "データソース更新を確認",
 				"customModeWarning": "カスタムモードではデータソースから更新できません。",
 				"dataSource": "データソース",
 				"invalidIdType": "無効なIDタイプ",
-				"kunId": "Kungal ID",
 				"loading": "読み込み中...",
+				"manualIdMode": "手動 ID",
 				"noDataFetched": "データが取得されていないか、データソースが無効です。",
 				"noGameSelected": "ゲームが選択されていません",
+				"search": "検索",
+				"searching": "検索中...",
+				"searchMode": "名前検索",
+				"searchName": "検索名",
+				"selectAndUpdateGame": "選択して更新",
 				"sourceSwitchUnavailable": "このゲームには選択したデータソースのローカルデータがないため、表示ソースだけを切り替えられません。",
 				"switchDisplaySource": "表示ソースを切替",
 				"switchingSource": "切り替え中...",
-				"updateFromSource": "データソースから更新",
-				"vndbId": "VNDB ID",
-				"ymgalId": "Ymgal ID"
+				"updateFromSource": "データソースから更新"
 			},
 			"Edit": {
 				"dataSourceEditAndUpdate": "データソース編集と更新",

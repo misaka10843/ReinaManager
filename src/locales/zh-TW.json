@@ -451,20 +451,23 @@
 			"clearSelectedTags": "清空",
 			"collapseTags": "折疊標籤",
 			"DataSourceUpdate": {
-				"bgmId": "Bangumi ID",
+				"confirmUpdateTitle": "確認更新數據源",
 				"customModeWarning": "自定模式無法從數據源更新。",
 				"dataSource": "數據源",
 				"invalidIdType": "無效的ID類型",
-				"kunId": "Kungal ID",
 				"loading": "正在獲取...",
+				"manualIdMode": "手動 ID",
 				"noDataFetched": "未獲取到數據或數據源無效。",
 				"noGameSelected": "未選擇遊戲",
+				"search": "搜尋",
+				"searching": "正在搜尋...",
+				"searchMode": "名稱搜尋",
+				"searchName": "搜尋名稱",
+				"selectAndUpdateGame": "選擇並更新遊戲",
 				"sourceSwitchUnavailable": "目前遊戲沒有該數據源的本地數據，無法僅切換顯示源。",
 				"switchDisplaySource": "切換顯示源",
 				"switchingSource": "正在切換...",
-				"updateFromSource": "從數據源更新數據",
-				"vndbId": "VNDB ID",
-				"ymgalId": "Ymgal ID"
+				"updateFromSource": "從數據源更新數據"
 			},
 			"Edit": {
 				"dataSourceEditAndUpdate": "數據源編輯與更新",
