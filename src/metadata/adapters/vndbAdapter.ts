@@ -1,13 +1,14 @@
 import type { GameCandidateData, VndbData } from "@/types";
 import { fetchVndbById, fetchVndbByName } from "../api/vndb";
-import type { MetadataSourceAdapter } from "../sourceAdapter";
+import {
+	DEFAULT_METADATA_SEARCH_LIMIT,
+	type MetadataSourceAdapter,
+} from "../sourceAdapter";
 import {
 	getSourceCandidateFromGame,
 	type SourceCandidate,
 	type SourceDisplayFields,
 } from "../sourceCandidate";
-
-const VNDB_MIXED_SEARCH_LIMIT = 25;
 
 function toVndbCandidate(game: GameCandidateData): SourceCandidate<VndbData> {
 	return getSourceCandidateFromGame<VndbData>(
@@ -25,7 +26,6 @@ export const vndbAdapter: MetadataSourceAdapter<VndbData> = {
 	iconUrl: "https://vndb.org/favicon.ico",
 	participatesInMixed: true,
 	defaultMixedEnabled: true,
-	mixedSearchLimit: VNDB_MIXED_SEARCH_LIMIT,
 	validateId: (id) => /^v\d+$/i.test(id),
 	getExternalUrl: (id) => `https://vndb.org/${id}`,
 	async fetchById(id, ctx) {
@@ -36,7 +36,7 @@ export const vndbAdapter: MetadataSourceAdapter<VndbData> = {
 		const games = await fetchVndbByName(
 			name,
 			undefined,
-			ctx.limit ?? VNDB_MIXED_SEARCH_LIMIT,
+			ctx.limit ?? DEFAULT_METADATA_SEARCH_LIMIT,
 			ctx.signal,
 		);
 		return games.map(toVndbCandidate);

@@ -1,14 +1,15 @@
 import type { GameCandidateData, KunData } from "@/types";
 import { fetchGalgameById, searchGalgame } from "../api/kun";
-import type { MetadataSourceAdapter } from "../sourceAdapter";
+import {
+	DEFAULT_METADATA_SEARCH_LIMIT,
+	type MetadataSourceAdapter,
+} from "../sourceAdapter";
 import {
 	getSourceCandidateFromGame,
 	mergeCandidateWithDetails,
 	type SourceCandidate,
 	type SourceDisplayFields,
 } from "../sourceCandidate";
-
-const KUN_MIXED_SEARCH_LIMIT = 12;
 
 function toKunCandidate(game: GameCandidateData): SourceCandidate<KunData> {
 	return getSourceCandidateFromGame<KunData>(
@@ -26,7 +27,6 @@ export const kunAdapter: MetadataSourceAdapter<KunData> = {
 	iconUrl: "https://www.kungal.com/favicon.ico",
 	participatesInMixed: true,
 	defaultMixedEnabled: false,
-	mixedSearchLimit: KUN_MIXED_SEARCH_LIMIT,
 	validateId: (id) => /^\d+$/.test(id),
 	getExternalUrl: (id) => `https://www.kungal.com/galgame/${id}`,
 	async fetchById(id, ctx) {
@@ -40,7 +40,7 @@ export const kunAdapter: MetadataSourceAdapter<KunData> = {
 		const games = await searchGalgame(
 			name,
 			1,
-			ctx.limit ?? KUN_MIXED_SEARCH_LIMIT,
+			ctx.limit ?? DEFAULT_METADATA_SEARCH_LIMIT,
 			false,
 			{ signal: ctx.signal },
 		);

@@ -1,13 +1,14 @@
 import type { BgmData, GameCandidateData } from "@/types";
 import { fetchBgmById, fetchBgmByName } from "../api/bgm";
-import type { MetadataSourceAdapter } from "../sourceAdapter";
+import {
+	DEFAULT_METADATA_SEARCH_LIMIT,
+	type MetadataSourceAdapter,
+} from "../sourceAdapter";
 import {
 	getSourceCandidateFromGame,
 	type SourceCandidate,
 	type SourceDisplayFields,
 } from "../sourceCandidate";
-
-const BGM_MIXED_SEARCH_LIMIT = 25;
 
 // BGM token 不應為必須
 // 但是需要R18等信息時還是需要登錄
@@ -28,7 +29,6 @@ export const bgmAdapter: MetadataSourceAdapter<BgmData> = {
 	iconUrl: "https://bgm.tv/img/favicon.ico",
 	participatesInMixed: true,
 	defaultMixedEnabled: true,
-	mixedSearchLimit: BGM_MIXED_SEARCH_LIMIT,
 	validateId: (id) => /^\d+$/.test(id),
 	getExternalUrl: (id) => `https://bgm.tv/subject/${id}`,
 	async fetchById(id, ctx) {
@@ -39,7 +39,7 @@ export const bgmAdapter: MetadataSourceAdapter<BgmData> = {
 		const games = await fetchBgmByName(
 			name,
 			ctx.bgmToken,
-			ctx.limit ?? BGM_MIXED_SEARCH_LIMIT,
+			ctx.limit ?? DEFAULT_METADATA_SEARCH_LIMIT,
 			ctx.signal,
 		);
 		return games.map(toBgmCandidate);

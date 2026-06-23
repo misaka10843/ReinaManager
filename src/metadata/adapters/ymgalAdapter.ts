@@ -1,14 +1,15 @@
 import type { GameCandidateData, YmgalData } from "@/types";
 import { fetchYmById, fetchYmByName } from "../api/ymgal";
-import type { MetadataSourceAdapter } from "../sourceAdapter";
+import {
+	DEFAULT_METADATA_SEARCH_LIMIT,
+	type MetadataSourceAdapter,
+} from "../sourceAdapter";
 import {
 	getSourceCandidateFromGame,
 	mergeCandidateWithDetails,
 	type SourceCandidate,
 	type SourceDisplayFields,
 } from "../sourceCandidate";
-
-const YMGAL_MIXED_SEARCH_LIMIT = 20;
 
 function toYmgalCandidate(game: GameCandidateData): SourceCandidate<YmgalData> {
 	return getSourceCandidateFromGame<YmgalData>(
@@ -26,7 +27,6 @@ export const ymgalAdapter: MetadataSourceAdapter<YmgalData> = {
 	iconUrl: "https://www.ymgal.games/favicon.ico",
 	participatesInMixed: true,
 	defaultMixedEnabled: false,
-	mixedSearchLimit: YMGAL_MIXED_SEARCH_LIMIT,
 	validateId: (id) => /^(ga)?\d+$/i.test(id),
 	getExternalUrl: (id) => `https://www.ymgal.games/ga${id}`,
 	async fetchById(id, ctx) {
@@ -37,7 +37,7 @@ export const ymgalAdapter: MetadataSourceAdapter<YmgalData> = {
 		const games = await fetchYmByName(
 			name,
 			1,
-			ctx.limit ?? YMGAL_MIXED_SEARCH_LIMIT,
+			ctx.limit ?? DEFAULT_METADATA_SEARCH_LIMIT,
 			false,
 			ctx.signal,
 		);

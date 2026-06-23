@@ -3,6 +3,8 @@ import type { SourceCandidate, SourceDisplayFields } from "./sourceCandidate";
 
 export type SourceIdMap = Partial<Record<SourceType, string>>;
 
+export const DEFAULT_METADATA_SEARCH_LIMIT = 8;
+
 export interface MetadataSourceContext {
 	bgmToken?: string;
 	enrichCrossSource?: boolean;
@@ -18,7 +20,6 @@ export interface MetadataSourceAdapter<TData = unknown> {
 	iconUrl: string;
 	participatesInMixed: boolean;
 	defaultMixedEnabled: boolean;
-	mixedSearchLimit: number;
 	validateId: (id: string) => boolean;
 	getExternalUrl(id: string): string;
 	fetchById(
