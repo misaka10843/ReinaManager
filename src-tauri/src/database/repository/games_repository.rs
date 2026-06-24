@@ -8,6 +8,7 @@ use crate::database::dto::{
 };
 use crate::entity::prelude::*;
 use crate::entity::{games, savedata};
+use sea_orm::sea_query::Expr;
 use sea_orm::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
@@ -452,6 +453,16 @@ impl GamesRepository {
         query
     }
 
+    /// 发行日期排序：无日期的游戏始终置末尾，升序/降序只影响非空日期。
+    fn apply_date_order(query: Select<Games>, sort_order: SortOrder) -> Select<Games> {
+        let query = query.order_by(Expr::col(games::Column::Date).is_null(), Order::Asc);
+        match sort_order {
+            SortOrder::Asc => query.order_by_asc(games::Column::Date),
+            SortOrder::Desc => query.order_by_desc(games::Column::Date),
+        }
+        .order_by_asc(games::Column::Id)
+    }
+
     /// 应用层排序：按可选数值键排序，None 值统一置末尾
     ///
     /// - `key_fn`：从游戏记录提取排序键，返回 `Option<K>`
@@ -575,14 +586,13 @@ impl GamesRepository {
                 query.into_tuple::<i32>().all(db).await
             }
             SortOption::Datetime => {
-                let mut query = Self::build_base_query(game_type)
+                let query = Self::build_base_query(game_type)
                     .select_only()
                     .column(games::Column::Id);
-                query = match sort_order {
-                    SortOrder::Asc => query.order_by_asc(games::Column::Date),
-                    SortOrder::Desc => query.order_by_desc(games::Column::Date),
-                };
-                query.into_tuple::<i32>().all(db).await
+                Self::apply_date_order(query, sort_order)
+                    .into_tuple::<i32>()
+                    .all(db)
+                    .await
             }
             SortOption::LastPlayed => {
                 use crate::entity::game_statistics;
@@ -620,12 +630,9 @@ impl GamesRepository {
                 query.all(db).await
             }
             SortOption::Datetime => {
-                let mut query = Self::build_base_query(game_type);
-                query = match sort_order {
-                    SortOrder::Asc => query.order_by_asc(games::Column::Date),
-                    SortOrder::Desc => query.order_by_desc(games::Column::Date),
-                };
-                query.all(db).await
+                Self::apply_date_order(Self::build_base_query(game_type), sort_order)
+                    .all(db)
+                    .await
             }
             SortOption::LastPlayed => {
                 let query = Self::build_base_query(game_type).left_join(game_statistics::Entity);
