@@ -25,6 +25,7 @@ export const CardItem = memo(
 			{
 				game,
 				displayName,
+				sortFieldOverlay,
 				interaction,
 				batch,
 				removeAction,
@@ -102,20 +103,18 @@ export const CardItem = memo(
 								alt={displayName}
 								draggable="false"
 								loading="lazy"
-								className="h-full w-full object-cover"
-								sx={{
-									filter: "saturate(0.92) contrast(0.98)",
-								}}
+								className="h-full w-full object-cover [filter:saturate(0.92)_contrast(0.98)]"
 							/>
-							{/* 未来悬浮文本（例如游玩时间、日期等）的占位符 */}
-							{/*<Box
-								className="absolute inset-x-0 bottom-0 px-2.5 pt-6 pb-1.5"
-								sx={{
-									background:
-										"linear-gradient(to bottom, transparent 0%, rgba(15,23,32,0.3) 50%, rgba(15,23,32,0.85) 100%)",
-									color: "white",
-								}}
-							/>*/}
+							{sortFieldOverlay && (
+								<Box className="pointer-events-none absolute inset-x-0 bottom-0 px-2.5 pt-6 pb-1.5 text-white [background:linear-gradient(to_bottom,transparent_0%,rgba(15,23,32,0.3)_50%,rgba(15,23,32,0.85)_100%)]">
+									<Typography
+										variant="caption"
+										className="block truncate text-left text-13px font-600 drop-shadow"
+									>
+										{sortFieldOverlay.value}
+									</Typography>
+								</Box>
+							)}
 						</Box>
 						<Box className="px-3 py-2.5 text-center">
 							<Tooltip title={displayName} placement="top" arrow>

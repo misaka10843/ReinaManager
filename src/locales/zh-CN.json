@@ -146,6 +146,7 @@
 			"onlineGames": "云端游戏",
 			"playStatusFilter": "游戏状态",
 			"releaseTime": "游戏发布时间",
+			"showCardSortFieldOverlay": "封面展示排序字段",
 			"sortMethod": "排序方式",
 			"sortOrder": "排序方向",
 			"sourceFilter": "游戏来源",

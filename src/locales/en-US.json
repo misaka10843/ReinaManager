@@ -153,6 +153,7 @@
 			"onlineGames": "Cloud Games",
 			"playStatusFilter": "Play Status",
 			"releaseTime": "Game Release Time",
+			"showCardSortFieldOverlay": "Show sort field on covers",
 			"sortMethod": "Sort Method",
 			"sortOrder": "Sort Order",
 			"sourceFilter": "Game Source",

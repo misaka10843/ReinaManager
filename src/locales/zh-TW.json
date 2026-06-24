@@ -146,6 +146,7 @@
 			"onlineGames": "雲端遊戲",
 			"playStatusFilter": "遊戲狀態",
 			"releaseTime": "遊戲發布時間",
+			"showCardSortFieldOverlay": "封面顯示排序欄位",
 			"sortMethod": "排序方式",
 			"sortOrder": "排序方向",
 			"sourceFilter": "遊戲來源",

@@ -146,6 +146,7 @@
 			"onlineGames": "クラウドゲーム",
 			"playStatusFilter": "プレイ状態",
 			"releaseTime": "ゲーム発売時間",
+			"showCardSortFieldOverlay": "カバーに並べ替え項目を表示",
 			"sortMethod": "並べ替え方法",
 			"sortOrder": "並べ替え方向",
 			"sourceFilter": "ゲームソース",

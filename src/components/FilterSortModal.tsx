@@ -14,9 +14,11 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import FormControl from "@mui/material/FormControl";
+import FormControlLabel from "@mui/material/FormControlLabel";
 import IconButton from "@mui/material/IconButton";
 import MenuItem from "@mui/material/MenuItem";
 import Select, { type SelectChangeEvent } from "@mui/material/Select";
+import Switch from "@mui/material/Switch";
 import TextField from "@mui/material/TextField";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
@@ -81,10 +83,12 @@ export const FilterSortModal: React.FC = () => {
 		tagFilters,
 		sortOption,
 		sortOrder,
+		showCardSortFieldOverlay,
 		setGameFilterType,
 		setPlayStatusFilter,
 		setTagFilters,
 		updateSort,
+		setShowCardSortFieldOverlay,
 	} = useStore(
 		useShallow((s) => ({
 			gameFilterType: s.gameFilterType,
@@ -92,10 +96,12 @@ export const FilterSortModal: React.FC = () => {
 			tagFilters: s.tagFilters,
 			sortOption: s.sortOption,
 			sortOrder: s.sortOrder,
+			showCardSortFieldOverlay: s.showCardSortFieldOverlay,
 			setGameFilterType: s.setGameFilterType,
 			setPlayStatusFilter: s.setPlayStatusFilter,
 			setTagFilters: s.setTagFilters,
 			updateSort: s.updateSort,
+			setShowCardSortFieldOverlay: s.setShowCardSortFieldOverlay,
 		})),
 	);
 	const { baseFilteredGames } = useFilteredGamesFacade();
@@ -110,6 +116,8 @@ export const FilterSortModal: React.FC = () => {
 	const [localSortOption, setLocalSortOption] =
 		useState<SortOption>(sortOption);
 	const [localSortOrder, setLocalSortOrder] = useState<SortOrder>(sortOrder);
+	const [localShowCardSortFieldOverlay, setLocalShowCardSortFieldOverlay] =
+		useState(showCardSortFieldOverlay);
 	const activeFilterCount = getActiveFilterCount(
 		gameFilterType,
 		playStatusFilter,
@@ -153,6 +161,7 @@ export const FilterSortModal: React.FC = () => {
 		setTagInput("");
 		setLocalSortOption(sortOption);
 		setLocalSortOrder(sortOrder);
+		setLocalShowCardSortFieldOverlay(showCardSortFieldOverlay);
 		setOpen(true);
 	};
 
@@ -171,6 +180,7 @@ export const FilterSortModal: React.FC = () => {
 		setPlayStatusFilter(localPlayStatusFilter);
 		setTagFilters(localTagFilters);
 		updateSort(localSortOption, localSortOrder);
+		setShowCardSortFieldOverlay(localShowCardSortFieldOverlay);
 		handleClose();
 	};
 
@@ -458,6 +468,23 @@ export const FilterSortModal: React.FC = () => {
 										{t("components.FilterSortModal.descending", "降序")}
 									</ToggleButton>
 								</ToggleButtonGroup>
+								<FormControlLabel
+									control={
+										<Switch
+											size="small"
+											checked={localShowCardSortFieldOverlay}
+											onChange={(event) =>
+												setLocalShowCardSortFieldOverlay(event.target.checked)
+											}
+										/>
+									}
+									label={t(
+										"components.FilterSortModal.showCardSortFieldOverlay",
+										"封面展示排序字段",
+									)}
+									labelPlacement="start"
+									className="ml-0 justify-between"
+								/>
 							</div>
 						</Box>
 					</div>

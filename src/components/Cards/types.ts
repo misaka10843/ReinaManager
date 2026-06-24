@@ -17,9 +17,14 @@ export interface CardRemoveAction {
 	onRemove: () => void;
 }
 
+export interface CardSortFieldOverlay {
+	value: string;
+}
+
 export interface CardItemProps extends React.HTMLAttributes<HTMLDivElement> {
 	game: GameData;
 	displayName: string;
+	sortFieldOverlay?: CardSortFieldOverlay;
 	interaction?: CardInteraction;
 	batch?: CardBatchState;
 	removeAction?: CardRemoveAction;

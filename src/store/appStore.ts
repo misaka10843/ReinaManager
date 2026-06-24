@@ -53,6 +53,8 @@ export interface AppState {
 	// 排序选项
 	sortOption: SortOption;
 	sortOrder: SortOrder;
+	showCardSortFieldOverlay: boolean;
+	setShowCardSortFieldOverlay: (enabled: boolean) => void;
 
 	// 关闭应用时的提醒设置，skip=不再提醒，行为为 'hide' 或 'close'
 	skipCloseRemind: boolean;
@@ -180,6 +182,7 @@ export const useStore = create<AppState>()(
 			// 排序选项默认值
 			sortOption: "addtime",
 			sortOrder: "asc",
+			showCardSortFieldOverlay: false,
 
 			// 关闭应用时的提醒设置，skip=不再提醒，行为为 'hide' 或 'close'
 			skipCloseRemind: false,
@@ -324,6 +327,9 @@ export const useStore = create<AppState>()(
 					sortOrder: order,
 				});
 			},
+			setShowCardSortFieldOverlay: (enabled: boolean) => {
+				set({ showCardSortFieldOverlay: enabled });
+			},
 
 			// UI 操作方法
 			setSelectedGameId: (id: number | null) => {
@@ -438,6 +444,7 @@ export const useStore = create<AppState>()(
 				// 排序偏好
 				sortOption: state.sortOption,
 				sortOrder: state.sortOrder,
+				showCardSortFieldOverlay: state.showCardSortFieldOverlay,
 				// 筛选偏好
 				gameFilterType: state.gameFilterType,
 				playStatusFilter: state.playStatusFilter,
