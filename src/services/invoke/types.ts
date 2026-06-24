@@ -17,6 +17,7 @@ export type SortOption =
 	| "lastplayed"
 	| "bgmrank"
 	| "vndbrank"
+	| "userratingrank"
 	| "namesort";
 
 /**

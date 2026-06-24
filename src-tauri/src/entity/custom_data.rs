@@ -56,4 +56,12 @@ pub struct CustomData {
     /// 是否为成人内容
     #[serde(skip_serializing_if = "Option::is_none")]
     pub nsfw: Option<bool>,
+
+    /// 用户个人评分，范围 0-10，0 表示清空评分
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub user_rating: Option<f64>,
+
+    /// 用户个人评价
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub user_review: Option<String>,
 }

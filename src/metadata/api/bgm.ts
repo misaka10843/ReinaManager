@@ -39,6 +39,14 @@ export interface BgmUserCollection {
 	type: number;
 }
 
+export interface BgmUserCollectionModifyPayload {
+	type?: number;
+	rate?: number;
+	comment?: string;
+	private?: boolean;
+	tags?: string[];
+}
+
 interface BgmUserCollectionsResponse {
 	total?: number;
 	limit?: number;
@@ -438,20 +446,20 @@ export async function fetchUserGameCollectionsPage(
 /**
  * 更新当前用户的条目收藏状态
  * @param subjectId Bangumi 条目 ID
- * @param type 收藏状态 (1=wish, 2=collect, 3=do, 4=on_hold, 5=dropped)
+ * @param payload 收藏状态、评分、评价等更新字段
  * @param token Bangumi API 访问令牌
  */
 export async function updateUserCollection(
 	subjectId: string,
-	type: number,
+	payload: BgmUserCollectionModifyPayload,
 	token: string,
 	signal?: AbortSignal,
 ): Promise<boolean> {
 	await http.post(
 		`${BGM_API_BASE_URL}/users/-/collections/${subjectId}`,
-		{ type },
+		payload,
 		buildBgmRateLimitedOptions(token, signal),
 	);
-	// HTTP 204 does not return response body (但是官方api调试文档返回的是202(?))
+	// HTTP 204 does not return response body
 	return true;
 }

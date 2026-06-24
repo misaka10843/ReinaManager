@@ -42,3 +42,30 @@ export function getBoolDiff(
 
 	return current;
 }
+
+export function getNumberDiff(
+	current: number | null | undefined,
+	original: number | null | undefined,
+	options?: { clearValue?: number; precision?: number },
+): number | null | undefined {
+	const normalize = (value: number | null | undefined) => {
+		if (typeof value !== "number" || !Number.isFinite(value)) {
+			return null;
+		}
+
+		const nextValue =
+			options?.precision === undefined
+				? value
+				: Math.round(value * 10 ** options.precision) / 10 ** options.precision;
+		return nextValue === options?.clearValue ? null : nextValue;
+	};
+
+	const normCurrent = normalize(current);
+	const normOriginal = normalize(original);
+
+	if (normCurrent === normOriginal) {
+		return normCurrent === null && original != null ? null : undefined;
+	}
+
+	return normCurrent;
+}

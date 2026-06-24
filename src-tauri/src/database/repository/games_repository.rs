@@ -21,6 +21,7 @@ pub enum SortOption {
     LastPlayed,
     BGMRank,
     VNDBRank,
+    UserRatingRank,
     Namesort,
 }
 
@@ -333,7 +334,7 @@ impl GamesRepository {
     ///
     /// 对 SQL 层可直接排序的选项（Addtime/Datetime/LastPlayed）
     /// 走 `SELECT id` 优化路径，避免加载 JSON 元数据列。
-    /// 其余选项（BGMRank/VNDBRank/Namesort）复用 find_with_sort 再提取 id。
+    /// 其余选项（BGMRank/VNDBRank/UserRatingRank/Namesort）复用 find_with_sort 再提取 id。
     /// 前端已缓存完整数据，切换排序/筛选时只需传输 ID 数组。
     pub async fn find_ids(
         db: &DatabaseConnection,
@@ -652,6 +653,18 @@ impl GamesRepository {
                         .as_ref()
                         .and_then(|d| d.score)
                         .filter(|&s| s != 0.0)
+                });
+                Ok(games)
+            }
+            SortOption::UserRatingRank => {
+                // custom_data.user_rating：按“排名”语义排序，升序时高分靠前，无评分或 0 置末尾
+                let mut games = Self::build_base_query(game_type).all(db).await?;
+                let desc = matches!(sort_order, SortOrder::Asc);
+                Self::sort_by_optional_key(&mut games, desc, |g| {
+                    g.custom_data
+                        .as_ref()
+                        .and_then(|d| d.user_rating)
+                        .filter(|&rating| rating > 0.0)
                 });
                 Ok(games)
             }

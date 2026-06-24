@@ -50,6 +50,7 @@ import { getTagDisplayName } from "@/utils/game/tagTranslation";
 import { Backup } from "./Backup";
 import { Edit } from "./Edit";
 import { InfoBox } from "./InfoBox";
+import { Review } from "./Review";
 
 // Tab面板组件
 interface TabPanelProps {
@@ -73,6 +74,14 @@ const TabPanel = (props: TabPanelProps) => {
 		</div>
 	);
 };
+
+function formatScoreValue(value: number | null | undefined) {
+	return typeof value === "number" && value > 0 ? value.toFixed(1) : "-";
+}
+
+function hasMyRating(value: number | null | undefined) {
+	return typeof value === "number" && value > 0;
+}
 
 /**
  * Detail 组件
@@ -373,11 +382,23 @@ export const Detail: React.FC = () => {
 									fontWeight="bold"
 									component="div"
 								>
-									{t("pages.Detail.gameScore", "游戏评分")}
+									{t("pages.Detail.score", "评分")}
 								</Typography>
-								<Typography component="div">
-									{selectedGame.score || "-"}
-								</Typography>
+								<Stack direction="row" spacing={0.75} className="flex-wrap">
+									<Chip
+										size="small"
+										variant="outlined"
+										label={`${t("pages.Detail.siteScore", "站点")} ${formatScoreValue(selectedGame.score)}`}
+									/>
+									{hasMyRating(selectedGame.custom_data?.user_rating) && (
+										<Chip
+											size="small"
+											color="primary"
+											variant="outlined"
+											label={`${t("pages.Detail.myScore", "我的")} ${formatScoreValue(selectedGame.custom_data?.user_rating)}`}
+										/>
+									)}
+								</Stack>
 							</Box>
 						</Stack>
 						{/* 标签 */}
@@ -483,9 +504,14 @@ export const Detail: React.FC = () => {
 								aria-controls="game-tabpanel-2"
 							/>
 							<Tab
-								label={t("pages.Detail.backup", "备份")}
+								label={t("pages.Detail.backup", "存档")}
 								id="game-tab-3"
 								aria-controls="game-tabpanel-3"
+							/>
+							<Tab
+								label={t("pages.Detail.review", "评价")}
+								id="game-tab-4"
+								aria-controls="game-tabpanel-4"
 							/>
 						</Tabs>
 						<Button
@@ -519,6 +545,9 @@ export const Detail: React.FC = () => {
 					</TabPanel>
 					<TabPanel value={tabIndex} index={3}>
 						{tabIndex === 3 && <Backup />}
+					</TabPanel>
+					<TabPanel value={tabIndex} index={4}>
+						{tabIndex === 4 && <Review selectedGame={selectedGame} />}
 					</TabPanel>
 				</Box>
 				<CollectionPickerDialog

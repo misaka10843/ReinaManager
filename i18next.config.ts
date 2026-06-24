@@ -28,6 +28,7 @@ export default defineConfig({
 			"components.FilterSortModal.lastPlayed",
 			"components.FilterSortModal.bgmRank",
 			"components.FilterSortModal.vndbRank",
+			"components.FilterSortModal.userRatingRank",
 		],
 	},
 });

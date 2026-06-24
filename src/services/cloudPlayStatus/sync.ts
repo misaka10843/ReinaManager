@@ -89,7 +89,7 @@ async function syncPlayStatusToBgm(
 		return await withBgmAuth((token) => {
 			if (!token) return Promise.resolve(true);
 
-			return updateUserCollection(bgmId, newStatus, token);
+			return updateUserCollection(bgmId, { type: newStatus }, token);
 		});
 	} catch (error) {
 		console.error("同步 BGM 收藏状态失败:", error);

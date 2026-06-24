@@ -149,6 +149,8 @@ export interface CustomData {
 	tags?: Nullable<string[]>;
 	developer?: Nullable<string>;
 	nsfw?: Nullable<boolean>;
+	user_rating?: Nullable<number>;
+	user_review?: Nullable<string>;
 }
 
 // ==================== 游戏数据类型（DTO 三位一体） ====================

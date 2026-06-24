@@ -13,7 +13,12 @@ import type {
 	UpdateGameParams,
 } from "@/types";
 import { isSourceType } from "@/types";
-import { getArrayDiff, getBoolDiff, getDiff } from "@/utils/diff";
+import {
+	getArrayDiff,
+	getBoolDiff,
+	getDiff,
+	getNumberDiff,
+} from "@/utils/diff";
 import { getGameDisplayName, getGameNsfwStatus } from "@/utils/game";
 import type { SourceIdMap } from "../sourceAdapter";
 import {
@@ -34,6 +39,8 @@ export interface GameInfoUpdateDraft {
 	newDeveloper?: string;
 	newNsfw?: boolean;
 	newDate?: string;
+	newUserRating?: number | null;
+	newUserReview?: string;
 }
 
 export interface BatchImportGameCandidate {
@@ -387,6 +394,27 @@ export function buildGameInfoUpdatePayload(
 		const dateDiff = getDiff(draft.newDate, originalDate);
 		if (dateDiff !== undefined) {
 			payload.date = dateDiff;
+		}
+	}
+
+	if (draft.newUserRating !== undefined) {
+		const userRatingDiff = getNumberDiff(
+			draft.newUserRating,
+			currentCustomData.user_rating,
+			{ clearValue: 0, precision: 1 },
+		);
+		if (userRatingDiff !== undefined) {
+			customData().user_rating = userRatingDiff;
+		}
+	}
+
+	if (draft.newUserReview !== undefined) {
+		const userReviewDiff = getDiff(
+			draft.newUserReview,
+			currentCustomData.user_review ?? undefined,
+		);
+		if (userReviewDiff !== undefined) {
+			customData().user_review = userReviewDiff;
 		}
 	}
 

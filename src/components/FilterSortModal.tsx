@@ -56,6 +56,7 @@ const sortOptions: Array<{ value: SortOption; labelKey: string }> = [
 	{ value: "lastplayed", labelKey: "lastPlayed" },
 	{ value: "bgmrank", labelKey: "bgmRank" },
 	{ value: "vndbrank", labelKey: "vndbRank" },
+	{ value: "userratingrank", labelKey: "userRatingRank" },
 ];
 
 const MAX_TAG_SUGGESTIONS = 8;
