@@ -1,3 +1,43 @@
+## [0.24.0](https://github.com/huoshen80/ReinaManager/compare/v0.23.2...v0.24.0) (2026-06-25)
+
+<details>
+<summary>查看中文版本</summary>
+
+### ✨ 新功能
+
+- *(detail)* 添加个人评测和评分 ([33ebfeb](https://github.com/huoshen80/ReinaManager/commit/33ebfebafdc8463e1ca669c322d1cba5573d99e8))
+- *(cards)* 在封面显示选中的排序值 ([ccb0c1e](https://github.com/huoshen80/ReinaManager/commit/ccb0c1ef9da242c7f421d1ca4561950b52e32587))
+- *(cards)* 在封面显示来源排序值 ([bccbf61](https://github.com/huoshen80/ReinaManager/commit/bccbf61f6d2362b89d7d6b00643599d242ea32ac))
+
+### 🐛 Bug 修复
+
+- *(games)* 让缺失发售日期的项目排在最后 ([04d2a1d](https://github.com/huoshen80/ReinaManager/commit/04d2a1dcbc5ebedf744e1d92477054414e1b0d27))
+- *(games)* 遵循最近游玩排序顺序 ([d0e3c28](https://github.com/huoshen80/ReinaManager/commit/d0e3c28eb6105629620108a38ca635a4abe210a8))
+- *(games)* 按评分排序 BGM 条目 ([1a2f78d](https://github.com/huoshen80/ReinaManager/commit/1a2f78dc426630aa41d971258e5eb8cb26841168))
+
+### 🚀 性能
+
+- *(metadata)* 限制默认搜索结果数量 ([475a1c0](https://github.com/huoshen80/ReinaManager/commit/475a1c047977de8e2754b191c7c8f0bc4e02d31a))
+
+</details>
+
+### ✨ Features
+
+- *(detail)* Add personal reviews and ratings ([33ebfeb](https://github.com/huoshen80/ReinaManager/commit/33ebfebafdc8463e1ca669c322d1cba5573d99e8))
+- *(cards)* Show selected sort value on covers ([ccb0c1e](https://github.com/huoshen80/ReinaManager/commit/ccb0c1ef9da242c7f421d1ca4561950b52e32587))
+- *(cards)* Show source sort values on covers ([bccbf61](https://github.com/huoshen80/ReinaManager/commit/bccbf61f6d2362b89d7d6b00643599d242ea32ac))
+
+### 🐛 Bug Fixes
+
+- *(games)* Keep missing release dates last ([04d2a1d](https://github.com/huoshen80/ReinaManager/commit/04d2a1dcbc5ebedf744e1d92477054414e1b0d27))
+- *(games)* Respect last played sort order ([d0e3c28](https://github.com/huoshen80/ReinaManager/commit/d0e3c28eb6105629620108a38ca635a4abe210a8))
+- *(games)* Rank BGM entries by score ([1a2f78d](https://github.com/huoshen80/ReinaManager/commit/1a2f78dc426630aa41d971258e5eb8cb26841168))
+
+### 🚀 Performance
+
+- *(metadata)* Limit default search results ([475a1c0](https://github.com/huoshen80/ReinaManager/commit/475a1c047977de8e2754b191c7c8f0bc4e02d31a))
+
+
 ## [0.23.2](https://github.com/huoshen80/ReinaManager/compare/v0.23.1...v0.23.2) (2026-06-22)
 
 <details>
