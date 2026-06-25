@@ -7,7 +7,7 @@ use crate::database::dto::{
     BatchOperationError, BatchOperationResult, InsertGameData, UpdateGameData,
 };
 use crate::entity::prelude::*;
-use crate::entity::{games, savedata};
+use crate::entity::{game_statistics, games, savedata};
 use sea_orm::sea_query::Expr;
 use sea_orm::*;
 use serde::{Deserialize, Serialize};
@@ -463,6 +463,19 @@ impl GamesRepository {
         .order_by_asc(games::Column::Id)
     }
 
+    /// 最近游玩排序：无游玩记录始终置末尾，升序按最近优先，降序按最久优先。
+    fn apply_last_played_order(query: Select<Games>, sort_order: SortOrder) -> Select<Games> {
+        let query = query.left_join(game_statistics::Entity).order_by(
+            Expr::col(game_statistics::Column::LastPlayed).is_null(),
+            Order::Asc,
+        );
+        match sort_order {
+            SortOrder::Asc => query.order_by_desc(game_statistics::Column::LastPlayed),
+            SortOrder::Desc => query.order_by_asc(game_statistics::Column::LastPlayed),
+        }
+        .order_by_asc(games::Column::Id)
+    }
+
     /// 应用层排序：按可选数值键排序，None 值统一置末尾
     ///
     /// - `key_fn`：从游戏记录提取排序键，返回 `Option<K>`
@@ -595,13 +608,10 @@ impl GamesRepository {
                     .await
             }
             SortOption::LastPlayed => {
-                use crate::entity::game_statistics;
-                Self::build_base_query(game_type)
+                let query = Self::build_base_query(game_type)
                     .select_only()
-                    .column(games::Column::Id)
-                    .left_join(game_statistics::Entity)
-                    .order_by(game_statistics::Column::LastPlayed, Order::Desc)
-                    .order_by_asc(games::Column::Id)
+                    .column(games::Column::Id);
+                Self::apply_last_played_order(query, sort_order)
                     .into_tuple::<i32>()
                     .all(db)
                     .await
@@ -618,8 +628,6 @@ impl GamesRepository {
         sort_order: SortOrder,
         language: Option<String>,
     ) -> Result<Vec<games::Model>, DbErr> {
-        use crate::entity::game_statistics;
-
         match sort_option {
             SortOption::Addtime => {
                 let mut query = Self::build_base_query(game_type);
@@ -635,10 +643,7 @@ impl GamesRepository {
                     .await
             }
             SortOption::LastPlayed => {
-                let query = Self::build_base_query(game_type).left_join(game_statistics::Entity);
-                query
-                    .order_by(game_statistics::Column::LastPlayed, Order::Desc)
-                    .order_by_asc(games::Column::Id)
+                Self::apply_last_played_order(Self::build_base_query(game_type), sort_order)
                     .all(db)
                     .await
             }
