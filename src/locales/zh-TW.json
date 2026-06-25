@@ -104,7 +104,10 @@
 		"Cards": {
 			"removeFromCategory": "移出目前分類",
 			"removeFromCategoryFailed": "移出分類失敗",
-			"removeFromCategorySuccess": "已從目前分類移除"
+			"removeFromCategorySuccess": "已從目前分類移除",
+			"sortOverlay": {
+				"yesterday": "昨天"
+			}
 		},
 		"Collection": {
 			"errors": {

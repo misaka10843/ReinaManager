@@ -101,6 +101,7 @@ pub fn run() {
             get_game_statistics,
             get_multiple_game_statistics,
             get_all_game_statistics,
+            get_all_game_last_played,
             delete_game_statistics,
             get_today_playtime,
             init_game_statistics,

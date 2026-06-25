@@ -153,6 +153,11 @@ export interface CustomData {
 	user_review?: Nullable<string>;
 }
 
+export interface SourceScores {
+	bgm?: number;
+	vndb?: number;
+}
+
 // ==================== 游戏数据类型（DTO 三位一体） ====================
 
 export type SourceType = "bgm" | "vndb" | "ymgal" | "kun";
@@ -336,6 +341,7 @@ export interface GameData
 	tags?: string[];
 	rank?: number;
 	score?: number;
+	sourceScores?: SourceScores;
 	developer?: string;
 	all_titles?: string[];
 	aliases?: string[];
@@ -364,6 +370,11 @@ export interface GameStatistics {
 	session_count: number;
 	last_played?: number;
 	daily_stats?: Array<{ date: string; playtime: number }>; // 新格式: [{date: "YYYY-MM-DD", playtime: minutes}, ...]
+}
+
+export interface GameLastPlayed {
+	game_id: number;
+	last_played?: number | null;
 }
 
 /**

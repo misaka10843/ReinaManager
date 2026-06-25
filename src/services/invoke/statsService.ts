@@ -3,7 +3,7 @@
  * @description 封装所有游戏统计相关的后端调用
  */
 
-import type { GameSession, GameStatistics } from "@/types";
+import type { GameLastPlayed, GameSession, GameStatistics } from "@/types";
 import { BaseService } from "./base";
 import type { DailyStats } from "./types";
 
@@ -130,6 +130,13 @@ class StatsService extends BaseService {
 	 */
 	async getAllGameStatistics(): Promise<GameStatistics[]> {
 		return this.invoke<GameStatistics[]>("get_all_game_statistics");
+	}
+
+	/**
+	 * 获取所有游戏的最近游玩时间
+	 */
+	async getAllGameLastPlayed(): Promise<GameLastPlayed[]> {
+		return this.invoke<GameLastPlayed[]>("get_all_game_last_played");
 	}
 
 	// 暂时无用开始

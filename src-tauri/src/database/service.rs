@@ -7,7 +7,7 @@ use crate::database::dto::{
 };
 use crate::database::repository::{
     collections_repository::{CategoryWithCount, CollectionsRepository},
-    game_stats_repository::{DailyStats, GameStatsRepository},
+    game_stats_repository::{DailyStats, GameLastPlayed, GameStatsRepository},
     games_repository::{GameType, GamesRepository, SortOption, SortOrder},
     settings_repository::SettingsRepository,
 };
@@ -364,6 +364,16 @@ pub async fn get_all_game_statistics(
     GameStatsRepository::get_all_statistics(&db)
         .await
         .map_err(|e| format!("获取所有游戏统计失败: {}", e))
+}
+
+/// 获取所有游戏的最近游玩时间
+#[tauri::command]
+pub async fn get_all_game_last_played(
+    db: State<'_, DatabaseConnection>,
+) -> Result<Vec<GameLastPlayed>, String> {
+    GameStatsRepository::get_all_last_played(&db)
+        .await
+        .map_err(|e| format!("获取所有游戏最近游玩时间失败: {}", e))
 }
 
 /// 删除游戏统计信息

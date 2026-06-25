@@ -50,6 +50,10 @@ export function getDisplayGameData(fullData: FullGameData): GameData {
 		tags: [],
 		rank: undefined,
 		score: undefined,
+		sourceScores: {
+			bgm: fullData.bgm_data?.score,
+			vndb: fullData.vndb_data?.score ?? undefined,
+		},
 		developer: undefined,
 		all_titles: undefined,
 		aliases: undefined,

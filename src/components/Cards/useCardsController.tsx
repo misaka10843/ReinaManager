@@ -4,48 +4,21 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
 import { saveScrollPosition } from "@/hooks/common/useScrollRestore";
 import { useRemoveGamesFromCategory } from "@/hooks/queries/useCollections";
+import { useAllGameLastPlayedMap } from "@/hooks/queries/useStats";
 import { snackbar } from "@/providers/snackBar";
-import type { SortOption } from "@/services/invoke/types";
 import { useStore } from "@/store/appStore";
 import { useGamePlayStore } from "@/store/gamePlayStore";
 import type { GameData } from "@/types";
-import { getLocalDateString } from "@/utils/dateTime";
 import { getUserErrorMessage } from "@/utils/errors";
 import { getGameDisplayName } from "@/utils/game";
 import { CardsBatchBar } from "./CardsBatchBar";
+import { getCardSortFieldOverlay } from "./cardSortFieldOverlay";
 import { RightMenuHost } from "./RightMenuHost";
-import type {
-	CardSortFieldOverlay,
-	RightMenuHostHandle,
-	SortableCardItemProps,
-} from "./types";
+import type { RightMenuHostHandle, SortableCardItemProps } from "./types";
 
 interface UseCardsControllerOptions {
 	gameIds: number[];
 	categoryId?: number;
-}
-
-function getCardSortFieldOverlay(
-	game: GameData,
-	sortOption: SortOption,
-): CardSortFieldOverlay | undefined {
-	switch (sortOption) {
-		case "addtime":
-			return game.created_at
-				? { value: getLocalDateString(game.created_at) }
-				: undefined;
-		case "datetime":
-			return game.date ? { value: game.date } : undefined;
-		case "userratingrank": {
-			const userRating = game.custom_data?.user_rating;
-			return userRating ? { value: userRating.toFixed(1) } : undefined;
-		}
-		case "bgmrank":
-		case "vndbrank":
-		case "lastplayed":
-		case "namesort":
-			return undefined;
-	}
 }
 
 export function useCardsController({
@@ -74,6 +47,13 @@ export function useCardsController({
 		})),
 	);
 	const launchGame = useGamePlayStore((s) => s.launchGame);
+	const shouldShowCardSortFieldOverlay =
+		isLibraries && showCardSortFieldOverlay;
+	const shouldLoadLastPlayed =
+		shouldShowCardSortFieldOverlay && sortOption === "lastplayed";
+	const lastPlayedQuery = useAllGameLastPlayedMap({
+		enabled: shouldLoadLastPlayed,
+	});
 	const [batchMode, setBatchMode] = useState(false);
 	const [selectedBatchGameIds, setSelectedBatchGameIds] = useState<number[]>(
 		[],
@@ -192,8 +172,14 @@ export function useCardsController({
 			return {
 				game,
 				displayName: getGameDisplayName(game),
-				sortFieldOverlay: showCardSortFieldOverlay
-					? getCardSortFieldOverlay(game, sortOption)
+				sortFieldOverlay: shouldShowCardSortFieldOverlay
+					? getCardSortFieldOverlay({
+							game,
+							sortOption,
+							lastPlayed: lastPlayedQuery.data?.get(gameId),
+							language: i18n.language,
+							t,
+						})
 					: undefined,
 				batch: showBatchControls
 					? { selected: selectedBatchGameIdSet.has(gameId) }
@@ -220,8 +206,10 @@ export function useCardsController({
 			handleCardDoubleClick,
 			handleRemoveSingleFromCategory,
 			isCollectionCategory,
+			i18n.language,
+			lastPlayedQuery.data,
+			shouldShowCardSortFieldOverlay,
 			selectedBatchGameIdSet,
-			showCardSortFieldOverlay,
 			showBatchControls,
 			sortOption,
 			t,

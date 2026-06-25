@@ -104,7 +104,10 @@
 		"Cards": {
 			"removeFromCategory": "現在のカテゴリから削除",
 			"removeFromCategoryFailed": "カテゴリからの削除に失敗しました",
-			"removeFromCategorySuccess": "現在のカテゴリから削除しました"
+			"removeFromCategorySuccess": "現在のカテゴリから削除しました",
+			"sortOverlay": {
+				"yesterday": "昨日"
+			}
 		},
 		"Collection": {
 			"errors": {

@@ -10,6 +10,12 @@ pub struct DailyStats {
     pub playtime: i32,
 }
 
+#[derive(Debug, Clone, Serialize, FromQueryResult)]
+pub struct GameLastPlayed {
+    pub game_id: i32,
+    pub last_played: Option<i32>,
+}
+
 /// 游戏统计仓库
 pub struct GameStatsRepository;
 
@@ -195,6 +201,19 @@ impl GameStatsRepository {
         db: &DatabaseConnection,
     ) -> Result<Vec<game_statistics::Model>, DbErr> {
         GameStatistics::find().all(db).await
+    }
+
+    /// 获取所有游戏的最近游玩时间，不包含 daily_stats 大字段。
+    pub async fn get_all_last_played(
+        db: &DatabaseConnection,
+    ) -> Result<Vec<GameLastPlayed>, DbErr> {
+        GameStatistics::find()
+            .select_only()
+            .column(game_statistics::Column::GameId)
+            .column(game_statistics::Column::LastPlayed)
+            .into_model::<GameLastPlayed>()
+            .all(db)
+            .await
     }
 
     /// 初始化游戏统计记录（游戏启动时调用）

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import {
+	getAllGameLastPlayed,
 	getAllGameStatistics,
 	getFormattedGameStats,
 	getRecentSessionsForGames,
@@ -13,6 +14,7 @@ export const statsKeys = {
 	gameStats: (gameId: number) => [...statsKeys.all, "game", gameId] as const,
 	sessions: (gameId: number, limit: number) =>
 		[...statsKeys.all, "sessions", gameId, limit] as const,
+	allGameLastPlayed: () => [...statsKeys.all, "allGameLastPlayed"] as const,
 	recentSessionsForGames: (gameIds: number[], limit: number) =>
 		[...statsKeys.all, "recentSessionsForGames", gameIds, limit] as const,
 	playTimeSummary: () => [...statsKeys.all, "playTimeSummary"] as const,
@@ -120,6 +122,14 @@ function useGameSessions(gameId: number | null, limit = 10) {
 	});
 }
 
+function useAllGameLastPlayedMap({ enabled }: { enabled: boolean }) {
+	return useQuery({
+		queryKey: statsKeys.allGameLastPlayed(),
+		queryFn: getAllGameLastPlayed,
+		enabled,
+	});
+}
+
 function useRecentSessionsForGames(gameIds: number[], limit = 10) {
 	return useQuery({
 		queryKey: statsKeys.recentSessionsForGames(gameIds, limit),
@@ -182,6 +192,7 @@ function usePlayTimeSummary() {
 }
 
 export {
+	useAllGameLastPlayedMap,
 	useGameSessions,
 	useGameStats,
 	usePlayTimeSummary,

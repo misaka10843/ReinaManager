@@ -108,7 +108,10 @@
 		"Cards": {
 			"removeFromCategory": "Remove from Current Category",
 			"removeFromCategoryFailed": "Failed to remove from category",
-			"removeFromCategorySuccess": "Removed from current category"
+			"removeFromCategorySuccess": "Removed from current category",
+			"sortOverlay": {
+				"yesterday": "Yesterday"
+			}
 		},
 		"Collection": {
 			"errors": {
