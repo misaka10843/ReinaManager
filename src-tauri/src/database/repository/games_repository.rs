@@ -495,6 +495,50 @@ impl GamesRepository {
             }
         });
     }
+
+    /// BGM 排名排序：优先按评分排序，同分时用官方排名补充排序。
+    fn sort_by_bgm_rank(games: &mut [games::Model], sort_order: SortOrder) {
+        let rank_desc = matches!(sort_order, SortOrder::Desc);
+        games.sort_unstable_by(|a, b| {
+            let score_a = a
+                .bgm_data
+                .as_ref()
+                .and_then(|d| d.score)
+                .filter(|&s| s > 0.0);
+            let score_b = b
+                .bgm_data
+                .as_ref()
+                .and_then(|d| d.score)
+                .filter(|&s| s > 0.0);
+            let rank_a = a.bgm_data.as_ref().and_then(|d| d.rank).filter(|&r| r != 0);
+            let rank_b = b.bgm_data.as_ref().and_then(|d| d.rank).filter(|&r| r != 0);
+
+            let rank_order = || match (rank_a, rank_b) {
+                (Some(ra), Some(rb)) => {
+                    let ord = ra.cmp(&rb);
+                    if rank_desc { ord.reverse() } else { ord }
+                }
+                (Some(_), None) => std::cmp::Ordering::Less,
+                (None, Some(_)) => std::cmp::Ordering::Greater,
+                (None, None) => std::cmp::Ordering::Equal,
+            };
+
+            match (score_a, score_b) {
+                (Some(sa), Some(sb)) => {
+                    let ord = match sort_order {
+                        SortOrder::Asc => sb.partial_cmp(&sa),
+                        SortOrder::Desc => sa.partial_cmp(&sb),
+                    }
+                    .unwrap_or(std::cmp::Ordering::Equal);
+                    ord.then_with(rank_order).then_with(|| a.id.cmp(&b.id))
+                }
+                (Some(_), None) => std::cmp::Ordering::Less,
+                (None, Some(_)) => std::cmp::Ordering::Greater,
+                (None, None) => rank_order().then_with(|| a.id.cmp(&b.id)),
+            }
+        });
+    }
+
     /// 从游戏记录中提取用于排序的显示名称
     ///
     /// 优先级与前端 `getGameDisplayName` 保持一致：
@@ -648,12 +692,9 @@ impl GamesRepository {
                     .await
             }
             SortOption::BGMRank => {
-                // bgm_data.rank：数值越小排名越靠前，无 rank 或 rank=0 置末尾
+                // bgm_data.score：按“排名”语义排序，升序时高分靠前，rank 作为同分补充依据
                 let mut games = Self::build_base_query(game_type).all(db).await?;
-                let desc = matches!(sort_order, SortOrder::Desc);
-                Self::sort_by_optional_key(&mut games, desc, |g| {
-                    g.bgm_data.as_ref().and_then(|d| d.rank).filter(|&r| r != 0)
-                });
+                Self::sort_by_bgm_rank(&mut games, sort_order);
                 Ok(games)
             }
             SortOption::VNDBRank => {
