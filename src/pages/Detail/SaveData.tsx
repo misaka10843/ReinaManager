@@ -51,26 +51,26 @@ const formatDate = (timestamp: number): string => {
 	return new Date(timestamp * 1000).toLocaleString();
 };
 
-interface BackupContentProps {
+interface SaveDataContentProps {
 	selectedGame: GameData;
 	gameId: number;
 }
 
 /**
- * Backup 组件
- * 游戏存档备份页面
+ * SaveData 组件
+ * 游戏存档页面
  */
-export const Backup: React.FC = () => {
+export const SaveData: React.FC = () => {
 	return (
 		<SelectedGameGuard>
 			{(selectedGame) => (
-				<BackupContent selectedGame={selectedGame} gameId={selectedGame.id} />
+				<SaveDataContent selectedGame={selectedGame} gameId={selectedGame.id} />
 			)}
 		</SelectedGameGuard>
 	);
 };
 
-function BackupContent({ selectedGame, gameId }: BackupContentProps) {
+function SaveDataContent({ selectedGame, gameId }: SaveDataContentProps) {
 	const updateGameMutation = useUpdateGame();
 	const { t } = useTranslation();
 	const originalAutoSaveEnabled = selectedGame.autosave === 1;

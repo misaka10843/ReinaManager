@@ -34,20 +34,22 @@ interface GameTimeChartData {
 }
 
 /**
- * InfoBox 组件属性类型
+ * GameStatsOverview 组件属性类型
  */
-interface InfoBoxProps {
+interface GameStatsOverviewProps {
 	gameID: number;
 }
 
 /**
- * InfoBox 组件
+ * GameStatsOverview 组件
  * 展示游戏统计信息（游玩次数、今日时长、总时长、备份次数）及近7天游玩时长折线图。
  *
- * @param {InfoBoxProps} props 组件属性
+ * @param {GameStatsOverviewProps} props 组件属性
  * @returns 统计信息卡片与折线图
  */
-export const InfoBox: React.FC<InfoBoxProps> = ({ gameID }: InfoBoxProps) => {
+export const GameStatsOverview: React.FC<GameStatsOverviewProps> = ({
+	gameID,
+}: GameStatsOverviewProps) => {
 	const { t } = useTranslation();
 	const runningGameIds = useGamePlayStore((s) => s.runningGameIds);
 	const gameStatsQuery = useGameStats(gameID);

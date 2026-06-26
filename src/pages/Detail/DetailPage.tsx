@@ -47,10 +47,10 @@ import { useStore } from "@/store/appStore";
 import { DefaultGroup } from "@/types/collection";
 import { getGameCover, getGameDisplayName } from "@/utils/game";
 import { getTagDisplayName } from "@/utils/game/tagTranslation";
-import { Backup } from "./Backup";
 import { Edit } from "./Edit";
-import { InfoBox } from "./InfoBox";
+import { GameStatsOverview } from "./GameStatsOverview";
 import { Review } from "./Review";
+import { SaveData } from "./SaveData";
 
 // Tab面板组件
 interface TabPanelProps {
@@ -525,7 +525,7 @@ export const Detail: React.FC = () => {
 
 					{/* 统计信息Tab */}
 					<TabPanel value={tabIndex} index={0}>
-						{tabIndex === 0 && <InfoBox gameID={id} />}
+						{tabIndex === 0 && <GameStatsOverview gameID={id} />}
 					</TabPanel>
 					<TabPanel value={tabIndex} index={1}>
 						{tabIndex === 1 && (
@@ -544,7 +544,7 @@ export const Detail: React.FC = () => {
 						{tabIndex === 2 && <Edit />}
 					</TabPanel>
 					<TabPanel value={tabIndex} index={3}>
-						{tabIndex === 3 && <Backup />}
+						{tabIndex === 3 && <SaveData />}
 					</TabPanel>
 					<TabPanel value={tabIndex} index={4}>
 						{tabIndex === 4 && <Review selectedGame={selectedGame} />}
