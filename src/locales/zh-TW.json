@@ -444,6 +444,7 @@
 				"settingsSaveFailed": "備份設定儲存失敗"
 			},
 			"backupCount": "存檔備份數",
+			"chartView": "圖表",
 			"clearSelectedTags": "清空",
 			"collapseTags": "折疊標籤",
 			"DataSourceUpdate": {
@@ -524,8 +525,10 @@
 			"gameTags": "遊戲標籤",
 			"introduction": "簡介",
 			"loading": "加載中...",
+			"loadMoreSessions": "載入更多",
 			"manageCollections": "管理收藏夾",
 			"myScore": "我的",
+			"noPlaySessions": "暫無遊玩記錄",
 			"notFound": "未找到該遊戲",
 			"playCount": "累計遊戲次數",
 			"playTimeChart": "統計圖表",
@@ -554,7 +557,9 @@
 			},
 			"score": "評分",
 			"searchBySelectedTags_other": "搜尋 ({{count}})",
+			"sessionDuration": "時長",
 			"siteScore": "站點",
+			"timelineView": "列表",
 			"todayPlayTime": "今日遊戲時長",
 			"totalPlayTime": "累計總時長"
 		},

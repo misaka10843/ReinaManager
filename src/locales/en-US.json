@@ -456,6 +456,7 @@
 				"settingsSaveFailed": "Failed to save backup settings"
 			},
 			"backupCount": "Backup Count",
+			"chartView": "Chart",
 			"clearSelectedTags": "Clear",
 			"collapseTags": "Collapse Tags",
 			"DataSourceUpdate": {
@@ -536,8 +537,10 @@
 			"gameTags": "Game Tags",
 			"introduction": "Introduction",
 			"loading": "Loading...",
+			"loadMoreSessions": "Load More",
 			"manageCollections": "Manage Collections",
 			"myScore": "Mine",
+			"noPlaySessions": "No play sessions",
 			"notFound": "Game data not found",
 			"playCount": "Total Play Count",
 			"playTimeChart": "Play Time Chart",
@@ -567,7 +570,9 @@
 			"score": "Score",
 			"searchBySelectedTags_one": "Search ({{count}})",
 			"searchBySelectedTags_other": "Search ({{count}})",
+			"sessionDuration": "Duration",
 			"siteScore": "Site",
+			"timelineView": "List",
 			"todayPlayTime": "Today's Play Time",
 			"totalPlayTime": "Total Play Time"
 		},

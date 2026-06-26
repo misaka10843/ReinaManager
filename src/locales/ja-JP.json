@@ -444,6 +444,7 @@
 				"settingsSaveFailed": "バックアップ設定の保存に失敗しました"
 			},
 			"backupCount": "バックアップ数",
+			"chartView": "チャート",
 			"clearSelectedTags": "クリア",
 			"collapseTags": "タグを折りたたむ",
 			"DataSourceUpdate": {
@@ -524,8 +525,10 @@
 			"gameTags": "ゲームタグ",
 			"introduction": "紹介",
 			"loading": "読み込み中...",
+			"loadMoreSessions": "さらに読み込む",
 			"manageCollections": "コレクション管理",
 			"myScore": "自分",
+			"noPlaySessions": "プレイ記録がありません",
 			"notFound": "ゲームデータが見つかりません",
 			"playCount": "累計プレイ回数",
 			"playTimeChart": "プレイ時間チャート",
@@ -554,7 +557,9 @@
 			},
 			"score": "評価",
 			"searchBySelectedTags_other": "検索 ({{count}})",
+			"sessionDuration": "プレイ時間",
 			"siteScore": "サイト",
+			"timelineView": "リスト",
 			"todayPlayTime": "本日のプレイ時間",
 			"totalPlayTime": "累計総プレイ時間"
 		},

@@ -1,28 +1,41 @@
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import BackupIcon from "@mui/icons-material/Backup";
+import BarChartIcon from "@mui/icons-material/BarChart";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
 import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
 import TodayIcon from "@mui/icons-material/Today";
 import {
 	Box,
+	Button,
+	CircularProgress,
 	IconButton,
 	ToggleButton,
 	ToggleButtonGroup,
+	Tooltip,
 	Typography,
 } from "@mui/material";
 import { LineChart } from "@mui/x-charts/LineChart";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSaveDataBackupCount } from "@/hooks/queries/useSavedata";
-import { useGameStats } from "@/hooks/queries/useStats";
+import { useGameSessions, useGameStats } from "@/hooks/queries/useStats";
 import { useGamePlayStore } from "@/store/gamePlayStore";
 import type { GameTimeStats } from "@/types";
+import { formatPlayTime, getLocalDateString } from "@/utils/dateTime";
 
 /**
  * 时间范围类型定义
  */
 type TimeRange = "7D" | "30D" | "MONTH" | "1Y" | "ALL";
+
+/**
+ * 统计视图类型定义
+ */
+type StatsViewMode = "chart" | "timeline";
+
+const SESSION_PAGE_SIZE = 30;
 
 /**
  * 图表数据类型定义
@@ -40,6 +53,17 @@ interface GameStatsOverviewProps {
 	gameID: number;
 }
 
+const padTimeUnit = (value: number): string => String(value).padStart(2, "0");
+
+const formatClockTime = (date: Date): string =>
+	`${padTimeUnit(date.getHours())}:${padTimeUnit(date.getMinutes())}`;
+
+const formatMonthDayTime = (date: Date): string =>
+	`${padTimeUnit(date.getMonth() + 1)}/${padTimeUnit(date.getDate())} ${formatClockTime(date)}`;
+
+const formatYearMonthDayTime = (date: Date): string =>
+	`${date.getFullYear()}/${formatMonthDayTime(date)}`;
+
 /**
  * GameStatsOverview 组件
  * 展示游戏统计信息（游玩次数、今日时长、总时长、备份次数）及近7天游玩时长折线图。
@@ -53,9 +77,14 @@ export const GameStatsOverview: React.FC<GameStatsOverviewProps> = ({
 	const { t } = useTranslation();
 	const runningGameIds = useGamePlayStore((s) => s.runningGameIds);
 	const gameStatsQuery = useGameStats(gameID);
+	const [sessionLimit, setSessionLimit] = useState(SESSION_PAGE_SIZE);
+	const gameSessionsQuery = useGameSessions(gameID, sessionLimit);
 	const backupCountQuery = useSaveDataBackupCount(gameID);
+	const { refetch: refetchGameStats } = gameStatsQuery;
+	const { refetch: refetchGameSessions } = gameSessionsQuery;
 	const stats = gameStatsQuery.data as GameTimeStats | null;
 	const [timeRange, setTimeRange] = useState<TimeRange>("7D");
+	const [viewMode, setViewMode] = useState<StatsViewMode>("chart");
 	// 选中的月份 (YYYY-MM 格式)
 	const [selectedMonth, setSelectedMonth] = useState<string>(() => {
 		const now = new Date();
@@ -113,10 +142,14 @@ export const GameStatsOverview: React.FC<GameStatsOverviewProps> = ({
 	useEffect(() => {
 		let unmounted = false;
 		const isCurrentGameRunning = runningGameIds.has(gameID);
-		if (prevRunningRef.current && !isCurrentGameRunning) {
+		const wasCurrentGameRunning = prevRunningRef.current;
+		prevRunningRef.current = isCurrentGameRunning;
+
+		if (wasCurrentGameRunning && !isCurrentGameRunning) {
 			const timer = setTimeout(() => {
 				if (!unmounted) {
-					gameStatsQuery.refetch();
+					refetchGameStats();
+					refetchGameSessions();
 				}
 			}, 500);
 			return () => {
@@ -124,11 +157,10 @@ export const GameStatsOverview: React.FC<GameStatsOverviewProps> = ({
 				clearTimeout(timer);
 			};
 		}
-		prevRunningRef.current = isCurrentGameRunning;
 		return () => {
 			unmounted = true;
 		};
-	}, [runningGameIds, gameID, gameStatsQuery]);
+	}, [runningGameIds, gameID, refetchGameStats, refetchGameSessions]);
 
 	/**
 	 * 统计项数据
@@ -306,6 +338,35 @@ export const GameStatsOverview: React.FC<GameStatsOverviewProps> = ({
 		};
 	}, [timeRange]);
 
+	const formatSessionTimeRange = useCallback(
+		(startTime: number, endTime?: number) => {
+			if (!endTime) {
+				return `${formatClockTime(new Date(startTime * 1000))} -`;
+			}
+
+			const start = new Date(startTime * 1000);
+			const end = new Date(endTime * 1000);
+			const isSameDate =
+				start.getFullYear() === end.getFullYear() &&
+				start.getMonth() === end.getMonth() &&
+				start.getDate() === end.getDate();
+			const endText = isSameDate
+				? formatClockTime(end)
+				: start.getFullYear() === end.getFullYear()
+					? formatMonthDayTime(end)
+					: formatYearMonthDayTime(end);
+
+			return `${formatClockTime(start)} - ${endText}`;
+		},
+		[],
+	);
+
+	const sessions = gameSessionsQuery.data ?? [];
+	const canLoadMoreSessions =
+		sessions.length > 0 &&
+		(gameSessionsQuery.isPlaceholderData || sessions.length === sessionLimit) &&
+		!gameSessionsQuery.isLoading;
+
 	return (
 		<>
 			{/* 统计信息卡片 */}
@@ -397,39 +458,152 @@ export const GameStatsOverview: React.FC<GameStatsOverviewProps> = ({
 									ALL
 								</ToggleButton>
 							</ToggleButtonGroup>
+							<ToggleButtonGroup
+								value={viewMode}
+								exclusive
+								onChange={(_, newValue) => {
+									if (newValue !== null) {
+										setViewMode(newValue);
+									}
+								}}
+								size="small"
+								aria-label="stats view selector"
+							>
+								<ToggleButton
+									value="chart"
+									aria-label={t("pages.Detail.chartView", "图表")}
+								>
+									<Tooltip title={t("pages.Detail.chartView", "图表")}>
+										<BarChartIcon fontSize="small" />
+									</Tooltip>
+								</ToggleButton>
+								<ToggleButton
+									value="timeline"
+									aria-label={t("pages.Detail.timelineView", "列表")}
+								>
+									<Tooltip title={t("pages.Detail.timelineView", "列表")}>
+										<FormatListBulletedIcon fontSize="small" />
+									</Tooltip>
+								</ToggleButton>
+							</ToggleButtonGroup>
 						</Box>
 					</Box>
-					<LineChart
-						dataset={chartData}
-						xAxis={[
-							{
-								dataKey: "date",
-								scaleType: "point",
-								valueFormatter: xAxisFormatter,
-							},
-						]}
-						yAxis={[
-							{
-								min: 0,
-								max: chartData.every((item) => item.playtime === 0)
-									? 10
-									: undefined,
-								scaleType: "linear",
-								tickMinStep: 1,
-							},
-						]}
-						series={[
-							{
-								dataKey: "playtime",
-								color: "#1976d2",
-								showMark: chartConfig.showMark,
-								area: chartConfig.showArea,
-							},
-						]}
-						height={300}
-						margin={{ right: 40 }}
-						grid={{ vertical: true, horizontal: true }}
-					/>
+					{viewMode === "chart" ? (
+						<LineChart
+							dataset={chartData}
+							xAxis={[
+								{
+									dataKey: "date",
+									scaleType: "point",
+									valueFormatter: xAxisFormatter,
+								},
+							]}
+							yAxis={[
+								{
+									min: 0,
+									max: chartData.every((item) => item.playtime === 0)
+										? 10
+										: undefined,
+									scaleType: "linear",
+									tickMinStep: 1,
+								},
+							]}
+							series={[
+								{
+									dataKey: "playtime",
+									color: "#1976d2",
+									showMark: chartConfig.showMark,
+									area: chartConfig.showArea,
+								},
+							]}
+							height={300}
+							margin={{ right: 40 }}
+							grid={{ vertical: true, horizontal: true }}
+						/>
+					) : (
+						<Box className="min-h-[300px]">
+							{gameSessionsQuery.isLoading ? (
+								<Box className="h-[300px] flex items-center justify-center">
+									<CircularProgress size={24} />
+								</Box>
+							) : sessions.length === 0 ? (
+								<Box className="h-[300px] flex items-center justify-center">
+									<Typography color="textSecondary" component="div">
+										{t("pages.Detail.noPlaySessions", "暂无游玩记录")}
+									</Typography>
+								</Box>
+							) : (
+								<Box className="max-h-[360px] overflow-y-auto pr-2">
+									{sessions.map((session, index) => {
+										const sessionDate = getLocalDateString(session.start_time);
+										const previousSessionDate = sessions[index - 1]
+											? getLocalDateString(sessions[index - 1].start_time)
+											: null;
+										const showDate =
+											index === 0 || previousSessionDate !== sessionDate;
+
+										return (
+											<Box key={session.session_id}>
+												{showDate && (
+													<Typography
+														variant="subtitle2"
+														color="textSecondary"
+														className="mt-2 mb-1"
+														component="div"
+													>
+														{sessionDate}
+													</Typography>
+												)}
+												<Box className="relative flex gap-3 py-2 pl-1">
+													<Box className="flex flex-col items-center">
+														<Box className="w-2 h-2 rounded-full bg-[#1976d2] mt-2" />
+														{index !== sessions.length - 1 && (
+															<Box className="w-px flex-1 min-h-8 bg-gray-200 mt-1" />
+														)}
+													</Box>
+													<Box className="min-w-0 flex-1">
+														<Typography
+															variant="body2"
+															className="font-medium"
+															component="div"
+														>
+															{formatSessionTimeRange(
+																session.start_time,
+																session.end_time,
+															)}
+														</Typography>
+														<Typography
+															variant="body2"
+															color="textSecondary"
+															component="div"
+														>
+															{t("pages.Detail.sessionDuration", "时长")}:{" "}
+															{formatPlayTime(session.duration ?? 0)}
+														</Typography>
+													</Box>
+												</Box>
+											</Box>
+										);
+									})}
+									{canLoadMoreSessions && (
+										<Box className="flex justify-center py-3">
+											<Button
+												variant="outlined"
+												onClick={() =>
+													setSessionLimit((value) => value + SESSION_PAGE_SIZE)
+												}
+												disabled={gameSessionsQuery.isFetching}
+											>
+												{gameSessionsQuery.isFetching
+													? t("pages.Detail.loading", "加载中...")
+													: t("pages.Detail.loadMoreSessions", "加载更多")}
+											</Button>
+										</Box>
+									)}
+								</Box>
+							)}
+						</Box>
+					)}
 				</Box>
 			)}
 		</>

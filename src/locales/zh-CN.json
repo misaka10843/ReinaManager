@@ -444,6 +444,7 @@
 				"settingsSaveFailed": "备份设置保存失败"
 			},
 			"backupCount": "存档备份数",
+			"chartView": "图表",
 			"clearSelectedTags": "清空",
 			"collapseTags": "折叠标签",
 			"DataSourceUpdate": {
@@ -524,8 +525,10 @@
 			"gameTags": "游戏标签",
 			"introduction": "简介",
 			"loading": "加载中...",
+			"loadMoreSessions": "加载更多",
 			"manageCollections": "管理收藏夹",
 			"myScore": "我的",
+			"noPlaySessions": "暂无游玩记录",
 			"notFound": "未找到游戏数据",
 			"playCount": "累计游戏次数",
 			"playTimeChart": "统计图表",
@@ -554,7 +557,9 @@
 			},
 			"score": "评分",
 			"searchBySelectedTags": "搜索 ({{count}})",
+			"sessionDuration": "时长",
 			"siteScore": "站点",
+			"timelineView": "列表",
 			"todayPlayTime": "今日游戏时长",
 			"totalPlayTime": "累计总时长"
 		},

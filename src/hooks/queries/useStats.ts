@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import {
 	getAllGameLastPlayed,
@@ -119,6 +119,7 @@ function useGameSessions(gameId: number | null, limit = 10) {
 			return statsService.getGameSessions(gameId, limit);
 		},
 		enabled: gameId !== null,
+		placeholderData: keepPreviousData,
 	});
 }
 
