@@ -189,7 +189,7 @@ export const Settings: React.FC = () => {
 								)}
 								description={t(
 									"pages.Settings.pathSettings.note",
-									"配置游戏存档备份、LE转区软件、Magpie软件、数据库备份等路径",
+									"配置游戏存档备份、数据库备份、LE转区软件、Magpie软件等路径",
 								)}
 							>
 								<Button

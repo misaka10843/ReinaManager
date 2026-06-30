@@ -65,7 +65,7 @@ export const LogLevelSettings = () => {
 		try {
 			await setLogLevelMutation.mutateAsync(level);
 			snackbar.success(
-				t("pages.Settings.logLevel.changed", `日志级别已切换为 ${level}`, {
+				t("pages.Settings.logLevel.changed", "日志级别已切换为 {{level}}", {
 					level,
 				}),
 			);

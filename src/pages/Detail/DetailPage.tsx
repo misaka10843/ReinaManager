@@ -422,9 +422,8 @@ export const Detail: React.FC = () => {
 									disabled={selectedTags.length === 0}
 									onClick={handleSearchByTags}
 								>
-									{t("pages.Detail.searchBySelectedTags", {
+									{t("pages.Detail.searchBySelectedTags", "搜索 ({{count}})", {
 										count: selectedTags.length,
-										defaultValue: "搜索",
 									})}
 								</Button>
 								<Button

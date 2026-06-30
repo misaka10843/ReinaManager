@@ -80,7 +80,7 @@ export function useGameStatusActions() {
 						snackbar.warning(
 							t(
 								"pages.Settings.collectionSync.syncFailed",
-								`本地状态已更新，但 ${sourceLabel} 云端同步失败`,
+								"本地状态已更新，但 {{source}} 云端同步失败",
 								{ source: sourceLabel },
 							),
 						);

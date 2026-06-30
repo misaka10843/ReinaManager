@@ -204,7 +204,7 @@ const BatchUpdateSettings: React.FC = () => {
 			if (result.success > 0) {
 				const message = t(
 					"pages.Settings.batchUpdate.success",
-					`成功更新 ${result.success}/${result.total} 个游戏`,
+					"成功更新 {{success}}/{{total}} 个游戏",
 					{ success: result.success, total: result.total },
 				);
 				setUpdateStatus(message);
@@ -214,7 +214,7 @@ const BatchUpdateSettings: React.FC = () => {
 			if (result.failed > 0) {
 				const failedMessage = t(
 					"pages.Settings.batchUpdate.partialFailed",
-					`${result.failed} 个游戏更新失败`,
+					"{{failed}} 个游戏更新失败",
 					{ failed: result.failed },
 				);
 				setUpdateStatus((prev) =>
@@ -269,7 +269,7 @@ const BatchUpdateSettings: React.FC = () => {
 			if (result.success > 0) {
 				const message = t(
 					"pages.Settings.batchUpdate.success",
-					`成功更新 ${result.success}/${result.total} 个游戏`,
+					"成功更新 {{success}}/{{total}} 个游戏",
 					{ success: result.success, total: result.total },
 				);
 				setUpdateStatus(message);
@@ -279,7 +279,7 @@ const BatchUpdateSettings: React.FC = () => {
 			if (result.failed > 0) {
 				const failedMessage = t(
 					"pages.Settings.batchUpdate.partialFailed",
-					`${result.failed} 个游戏更新失败`,
+					"{{failed}} 个游戏更新失败",
 					{ failed: result.failed },
 				);
 				setUpdateStatus((prev) =>

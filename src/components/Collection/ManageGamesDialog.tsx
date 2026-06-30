@@ -268,10 +268,11 @@ export const ManageGamesDialog: React.FC<ManageGamesDialogProps> = ({
 
 			// 成功提示
 			snackbar.success(
-				t("components.Collection.success.categoryGamesUpdated", {
-					count: gameIdsArray.length,
-					defaultValue: `已更新分类游戏：${gameIdsArray.length} 个`,
-				}),
+				t(
+					"components.Collection.success.categoryGamesUpdated",
+					"已更新分类游戏：{{count}} 个",
+					{ count: gameIdsArray.length },
+				),
 			);
 
 			// 关闭对话框
