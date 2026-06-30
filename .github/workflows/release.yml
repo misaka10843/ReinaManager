@@ -157,7 +157,7 @@ jobs:
           rustflags = ["-C", "link-arg=-fuse-ld=mold"]
           EOF
       - name: Build and Upload to Draft Release
-        uses: tauri-apps/tauri-action@v1
+        uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
@@ -171,7 +171,8 @@ jobs:
           releaseBody: ${{ needs.prepare.outputs.pure_changelog }}
           releaseDraft: true
           prerelease: false
-          uploadUpdaterJson: true
+          includeUpdaterJson: true
+          includeRelease: true
           tauriScript: pnpm tauri
           args: --target ${{ matrix.rust_target }}
 
@@ -240,7 +241,7 @@ jobs:
           esac
           echo "SHORT=$SHORT" >> $GITHUB_OUTPUT
       - name: Build and Upload to Draft Release
-        uses: tauri-apps/tauri-action@v1
+        uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
@@ -254,7 +255,8 @@ jobs:
           releaseBody: ${{ needs.prepare.outputs.pure_changelog }}
           releaseDraft: true
           prerelease: false
-          uploadUpdaterJson: true
+          includeUpdaterJson: true
+          includeRelease: true
           tauriScript: pnpm tauri
           args: --target ${{ matrix.rust_target }}
       - name: Prepare portable package (Windows)

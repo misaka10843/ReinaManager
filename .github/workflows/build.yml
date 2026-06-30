@@ -116,7 +116,7 @@ jobs:
           fi
 
       - name: Build with Tauri Action
-        uses: tauri-apps/tauri-action@v1
+        uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
@@ -137,6 +137,8 @@ jobs:
           releaseBody: ""
           releaseDraft: false
           prerelease: false
+          includeDebug: false
+          includeRelease: true
           tauriScript: pnpm tauri
 
       - name: Prepare portable package (Windows)
