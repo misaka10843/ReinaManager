@@ -1,3 +1,55 @@
+## [0.24.1](https://github.com/huoshen80/ReinaManager/compare/v0.24.0...v0.24.1) (2026-06-30)
+
+<details>
+<summary>查看中文版本</summary>
+
+### ⚙️ 杂类任务
+
+- 更新 GitHub Actions 版本 ([bcada64](https://github.com/huoshen80/ReinaManager/commit/bcada64a888f41e8188a7c6663d75e5f87ea8ad0))
+
+### ✨ 新功能
+
+- *(detail)* 添加游玩会话时间线 ([c1e7a30](https://github.com/huoshen80/ReinaManager/commit/c1e7a30b215be14fd3515e0bdf02b71ed3a5c5b2))
+
+### 🎨 样式
+
+- *(filter)* 移除模态框分隔线 ([cfff838](https://github.com/huoshen80/ReinaManager/commit/cfff838ed2d31d902b78ff999482725794c5d87b))
+
+### 🐛 Bug 修复
+
+- *(scan)* 将默认批量扫描深度提高到 3，并在深度变化时重新扫描 (#63) ([39a6ac0](https://github.com/huoshen80/ReinaManager/commit/39a6ac06ec2611957d1309810d57775c30ec419f))
+- *(detail)* 隐藏不可用的游戏指标 ([fd507e3](https://github.com/huoshen80/ReinaManager/commit/fd507e3ccc84eca066b73671315613fb5407918d))
+- *(i18n)* 使源默认文本与本地化翻译保持一致 ([f53fca6](https://github.com/huoshen80/ReinaManager/commit/f53fca626f56e3c6714e6d0ee1493326f07be63c))
+
+### 🚜 重构
+
+- *(detail)* 明确详情面板命名 ([1237336](https://github.com/huoshen80/ReinaManager/commit/1237336c3a27bbcff4cdf6e7c6a8766a165bf166))
+
+</details>
+
+### ⚙️ Miscellaneous Tasks
+
+- Update GitHub Actions versions ([bcada64](https://github.com/huoshen80/ReinaManager/commit/bcada64a888f41e8188a7c6663d75e5f87ea8ad0))
+
+### ✨ Features
+
+- *(detail)* Add play session timeline ([c1e7a30](https://github.com/huoshen80/ReinaManager/commit/c1e7a30b215be14fd3515e0bdf02b71ed3a5c5b2))
+
+### 🎨 Styling
+
+- *(filter)* Remove modal divider borders ([cfff838](https://github.com/huoshen80/ReinaManager/commit/cfff838ed2d31d902b78ff999482725794c5d87b))
+
+### 🐛 Bug Fixes
+
+- *(scan)* Raise default bulk scan depth to 3 and rescan on depth change (#63) ([39a6ac0](https://github.com/huoshen80/ReinaManager/commit/39a6ac06ec2611957d1309810d57775c30ec419f))
+- *(detail)* Hide unavailable game metrics ([fd507e3](https://github.com/huoshen80/ReinaManager/commit/fd507e3ccc84eca066b73671315613fb5407918d))
+- *(i18n)* Align source defaults with locales ([f53fca6](https://github.com/huoshen80/ReinaManager/commit/f53fca626f56e3c6714e6d0ee1493326f07be63c))
+
+### 🚜 Refactor
+
+- *(detail)* Clarify detail panel names ([1237336](https://github.com/huoshen80/ReinaManager/commit/1237336c3a27bbcff4cdf6e7c6a8766a165bf166))
+
+
 ## [0.24.0](https://github.com/huoshen80/ReinaManager/compare/v0.23.2...v0.24.0) (2026-06-25)
 
 <details>
