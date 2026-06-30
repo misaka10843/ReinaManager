@@ -42,7 +42,7 @@ jobs:
           echo "Release tag is $TAG"
 
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ steps.resolve_tag.outputs.TAG }}
           fetch-depth: 0
@@ -116,7 +116,7 @@ jobs:
     environment: TAURI_KEY
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.prepare.outputs.release_tag }}
       - name: Install Node.js
@@ -157,7 +157,7 @@ jobs:
           rustflags = ["-C", "link-arg=-fuse-ld=mold"]
           EOF
       - name: Build and Upload to Draft Release
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
@@ -171,8 +171,7 @@ jobs:
           releaseBody: ${{ needs.prepare.outputs.pure_changelog }}
           releaseDraft: true
           prerelease: false
-          includeUpdaterJson: true
-          includeRelease: true
+          uploadUpdaterJson: true
           tauriScript: pnpm tauri
           args: --target ${{ matrix.rust_target }}
 
@@ -188,7 +187,7 @@ jobs:
     environment: TAURI_KEY
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ needs.prepare.outputs.release_tag }}
       - name: Install Node.js
@@ -241,7 +240,7 @@ jobs:
           esac
           echo "SHORT=$SHORT" >> $GITHUB_OUTPUT
       - name: Build and Upload to Draft Release
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
@@ -255,8 +254,7 @@ jobs:
           releaseBody: ${{ needs.prepare.outputs.pure_changelog }}
           releaseDraft: true
           prerelease: false
-          includeUpdaterJson: true
-          includeRelease: true
+          uploadUpdaterJson: true
           tauriScript: pnpm tauri
           args: --target ${{ matrix.rust_target }}
       - name: Prepare portable package (Windows)
@@ -300,7 +298,7 @@ jobs:
       contents: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Determine release type
         id: release-type
@@ -341,7 +339,7 @@ jobs:
     if: needs.prepare.outputs.release_tag != ''
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Update latest.json with CDN URLs
         shell: bash
