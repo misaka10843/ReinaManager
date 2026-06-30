@@ -79,7 +79,7 @@ function formatScoreValue(value: number | null | undefined) {
 	return typeof value === "number" && value > 0 ? value.toFixed(1) : "-";
 }
 
-function hasMyRating(value: number | null | undefined) {
+function hasRating(value: number | null | undefined) {
 	return typeof value === "number" && value > 0;
 }
 
@@ -347,20 +347,6 @@ export const Detail: React.FC = () => {
 										: "-"}
 								</Typography>
 							</Box>
-							{selectedGame.rank !== 0 && selectedGame.rank !== null && (
-								<Box>
-									<Typography
-										variant="subtitle2"
-										fontWeight="bold"
-										component="div"
-									>
-										{t("pages.Detail.gameRanking", "游戏排行")}
-									</Typography>
-									<Typography component="div">
-										{selectedGame.rank || "-"}
-									</Typography>
-								</Box>
-							)}
 							{selectedGame.average_hours !== 0 &&
 								selectedGame.average_hours && (
 									<Box>
@@ -376,30 +362,48 @@ export const Detail: React.FC = () => {
 										</Typography>
 									</Box>
 								)}
-							<Box>
-								<Typography
-									variant="subtitle2"
-									fontWeight="bold"
-									component="div"
-								>
-									{t("pages.Detail.score", "评分")}
-								</Typography>
-								<Stack direction="row" spacing={0.75} className="flex-wrap">
-									<Chip
-										size="small"
-										variant="outlined"
-										label={`${t("pages.Detail.siteScore", "站点")} ${formatScoreValue(selectedGame.score)}`}
-									/>
-									{hasMyRating(selectedGame.custom_data?.user_rating) && (
-										<Chip
-											size="small"
-											color="primary"
-											variant="outlined"
-											label={`${t("pages.Detail.myScore", "我的")} ${formatScoreValue(selectedGame.custom_data?.user_rating)}`}
-										/>
-									)}
-								</Stack>
-							</Box>
+							{typeof selectedGame.rank === "number" &&
+								selectedGame.rank > 0 && (
+									<Box>
+										<Typography
+											variant="subtitle2"
+											fontWeight="bold"
+											component="div"
+										>
+											{t("pages.Detail.gameRanking", "游戏排行")}
+										</Typography>
+										<Typography component="div">{selectedGame.rank}</Typography>
+									</Box>
+								)}
+							{(hasRating(selectedGame.score) ||
+								hasRating(selectedGame.custom_data?.user_rating)) && (
+								<Box>
+									<Typography
+										variant="subtitle2"
+										fontWeight="bold"
+										component="div"
+									>
+										{t("pages.Detail.score", "评分")}
+									</Typography>
+									<Stack direction="row" spacing={0.75} className="flex-wrap">
+										{hasRating(selectedGame.score) && (
+											<Chip
+												size="small"
+												variant="outlined"
+												label={`${t("pages.Detail.siteScore", "站点")} ${formatScoreValue(selectedGame.score)}`}
+											/>
+										)}
+										{hasRating(selectedGame.custom_data?.user_rating) && (
+											<Chip
+												size="small"
+												color="primary"
+												variant="outlined"
+												label={`${t("pages.Detail.myScore", "我的")} ${formatScoreValue(selectedGame.custom_data?.user_rating)}`}
+											/>
+										)}
+									</Stack>
+								</Box>
+							)}
 						</Stack>
 						{/* 标签 */}
 						<Box className="mt-2">
