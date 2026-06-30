@@ -266,7 +266,6 @@ export const FilterSortModal: React.FC = () => {
 				<DialogTitle
 					id="filter-sort-dialog-title"
 					className="flex items-center gap-2 px-5 py-4"
-					sx={{ borderBottom: 1, borderColor: "divider" }}
 				>
 					<FilterAlt fontSize="small" className="text-primary" />
 					<span className="text-base font-600">
@@ -489,10 +488,7 @@ export const FilterSortModal: React.FC = () => {
 						</Box>
 					</div>
 				</DialogContent>
-				<DialogActions
-					className="px-5 py-3"
-					sx={{ borderTop: 1, borderColor: "divider" }}
-				>
+				<DialogActions className="px-5 py-3">
 					<Button onClick={handleClose}>
 						{t("components.FilterSortModal.cancel", "取消")}
 					</Button>
