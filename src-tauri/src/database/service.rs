@@ -7,7 +7,7 @@ use crate::database::dto::{
 };
 use crate::database::repository::{
     collections_repository::{CategoryWithCount, CollectionsRepository},
-    game_stats_repository::{DailyStats, GameLastPlayed, GameStatsRepository},
+    game_stats_repository::{GameLastPlayed, GameStatsRepository},
     games_repository::{GameType, GamesRepository, SortOption, SortOrder},
     settings_repository::SettingsRepository,
 };
@@ -260,19 +260,31 @@ pub async fn get_savedata_records(
 
 // ==================== 游戏统计相关 ====================
 
-/// 记录游戏会话
+/// 手动创建游戏会话
 #[tauri::command]
-pub async fn record_game_session(
+pub async fn create_manual_game_session(
     db: State<'_, DatabaseConnection>,
     game_id: i32,
     start_time: i32,
-    end_time: i32,
     duration: i32,
-    date: String,
 ) -> Result<i32, String> {
-    GameStatsRepository::record_session(&db, game_id, start_time, end_time, duration, date)
+    GameStatsRepository::create_manual_session(&db, game_id, start_time, duration)
         .await
-        .map_err(|e| format!("记录游戏会话失败: {}", e))
+        .map(|session| session.session_id)
+        .map_err(|e| format!("创建游戏会话失败: {}", e))
+}
+
+/// 修复/调试命令：从全部事实会话重建指定游戏的统计投影
+///
+/// 常规会话增删已在事务内同步维护统计，不应调用此命令。
+#[tauri::command]
+pub async fn rebuild_game_statistics(
+    db: State<'_, DatabaseConnection>,
+    game_id: i32,
+) -> Result<(), String> {
+    GameStatsRepository::rebuild_statistics(&db, game_id)
+        .await
+        .map_err(|e| format!("重建游戏统计失败: {}", e))
 }
 
 /// 获取游戏会话历史
@@ -305,33 +317,10 @@ pub async fn get_recent_sessions_for_all(
 pub async fn delete_game_session(
     db: State<'_, DatabaseConnection>,
     session_id: i32,
-) -> Result<u64, String> {
-    GameStatsRepository::delete_session(&db, session_id)
+) -> Result<i32, String> {
+    GameStatsRepository::delete_session_with_statistics(&db, session_id)
         .await
-        .map(|result| result.rows_affected)
         .map_err(|e| format!("删除游戏会话失败: {}", e))
-}
-
-/// 更新游戏统计信息
-#[tauri::command]
-pub async fn update_game_statistics(
-    db: State<'_, DatabaseConnection>,
-    game_id: i32,
-    total_time: i32,
-    session_count: i32,
-    last_played: Option<i32>,
-    daily_stats: Vec<DailyStats>,
-) -> Result<(), String> {
-    GameStatsRepository::update_statistics(
-        &db,
-        game_id,
-        total_time,
-        session_count,
-        last_played,
-        daily_stats,
-    )
-    .await
-    .map_err(|e| format!("更新游戏统计失败: {}", e))
 }
 
 /// 获取游戏统计信息
@@ -343,17 +332,6 @@ pub async fn get_game_statistics(
     GameStatsRepository::get_statistics(&db, game_id)
         .await
         .map_err(|e| format!("获取游戏统计失败: {}", e))
-}
-
-/// 批量获取游戏统计信息
-#[tauri::command]
-pub async fn get_multiple_game_statistics(
-    db: State<'_, DatabaseConnection>,
-    game_ids: Vec<i32>,
-) -> Result<Vec<crate::entity::game_statistics::Model>, String> {
-    GameStatsRepository::get_statistics_batch(&db, game_ids)
-        .await
-        .map_err(|e| format!("批量获取游戏统计失败: {}", e))
 }
 
 /// 获取所有游戏统计信息
@@ -374,41 +352,6 @@ pub async fn get_all_game_last_played(
     GameStatsRepository::get_all_last_played(&db)
         .await
         .map_err(|e| format!("获取所有游戏最近游玩时间失败: {}", e))
-}
-
-/// 删除游戏统计信息
-#[tauri::command]
-pub async fn delete_game_statistics(
-    db: State<'_, DatabaseConnection>,
-    game_id: i32,
-) -> Result<u64, String> {
-    GameStatsRepository::delete_statistics(&db, game_id)
-        .await
-        .map(|result| result.rows_affected)
-        .map_err(|e| format!("删除游戏统计失败: {}", e))
-}
-
-/// 获取今天的游戏时间
-#[tauri::command]
-pub async fn get_today_playtime(
-    db: State<'_, DatabaseConnection>,
-    game_id: i32,
-    today: String,
-) -> Result<i32, String> {
-    GameStatsRepository::get_today_playtime(&db, game_id, &today)
-        .await
-        .map_err(|e| format!("获取今天游戏时间失败: {}", e))
-}
-
-/// 初始化游戏统计记录
-#[tauri::command]
-pub async fn init_game_statistics(
-    db: State<'_, DatabaseConnection>,
-    game_id: i32,
-) -> Result<(), String> {
-    GameStatsRepository::init_statistics_if_not_exists(&db, game_id)
-        .await
-        .map_err(|e| format!("初始化游戏统计失败: {}", e))
 }
 
 // ==================== 用户设置相关 ====================

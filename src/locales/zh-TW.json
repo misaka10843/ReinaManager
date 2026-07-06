@@ -402,6 +402,8 @@
 			}
 		},
 		"Detail": {
+			"addGameSession": "新增記錄",
+			"addGameSessionTitle": "新增遊玩記錄",
 			"addTime": "添加時間",
 			"backup": "存檔",
 			"Backup": {
@@ -447,6 +449,8 @@
 			"chartView": "圖表",
 			"clearSelectedTags": "清空",
 			"collapseTags": "折疊標籤",
+			"createSessionFailed": "新增遊玩記錄失敗",
+			"createSessionSuccess": "遊玩記錄已新增",
 			"DataSourceUpdate": {
 				"confirmUpdateTitle": "確認更新數據源",
 				"customModeWarning": "自定模式無法從數據源更新。",
@@ -466,6 +470,11 @@
 				"switchingSource": "正在切換...",
 				"updateFromSource": "從數據源更新數據"
 			},
+			"deleteGameSession": "刪除記錄",
+			"deleteGameSessionMessage": "刪除該遊玩記錄後，總時長、遊玩次數、每日統計和最近遊玩時間將同步更新。",
+			"deleteGameSessionTitle": "刪除遊玩記錄",
+			"deleteSessionFailed": "刪除遊玩記錄失敗",
+			"deleteSessionSuccess": "遊玩記錄已刪除",
 			"Edit": {
 				"dataSourceEditAndUpdate": "數據源編輯與更新",
 				"gameInfoEdit": "遊戲資料編輯",
@@ -558,6 +567,14 @@
 			"score": "評分",
 			"searchBySelectedTags_other": "搜尋 ({{count}})",
 			"sessionDuration": "時長",
+			"sessionDurationHours": "小時",
+			"sessionDurationInvalid": "請輸入有效的小時和分鐘，且總時長必須大於 0",
+			"sessionDurationMinutePart": "分鐘",
+			"sessionEndTime": "結束時間",
+			"sessionRecordFailed": "遊玩記錄儲存失敗，請稍後再試",
+			"sessionStartTime": "開始時間",
+			"sessionStartTimeRequired": "請選擇有效的開始時間",
+			"sessionTimeInvalid": "結束時間不能晚於目前時間",
 			"siteScore": "站點",
 			"timelineView": "列表",
 			"todayPlayTime": "今日遊戲時長",
@@ -750,7 +767,7 @@
 				"title": "TAG翻譯"
 			},
 			"timeTrackingMode": {
-				"description": "選擇遊戲時間的計算方式，影響遊戲運行時的時間顯示和統計記錄。",
+				"description": "選擇遊戲時間的計算方式，變更僅對之後啟動的遊戲生效。",
 				"elapsed": "遊戲啟動時間",
 				"elapsedDesc": "計算從遊戲啟動到結束的總時間，不區分前台後台",
 				"playtime": "真實遊戲時間（預設）",

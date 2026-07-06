@@ -414,6 +414,8 @@
 			}
 		},
 		"Detail": {
+			"addGameSession": "Add Record",
+			"addGameSessionTitle": "Add Play Record",
 			"addTime": "Added Time",
 			"backup": "Save Data",
 			"Backup": {
@@ -459,6 +461,8 @@
 			"chartView": "Chart",
 			"clearSelectedTags": "Clear",
 			"collapseTags": "Collapse Tags",
+			"createSessionFailed": "Failed to add play record",
+			"createSessionSuccess": "Play record added",
 			"DataSourceUpdate": {
 				"confirmUpdateTitle": "Confirm Data Source Update",
 				"customModeWarning": "Custom mode cannot update from data source.",
@@ -478,6 +482,11 @@
 				"switchingSource": "Switching...",
 				"updateFromSource": "Update from data source"
 			},
+			"deleteGameSession": "Delete Record",
+			"deleteGameSessionMessage": "Deleting this play record will also update total time, play count, daily statistics, and last played time.",
+			"deleteGameSessionTitle": "Delete Play Record",
+			"deleteSessionFailed": "Failed to delete play record",
+			"deleteSessionSuccess": "Play record deleted",
 			"Edit": {
 				"dataSourceEditAndUpdate": "Data Source Edit and Update",
 				"gameInfoEdit": "Game Info Edit",
@@ -571,6 +580,14 @@
 			"searchBySelectedTags_one": "Search ({{count}})",
 			"searchBySelectedTags_other": "Search ({{count}})",
 			"sessionDuration": "Duration",
+			"sessionDurationHours": "Hours",
+			"sessionDurationInvalid": "Enter valid hours and minutes with a total greater than 0",
+			"sessionDurationMinutePart": "Minutes",
+			"sessionEndTime": "End Time",
+			"sessionRecordFailed": "Failed to save the play record. Try again later.",
+			"sessionStartTime": "Start Time",
+			"sessionStartTimeRequired": "Select a valid start time",
+			"sessionTimeInvalid": "End time cannot be later than the current time",
 			"siteScore": "Site",
 			"timelineView": "List",
 			"todayPlayTime": "Today's Play Time",
@@ -763,7 +780,7 @@
 				"title": "TAG Translation"
 			},
 			"timeTrackingMode": {
-				"description": "Select how game time is calculated, affecting time display and statistics recording.",
+				"description": "Select how game time is calculated. Changes apply only to games launched afterward.",
 				"elapsed": "Total Elapsed Time",
 				"elapsedDesc": "Counts total time from game launch to exit, regardless of focus",
 				"playtime": "Real Game Time (Default)",
