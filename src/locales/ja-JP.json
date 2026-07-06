@@ -762,6 +762,10 @@
 				"level2": "2 - 深刻なネタバレ",
 				"title": "TAGネタバレレベル"
 			},
+			"startupPage": {
+				"description": "次回のアプリ起動時に開く初期ページです。",
+				"title": "起動時のデフォルトページ"
+			},
 			"tagTranslation": {
 				"description": "ゲームタグの中国語翻訳を有効にする",
 				"title": "TAG翻訳"

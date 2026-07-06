@@ -762,6 +762,10 @@
 				"level2": "2 - 严重剧透",
 				"title": "TAG剧透等级"
 			},
+			"startupPage": {
+				"description": "下次启动应用时打开的初始页面。",
+				"title": "启动默认页面"
+			},
 			"tagTranslation": {
 				"description": "开启后将使用中文翻译显示游戏标签",
 				"title": "TAG翻译"

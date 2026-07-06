@@ -4,7 +4,7 @@ import MenuItem from "@mui/material/MenuItem";
 import Select, { type SelectChangeEvent } from "@mui/material/Select";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
-import { useStore } from "@/store/appStore";
+import { type StartupPage, useStore } from "@/store/appStore";
 import { SettingsGroup, SettingsItem } from "./SettingsLayout";
 
 export const LanguageSelect = () => {
@@ -43,6 +43,46 @@ export const LanguageSelect = () => {
 				<MenuItem value="zh-TW">繁体中文(zh-TW)</MenuItem>
 				<MenuItem value="en-US">English(en-US)</MenuItem>
 				<MenuItem value="ja-JP">日本語(ja-JP)</MenuItem>
+			</Select>
+		</SettingsItem>
+	);
+};
+
+export const StartupPageSettings = () => {
+	const { t } = useTranslation();
+	const { startupPage, setStartupPage } = useStore(
+		useShallow((s) => ({
+			startupPage: s.startupPage,
+			setStartupPage: s.setStartupPage,
+		})),
+	);
+
+	const handleChange = (event: SelectChangeEvent<StartupPage>) => {
+		setStartupPage(event.target.value as StartupPage);
+	};
+
+	return (
+		<SettingsItem
+			title={t("pages.Settings.startupPage.title", "启动默认页面")}
+			description={t(
+				"pages.Settings.startupPage.description",
+				"下次启动应用时打开的初始页面。",
+			)}
+		>
+			<Select
+				id="startup-page-select"
+				value={startupPage}
+				onChange={handleChange}
+				className="w-60 max-w-full"
+				size="small"
+			>
+				<MenuItem value="home">{t("app.NAVIGATION.home", "主页")}</MenuItem>
+				<MenuItem value="libraries">
+					{t("app.NAVIGATION.gameLibrary", "游戏库")}
+				</MenuItem>
+				<MenuItem value="collection">
+					{t("app.NAVIGATION.collection", "收藏夹")}
+				</MenuItem>
 			</Select>
 		</SettingsItem>
 	);

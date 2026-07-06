@@ -38,6 +38,7 @@ export type SelectedCategory =
 	| null;
 
 export type DataSourceUpdateMode = "search" | "manualId";
+export type StartupPage = "home" | "libraries" | "collection";
 
 /**
  * AppState 全局状态类型定义
@@ -124,6 +125,10 @@ export interface AppState {
 	// 卡片交互模式
 	cardClickMode: "navigate" | "select";
 	setCardClickMode: (mode: "navigate" | "select") => void;
+
+	// 启动默认页面
+	startupPage: StartupPage;
+	setStartupPage: (page: StartupPage) => void;
 
 	// TAG翻译功能
 	tagTranslation: boolean;
@@ -278,6 +283,10 @@ export const useStore = create<AppState>()(
 			setCardClickMode: (mode: "navigate" | "select") => {
 				set({ cardClickMode: mode });
 			},
+
+			// 启动默认页面
+			startupPage: "home",
+			setStartupPage: (page: StartupPage) => set({ startupPage: page }),
 
 			// TAG翻译功能（默认关闭）
 			tagTranslation: false,
@@ -466,6 +475,8 @@ export const useStore = create<AppState>()(
 				nsfwCoverReplace: state.nsfwCoverReplace,
 				// 卡片点击模式
 				cardClickMode: state.cardClickMode,
+				// 启动默认页面
+				startupPage: state.startupPage,
 				// VNDB标签翻译
 				tagTranslation: state.tagTranslation,
 				// 收藏同步开关

@@ -23,6 +23,7 @@ import {
 	CardClickModeSettings,
 	LanguageSelect,
 	NsfwSettings,
+	StartupPageSettings,
 } from "./GeneralSettings";
 import { DatabaseBackupSettings } from "./MaintenanceSettings";
 import { SettingsDivider, SettingsGroup, SettingsItem } from "./SettingsLayout";
@@ -135,6 +136,8 @@ export const Settings: React.FC = () => {
 				content: (
 					<Box className="space-y-5">
 						<LanguageSelect />
+						<SettingsDivider />
+						<StartupPageSettings />
 						<SettingsDivider />
 						<NsfwSettings />
 						<SettingsDivider />

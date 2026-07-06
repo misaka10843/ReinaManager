@@ -775,6 +775,10 @@
 				"level2": "2 - Severe Spoiler",
 				"title": "TAG Spoiler Level"
 			},
+			"startupPage": {
+				"description": "The initial page shown the next time the application starts.",
+				"title": "Default Startup Page"
+			},
 			"tagTranslation": {
 				"description": "Enable Chinese translation for game tags",
 				"title": "TAG Translation"

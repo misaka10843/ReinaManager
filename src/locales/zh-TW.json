@@ -762,6 +762,10 @@
 				"level2": "2 - 嚴重劇透",
 				"title": "TAG劇透等級"
 			},
+			"startupPage": {
+				"description": "下次啟動應用程式時開啟的初始頁面。",
+				"title": "啟動預設頁面"
+			},
 			"tagTranslation": {
 				"description": "開啟後將使用中文翻譯顯示遊戲標籤",
 				"title": "TAG翻譯"

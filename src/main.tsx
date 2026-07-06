@@ -22,7 +22,7 @@ import { isTauri } from "@tauri-apps/api/core";
 import { queryClient } from "@/providers/queryClient";
 import { initPathCache } from "@/services/fs/pathCache";
 import { initTray } from "@/services/plugins/trayService";
-import { initializeStores } from "./store/appStore";
+import { initializeStores, type StartupPage, useStore } from "./store/appStore";
 
 // 创建 Emotion 缓存,确保样式注入顺序正确
 // 根据官方文档: https://github.com/mui/material-ui/blob/master/docs/data/material/integrations/interoperability/interoperability.md
@@ -39,6 +39,11 @@ document.addEventListener("dragover", (e) => e.preventDefault());
 document.addEventListener("contextmenu", (e) => e.preventDefault());
 const DISABLED_FUNCTION_KEYS = ["F3", "F5", "F7"];
 const DISABLED_CTRL_KEYS = ["r", "u", "p", "l", "j", "g", "f", "s"];
+const STARTUP_PAGE_PATHS: Record<StartupPage, string> = {
+	home: "/",
+	libraries: "/libraries",
+	collection: "/collection",
+};
 
 document.addEventListener("keydown", (e) => {
 	if (DISABLED_FUNCTION_KEYS.includes(e.key.toUpperCase())) {
@@ -52,6 +57,14 @@ document.addEventListener("keydown", (e) => {
 
 // 初始化全局状态后，挂载 React 应用
 initializeStores().then(async () => {
+	const currentLocation = routers.state.location;
+	if (currentLocation.pathname === "/") {
+		const startupPath = STARTUP_PAGE_PATHS[useStore.getState().startupPage];
+		if (startupPath !== currentLocation.pathname) {
+			await routers.navigate(startupPath, { replace: true });
+		}
+	}
+
 	const trayReady = isTauri()
 		? initTray().catch((error) => {
 				console.error("托盘初始化失败:", error);
