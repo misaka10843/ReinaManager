@@ -18,6 +18,7 @@ import {
 	Tooltip,
 	Typography,
 } from "@mui/material";
+import { axisClasses } from "@mui/x-charts/ChartsAxis";
 import { LineChart } from "@mui/x-charts/LineChart";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -74,6 +75,18 @@ const formatMonthDayTime = (date: Date): string =>
 
 const formatYearMonthDayTime = (date: Date): string =>
 	`${date.getFullYear()}/${formatMonthDayTime(date)}`;
+
+const formatChartPlaytime = (minutes: number | null): string => {
+	if (minutes === null) return "";
+
+	const roundedMinutes = Math.round(minutes);
+	const hours = Math.floor(roundedMinutes / 60);
+	const remainingMinutes = roundedMinutes % 60;
+
+	if (hours === 0) return `${remainingMinutes}m`;
+	if (remainingMinutes === 0) return `${hours}h`;
+	return `${hours}h ${remainingMinutes}m`;
+};
 
 /**
  * GameStatsOverview 组件
@@ -322,6 +335,15 @@ export const GameStatsOverview: React.FC<GameStatsOverviewProps> = ({
 		return result;
 	}, [stats?.daily_stats, timeRange, selectedMonth]);
 
+	const maxChartPlaytime = chartData.reduce(
+		(max, item) => Math.max(max, item.playtime),
+		0,
+	);
+	const yAxisWidth =
+		maxChartPlaytime < 60
+			? 48
+			: (String(Math.ceil(maxChartPlaytime / 60)).length + 6) * 8 + 12;
+
 	/**
 	 * 格式化X轴标签
 	 */
@@ -347,11 +369,9 @@ export const GameStatsOverview: React.FC<GameStatsOverviewProps> = ({
 	 */
 	const chartConfig = useMemo(() => {
 		const showMark = timeRange === "7D";
-		const showArea = timeRange === "1Y";
 
 		return {
 			showMark,
-			showArea,
 		};
 	}, [timeRange]);
 
@@ -582,6 +602,11 @@ export const GameStatsOverview: React.FC<GameStatsOverviewProps> = ({
 										: undefined,
 									scaleType: "linear",
 									tickMinStep: 1,
+									width: yAxisWidth,
+									valueFormatter: formatChartPlaytime,
+									tickLabelStyle: {
+										fontWeight: 600,
+									},
 								},
 							]}
 							series={[
@@ -589,12 +614,19 @@ export const GameStatsOverview: React.FC<GameStatsOverviewProps> = ({
 									dataKey: "playtime",
 									color: "#1976d2",
 									showMark: chartConfig.showMark,
-									area: chartConfig.showArea,
+									valueFormatter: formatChartPlaytime,
 								},
 							]}
 							height={300}
-							margin={{ right: 40 }}
+							margin={{ left: 8, right: 8 }}
 							grid={{ vertical: true, horizontal: true }}
+							sx={{
+								[`& .${axisClasses.left} .${axisClasses.line}, & .${axisClasses.left} .${axisClasses.tick}`]:
+									{
+										stroke: "text.secondary",
+										strokeWidth: 1.5,
+									},
+							}}
 						/>
 					) : (
 						<Box className="min-h-[300px]">
