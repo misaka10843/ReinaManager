@@ -13,13 +13,12 @@
  * - zustand
  * - zustand/middleware
  * - @/types
- * - @/utils/settingsConfig
  * - @/store/gamePlayStore
  */
 import type { Update } from "@tauri-apps/plugin-updater";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { MIXED_SOURCE_KEYS } from "@/metadata";
+import { DEFAULT_MIXED_SOURCE_KEYS, MIXED_SOURCE_KEYS } from "@/metadata";
 import { type ProxyConfig, settingsService } from "@/services/invoke";
 import type { GameType, SortOption, SortOrder } from "@/services/invoke/types";
 import type { apiSourceType, SourceType } from "@/types";
@@ -27,7 +26,6 @@ import type { PlayStatusFilter } from "@/types/collection";
 import { normalizeTagFilters } from "@/utils/game/tagFilter";
 import {
 	APP_STORE_VERSION,
-	DEFAULT_MIXED_ENABLED_SOURCES,
 	migrateAppStorePersistedState,
 } from "./appStoreMigrations";
 import { initializeGamePlayTracking } from "./gamePlayStore";
@@ -234,7 +232,7 @@ export const useStore = create<AppState>()(
 			setApiSource: (source: apiSourceType) => {
 				set({ apiSource: source });
 			},
-			mixedEnabledSources: [...DEFAULT_MIXED_ENABLED_SOURCES],
+			mixedEnabledSources: [...DEFAULT_MIXED_SOURCE_KEYS],
 			toggleMixedSource: (source: SourceType) => {
 				set((state) => {
 					const current = state.mixedEnabledSources;
@@ -245,7 +243,7 @@ export const useStore = create<AppState>()(
 						? current.filter((item) => item !== source)
 						: enabledAfterAdd;
 
-					return nextSources.length >= DEFAULT_MIXED_ENABLED_SOURCES.length
+					return nextSources.length >= DEFAULT_MIXED_SOURCE_KEYS.length
 						? { mixedEnabledSources: nextSources }
 						: {};
 				});

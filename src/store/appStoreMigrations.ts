@@ -3,8 +3,6 @@ import type { SourceType } from "@/types";
 import { DefaultGroup } from "@/types/collection";
 
 export const APP_STORE_VERSION = 2;
-export const DEFAULT_MIXED_ENABLED_SOURCES: readonly SourceType[] =
-	DEFAULT_MIXED_SOURCE_KEYS;
 
 type AppStorePersistedState = {
 	mixedEnabledSources?: SourceType[];
@@ -26,15 +24,15 @@ type SelectedCategoryState =
 function normalizeMixedEnabledSources(
 	sources?: readonly SourceType[] | null,
 ): SourceType[] {
-	if (!sources) return [...DEFAULT_MIXED_ENABLED_SOURCES];
+	if (!sources) return [...DEFAULT_MIXED_SOURCE_KEYS];
 
 	const enabled = new Set(
 		sources.filter((source) => MIXED_SOURCE_KEYS.includes(source)),
 	);
 	const filtered = MIXED_SOURCE_KEYS.filter((source) => enabled.has(source));
-	return filtered.length >= DEFAULT_MIXED_ENABLED_SOURCES.length
+	return filtered.length >= DEFAULT_MIXED_SOURCE_KEYS.length
 		? filtered
-		: [...DEFAULT_MIXED_ENABLED_SOURCES];
+		: [...DEFAULT_MIXED_SOURCE_KEYS];
 }
 
 export function migrateAppStorePersistedState(
@@ -62,7 +60,7 @@ function migrateMixedSourceFlagsToEnabledSources(
 	state: AppStorePersistedState,
 ) {
 	state.mixedEnabledSources = normalizeMixedEnabledSources([
-		...DEFAULT_MIXED_ENABLED_SOURCES,
+		...DEFAULT_MIXED_SOURCE_KEYS,
 		...(state.mixedEnableYmgal ? (["ymgal"] as const) : []),
 		...(state.mixedEnableKun ? (["kun"] as const) : []),
 	]);
