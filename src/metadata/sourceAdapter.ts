@@ -20,6 +20,7 @@ export interface MetadataSourceAdapter<TData = unknown> {
 	iconUrl: string;
 	participatesInMixed: boolean;
 	defaultMixedEnabled: boolean;
+	isBanned?: boolean;
 	validateId: (id: string) => boolean;
 	getExternalUrl(id: string): string;
 	fetchById(

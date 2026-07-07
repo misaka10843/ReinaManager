@@ -25,8 +25,9 @@ export const kunAdapter: MetadataSourceAdapter<KunData> = {
 	idKey: "kun_id",
 	dataKey: "kun_data",
 	iconUrl: "https://www.kungal.com/favicon.ico",
-	participatesInMixed: true,
+	participatesInMixed: false,
 	defaultMixedEnabled: false,
+	isBanned: true,
 	validateId: (id) => /^\d+$/.test(id),
 	getExternalUrl: (id) => `https://www.kungal.com/galgame/${id}`,
 	async fetchById(id, ctx) {
