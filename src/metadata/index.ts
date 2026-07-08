@@ -6,14 +6,28 @@ export type {
 	SourceIdMap,
 } from "./sourceAdapter";
 export type { AutoResolveSourceCandidateParams } from "./sourceAutoResolve";
-export { resolveAutoSelectedSourceCandidate } from "./sourceAutoResolve";
+export {
+	resolveAutoSelectedGameDraft,
+	resolveAutoSelectedSourceCandidate,
+} from "./sourceAutoResolve";
 export type {
 	SourceCandidate,
 	SourceDisplayFields,
 } from "./sourceCandidate";
 export {
+	buildGameCandidateFromSourceSelection,
+	candidateSourcesToGameSources,
+	createGameCandidate,
+	createSourceCandidate,
+	createSourceCandidateRecord,
+	getCandidateSourceData,
+	getCandidateSourceId,
+	getCandidateSourceRecord,
 	getSourceCandidateFromGame,
-	sourceCandidateToGameCandidate,
+	mergeCandidateDetailData,
+	mergeCandidateSources,
+	normalizeGameCandidateSources,
+	sourceCandidateToDraft,
 } from "./sourceCandidate";
 export type { RuntimeSourceAdapter } from "./sourceRegistry";
 export {

@@ -3,7 +3,7 @@
  * @description 封装所有游戏相关的后端调用
  *
  * 重构说明:
- * - 采用单表架构，元数据以 JSON 列形式嵌入 games 表
+ * - 采用聚合架构，元数据分离为 game_sources 表管理
  * - 使用 DTO 模式区分读取、插入、更新操作
  * - InsertGameParams: 新增游戏
  * - UpdateGameParams: 更新游戏（支持三态逻辑）
@@ -19,13 +19,19 @@ import type {
 import { BaseService } from "./base";
 import type { GameType, SortOption, SortOrder } from "./types";
 
+type WireBatchOperationResult = Omit<BatchOperationResult, "games"> & {
+	games: FullGameData[];
+};
+
 class GameService extends BaseService {
 	/**
-	 * 插入游戏数据（单表架构）
+	 * 插入游戏数据（聚合架构）
 	 * @param game 插入参数（不含 id 和时间戳）
 	 */
 	async insertGame(game: InsertGameParams): Promise<FullGameData> {
-		return this.invoke<FullGameData>("insert_game", { game });
+		return this.invoke<FullGameData>("insert_game", {
+			game,
+		});
 	}
 
 	/**
@@ -34,14 +40,20 @@ class GameService extends BaseService {
 	async insertGamesBatch(
 		games: InsertGameParams[],
 	): Promise<BatchOperationResult> {
-		return this.invoke<BatchOperationResult>("insert_games_batch", { games });
+		const result = await this.invoke<WireBatchOperationResult>(
+			"insert_games_batch",
+			{ games },
+		);
+		return result;
 	}
 
 	/**
 	 * 根据 ID 查询游戏数据
 	 */
 	async getGameById(id: number): Promise<FullGameData | null> {
-		return this.invoke<FullGameData | null>("find_game_by_id", { id });
+		return this.invoke<FullGameData | null>("find_game_by_id", {
+			id,
+		});
 	}
 
 	/**
@@ -83,7 +95,7 @@ class GameService extends BaseService {
 	}
 
 	/**
-	 * 更新游戏数据（单表架构）
+	 * 更新游戏数据（聚合架构）
 	 *
 	 * 支持三态逻辑：
 	 * - undefined: 不修改
@@ -125,17 +137,12 @@ class GameService extends BaseService {
 	}
 
 	/**
-	 * 检查 BGM ID 是否已存在
+	 * 获取指定 source 的游戏绑定
 	 */
-	async gameExistsByBgmId(bgmId: string): Promise<boolean> {
-		return this.invoke<boolean>("game_exists_by_bgm_id", { bgmId });
-	}
-
-	/**
-	 * 检查 VNDB ID 是否已存在
-	 */
-	async gameExistsByVndbId(vndbId: string): Promise<boolean> {
-		return this.invoke<boolean>("game_exists_by_vndb_id", { vndbId });
+	async getSourceBindings(source: string): Promise<Array<[number, string]>> {
+		return this.invoke<Array<[number, string]>>("get_source_bindings", {
+			source,
+		});
 	}
 
 	/**
@@ -143,7 +150,7 @@ class GameService extends BaseService {
 	 * @returns 返回 [id, bgm_id] 的数组，只包含有 BGM ID 的游戏
 	 */
 	async getAllBgmIds(): Promise<Array<[number, string]>> {
-		return this.invoke<Array<[number, string]>>("get_all_bgm_ids", {});
+		return this.getSourceBindings("bgm");
 	}
 
 	/**
@@ -151,7 +158,7 @@ class GameService extends BaseService {
 	 * @returns 返回 [id, vndb_id] 的数组，只包含有 VNDB ID 的游戏
 	 */
 	async getAllVndbIds(): Promise<Array<[number, string]>> {
-		return this.invoke<Array<[number, string]>>("get_all_vndb_ids", {});
+		return this.getSourceBindings("vndb");
 	}
 
 	/**
@@ -165,7 +172,9 @@ class GameService extends BaseService {
 	async updateBatch(
 		updates: Array<[number, UpdateGameParams]>,
 	): Promise<FullGameData[]> {
-		return this.invoke<FullGameData[]>("update_games_batch", { updates });
+		return this.invoke<FullGameData[]>("update_games_batch", {
+			updates,
+		});
 	}
 }
 

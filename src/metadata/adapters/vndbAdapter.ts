@@ -1,28 +1,35 @@
-import type { GameCandidateData, VndbData } from "@/types";
+import type { GameMetadataDraft, VndbData } from "@/types";
 import { fetchVndbById, fetchVndbByName } from "../api/vndb";
 import {
 	DEFAULT_METADATA_SEARCH_LIMIT,
 	type MetadataSourceAdapter,
 } from "../sourceAdapter";
 import {
-	getSourceCandidateFromGame,
+	createSourceCandidate,
+	getCandidateSourceData,
+	getCandidateSourceId,
+	normalizeGameCandidateSources,
 	type SourceCandidate,
 	type SourceDisplayFields,
 } from "../sourceCandidate";
 
-function toVndbCandidate(game: GameCandidateData): SourceCandidate<VndbData> {
-	return getSourceCandidateFromGame<VndbData>(
-		game,
-		vndbAdapter,
-		vndbAdapter.toDisplayFields(game.vndb_data as VndbData),
-	);
+function toVndbCandidate(game: GameMetadataDraft): SourceCandidate<VndbData> {
+	const data = getCandidateSourceData<VndbData>(game, "vndb");
+	if (!data) {
+		throw new Error("Missing vndb data in vndb candidate");
+	}
+
+	return createSourceCandidate({
+		source: "vndb",
+		externalId: getCandidateSourceId(game, "vndb"),
+		data,
+		display: vndbAdapter.toDisplayFields(data),
+	});
 }
 
 export const vndbAdapter: MetadataSourceAdapter<VndbData> = {
 	key: "vndb",
 	label: "VNDB",
-	idKey: "vndb_id",
-	dataKey: "vndb_data",
 	iconUrl: "https://vndb.org/favicon.ico",
 	participatesInMixed: true,
 	defaultMixedEnabled: true,
@@ -30,7 +37,7 @@ export const vndbAdapter: MetadataSourceAdapter<VndbData> = {
 	getExternalUrl: (id) => `https://vndb.org/${id}`,
 	async fetchById(id, ctx) {
 		const game = await fetchVndbById(id, ctx.signal);
-		return toVndbCandidate(game);
+		return normalizeGameCandidateSources(game, "vndb");
 	},
 	async searchByName(name, ctx) {
 		const games = await fetchVndbByName(

@@ -42,7 +42,7 @@ import {
 	trimDirnameToSearchName,
 } from "@/services/fs/fileDialog";
 import { useStore } from "@/store/appStore";
-import type { GameCandidateData, InsertGameParams } from "@/types";
+import type { GameMetadataDraft, InsertGameParams } from "@/types";
 import { createAbortableRunner } from "@/utils/async";
 import { getUserErrorMessage } from "@/utils/errors";
 import { ApiSourceRadioGroup } from "./ApiSourceRadioGroup";
@@ -146,7 +146,7 @@ const AddModal: React.FC = () => {
 	}, [addModalOpen]);
 
 	const handleAddGame = useCallback(
-		async (gameData: GameCandidateData) => {
+		async (gameData: GameMetadataDraft) => {
 			const game = await addGameFromMetadata(gameData);
 			closeAddModal();
 			showGameAddedSuccess({ gameId: game.id, navigate, t });
@@ -227,6 +227,7 @@ const AddModal: React.FC = () => {
 				const customGameData: InsertGameParams = {
 					...defaultdata,
 					id_type: "custom", // 标记为自定义
+					sources: [],
 					custom_data: {
 						name: formText,
 					},
@@ -442,8 +443,8 @@ const AddModal: React.FC = () => {
 			<GameSelectDialog
 				open={metadataSearchFlow.searchResultState.open}
 				onClose={metadataSearchFlow.closeSearchResult}
-				results={metadataSearchFlow.searchResultState.results}
-				onSelect={metadataSearchFlow.selectGame}
+				sourceCandidates={metadataSearchFlow.searchResultState.results}
+				onSelectCandidate={metadataSearchFlow.selectGame}
 				loading={isBusy}
 				title={t("components.AddModal.selectGame", "选择游戏")}
 				apiSource={metadataSearchFlow.searchResultState.apiSource}

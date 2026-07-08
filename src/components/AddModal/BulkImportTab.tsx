@@ -34,7 +34,7 @@ import { isBgmAuthExpiredError, withBgmAuth } from "@/services/bgmAuthSession";
 import { handleFolder } from "@/services/fs/fileDialog";
 import { fileService } from "@/services/invoke";
 import { useStore } from "@/store/appStore";
-import type { apiSourceType, GameCandidateData, SourceType } from "@/types";
+import type { apiSourceType, GameMetadataDraft, SourceType } from "@/types";
 import { createAbortableRunner, isAbortError } from "@/utils/async";
 import { getUserErrorMessage, isApiRateLimitError } from "@/utils/errors";
 import { ApiSourceRadioGroup } from "./ApiSourceRadioGroup";
@@ -106,7 +106,7 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 	}, []);
 
 	const handleResolvedEditMetadata = useCallback(
-		async (resolvedData: GameCandidateData) => {
+		async (resolvedData: GameMetadataDraft) => {
 			if (!editItemPath) return;
 
 			setItems((prevItems) => {
@@ -747,8 +747,8 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 			<GameSelectDialog
 				open={metadataSearchFlow.searchResultState.open}
 				onClose={metadataSearchFlow.closeSearchResult}
-				results={metadataSearchFlow.searchResultState.results}
-				onSelect={metadataSearchFlow.selectGame}
+				sourceCandidates={metadataSearchFlow.searchResultState.results}
+				onSelectCandidate={metadataSearchFlow.selectGame}
 				loading={searchResultLoading}
 				title={t("components.AddModal.selectGame", "选择游戏")}
 				apiSource={metadataSearchFlow.searchResultState.apiSource}

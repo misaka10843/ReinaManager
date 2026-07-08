@@ -22,13 +22,14 @@ import MixedSourceConfirmDialog from "@/components/AddModal/MixedSourceConfirmDi
 import { useMetadataSearchFlow } from "@/hooks/common/useMetadataSearchFlow";
 import { getRuntimeSourceAdapter, SEARCHABLE_SOURCE_KEYS } from "@/metadata";
 import { fetchMetadataForUpdate } from "@/metadata/data/metadata";
+import { getSourceIdFromDisplay } from "@/metadata/sourceRecord";
 import { snackbar } from "@/providers/snackBar";
 import { isBgmAuthExpiredError, withBgmAuth } from "@/services/bgmAuthSession";
 import { useStore } from "@/store/appStore";
 import type {
 	apiSourceType,
-	GameCandidateData,
 	GameData,
+	GameMetadataDraft,
 	SourceType,
 } from "@/types";
 import { isSourceType } from "@/types";
@@ -38,8 +39,8 @@ import { getGameDisplayName } from "@/utils/game";
 interface DataSourceUpdateProps {
 	selectedGame: GameData;
 	sourceAvailability: Record<SourceType, boolean>;
-	onDataFetched: (data: GameCandidateData) => void;
-	onDirectDataUpdate: (data: GameCandidateData) => Promise<void>;
+	onDataFetched: (data: GameMetadataDraft) => void;
+	onDirectDataUpdate: (data: GameMetadataDraft) => Promise<void>;
 	onSourceSwitch: (idType: string) => Promise<void>;
 	disabled?: boolean;
 }
@@ -49,8 +50,7 @@ type SourceIdState = Record<SourceType, string>;
 function getSourceIdState(game: GameData): SourceIdState {
 	return Object.fromEntries(
 		SEARCHABLE_SOURCE_KEYS.map((source) => {
-			const { idKey } = getRuntimeSourceAdapter(source);
-			return [source, game[idKey] || ""];
+			return [source, getSourceIdFromDisplay(game, source) || ""];
 		}),
 	) as SourceIdState;
 }
@@ -121,8 +121,10 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 			: isSourceType(idType) && Boolean(sourceIds[idType]);
 
 	const hasSelectedSourceData = (source: SourceType) => {
-		const { idKey } = getRuntimeSourceAdapter(source);
-		return Boolean(selectedGame[idKey] && sourceAvailability[source]);
+		return Boolean(
+			getSourceIdFromDisplay(selectedGame, source) &&
+				sourceAvailability[source],
+		);
 	};
 
 	const canSwitchSource = () => {
@@ -393,8 +395,8 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 			<GameSelectDialog
 				open={metadataSearchFlow.searchResultState.open}
 				onClose={metadataSearchFlow.closeSearchResult}
-				results={metadataSearchFlow.searchResultState.results}
-				onSelect={metadataSearchFlow.selectGame}
+				sourceCandidates={metadataSearchFlow.searchResultState.results}
+				onSelectCandidate={metadataSearchFlow.selectGame}
 				loading={metadataSearchFlow.isSearching}
 				title={t(
 					"pages.Detail.DataSourceUpdate.selectAndUpdateGame",

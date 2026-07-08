@@ -11,14 +11,14 @@
  *    - 多个数据源ID：并行获取所有指定的数据源
  *    - 只有名称：同时搜索所有数据源
  * 2. 使用安全模式避免单个数据源失败导致整体失败
- * 3. 返回四份原始数据 { bgm_data, vndb_data, ymgal_data, kun_data }
+ * 3. 按 source 返回候选列表 { bgm, vndb, ymgal, kun }
  *
  * 主要导出：
- * - fetchMixedData：通用混合数据获取，返回 { bgm_data, vndb_data, ymgal_data, kun_data }
+ * - fetchMixedData：通用混合数据获取，返回按 source 分组的候选列表
  * - fetchMultiSourceData：多数据源搜索和获取的统一接口
  */
 
-import type { GameCandidateData, SourceDataKey, SourceType } from "@/types";
+import type { GameMetadataDraft, SourceType } from "@/types";
 import {
 	AppError,
 	isApiRateLimitError,
@@ -26,10 +26,13 @@ import {
 	toError,
 } from "@/utils/errors";
 import { resolveAutoSelectedSourceCandidate } from "../sourceAutoResolve";
-import type { SourceCandidate } from "../sourceCandidate";
+import {
+	getCandidateSourceData,
+	getSourceCandidateFromGame,
+	type SourceCandidate,
+} from "../sourceCandidate";
 import {
 	getEnabledMixedAdapters,
-	getRuntimeSourceAdapter,
 	type RuntimeSourceAdapter,
 } from "../sourceRegistry";
 
@@ -40,20 +43,12 @@ interface SafeFetchResult {
 	attempted: boolean;
 }
 
-type MixedLegacyResult = Partial<Record<SourceDataKey, GameCandidateData[]>>;
-
-const MIXED_ID_KEYS = {
-	bgm: "bgm_id",
-	vndb: "vndb_id",
-	ymgal: "ymgal_id",
-	kun: "kun_id",
-} as const satisfies Record<SourceType, keyof FetchMixedDataOptions>;
+export type MixedSourceCandidateResult = Partial<
+	Record<SourceType, SourceCandidate[]>
+>;
 
 interface FetchMixedDataOptions {
-	bgm_id?: string;
-	vndb_id?: string;
-	ymgal_id?: string;
-	kun_id?: string;
+	sourceIds?: Partial<Record<SourceType, string>>;
 	name?: string;
 	bgmToken?: string;
 	enabledSources?: readonly SourceType[];
@@ -100,14 +95,13 @@ function assertNotAllAttemptedSourcesFailed(
 	}
 }
 
-function toLegacyResult(results: SafeFetchResult[]): MixedLegacyResult {
-	const mixedResult: MixedLegacyResult = {};
+function toSourceResult(
+	results: SafeFetchResult[],
+): MixedSourceCandidateResult {
+	const mixedResult: MixedSourceCandidateResult = {};
 
 	for (const result of results) {
-		const adapter = getRuntimeSourceAdapter(result.source);
-		mixedResult[adapter.dataKey] = result.data.map(
-			(candidate) => candidate.raw,
-		);
+		mixedResult[result.source] = result.data;
 	}
 
 	return mixedResult;
@@ -121,6 +115,22 @@ function extractNameFromApi(
 	return candidate.display.name || candidate.display.name_cn;
 }
 
+function getSourceCandidateFromDraft(
+	adapter: RuntimeSourceAdapter,
+	draft: GameMetadataDraft,
+): SourceCandidate {
+	const data = getCandidateSourceData(draft, adapter.key);
+	if (!data) {
+		throw new Error(`Missing ${adapter.key} data in ${adapter.key} candidate`);
+	}
+
+	return getSourceCandidateFromGame(
+		draft,
+		adapter,
+		adapter.toDisplayFields(data),
+	);
+}
+
 function getProvidedSourceIds(
 	options: FetchMixedDataOptions,
 	adapters: RuntimeSourceAdapter[],
@@ -128,7 +138,7 @@ function getProvidedSourceIds(
 	return adapters
 		.map((adapter) => ({
 			adapter,
-			id: options[MIXED_ID_KEYS[adapter.key]],
+			id: options.sourceIds?.[adapter.key],
 		}))
 		.filter((entry): entry is { adapter: RuntimeSourceAdapter; id: string } =>
 			Boolean(entry.id),
@@ -142,13 +152,10 @@ function getProvidedSourceIds(
  * - 游戏名称：所有源都返回候选列表
  *
  * @param options 配置选项
- * @param options.bgm_id Bangumi 条目 ID（可选）
- * @param options.vndb_id VNDB 游戏 ID（可选）
- * @param options.ymgal_id YMGal 游戏 ID（可选）
- * @param options.kun_id Kungal 游戏 ID（可选，仅用于更新等非 mixed ID 输入场景）
+ * @param options.sourceIds 按 source 传入的外部 ID（可选）
  * @param options.name 游戏名称（可选）
  * @param options.bgmToken Bangumi API 访问令牌（可选）
- * @returns 返回 { bgm_data, vndb_data, ymgal_data, kun_data } 列表对象
+ * @returns 返回按 source 分组的候选列表
  */
 export async function fetchMixedData(options: FetchMixedDataOptions) {
 	const { name, bgmToken, enabledSources, signal } = options;
@@ -163,11 +170,14 @@ export async function fetchMixedData(options: FetchMixedDataOptions) {
 		let sourceResult = createEmptyResult(sourceAdapter);
 
 		sourceResult = await fetchAdapterSafely(sourceAdapter, async () => [
-			await sourceAdapter.fetchById(sourceId, {
-				bgmToken,
-				enrichCrossSource: false,
-				signal,
-			}),
+			getSourceCandidateFromDraft(
+				sourceAdapter,
+				await sourceAdapter.fetchById(sourceId, {
+					bgmToken,
+					enrichCrossSource: false,
+					signal,
+				}),
+			),
 		]);
 		searchName = extractNameFromApi(sourceResult.data[0]);
 
@@ -200,7 +210,7 @@ export async function fetchMixedData(options: FetchMixedDataOptions) {
 			"All mixed source requests failed for single-id lookup",
 		);
 
-		return toLegacyResult(results);
+		return toSourceResult(results);
 	}
 
 	// 场景2: 只有名称（用于搜索）- 同时搜索所有数据源候选列表
@@ -223,7 +233,7 @@ export async function fetchMixedData(options: FetchMixedDataOptions) {
 			toError(undefined, "Mixed search failed"),
 		);
 
-		return toLegacyResult(results);
+		return toSourceResult(results);
 	}
 
 	throw new AppError({

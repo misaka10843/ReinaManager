@@ -14,7 +14,6 @@ import { useTranslation } from "react-i18next";
 import {
 	appendGamesToCaches,
 	patchGameCaches,
-	patchManyGameCaches,
 	removeGamesFromCaches,
 } from "@/hooks/queries/gameCachePatch";
 import type { GameType, SortOption, SortOrder } from "@/services/invoke";
@@ -26,19 +25,13 @@ import type {
 } from "@/types";
 
 const listRelevantUpdateFields = new Set<keyof UpdateGameParams>([
-	"bgm_id",
-	"vndb_id",
-	"ymgal_id",
-	"kun_id",
 	"id_type",
 	"date",
 	"localpath",
 	"clear",
-	"bgm_data",
-	"vndb_data",
-	"ymgal_data",
-	"kun_data",
 	"custom_data",
+	"upsert_sources",
+	"remove_sources",
 ]);
 
 function shouldInvalidateGameLists(updates: UpdateGameParams): boolean {
@@ -48,7 +41,14 @@ function shouldInvalidateGameLists(updates: UpdateGameParams): boolean {
 }
 
 function shouldInvalidateSourceIdCaches(updates: UpdateGameParams): boolean {
-	return "bgm_id" in updates || "vndb_id" in updates;
+	return Boolean(
+		updates.remove_sources?.some(
+			(source) => source === "bgm" || source === "vndb",
+		) ||
+			updates.upsert_sources?.some(
+				(record) => record.source === "bgm" || record.source === "vndb",
+			),
+	);
 }
 
 function invalidateSourceIdCaches(queryClient: QueryClient) {
@@ -219,34 +219,12 @@ function useUpdateGame() {
 	});
 }
 
-function useBatchUpdateGames() {
-	const queryClient = useQueryClient();
-
-	return useMutation({
-		mutationFn: (updates: Array<[number, UpdateGameParams]>) =>
-			gameService.updateBatch(updates),
-		onSuccess: (updatedFullGames, updates) => {
-			if (updatedFullGames.length === 0) {
-				return;
-			}
-			patchManyGameCaches(queryClient, gameKeys, updatedFullGames);
-			queryClient.invalidateQueries({ queryKey: gameKeys.idLists() });
-			if (
-				updates.some(([, update]) => shouldInvalidateSourceIdCaches(update))
-			) {
-				invalidateSourceIdCaches(queryClient);
-			}
-		},
-	});
-}
-
 export {
 	useAddGame,
 	useAllBgmIds,
 	useAllGames,
 	useAllVndbIds,
 	useBatchAddGames,
-	useBatchUpdateGames,
 	useDeleteGame,
 	useDeleteGames,
 	useGameIdList,

@@ -26,8 +26,12 @@ import Typography from "@mui/material/Typography";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { useProxyImageUrlResolver } from "@/hooks/common/useProxyImageUrlResolver";
-import { getRuntimeSourceAdapter, REGISTERED_SOURCE_KEYS } from "@/metadata";
-import type { GameCandidateData, SourceType } from "@/types";
+import {
+	getCandidateSourceData,
+	getRuntimeSourceAdapter,
+	REGISTERED_SOURCE_KEYS,
+} from "@/metadata";
+import type { GameMetadataDraft, SourceType } from "@/types";
 
 interface ViewGameSourceItem {
 	key: SourceType;
@@ -77,7 +81,7 @@ interface AlertConfirmBoxProps {
 
 // 定义 ViewGameBoxProps 接口
 interface ViewGameBoxProps {
-	fullgame: GameCandidateData;
+	gameDraft: GameMetadataDraft;
 	open: boolean;
 	setOpen: (value: boolean) => void;
 	onConfirm: () => void;
@@ -232,7 +236,7 @@ export const AlertConfirmBox: React.FC<AlertConfirmBoxProps> = ({
  * @returns {JSX.Element} 更新游戏信息弹窗
  */
 export const ViewGameBox: React.FC<ViewGameBoxProps> = ({
-	fullgame,
+	gameDraft,
 	open,
 	setOpen,
 	onConfirm,
@@ -245,7 +249,7 @@ export const ViewGameBox: React.FC<ViewGameBoxProps> = ({
 
 	REGISTERED_SOURCE_KEYS.forEach((source) => {
 		const adapter = getRuntimeSourceAdapter(source);
-		const data = fullgame[adapter.dataKey];
+		const data = getCandidateSourceData(gameDraft, source);
 		if (data) {
 			const display = adapter.toDisplayFields(data);
 			viewGameSources.push({

@@ -11,13 +11,16 @@ import {
 	buildInsertGameData,
 	getGameIdentityKeys,
 } from "@/metadata/data/metadata";
+import {
+	getSourceIdFromRecords,
+	type SourceIdentityPayload,
+} from "@/metadata/sourceRecord";
 import i18n from "@/providers/i18n";
 import { createCloudPlayStatusContext } from "@/services/cloudPlayStatus";
 import type {
 	BatchOperationResult,
-	GameCandidateData,
+	GameMetadataDraft,
 	InsertGameParams,
-	SourceIdType,
 } from "@/types";
 import { getUserErrorMessage } from "@/utils/errors";
 
@@ -56,7 +59,7 @@ export function useGameDuplicateChecker() {
 	}, [allGames]);
 
 	const checkGameExists = useCallback(
-		(gameData: Pick<InsertGameParams, SourceIdType>) => {
+		(gameData: SourceIdentityPayload) => {
 			return getGameIdentityKeys(gameData).some((key) =>
 				existingGameKeys.has(key),
 			);
@@ -76,7 +79,7 @@ export function useSingleGameAddActions() {
 		mutationFn: async ({
 			gameData,
 		}: {
-			gameData: GameCandidateData;
+			gameData: GameMetadataDraft;
 			options?: {
 				localpath?: string;
 				fallbackIdType?: string;
@@ -94,7 +97,7 @@ export function useSingleGameAddActions() {
 	});
 
 	const addGameFromMetadata = useCallback(
-		async (gameData: GameCandidateData) => {
+		async (gameData: GameMetadataDraft) => {
 			return metadataAddActionMutation.mutateAsync({
 				gameData,
 			});
@@ -122,22 +125,29 @@ export function useBulkGameAddActions() {
 				const duplicateItemIndices: number[] = [];
 				const preparationErrors: BulkImportPreparationError[] = [];
 				const pendingPayloads: BulkImportPendingPayload[] = [];
-				const bgmIds = new Set<string>();
-				const vndbIds = new Set<string>();
+				// 云端游玩状态同步目前只支持 BGM/VNDB；YMGal/KUN 不参与预取。
+				const cloudBgmIds = new Set<string>();
+				const cloudVndbIds = new Set<string>();
 				for (const item of items) {
 					if (item.status === "imported") {
 						continue;
 					}
-					if (item.matchedData?.bgm_id) {
-						bgmIds.add(item.matchedData.bgm_id);
+					const bgmId = item.matchedData
+						? getSourceIdFromRecords(item.matchedData, "bgm")
+						: undefined;
+					const vndbId = item.matchedData
+						? getSourceIdFromRecords(item.matchedData, "vndb")
+						: undefined;
+					if (bgmId) {
+						cloudBgmIds.add(bgmId);
 					}
-					if (item.matchedData?.vndb_id) {
-						vndbIds.add(item.matchedData.vndb_id);
+					if (vndbId) {
+						cloudVndbIds.add(vndbId);
 					}
 				}
 				const cloudStatusContext = await createCloudPlayStatusContext({
-					bgmIds,
-					vndbIds,
+					bgmIds: cloudBgmIds,
+					vndbIds: cloudVndbIds,
 				});
 
 				for (let index = 0; index < items.length; index++) {

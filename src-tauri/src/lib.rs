@@ -83,10 +83,7 @@ pub fn run() {
             delete_game,
             delete_games_batch,
             count_games,
-            game_exists_by_bgm_id,
-            game_exists_by_vndb_id,
-            get_all_bgm_ids,
-            get_all_vndb_ids,
+            get_source_bindings,
             update_games_batch,
             // 存档备份相关 commands
             save_savedata_record,
@@ -208,7 +205,10 @@ pub fn run() {
                         log::debug!("开始执行数据库迁移...");
                         match migration::Migrator::up(&conn, None).await {
                             Ok(_) => log::info!("数据库迁移完成"),
-                            Err(e) => log::error!("数据库迁移失败: {}", e),
+                            Err(e) => {
+                                log::error!("数据库迁移失败: {}", e);
+                                panic!("数据库迁移失败，已停止启动: {}", e);
+                            }
                         }
 
                         // 将数据库连接注册到 Tauri 状态管理

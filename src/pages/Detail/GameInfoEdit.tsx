@@ -43,6 +43,7 @@ import {
 	resolveSourceImage,
 	type SourceImageOption,
 } from "@/metadata/data/sourceImage";
+import { getSourceIdFromDisplay } from "@/metadata/sourceRecord";
 import { snackbar } from "@/providers/snackBar";
 import { handleExeFile } from "@/services/fs/fileDialog";
 import {
@@ -307,9 +308,11 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 		() => (rawGame ? getSourceImageOptions(rawGame) : []),
 		[rawGame],
 	);
-	const selectedGameSourceIdSignature = REGISTERED_SOURCE_KEYS.map(
-		(source) => selectedGame[getRuntimeSourceAdapter(source).idKey] ?? "",
-	).join("\0");
+	const selectedGameSourceIdSignature = (() => {
+		return REGISTERED_SOURCE_KEYS.map(
+			(source) => getSourceIdFromDisplay(selectedGame, source) ?? "",
+		).join("\0");
+	})();
 
 	// 游戏信息编辑相关状态
 	const [localPath, setLocalPath] = useState<string>("");

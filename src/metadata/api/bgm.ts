@@ -13,8 +13,12 @@
  * - http: 封装的 HTTP 请求工具
  */
 
-import type { BgmAuth, BgmData, GameCandidateData } from "@/types";
+import type { BgmAuth, BgmData, GameMetadataDraft } from "@/types";
 import { AppError, isApiRateLimitError, isHttpStatus } from "@/utils/errors";
+import {
+	createGameCandidate,
+	createSourceCandidateRecord,
+} from "../sourceCandidate";
 import http, { type TauriHttpOptions, USER_AGENT } from "./http";
 
 const BGM_API_BASE_URL = "https://api.bgm.tv/v0";
@@ -112,12 +116,7 @@ function filterSensitiveTags(tags: string[]): string[] {
 
 // 新增：将 BGM API 返回对象转换为统一的结构
 // biome-ignore lint/suspicious/noExplicitAny: external API has dynamic shape
-const transformBgmData = (BGMdata: any): GameCandidateData => {
-	const baseData = {
-		bgm_id: String(BGMdata.id),
-		id_type: "bgm",
-	};
-
+const transformBgmData = (BGMdata: any): GameMetadataDraft => {
 	// 处理 aliases 字段：可能是数组或字符串
 	const aliasesRaw = BGMdata.infobox?.find(
 		(k: { key: string }) => k.key === "别名",
@@ -134,7 +133,7 @@ const transformBgmData = (BGMdata: any): GameCandidateData => {
 		aliasesArray = [aliasesRaw];
 	}
 
-	const bgm_data: BgmData = {
+	const bgmData: BgmData = {
 		date: BGMdata.date,
 		image: BGMdata.images?.large,
 		summary: BGMdata.summary,
@@ -168,7 +167,10 @@ const transformBgmData = (BGMdata: any): GameCandidateData => {
 		nsfw: BGMdata.nsfw,
 	};
 
-	return { ...baseData, bgm_data };
+	return createGameCandidate({
+		idType: "bgm",
+		source: createSourceCandidateRecord("bgm", String(BGMdata.id), bgmData),
+	});
 };
 
 /**
@@ -182,7 +184,7 @@ export async function fetchBgmById(
 	id: string,
 	token?: string,
 	signal?: AbortSignal,
-): Promise<GameCandidateData> {
+): Promise<GameMetadataDraft> {
 	const BGMdata = (
 		await http.get<BgmSubjectResponse>(
 			`${BGM_API_BASE_URL}/subjects/${id}`,
@@ -213,7 +215,7 @@ export async function fetchBgmByName(
 	token?: string,
 	limit = 25,
 	signal?: AbortSignal,
-): Promise<GameCandidateData[]> {
+): Promise<GameMetadataDraft[]> {
 	const keyword = name.trim();
 	const resp = (
 		await http.post<BgmSearchResponse>(
@@ -249,18 +251,18 @@ export async function fetchBgmByName(
  * @example
  * // 获取 50 个游戏（自动控制请求频率）
  * const results = await fetchBgmByIds(idArray, token);
- * // 返回: [{ game, bgm_data, ... }, { game, bgm_data, ... }, ...]
+ * // 返回: [{ id_type, sources }, ...]
  */
 export async function fetchBgmByIds(
 	ids: string[],
 	token?: string,
 	signal?: AbortSignal,
-): Promise<GameCandidateData[]> {
+): Promise<GameMetadataDraft[]> {
 	if (ids.length === 0) {
 		return [];
 	}
 
-	const allResults: GameCandidateData[] = [];
+	const allResults: GameMetadataDraft[] = [];
 	let hasRequestFailure = false;
 
 	for (const id of ids) {

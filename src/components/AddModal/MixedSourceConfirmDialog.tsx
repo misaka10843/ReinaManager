@@ -18,7 +18,9 @@ import type {
 	MixedSourceSelection,
 } from "@/metadata/data/metadata";
 import type { SourceType } from "@/types";
-import GameSelectDialog, { extractDisplayInfo } from "./GameSelectDialog";
+import GameSelectDialog, {
+	extractSourceCandidateDisplayInfo,
+} from "./GameSelectDialog";
 
 interface MixedSourceConfirmDialogProps {
 	open: boolean;
@@ -138,7 +140,7 @@ const MixedSourceConfirmDialog: React.FC<MixedSourceConfirmDialogProps> = ({
 						{availableSources.map((source) => {
 							const selectedGame = selection[source] ?? null;
 							const displayInfo = selectedGame
-								? extractDisplayInfo(selectedGame, source)
+								? extractSourceCandidateDisplayInfo(selectedGame, source)
 								: null;
 
 							return (
@@ -260,11 +262,11 @@ const MixedSourceConfirmDialog: React.FC<MixedSourceConfirmDialogProps> = ({
 				<GameSelectDialog
 					open={Boolean(activeSource)}
 					onClose={() => setActiveSource(null)}
-					results={activeSourceResults}
-					onSelect={(game) => {
+					sourceCandidates={activeSourceResults}
+					onSelectCandidate={(candidate) => {
 						setSelection((prev) => ({
 							...prev,
-							[activeSource]: game,
+							[activeSource]: candidate,
 						}));
 						setEnabled((prev) => ({
 							...prev,

@@ -10,13 +10,17 @@
 
 import type { FullGameData, GameData } from "@/types";
 import { isSourceType } from "@/types";
-import { getRuntimeSourceAdapter } from "../sourceRegistry";
+import {
+	getSourceIdMap,
+	getSourceRecordMap,
+	type SourceDataMap,
+} from "../sourceRecord";
 import {
 	applyCustomDataOverride,
 	applyCustomSourceDisplay,
 	applyMixedSourceDisplay,
 	applySingleSourceDisplay,
-	getSourceDataMap,
+	getSourceDisplayFields,
 } from "./displayMergeRules";
 
 /**
@@ -33,15 +37,29 @@ const nullToUndefined = <T>(value: T | null | undefined): T | undefined =>
  * @returns 展平的 GameData
  */
 export function getDisplayGameData(fullData: FullGameData): GameData {
-	const { custom_data, ...gameData } = fullData;
-	const sourceDataMap = getSourceDataMap(fullData);
+	const { custom_data } = fullData;
+	const displayCustomData = nullToUndefined(custom_data);
+	const sourceDataMap: SourceDataMap = {};
+	for (const [source, record] of getSourceRecordMap(fullData)) {
+		if (record.data != null) sourceDataMap[source] = record.data;
+	}
 
 	// 基础数据 - 直接从 fullData 中获取根节点字段
 	const baseData: GameData = {
-		...gameData,
-		localpath: nullToUndefined(gameData.localpath),
-		savepath: nullToUndefined(gameData.savepath),
-		custom_data: nullToUndefined(custom_data),
+		id: fullData.id,
+		id_type: fullData.id_type,
+		sourceIds: getSourceIdMap(fullData),
+		date: fullData.date,
+		localpath: nullToUndefined(fullData.localpath),
+		savepath: nullToUndefined(fullData.savepath),
+		autosave: nullToUndefined(fullData.autosave),
+		maxbackups: nullToUndefined(fullData.maxbackups),
+		clear: nullToUndefined(fullData.clear),
+		le_launch: nullToUndefined(fullData.le_launch),
+		magpie: nullToUndefined(fullData.magpie),
+		custom_data: displayCustomData,
+		created_at: fullData.created_at,
+		updated_at: fullData.updated_at,
 		// 初始化展平字段
 		image: undefined,
 		name: undefined,
@@ -51,8 +69,12 @@ export function getDisplayGameData(fullData: FullGameData): GameData {
 		rank: undefined,
 		score: undefined,
 		sourceScores: {
-			bgm: fullData.bgm_data?.score,
-			vndb: fullData.vndb_data?.score ?? undefined,
+			bgm: sourceDataMap.bgm
+				? getSourceDisplayFields("bgm", sourceDataMap.bgm).score
+				: undefined,
+			vndb: sourceDataMap.vndb
+				? getSourceDisplayFields("vndb", sourceDataMap.vndb).score
+				: undefined,
 		},
 		developer: undefined,
 		all_titles: undefined,
@@ -63,8 +85,7 @@ export function getDisplayGameData(fullData: FullGameData): GameData {
 
 	// 根据 id_type 决定数据来源
 	if (fullData.id_type && isSourceType(fullData.id_type)) {
-		const sourceData =
-			fullData[getRuntimeSourceAdapter(fullData.id_type).dataKey];
+		const sourceData = sourceDataMap[fullData.id_type];
 		if (sourceData) {
 			applySingleSourceDisplay(baseData, fullData.id_type, sourceData);
 		}

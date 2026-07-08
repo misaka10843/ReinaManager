@@ -1,11 +1,14 @@
-import type { BgmData, GameCandidateData } from "@/types";
+import type { BgmData, GameMetadataDraft } from "@/types";
 import { fetchBgmById, fetchBgmByName } from "../api/bgm";
 import {
 	DEFAULT_METADATA_SEARCH_LIMIT,
 	type MetadataSourceAdapter,
 } from "../sourceAdapter";
 import {
-	getSourceCandidateFromGame,
+	createSourceCandidate,
+	getCandidateSourceData,
+	getCandidateSourceId,
+	normalizeGameCandidateSources,
 	type SourceCandidate,
 	type SourceDisplayFields,
 } from "../sourceCandidate";
@@ -13,19 +16,23 @@ import {
 // BGM token 不應為必須
 // 但是需要R18等信息時還是需要登錄
 
-function toBgmCandidate(game: GameCandidateData): SourceCandidate<BgmData> {
-	return getSourceCandidateFromGame<BgmData>(
-		game,
-		bgmAdapter,
-		bgmAdapter.toDisplayFields(game.bgm_data as BgmData),
-	);
+function toBgmCandidate(game: GameMetadataDraft): SourceCandidate<BgmData> {
+	const data = getCandidateSourceData<BgmData>(game, "bgm");
+	if (!data) {
+		throw new Error("Missing bgm data in bgm candidate");
+	}
+
+	return createSourceCandidate({
+		source: "bgm",
+		externalId: getCandidateSourceId(game, "bgm"),
+		data,
+		display: bgmAdapter.toDisplayFields(data),
+	});
 }
 
 export const bgmAdapter: MetadataSourceAdapter<BgmData> = {
 	key: "bgm",
 	label: "Bangumi",
-	idKey: "bgm_id",
-	dataKey: "bgm_data",
 	iconUrl: "https://bgm.tv/img/favicon.ico",
 	participatesInMixed: true,
 	defaultMixedEnabled: true,
@@ -33,7 +40,7 @@ export const bgmAdapter: MetadataSourceAdapter<BgmData> = {
 	getExternalUrl: (id) => `https://bgm.tv/subject/${id}`,
 	async fetchById(id, ctx) {
 		const game = await fetchBgmById(id, ctx.bgmToken, ctx.signal);
-		return toBgmCandidate(game);
+		return normalizeGameCandidateSources(game, "bgm");
 	},
 	async searchByName(name, ctx) {
 		const games = await fetchBgmByName(

@@ -1,29 +1,37 @@
-import type { GameCandidateData, KunData } from "@/types";
+import type { GameMetadataDraft, KunData } from "@/types";
 import { fetchGalgameById, searchGalgame } from "../api/kun";
 import {
 	DEFAULT_METADATA_SEARCH_LIMIT,
 	type MetadataSourceAdapter,
 } from "../sourceAdapter";
 import {
-	getSourceCandidateFromGame,
-	mergeCandidateWithDetails,
+	createSourceCandidate,
+	getCandidateSourceData,
+	getCandidateSourceId,
+	mergeCandidateDetailData,
+	normalizeGameCandidateSources,
 	type SourceCandidate,
 	type SourceDisplayFields,
+	sourceCandidateToDraft,
 } from "../sourceCandidate";
 
-function toKunCandidate(game: GameCandidateData): SourceCandidate<KunData> {
-	return getSourceCandidateFromGame<KunData>(
-		game,
-		kunAdapter,
-		kunAdapter.toDisplayFields(game.kun_data as KunData),
-	);
+function toKunCandidate(game: GameMetadataDraft): SourceCandidate<KunData> {
+	const data = getCandidateSourceData<KunData>(game, "kun");
+	if (!data) {
+		throw new Error("Missing kun data in kun candidate");
+	}
+
+	return createSourceCandidate({
+		source: "kun",
+		externalId: getCandidateSourceId(game, "kun"),
+		data,
+		display: kunAdapter.toDisplayFields(data),
+	});
 }
 
 export const kunAdapter: MetadataSourceAdapter<KunData> = {
 	key: "kun",
 	label: "Kungal",
-	idKey: "kun_id",
-	dataKey: "kun_data",
 	iconUrl: "https://www.kungal.com/favicon.ico",
 	participatesInMixed: false,
 	defaultMixedEnabled: false,
@@ -35,7 +43,7 @@ export const kunAdapter: MetadataSourceAdapter<KunData> = {
 			enrichVndb: ctx.enrichCrossSource ?? true,
 			signal: ctx.signal,
 		});
-		return toKunCandidate(game);
+		return normalizeGameCandidateSources(game, "kun");
 	},
 	async searchByName(name, ctx) {
 		const games = await searchGalgame(
@@ -49,14 +57,14 @@ export const kunAdapter: MetadataSourceAdapter<KunData> = {
 	},
 	async enrichOnSelect(candidate, ctx) {
 		if (!candidate.externalId) {
-			return candidate;
+			return sourceCandidateToDraft(candidate);
 		}
 
 		const game = await fetchGalgameById(candidate.externalId, {
 			enrichVndb: ctx.enrichCrossSource ?? true,
 			signal: ctx.signal,
 		});
-		return toKunCandidate(mergeCandidateWithDetails(candidate, game));
+		return mergeCandidateDetailData(candidate, game);
 	},
 	toDisplayFields: (data): SourceDisplayFields => ({
 		image: data.image,

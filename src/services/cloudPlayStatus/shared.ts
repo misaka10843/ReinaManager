@@ -3,8 +3,11 @@ import {
 	fetchBgmCurrentUserProfile,
 } from "@/hooks/queries/useSettings";
 import type { fetchVndbUserCollection } from "@/metadata/api/vndb";
+import {
+	getAnySourceId,
+	type SourceIdentityPayload,
+} from "@/metadata/sourceRecord";
 import { queryClient } from "@/providers/queryClient";
-import type { FullGameData } from "@/types";
 import { PlayStatus } from "@/types/collection";
 
 export interface CloudPlayStatusContext {
@@ -117,14 +120,17 @@ export function mapPlayStatusToVndbLabelId(status: PlayStatus) {
 }
 
 export function resolveCloudPlayStatusFromContext(
-	game: Pick<FullGameData, "bgm_id" | "vndb_id">,
+	game: SourceIdentityPayload,
 	context: CloudPlayStatusContext,
 ) {
-	if (game.bgm_id && context.bgm?.has(game.bgm_id)) {
-		return context.bgm.get(game.bgm_id);
+	const bgmId = getAnySourceId(game, "bgm");
+	const vndbId = getAnySourceId(game, "vndb");
+
+	if (bgmId && context.bgm?.has(bgmId)) {
+		return context.bgm.get(bgmId);
 	}
-	if (game.vndb_id && context.vndb?.has(game.vndb_id)) {
-		return context.vndb.get(game.vndb_id);
+	if (vndbId && context.vndb?.has(vndbId)) {
+		return context.vndb.get(vndbId);
 	}
 	return undefined;
 }

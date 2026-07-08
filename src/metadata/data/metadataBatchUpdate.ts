@@ -4,23 +4,20 @@ import { gameKeys } from "@/hooks/queries/useGames";
 import { queryClient } from "@/providers/queryClient";
 import { withBgmAuth } from "@/services/bgmAuthSession";
 import { gameService } from "@/services/invoke";
-import type { BgmData, VndbData } from "@/types";
+import type { GameMetadataDraft, UpdateGameParams } from "@/types";
 import { toError } from "@/utils/errors";
 import { fetchBgmByIds } from "../api/bgm";
 import { fetchVNDBByIds } from "../api/vndb";
+import {
+	candidateSourcesToGameSources,
+	getCandidateSourceRecord,
+} from "../sourceCandidate";
 
 async function batchUpdateCommon(
 	type: "vndb" | "bgm",
-	fetchFunction: (ids: string[]) => Promise<
-		Array<{
-			bgm_id?: string | null;
-			vndb_id?: string | null;
-			bgm_data?: BgmData | null;
-			vndb_data?: VndbData | null;
-		}>
-	>,
+	fetchFunction: (ids: string[]) => Promise<GameMetadataDraft[]>,
 	getAllIdsFunction: () => Promise<Array<[number, string]>>,
-	updateKeyName: "vndb_data" | "bgm_data",
+	source: "vndb" | "bgm",
 ): Promise<{
 	total: number;
 	success: number;
@@ -42,21 +39,27 @@ async function batchUpdateCommon(
 		const resultsTemp = await fetchFunction(ids);
 		const resultByApiId = new Map<string, (typeof resultsTemp)[number]>();
 		for (const result of resultsTemp) {
-			const apiId = type === "bgm" ? result.bgm_id : result.vndb_id;
-			if (apiId) {
-				resultByApiId.set(apiId, result);
+			const sourceRecord = getCandidateSourceRecord(result, source);
+			if (sourceRecord?.external_id) {
+				resultByApiId.set(sourceRecord.external_id, result);
 			}
 		}
 
-		const updates: Array<
-			[number, Partial<{ bgm_data: BgmData; vndb_data: VndbData }>]
-		> = [];
+		const updates: Array<[number, UpdateGameParams]> = [];
 
 		for (const [gameId, apiId] of idPairs) {
 			const data = resultByApiId.get(apiId);
+			const sourceRecord = data
+				? getCandidateSourceRecord(data, source)
+				: undefined;
 
-			if (data?.[updateKeyName]) {
-				updates.push([gameId, { [updateKeyName]: data[updateKeyName] }]);
+			if (sourceRecord) {
+				updates.push([
+					gameId,
+					{
+						upsert_sources: candidateSourcesToGameSources([sourceRecord]),
+					},
+				]);
 			}
 		}
 
@@ -86,7 +89,7 @@ export async function batchUpdateVndbData(): Promise<{
 		"vndb",
 		fetchVNDBByIds,
 		() => gameService.getAllVndbIds(),
-		"vndb_data",
+		"vndb",
 	);
 }
 
@@ -100,7 +103,7 @@ export async function batchUpdateBgmData(): Promise<{
 			"bgm",
 			(ids: string[]) => fetchBgmByIds(ids, token),
 			() => gameService.getAllBgmIds(),
-			"bgm_data",
+			"bgm",
 		),
 	);
 }

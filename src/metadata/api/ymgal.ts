@@ -15,8 +15,14 @@
  */
 // 注意认证失败重试机制未生效
 
-import type { GameCandidateData, YmgalData } from "@/types";
+import type { GameMetadataDraft, YmgalData } from "@/types";
 import { AppError, isHttpStatus, toError } from "@/utils/errors";
+import {
+	createGameCandidate,
+	createSourceCandidateRecord,
+	getCandidateSourceData,
+	getCandidateSourceId,
+} from "../sourceCandidate";
 import http, { type TauriHttpOptions, USER_AGENT } from "./http";
 
 /**
@@ -263,15 +269,15 @@ interface YmGameDetail {
  * 将 YMGal 数据转换为统一格式
  * @param {YmGameDetail} ymData YMGal 游戏详细数据
  * @param {boolean} update_batch 是否批量更新模式
- * @returns {GameCandidateData}
+ * @returns {GameMetadataDraft}
  */
 function transformYmData(
 	ymData: YmGameDetail,
 	update_batch = false,
-): GameCandidateData {
+): GameMetadataDraft {
 	const aliases = ymData.extensionName?.map((ext) => ext.name).filter(Boolean);
 
-	const ymgal_data: YmgalData = {
+	const ymgalData: YmgalData = {
 		date: ymData.releaseDate,
 		image: ymData.mainImg,
 		name: ymData.name,
@@ -283,9 +289,14 @@ function transformYmData(
 	};
 
 	return {
-		ymgal_id: String(ymData.gid),
-		...(update_batch ? {} : { id_type: "ymgal" }),
-		ymgal_data,
+		...createGameCandidate({
+			idType: update_batch ? undefined : "ymgal",
+			source: createSourceCandidateRecord(
+				"ymgal",
+				String(ymData.gid),
+				ymgalData,
+			),
+		}),
 	};
 }
 
@@ -297,7 +308,7 @@ function transformYmData(
  * @param {number} pageSize 每页数量，范围 1-20
  * @param {boolean} fetchDetailById 是否仅对第一个结果用 ID 再次请求完整详情（默认 false）
  * 说明：该参数只用于“首条补全”场景，禁止对搜索结果列表逐条补全。
- * @returns {Promise<GameCandidateData[]>} 游戏列表
+ * @returns {Promise<GameMetadataDraft[]>} 游戏列表
  */
 export async function fetchYmByName(
 	name: string,
@@ -305,7 +316,7 @@ export async function fetchYmByName(
 	pageSize = 20,
 	fetchDetailById = false,
 	signal?: AbortSignal,
-): Promise<GameCandidateData[]> {
+): Promise<GameMetadataDraft[]> {
 	const data = await ymApiRequest<{ result?: YmGameListItem[] }>(
 		"/open/archive/search-game",
 		{
@@ -323,8 +334,8 @@ export async function fetchYmByName(
 	}
 
 	// 将列表数据转换为统一格式（不包含详细信息）
-	const results = data.result.map((item: YmGameListItem): GameCandidateData => {
-		const ymgal_data: YmgalData = {
+	const results = data.result.map((item: YmGameListItem): GameMetadataDraft => {
+		const ymgalData: YmgalData = {
 			date: item.releaseDate,
 			image: item.mainImg,
 			name: item.name,
@@ -334,17 +345,25 @@ export async function fetchYmByName(
 		};
 
 		return {
-			ymgal_id: String(item.id),
-			id_type: "ymgal",
-			ymgal_data,
+			...createGameCandidate({
+				idType: "ymgal",
+				source: createSourceCandidateRecord(
+					"ymgal",
+					String(item.id),
+					ymgalData,
+				),
+			}),
 		};
 	});
 
 	// 如果启用二步请求且有结果，用第一个结果的 ID 获取完整详情。
 	// 注意：详情请求失败时降级为首条轻量数据，避免上层 mixed 链路整体失败。
-	if (fetchDetailById && results.length > 0 && results[0].ymgal_id) {
+	const firstResultId = results[0]
+		? getCandidateSourceId(results[0], "ymgal")
+		: undefined;
+	if (fetchDetailById && firstResultId) {
 		try {
-			const detailedData = await fetchYmById(results[0].ymgal_id, signal);
+			const detailedData = await fetchYmById(firstResultId, signal);
 			return [detailedData];
 		} catch {
 			return [results[0]];
@@ -358,12 +377,12 @@ export async function fetchYmByName(
  * 通过 YMGal 游戏 ID 获取游戏详细信息
  *
  * @param {number} gid YMGal 游戏 ID
- * @returns {Promise<GameCandidateData>} 游戏详细信息
+ * @returns {Promise<GameMetadataDraft>} 游戏详细信息
  */
 export async function fetchYmById(
 	gid: string,
 	signal?: AbortSignal,
-): Promise<GameCandidateData> {
+): Promise<GameMetadataDraft> {
 	const id = Number(gid.replace(/^ga/i, ""));
 	const data = await ymApiRequest<{
 		game?: YmGameDetail;
@@ -377,8 +396,9 @@ export async function fetchYmById(
 	}
 
 	const result = transformYmData(data.game);
-	if (result.ymgal_data) {
-		result.ymgal_data.developer = await fetchOrganizationName(
+	const ymgalData = getCandidateSourceData<YmgalData>(result, "ymgal");
+	if (ymgalData) {
+		ymgalData.developer = await fetchOrganizationName(
 			data.game?.developerId,
 			signal,
 		);

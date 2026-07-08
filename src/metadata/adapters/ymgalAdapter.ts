@@ -1,29 +1,37 @@
-import type { GameCandidateData, YmgalData } from "@/types";
+import type { GameMetadataDraft, YmgalData } from "@/types";
 import { fetchYmById, fetchYmByName } from "../api/ymgal";
 import {
 	DEFAULT_METADATA_SEARCH_LIMIT,
 	type MetadataSourceAdapter,
 } from "../sourceAdapter";
 import {
-	getSourceCandidateFromGame,
-	mergeCandidateWithDetails,
+	createSourceCandidate,
+	getCandidateSourceData,
+	getCandidateSourceId,
+	mergeCandidateDetailData,
+	normalizeGameCandidateSources,
 	type SourceCandidate,
 	type SourceDisplayFields,
+	sourceCandidateToDraft,
 } from "../sourceCandidate";
 
-function toYmgalCandidate(game: GameCandidateData): SourceCandidate<YmgalData> {
-	return getSourceCandidateFromGame<YmgalData>(
-		game,
-		ymgalAdapter,
-		ymgalAdapter.toDisplayFields(game.ymgal_data as YmgalData),
-	);
+function toYmgalCandidate(game: GameMetadataDraft): SourceCandidate<YmgalData> {
+	const data = getCandidateSourceData<YmgalData>(game, "ymgal");
+	if (!data) {
+		throw new Error("Missing ymgal data in ymgal candidate");
+	}
+
+	return createSourceCandidate({
+		source: "ymgal",
+		externalId: getCandidateSourceId(game, "ymgal"),
+		data,
+		display: ymgalAdapter.toDisplayFields(data),
+	});
 }
 
 export const ymgalAdapter: MetadataSourceAdapter<YmgalData> = {
 	key: "ymgal",
 	label: "YMGal",
-	idKey: "ymgal_id",
-	dataKey: "ymgal_data",
 	iconUrl: "https://www.ymgal.games/favicon.ico",
 	participatesInMixed: true,
 	defaultMixedEnabled: false,
@@ -31,7 +39,7 @@ export const ymgalAdapter: MetadataSourceAdapter<YmgalData> = {
 	getExternalUrl: (id) => `https://www.ymgal.games/ga${id}`,
 	async fetchById(id, ctx) {
 		const game = await fetchYmById(id, ctx.signal);
-		return toYmgalCandidate(game);
+		return normalizeGameCandidateSources(game, "ymgal");
 	},
 	async searchByName(name, ctx) {
 		const games = await fetchYmByName(
@@ -45,11 +53,11 @@ export const ymgalAdapter: MetadataSourceAdapter<YmgalData> = {
 	},
 	async enrichOnSelect(candidate, ctx) {
 		if (!candidate.externalId) {
-			return candidate;
+			return sourceCandidateToDraft(candidate);
 		}
 
 		const game = await fetchYmById(candidate.externalId, ctx.signal);
-		return toYmgalCandidate(mergeCandidateWithDetails(candidate, game));
+		return mergeCandidateDetailData(candidate, game);
 	},
 	toDisplayFields: (data): SourceDisplayFields => ({
 		image: data.image,

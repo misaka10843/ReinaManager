@@ -1,4 +1,4 @@
-import type { SourceDataKey, SourceIdType, SourceType } from "@/types";
+import type { GameMetadataDraft, SourceType } from "@/types";
 import type { SourceCandidate, SourceDisplayFields } from "./sourceCandidate";
 
 export type SourceIdMap = Partial<Record<SourceType, string>>;
@@ -15,18 +15,13 @@ export interface MetadataSourceContext {
 export interface MetadataSourceAdapter<TData = unknown> {
 	key: SourceType;
 	label: string;
-	idKey: SourceIdType;
-	dataKey: SourceDataKey;
 	iconUrl: string;
 	participatesInMixed: boolean;
 	defaultMixedEnabled: boolean;
 	isBanned?: boolean;
 	validateId: (id: string) => boolean;
 	getExternalUrl(id: string): string;
-	fetchById(
-		id: string,
-		ctx: MetadataSourceContext,
-	): Promise<SourceCandidate<TData>>;
+	fetchById(id: string, ctx: MetadataSourceContext): Promise<GameMetadataDraft>;
 	searchByName(
 		name: string,
 		ctx: MetadataSourceContext,
@@ -34,6 +29,6 @@ export interface MetadataSourceAdapter<TData = unknown> {
 	enrichOnSelect?(
 		candidate: SourceCandidate<TData>,
 		ctx: MetadataSourceContext,
-	): Promise<SourceCandidate<TData>>;
+	): Promise<GameMetadataDraft>;
 	toDisplayFields(data: TData): SourceDisplayFields;
 }
