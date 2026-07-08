@@ -9,6 +9,7 @@ import {
 export const SOURCE_COVER_PRIORITY: readonly SourceType[] = [
 	"bgm",
 	"vndb",
+	"erogamescape",
 	"kun",
 	"ymgal",
 ];
@@ -16,17 +17,24 @@ export const SOURCE_COVER_PRIORITY: readonly SourceType[] = [
 const BASIC_FIELD_PRIORITY: readonly SourceType[] = [
 	"bgm",
 	"vndb",
+	"erogamescape",
 	"ymgal",
 	"kun",
 ];
 const SUMMARY_PRIORITY: readonly SourceType[] = ["ymgal", "bgm", "kun", "vndb"];
 const DEVELOPER_PRIORITY: readonly SourceType[] = [
 	"vndb",
+	"erogamescape",
 	"kun",
 	"ymgal",
 	"bgm",
 ];
-const MIXED_TAG_SOURCES: readonly SourceType[] = ["bgm", "vndb", "kun"];
+const MIXED_TAG_SOURCES: readonly SourceType[] = [
+	"bgm",
+	"erogamescape",
+	"vndb",
+	"kun",
+];
 const MIXED_ALIAS_SOURCES: readonly SourceType[] = [
 	"bgm",
 	"vndb",
@@ -150,7 +158,8 @@ export function applyMixedSourceDisplay(
 	target.developer = firstField(displays, DEVELOPER_PRIORITY, "developer");
 	target.tags = mergeArrays(displays, MIXED_TAG_SOURCES, "tags");
 	target.aliases = mergeArrays(displays, MIXED_ALIAS_SOURCES, "aliases");
-	target.score = displays.bgm?.score ?? displays.vndb?.score;
+	target.score =
+		displays.bgm?.score ?? displays.erogamescape?.score ?? displays.vndb?.score;
 	target.rank = displays.bgm?.rank;
 	target.all_titles = mergeArrays(displays, MIXED_TITLE_SOURCES, "all_titles");
 	target.average_hours = displays.vndb?.average_hours;

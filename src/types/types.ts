@@ -141,6 +141,19 @@ export interface KunData {
 }
 
 /**
+ * ErogameScape 数据结构
+ */
+export interface ErogameScapeData {
+	image?: string;
+	name?: string;
+	tags?: string[];
+	developer?: string;
+	score?: number | null;
+	nsfw?: boolean;
+	date?: string;
+}
+
+/**
  * 自定义数据结构（JSON 列嵌入 games 表）
  *
  * 用于用户手动添加的游戏或自定义元数据
@@ -164,11 +177,18 @@ export interface CustomData {
 export interface SourceScores {
 	bgm?: number;
 	vndb?: number;
+	erogamescape?: number;
 }
 
 // ==================== 游戏数据类型（DTO 三位一体） ====================
 
-export const SOURCE_TYPES = ["bgm", "vndb", "ymgal", "kun"] as const;
+export const SOURCE_TYPES = [
+	"bgm",
+	"vndb",
+	"ymgal",
+	"kun",
+	"erogamescape",
+] as const;
 export type SourceType = (typeof SOURCE_TYPES)[number];
 
 export type apiSourceType = SourceType | "mixed";

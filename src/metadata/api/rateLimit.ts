@@ -1,4 +1,9 @@
-export type ApiRateLimitSource = "bgm" | "vndb" | "ymgal" | "kun";
+export type ApiRateLimitSource =
+	| "bgm"
+	| "vndb"
+	| "ymgal"
+	| "kun"
+	| "erogamescape";
 
 interface ApiRateLimitPolicy {
 	source: ApiRateLimitSource;
@@ -76,6 +81,14 @@ const API_RATE_LIMIT_POLICIES: Record<ApiRateLimitSource, ApiRateLimitPolicy> =
 			max429Retries: 0,
 			stopOn429: true,
 		},
+		erogamescape: {
+			source: "erogamescape",
+			minIntervalMs: 3000,
+			defaultBackoffMs: 0,
+			maxBackoffMs: 0,
+			max429Retries: 0,
+			stopOn429: true,
+		},
 	};
 
 const rateLimitStates: Record<ApiRateLimitSource, ApiRateLimitState> = {
@@ -83,6 +96,7 @@ const rateLimitStates: Record<ApiRateLimitSource, ApiRateLimitState> = {
 	bgm: createInitialState(),
 	ymgal: createInitialState(),
 	kun: createInitialState(),
+	erogamescape: createInitialState(),
 };
 
 const listeners = new Set<ApiRateLimitListener>();

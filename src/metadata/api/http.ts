@@ -42,6 +42,7 @@ export interface TauriHttpOptions {
 	allowRetry?: boolean;
 	rateLimit?: ApiRateLimitedRequestOptions;
 	signal?: AbortSignal;
+	responseType?: "json" | "text";
 }
 
 interface TauriHttpResponse<T = unknown> {
@@ -196,7 +197,10 @@ async function requestTauriHttp<T>(
 		markApiRequestSucceeded(rateLimitSource);
 	}
 
-	const parsedData = await parseTauriResponse<T>(response, method, fullUrl);
+	const parsedData =
+		options?.responseType === "text"
+			? ((await response.text()) as T)
+			: await parseTauriResponse<T>(response, method, fullUrl);
 
 	if (import.meta.env.DEV) {
 		console.log(`[TauriHTTP Response] ${method} ${fullUrl}`, parsedData);
@@ -217,6 +221,7 @@ function inferRateLimitSource(url: string): ApiRateLimitSource | undefined {
 		if (host === "api.vndb.org") return "vndb";
 		if (host === "www.ymgal.games") return "ymgal";
 		if (host === "www.kungal.com") return "kun";
+		if (host === "erogamescape.org") return "erogamescape";
 	} catch {
 		return undefined;
 	}
@@ -232,6 +237,8 @@ function getApiRateLimitErrorMessage(source: ApiRateLimitSource): string {
 			return "YMGal 请求被限速，请稍后重试";
 		case "kun":
 			return "Kungal 请求被限速，请稍后重试";
+		case "erogamescape":
+			return "ErogameScape 请求被限速，请稍后重试";
 	}
 }
 
@@ -248,6 +255,13 @@ export const tauriHttp = {
 	 */
 	async get<T = unknown>(url: string, options?: TauriHttpOptions) {
 		return requestTauriHttp<T>("GET", url, options);
+	},
+
+	async getText(url: string, options?: TauriHttpOptions) {
+		return requestTauriHttp<string>("GET", url, {
+			...options,
+			responseType: "text",
+		});
 	},
 
 	/**

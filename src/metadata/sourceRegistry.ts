@@ -1,11 +1,13 @@
 import type {
 	BgmData,
+	ErogameScapeData,
 	KunData,
 	SourceType,
 	VndbData,
 	YmgalData,
 } from "@/types";
 import { bgmAdapter } from "./adapters/bgmAdapter";
+import { erogamescapeAdapter } from "./adapters/erogamescapeAdapter";
 import { kunAdapter } from "./adapters/kunAdapter";
 import { vndbAdapter } from "./adapters/vndbAdapter";
 import { ymgalAdapter } from "./adapters/ymgalAdapter";
@@ -16,6 +18,7 @@ export type SourceAdapterMap = {
 	vndb: MetadataSourceAdapter<VndbData>;
 	ymgal: MetadataSourceAdapter<YmgalData>;
 	kun: MetadataSourceAdapter<KunData>;
+	erogamescape: MetadataSourceAdapter<ErogameScapeData>;
 };
 
 export const SOURCE_ADAPTERS = {
@@ -23,6 +26,7 @@ export const SOURCE_ADAPTERS = {
 	vndb: vndbAdapter,
 	ymgal: ymgalAdapter,
 	kun: kunAdapter,
+	erogamescape: erogamescapeAdapter,
 } as const satisfies SourceAdapterMap;
 
 export type RegisteredSourceAdapter = SourceAdapterMap[SourceType];
@@ -43,6 +47,9 @@ export const MIXED_SOURCE_KEYS = REGISTERED_SOURCE_KEYS.filter(
 export const DEFAULT_MIXED_SOURCE_KEYS = MIXED_SOURCE_KEYS.filter(
 	(source) => SOURCE_ADAPTERS[source].defaultMixedEnabled,
 );
+
+export const MIXED_SOURCE_MIN_COUNT = 2;
+export const MIXED_SOURCE_MAX_COUNT = 4;
 
 export function getSourceAdapter<TSource extends SourceType>(
 	source: TSource,

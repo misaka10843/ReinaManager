@@ -21,9 +21,10 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import {
-	DEFAULT_MIXED_SOURCE_KEYS,
 	getRuntimeSourceAdapter,
 	MIXED_SOURCE_KEYS,
+	MIXED_SOURCE_MAX_COUNT,
+	MIXED_SOURCE_MIN_COUNT,
 } from "@/metadata";
 import { snackbar } from "@/providers/snackBar";
 import { isBgmAuthExpiredError } from "@/services/bgmAuthSession";
@@ -46,7 +47,7 @@ export const MixedSearchSourceSettings = () => {
 			title={t("pages.Settings.mixedSearchSources.title", "Mixed 搜索源")}
 			description={t(
 				"pages.Settings.mixedSearchSources.description",
-				"该设置影响添加游戏、批量导入和详情页 mixed 数据源更新。BGM 与 VNDB 默认启用，YMGal 与 Kungal 可按需开启，至少保留两个源。",
+				"该设置影响添加游戏、批量导入和详情页 mixed 数据源更新。BGM 与 VNDB 默认启用，其他数据源可按需开启，至少保留两个源，最多启用四个源。",
 			)}
 		>
 			<Stack
@@ -67,7 +68,8 @@ export const MixedSearchSourceSettings = () => {
 									onChange={() => toggleMixedSource(source)}
 									color="primary"
 									disabled={
-										checked && enabledCount <= DEFAULT_MIXED_SOURCE_KEYS.length
+										(checked && enabledCount <= MIXED_SOURCE_MIN_COUNT) ||
+										(!checked && enabledCount >= MIXED_SOURCE_MAX_COUNT)
 									}
 								/>
 							}

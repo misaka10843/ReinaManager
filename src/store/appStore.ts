@@ -21,6 +21,8 @@ import { persist } from "zustand/middleware";
 import {
 	DEFAULT_MIXED_SOURCE_KEYS,
 	MIXED_SOURCE_KEYS,
+	MIXED_SOURCE_MAX_COUNT,
+	MIXED_SOURCE_MIN_COUNT,
 	SEARCHABLE_SOURCE_KEYS,
 } from "@/metadata";
 import { type ProxyConfig, settingsService } from "@/services/invoke";
@@ -249,7 +251,8 @@ export const useStore = create<AppState>()(
 						? current.filter((item) => item !== source)
 						: enabledAfterAdd;
 
-					return nextSources.length >= DEFAULT_MIXED_SOURCE_KEYS.length
+					return nextSources.length >= MIXED_SOURCE_MIN_COUNT &&
+						nextSources.length <= MIXED_SOURCE_MAX_COUNT
 						? { mixedEnabledSources: nextSources }
 						: {};
 				});
