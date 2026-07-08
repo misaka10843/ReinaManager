@@ -34,16 +34,20 @@ import { isBgmAuthExpiredError, withBgmAuth } from "@/services/bgmAuthSession";
 import { handleFolder } from "@/services/fs/fileDialog";
 import { fileService } from "@/services/invoke";
 import { useStore } from "@/store/appStore";
-import type { apiSourceType, GameMetadataDraft, SourceType } from "@/types";
+import type { GameMetadataDraft, SourceType } from "@/types";
 import { createAbortableRunner, isAbortError } from "@/utils/async";
 import { getUserErrorMessage, isApiRateLimitError } from "@/utils/errors";
-import { ApiSourceRadioGroup } from "./ApiSourceRadioGroup";
 import BulkImportResultTable, {
 	type BulkImportItem,
 	type VisibleBulkImportItem,
 } from "./BulkImportResultTable";
 import GameSelectDialog from "./GameSelectDialog";
 import MixedSourceConfirmDialog from "./MixedSourceConfirmDialog";
+import {
+	type MetadataMatchMode,
+	MetadataMatchModeToggleGroup,
+	SingleSourceSelect,
+} from "./SourceMatchControls";
 
 interface BulkImportTabProps {
 	// 控制此 tab 是否隐藏（通过 CSS display:none 而非卸载）
@@ -85,8 +89,10 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 	const [scanMaxDepth, setScanMaxDepth] = useState(DEFAULT_SCAN_DEPTH);
 	const [editItemPath, setEditItemPath] = useState<string | null>(null);
 	const [editName, setEditName] = useState("");
+	const [editMatchMode, setEditMatchMode] =
+		useState<MetadataMatchMode>("mixed");
 	const [editApiSource, setEditApiSource] =
-		useState<apiSourceType>(defaultBulkApiSource);
+		useState<SourceType>(defaultBulkApiSource);
 	const [customImportConfirmOpen, setCustomImportConfirmOpen] = useState(false);
 	const editSearchAbortControllerRef = useRef<AbortController | null>(null);
 	const matchAbortControllerRef = useRef<AbortController | null>(null);
@@ -150,7 +156,6 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 		setScanMaxDepth(DEFAULT_SCAN_DEPTH);
 		setEditItemPath(null);
 		setEditName("");
-		setEditApiSource(defaultBulkApiSource);
 		setCustomImportConfirmOpen(false);
 		metadataSearchFlow.reset();
 	}, [defaultBulkApiSource, metadataSearchFlow]);
@@ -416,7 +421,7 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 		try {
 			await metadataSearchFlow.searchMetadata({
 				query: editName,
-				source: editApiSource,
+				source: editMatchMode === "single" ? editApiSource : "mixed",
 				withAbort,
 				signal: controller.signal,
 			});
@@ -449,14 +454,10 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 		[],
 	);
 
-	const handleEditItem = useCallback(
-		(item: VisibleBulkImportItem) => {
-			setEditItemPath(item.path);
-			setEditName(item.name);
-			setEditApiSource(bulkApiSource);
-		},
-		[bulkApiSource],
-	);
+	const handleEditItem = useCallback((item: VisibleBulkImportItem) => {
+		setEditItemPath(item.path);
+		setEditName(item.name);
+	}, []);
 
 	const handleEditRowSaveNameOnly = () => {
 		if (!editItemPath) return;
@@ -675,14 +676,40 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 				</DialogTitle>
 				<DialogContent>
 					<Stack spacing={2} className="mt-2">
+						<Stack spacing={2}>
+							<MetadataMatchModeToggleGroup
+								value={editMatchMode}
+								onChange={setEditMatchMode}
+								disabled={searchResultLoading}
+								sx={{ width: "100%" }}
+							/>
+							{editMatchMode === "single" && (
+								<SingleSourceSelect
+									value={editApiSource}
+									onChange={setEditApiSource}
+									disabled={searchResultLoading}
+								/>
+							)}
+							{!hasBgmAuth &&
+								((editMatchMode === "single" && editApiSource === "bgm") ||
+									(editMatchMode === "mixed" &&
+										mixedEnabledSources.includes("bgm"))) && (
+									<Alert severity="info" sx={{ py: 0, px: 1.5 }}>
+										{t(
+											"components.AddModal.bgmNotLoggedInHint",
+											"未登录 Bangumi 账号，部分隐藏条目（如 R18）可能无法被搜索到。",
+										)}
+									</Alert>
+								)}
+						</Stack>
 						<TextField
 							label={
-								editApiSource === "mixed"
-									? t("components.AddModal.gameName", "游戏名称")
-									: `${t("components.AddModal.gameName", "游戏名称")} / ${t(
+								editMatchMode === "single"
+									? `${t("components.AddModal.gameName", "游戏名称")} / ${t(
 											"components.AddModal.gameIDTips",
 											"游戏ID",
 										)}`
+									: t("components.AddModal.gameName", "游戏名称")
 							}
 							value={editName}
 							onChange={(event) => setEditName(event.target.value)}
@@ -695,24 +722,6 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 								}
 							}}
 						/>
-						<FormControl component="fieldset" className="gap-2">
-							<ApiSourceRadioGroup
-								value={editApiSource}
-								onChange={setEditApiSource}
-								disabled={searchResultLoading}
-							/>
-							{!hasBgmAuth &&
-								(editApiSource === "bgm" ||
-									(editApiSource === "mixed" &&
-										mixedEnabledSources.includes("bgm"))) && (
-									<Alert severity="info" sx={{ py: 0, px: 1.5 }}>
-										{t(
-											"components.AddModal.bgmNotLoggedInHint",
-											"未登录 Bangumi 账号，部分隐藏条目（如 R18）可能无法被搜索到。",
-										)}
-									</Alert>
-								)}
-						</FormControl>
 					</Stack>
 				</DialogContent>
 				<DialogActions>

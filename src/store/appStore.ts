@@ -18,10 +18,14 @@
 import type { Update } from "@tauri-apps/plugin-updater";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { DEFAULT_MIXED_SOURCE_KEYS, MIXED_SOURCE_KEYS } from "@/metadata";
+import {
+	DEFAULT_MIXED_SOURCE_KEYS,
+	MIXED_SOURCE_KEYS,
+	SEARCHABLE_SOURCE_KEYS,
+} from "@/metadata";
 import { type ProxyConfig, settingsService } from "@/services/invoke";
 import type { GameType, SortOption, SortOrder } from "@/services/invoke/types";
-import type { apiSourceType, SourceType } from "@/types";
+import type { SourceType } from "@/types";
 import type { PlayStatusFilter } from "@/types/collection";
 import { normalizeTagFilters } from "@/utils/game/tagFilter";
 import {
@@ -37,6 +41,8 @@ export type SelectedCategory =
 
 export type DataSourceUpdateMode = "search" | "manualId";
 export type StartupPage = "home" | "libraries" | "collection";
+
+const DEFAULT_API_SOURCE: SourceType = SEARCHABLE_SOURCE_KEYS[0] ?? "vndb";
 
 /**
  * AppState 全局状态类型定义
@@ -107,8 +113,8 @@ export interface AppState {
 	clearTagFilters: () => void;
 
 	// 数据来源选择
-	apiSource: apiSourceType;
-	setApiSource: (source: apiSourceType) => void;
+	apiSource: SourceType;
+	setApiSource: (source: SourceType) => void;
 	mixedEnabledSources: SourceType[];
 	toggleMixedSource: (source: SourceType) => void;
 	dataSourceUpdateMode: DataSourceUpdateMode;
@@ -228,8 +234,8 @@ export const useStore = create<AppState>()(
 				})),
 
 			// 数据来源选择
-			apiSource: "mixed",
-			setApiSource: (source: apiSourceType) => {
+			apiSource: DEFAULT_API_SOURCE,
+			setApiSource: (source: SourceType) => {
 				set({ apiSource: source });
 			},
 			mixedEnabledSources: [...DEFAULT_MIXED_SOURCE_KEYS],

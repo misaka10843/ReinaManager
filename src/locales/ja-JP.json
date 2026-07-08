@@ -27,6 +27,7 @@
 	"components": {
 		"AddModal": {
 			"addGame": "ゲームを追加",
+			"apiSource": "照合データソース",
 			"bgmNotLoggedInHint": "Bangumiアカウントにログインしていません。一部の非表示アイテム（R18など）が検索できない場合があります。",
 			"bulkTab": "一括インポート",
 			"cancel": "キャンセル",
@@ -35,11 +36,12 @@
 			"dragDropHere": "ファイルをここにドロップ",
 			"dragHint": "実行ファイルまたはフォルダを選択またはドラッグしてください",
 			"emptyFolder": "このフォルダに実行ファイルが見つかりません",
-			"enableCustomMode": "カスタムモードを有効化",
 			"gameExists": "ゲームはすでに存在します",
 			"gameIDTips": "ゲームID",
 			"gameName": "ゲーム名",
 			"invalidFile": "有効な実行ファイル（.exe/.bat/.cmd）またはフォルダをドラッグしてください",
+			"manualMode": "カスタム",
+			"mixedMode": "Mixed",
 			"noExecutableSelected": "実行ファイルが選択されていません",
 			"noResults": "結果が見つかりませんでした",
 			"noResultsMixed": "いずれのデータソースでもゲームが見つかりませんでした",
@@ -48,6 +50,7 @@
 			"selectFromFolder": "フォルダ内に複数の実行ファイルがあります、1つ選択してください",
 			"selectGame": "ゲームを選択",
 			"selectLauncher": "ランチャーを選択",
+			"singleSourceMode": "単一ソース",
 			"singleTab": "単体追加",
 			"timeout": "タイムアウトしました。しばらくしてから再試行してください",
 			"viewMore": "もっと見る"

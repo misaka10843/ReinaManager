@@ -27,6 +27,7 @@
 	"components": {
 		"AddModal": {
 			"addGame": "添加游戏",
+			"apiSource": "匹配数据源",
 			"bgmNotLoggedInHint": "未登录 Bangumi 账号，部分隐藏条目（如 R18）可能无法被搜索到。",
 			"bulkTab": "批量导入",
 			"cancel": "取消",
@@ -35,11 +36,12 @@
 			"dragDropHere": "拖拽文件到这里",
 			"dragHint": "请选择或拖拽可执行文件或文件夹",
 			"emptyFolder": "该文件夹中没有找到可执行文件",
-			"enableCustomMode": "启用自定义模式",
 			"gameExists": "游戏已存在",
 			"gameIDTips": "游戏ID",
 			"gameName": "游戏名称",
 			"invalidFile": "请拖入有效的可执行文件（.exe/.bat/.cmd）或文件夹",
+			"manualMode": "自定义",
+			"mixedMode": "Mixed",
 			"noExecutableSelected": "未选择可执行程序",
 			"noResults": "没有找到结果",
 			"noResultsMixed": "所有数据源均未找到该游戏",
@@ -48,6 +50,7 @@
 			"selectFromFolder": "文件夹中有多个可执行文件，请选择一个",
 			"selectGame": "选择游戏",
 			"selectLauncher": "选择启动程序",
+			"singleSourceMode": "单源",
 			"singleTab": "单个添加",
 			"timeout": "请求超时，请稍后重试",
 			"viewMore": "查看更多"

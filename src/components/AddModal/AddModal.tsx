@@ -11,7 +11,6 @@
 
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import FileOpenIcon from "@mui/icons-material/FileOpen";
-import { FormControlLabel } from "@mui/material";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -21,7 +20,6 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import Stack from "@mui/material/Stack";
-import Switch from "@mui/material/Switch";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import TextField from "@mui/material/TextField";
@@ -45,10 +43,14 @@ import { useStore } from "@/store/appStore";
 import type { GameMetadataDraft, InsertGameParams } from "@/types";
 import { createAbortableRunner } from "@/utils/async";
 import { getUserErrorMessage } from "@/utils/errors";
-import { ApiSourceRadioGroup } from "./ApiSourceRadioGroup";
 import BulkImportTab from "./BulkImportTab";
 import GameSelectDialog from "./GameSelectDialog";
 import MixedSourceConfirmDialog from "./MixedSourceConfirmDialog";
+import {
+	type AddGameMode,
+	AddGameModeToggleGroup,
+	SingleSourceSelect,
+} from "./SourceMatchControls";
 
 /**
  * 常量定义
@@ -113,7 +115,7 @@ const AddModal: React.FC = () => {
 	const [formText, setFormText] = useState("");
 	const [error, setError] = useState("");
 	const [customLoading, setCustomLoading] = useState(false);
-	const [customMode, setCustomMode] = useState(false);
+	const [addMode, setAddMode] = useState<AddGameMode>("mixed");
 	const [activeTab, setActiveTab] = useState<AddModalTab>("single");
 	const previousFocus = useRef<HTMLElement | null>(null);
 
@@ -215,8 +217,8 @@ const AddModal: React.FC = () => {
 			const defaultdata = {
 				localpath: addModalPath,
 			};
-			// 场景1: 自定义模式
-			if (customMode) {
+			// 手动模式只写入本地路径和自定义名称，不请求元数据源。
+			if (addMode === "custom") {
 				if (!addModalPath) {
 					showError(
 						t("components.AddModal.noExecutableSelected", "未选择可执行程序"),
@@ -240,7 +242,7 @@ const AddModal: React.FC = () => {
 
 			await metadataSearchFlow.searchMetadata({
 				query: formText,
-				source: apiSource,
+				source: addMode === "single" ? apiSource : "mixed",
 				defaults: {
 					localpath: addModalPath,
 				},
@@ -348,32 +350,24 @@ const AddModal: React.FC = () => {
 							)}
 							InputProps={{ readOnly: true }}
 						/>
-						{/* 自定义模式和 API 来源切换 */}
-						<Stack spacing={1}>
-							<FormControlLabel
-								control={
-									<Switch
-										checked={customMode}
-										onChange={() => {
-											setCustomMode(!customMode);
-										}}
-										disabled={isBusy}
-									/>
-								}
-								label={t(
-									"components.AddModal.enableCustomMode",
-									"启用自定义模式",
-								)}
-							/>
-							<ApiSourceRadioGroup
-								value={apiSource}
-								sx={{ gap: 1 }}
-								onChange={setApiSource}
+						{/* 添加策略切换 */}
+						<Stack spacing={2}>
+							<AddGameModeToggleGroup
+								value={addMode}
+								onChange={setAddMode}
 								disabled={isBusy}
+								sx={{ width: "100%" }}
 							/>
+							{addMode === "single" && (
+								<SingleSourceSelect
+									value={apiSource}
+									onChange={setApiSource}
+									disabled={isBusy}
+								/>
+							)}
 							{!hasBgmAuth &&
-								(apiSource === "bgm" ||
-									(apiSource === "mixed" &&
+								((addMode === "single" && apiSource === "bgm") ||
+									(addMode === "mixed" &&
 										mixedEnabledSources.includes("bgm"))) && (
 									<Alert severity="info" sx={{ py: 0, px: 1.5 }}>
 										{t(
@@ -390,12 +384,12 @@ const AddModal: React.FC = () => {
 							id="name"
 							name="game-name"
 							label={
-								apiSource === "mixed"
-									? t("components.AddModal.gameName", "游戏名称")
-									: `${t("components.AddModal.gameName", "游戏名称")} / ${t(
+								addMode === "single"
+									? `${t("components.AddModal.gameName", "游戏名称")} / ${t(
 											"components.AddModal.gameIDTips",
 											"游戏ID",
 										)}`
+									: t("components.AddModal.gameName", "游戏名称")
 							}
 							type="text"
 							fullWidth
