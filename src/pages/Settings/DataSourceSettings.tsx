@@ -47,7 +47,7 @@ export const MixedSearchSourceSettings = () => {
 			title={t("pages.Settings.mixedSearchSources.title", "Mixed 搜索源")}
 			description={t(
 				"pages.Settings.mixedSearchSources.description",
-				"该设置影响添加游戏、批量导入和详情页 mixed 数据源更新。BGM 与 VNDB 默认启用，其他数据源可按需开启，至少保留两个源，最多启用四个源。",
+				"该设置影响 Mixed 模式，BGM 与 VNDB 默认启用，其它源可按需开启，启用数量限制为 2-4 个源。",
 			)}
 		>
 			<Stack
