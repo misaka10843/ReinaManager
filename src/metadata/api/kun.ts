@@ -56,7 +56,7 @@ export interface GalgameDetailResponse {
 	id: number;
 	vndb_id?: string;
 	name: Partial<KunLanguage>;
-	banner?: string;
+	effective_banner_url?: string;
 	introduction?: Partial<KunLanguage>;
 	content_limit?: "sfw" | "nsfw";
 	markdown?: Partial<KunLanguage>;
@@ -70,7 +70,7 @@ export interface GalgameDetailResponse {
 export interface SearchResultGalgame {
 	id: number;
 	name: KunLanguage;
-	banner: string;
+	effective_banner_url?: string;
 	release_date?: string | null;
 }
 
@@ -215,7 +215,7 @@ const transformKunData = (
 	const summary = pickLocalizedText(kunData.markdown);
 
 	const sourceData: KunData = {
-		image: kunData.banner,
+		image: kunData.effective_banner_url,
 		name: pickLocalizedText(kunData.name),
 		name_cn:
 			typeof kunData.name?.["zh-cn"] === "string"
@@ -368,7 +368,7 @@ export async function searchGalgame(
 			idType: "kun",
 			source: createSourceCandidateRecord("kun", String(item.id), {
 				name: pickLocalizedText(item.name),
-				image: item.banner,
+				image: item.effective_banner_url,
 				date: item.release_date ?? undefined,
 			}),
 		}),
