@@ -11,7 +11,7 @@
 特点：
 
 - 包含数据库主键、基础字段和所有 JSON 元数据列。
-- 包含 `bgm_data`、`vndb_data`、`ymgal_data`、`kun_data`、`custom_data`。
+- 包含由 `game_sources` 表聚合而成的 `sources` 数组（存储各平台的原始数据与外部 ID），以及 `custom_data`。
 - 是 React Query 中 `gameKeys.all` 的缓存内容。
 - 用于写入 patch、详情编辑、数据源切换等需要完整元数据的场景。
 
@@ -21,7 +21,7 @@
 
 特点：
 
-- 不包含四个原始元数据列。
+- 不包含原始的 `sources` 聚合元数据记录。
 - 将当前显示源、混合源和自定义覆盖逻辑展平成 `name`、`image`、`summary`、`developer`、`tags` 等展示字段。
 - 用于卡片、详情展示、搜索、开发商分类等 UI 场景。
 

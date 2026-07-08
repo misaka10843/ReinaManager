@@ -46,17 +46,17 @@ interface MetadataSourceContext {
 interface MetadataSourceAdapter<TData = unknown> {
   key: SourceType;              // "bgm" | "vndb" | "ymgal" | "kun"
   label: string;                // UI 显示名："Bangumi" / "VNDB" / "YMGal" / "Kungal"
-  idKey: SourceIdType;          // "bgm_id" / "vndb_id" / ...
-  dataKey: SourceDataKey;       // "bgm_data" / "vndb_data" / ...
+  iconUrl: string;
   participatesInMixed: boolean; // 是否参与混合搜索
   defaultMixedEnabled: boolean; // 混合搜索默认启用
   mixedSearchLimit: number;     // 混合搜索结果数限制
   requiresBgmToken?: boolean;   // 是否需要 BGM token
 
   validateId(id: string): boolean;
-  fetchById(id: string, ctx: MetadataSourceContext): Promise<SourceCandidate<TData>>;
+  getExternalUrl(id: string): string;
+  fetchById(id: string, ctx: MetadataSourceContext): Promise<GameMetadataDraft>;
   searchByName(name: string, ctx: MetadataSourceContext): Promise<SourceCandidate<TData>[]>;
-  enrichOnSelect?(candidate: SourceCandidate<TData>, ctx: MetadataSourceContext): Promise<SourceCandidate<TData>>;
+  enrichOnSelect?(candidate: SourceCandidate<TData>, ctx: MetadataSourceContext): Promise<GameMetadataDraft>;
   toDisplayFields(data: TData): SourceDisplayFields;
 }
 ```
@@ -139,13 +139,11 @@ BulkImportTab / AddModal
               : createEmptyResult(a)
           ))                                                        [api/mixed.ts:222]
         → assertNotAllAttemptedSourcesFailed(results)
-        → toLegacyResult(results)                                   [api/mixed.ts:110]
-          → { bgm_data: [...], vndb_data: [...], ... }
+        → toSourceResult(results)                                   [api/mixed.ts:110]
+          → { bgm: [SourceCandidate...], vndb: [SourceCandidate...], ... }
       → pickFirstMixedResult(result)                                [data/metadata.ts:140]
-      → mergeMixedResult(firstResults)                              [data/metadata.ts:116]
-        → mergeSourceIntoGame() per source
-          → getRuntimeSourceAdapter(source) → { idKey, dataKey }
-      → GameCandidateData[]
+      → buildGameCandidateFromSourceSelection()                     [sourceCandidate.ts:240]
+      → GameMetadataDraft[]
 ```
 
 ### 2.2 单源搜索
@@ -157,8 +155,8 @@ AddModal → gameMetadataService.searchGames({ source: "bgm", query })
       → getSourceAdapter(source).validateId(query)                 [data/gameMetadataService.ts:142]
     → searchByName() → getSourceAdapter(source).searchByName()    [data/gameMetadataService.ts:414]
       → bgmAdapter.searchByName() → fetchBgmByName()
-    → candidates.map(c => c.raw)                                   [data/gameMetadataService.ts:419]
-    → GameCandidateData[]
+    → candidates.map(c => sourceCandidateToDraft(c))               [data/gameMetadataService.ts:419]
+    → GameMetadataDraft[]
 ```
 
 ### 2.3 搜索结果选择后补全
@@ -168,10 +166,10 @@ AddModal → gameMetadataService.searchGames({ source: "bgm", query })
   → gameMetadataService.enrichSelectedGameDetails({ selectedGame, source })  [data/gameMetadataService.ts:294]
     → getSourceAdapter(source)
     → adapter.enrichOnSelect?
-      ├─ ymgal: fetchYmById(id) → mergeCandidateWithDetails()
+      ├─ ymgal: fetchYmById(id) → mergeCandidateDetailData()
       └─ kun: fetchGalgameById(id, { enrichVndb: ctx.enrichCrossSource })
-           → mergeCandidateWithDetails()
-    → candidate.raw
+           → mergeCandidateDetailData()
+    → GameMetadataDraft
 ```
 
 ### 2.4 混合单 ID 查找
@@ -186,7 +184,7 @@ fetchMixedData({ bgm_id: "12345", bgmToken })                   [api/mixed.ts:16
   → Promise.all(其他 adapters 用名称做 resolveAutoSelectedSourceCandidate())
     → adapter.searchByName(searchName, { limit: 1 })
     → adapter.enrichOnSelect?(candidate, { enrichCrossSource: false })
-  → toLegacyResult(results)
+  → toSourceResult(results)
 ```
 
 ### 2.5 混合多 ID 查找（数据更新场景）
@@ -195,7 +193,7 @@ fetchMixedData({ bgm_id: "12345", bgmToken })                   [api/mixed.ts:16
 fetchMetadataForUpdate({ idType: "mixed", bgmId, vndbId, ... }) [data/metadata.ts:216]
   → gameMetadataService.getGameByIds()
     → 并行 getSourceAdapter(source).fetchById(id, { bgmToken })  [data/gameMetadataService.ts:274]
-    → mergeMixedResult(combinedResults)
+    → mergeCandidateSources(combinedResults) 等组合操作
 ```
 
 ### 2.6 展示数据合并
@@ -206,7 +204,7 @@ FullGameData (数据库)
     → getSourceDataMap(fullData)                                   [data/displayMergeRules.ts:65]
       → REGISTERED_SOURCE_KEYS.map(source => {
           adapter = getRuntimeSourceAdapter(source)
-          game[adapter.dataKey]
+          getCandidateSourceData(fullData, source)
         })
       → { bgm: BgmData, vndb: VndbData, ... }
 
@@ -249,8 +247,8 @@ BulkImportTab.handleMatchMetadata()                               [BulkImportTab
     → resolveAutoSelectedSourceCandidate({ query, source, bgmToken })
       → adapter.searchByName(query, { limit: 1 })
       → adapter.enrichOnSelect?(candidate)
-    → candidate?.raw
-  → items[].matchedData = GameCandidateData
+    → candidate ? sourceCandidateToDraft(candidate) : undefined
+  → items[].matchedData = GameMetadataDraft
 
 BulkImportTab.handleEditRowSearch()
   → metadataSearchFlow.searchMetadata({ query, source })
@@ -277,8 +275,8 @@ MixedSourceConfirmDialog → 用户确认选择
         adapter = getRuntimeSourceAdapter(source)
         if (!adapter.enrichOnSelect) return
         sourceCandidate = getSourceCandidateFromGame(selectedGame, adapter, display)
-        enrichedCandidate = await adapter.enrichOnSelect(sourceCandidate, { enrichCrossSource: false })
-        nextSelection[source] = enrichedCandidate.raw
+        enrichedDraft = await adapter.enrichOnSelect(sourceCandidate, { enrichCrossSource: false })
+        nextSelection[source] = getSourceCandidateFromGame(enrichedDraft, adapter, ...)
       }))
 ```
 
@@ -310,13 +308,11 @@ MixedSourceConfirmDialog → 用户确认选择
 | 旧常量/类型 (types.ts) | 新对应 (metadata/) | 关系 |
 |---|---|---|
 | `SourceType` | `MetadataSourceAdapter.key` | 1:1，继续使用 |
-| `SourceIdType` | `MetadataSourceAdapter.idKey` | 1:1 |
-| `SourceDataKey` | `MetadataSourceAdapter.dataKey` | 1:1 |
+| `SourceIdType` / `SourceDataKey` | (已废弃) | 被 `game_sources` 聚合表结构取代 |
 | `SOURCE_KEYS` | `REGISTERED_SOURCE_KEYS` | 后者从 `Object.keys(SOURCE_ADAPTERS)` 派生 |
-| `SOURCE_FIELD_KEYS[source].id` | `getRuntimeSourceAdapter(source).idKey` | 后者是超集 |
-| `SOURCE_FIELD_KEYS[source].data` | `getRuntimeSourceAdapter(source).dataKey` | 后者是超集 |
+| `SOURCE_FIELD_KEYS` | (已废弃) | 不再依赖特定数据列后缀 |
 | `SOURCE_LABELS[source]` | `getRuntimeSourceAdapter(source).label` | 后者是超集 |
-| `GameCandidateData` | `SourceCandidate.raw` | raw 字段即 GameCandidateData |
+| `GameCandidateData` | `GameMetadataDraft` | 全新数据草稿格式，支持 sources 数组 |
 
 旧常量 `SOURCE_FIELD_KEYS` 和 `SOURCE_KEYS` 仅在 `types/types.ts` 定义处保留（`isSourceType()` 依赖），所有消费方已迁移到 registry 体系。
 
