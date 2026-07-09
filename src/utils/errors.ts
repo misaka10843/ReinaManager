@@ -16,7 +16,13 @@ export type AppErrorCode =
 	| "api_rate_limited"
 	| "metadata_request_failed";
 
-type ApiRateLimitSource = "bgm" | "vndb" | "ymgal" | "kun" | "erogamescape";
+type ApiRateLimitSource =
+	| "bgm"
+	| "vndb"
+	| "ymgal"
+	| "kun"
+	| "dlsite"
+	| "erogamescape";
 
 interface AppErrorOptions {
 	code: AppErrorCode | string;

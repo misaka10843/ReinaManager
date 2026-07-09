@@ -10,6 +10,7 @@ export const SOURCE_COVER_PRIORITY: readonly SourceType[] = [
 	"bgm",
 	"vndb",
 	"erogamescape",
+	"dlsite",
 	"kun",
 	"ymgal",
 ];
@@ -17,20 +18,29 @@ export const SOURCE_COVER_PRIORITY: readonly SourceType[] = [
 const BASIC_FIELD_PRIORITY: readonly SourceType[] = [
 	"bgm",
 	"vndb",
+	"dlsite",
 	"erogamescape",
 	"ymgal",
 	"kun",
 ];
-const SUMMARY_PRIORITY: readonly SourceType[] = ["ymgal", "bgm", "kun", "vndb"];
+const SUMMARY_PRIORITY: readonly SourceType[] = [
+	"ymgal",
+	"bgm",
+	"kun",
+	"vndb",
+	"dlsite",
+];
 const DEVELOPER_PRIORITY: readonly SourceType[] = [
 	"vndb",
 	"erogamescape",
 	"kun",
+	"dlsite",
 	"ymgal",
 	"bgm",
 ];
 const MIXED_TAG_SOURCES: readonly SourceType[] = [
 	"bgm",
+	"dlsite",
 	"erogamescape",
 	"vndb",
 	"kun",

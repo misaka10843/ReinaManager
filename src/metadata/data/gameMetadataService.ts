@@ -39,6 +39,7 @@ const mixedIdTypePriority: readonly SourceType[] = [
 	"ymgal",
 	"vndb",
 	"bgm",
+	"dlsite",
 	"erogamescape",
 ];
 

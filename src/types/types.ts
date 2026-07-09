@@ -141,6 +141,19 @@ export interface KunData {
 }
 
 /**
+ * DLsite 数据结构
+ */
+export interface DlsiteData {
+	image?: string;
+	name?: string;
+	summary?: string;
+	tags?: string[];
+	developer?: string;
+	nsfw?: boolean;
+	date?: string;
+}
+
+/**
  * ErogameScape 数据结构
  */
 export interface ErogameScapeData {
@@ -187,6 +200,7 @@ export const SOURCE_TYPES = [
 	"vndb",
 	"ymgal",
 	"kun",
+	"dlsite",
 	"erogamescape",
 ] as const;
 export type SourceType = (typeof SOURCE_TYPES)[number];

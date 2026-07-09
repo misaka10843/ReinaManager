@@ -1,6 +1,6 @@
 /**
  * @file 多数据源混合获取 API 封装
- * @description 同时从 Bangumi、VNDB、YMGal 和 Kungal 获取游戏信息，返回各源原始数据
+ * @description 同时从已启用的数据源获取游戏信息，返回各源原始数据
  * @module src/metadata/api/mixed
  * @author ReinaManager
  * @copyright AGPL-3.0
@@ -11,7 +11,7 @@
  *    - 多个数据源ID：并行获取所有指定的数据源
  *    - 只有名称：同时搜索所有数据源
  * 2. 使用安全模式避免单个数据源失败导致整体失败
- * 3. 按 source 返回候选列表 { bgm, vndb, ymgal, kun }
+ * 3. 按 source 返回候选列表
  *
  * 主要导出：
  * - fetchMixedData：通用混合数据获取，返回按 source 分组的候选列表
