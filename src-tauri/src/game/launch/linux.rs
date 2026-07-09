@@ -1,9 +1,9 @@
 use crate::database::repository::games_repository::GamesRepository;
+use crate::game::local_path::{GameLaunchTarget, resolve_launch_target};
 use crate::game::monitor::{TimeTrackingMode, monitor_game, stop_game_session};
 use log::{debug, info};
 use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
-use std::path::Path;
 use std::process::Command;
 use tauri::{AppHandle, Manager, Runtime, State, command};
 use tauri_plugin_store::StoreExt;
@@ -12,6 +12,7 @@ use tauri_plugin_store::StoreExt;
 pub struct LaunchResult {
     success: bool,
     message: String,
+    code: Option<String>,
 
     process_id: Option<u32>,
     systemd_scope: Option<String>,
@@ -36,18 +37,31 @@ pub async fn launch_game<R: Runtime>(
         .await
         .map_err(|e| format!("查询游戏失败: {}", e))?
         .ok_or_else(|| format!("游戏不存在: {}", game_id))?;
-    let game_path = game.localpath.ok_or_else(|| "游戏路径未设置".to_string())?;
-
-    if !Path::new(&game_path).exists() {
-        return Err(format!("游戏可执行文件不存在: {}", game_path));
-    }
-
-    let game_dir = match Path::new(&game_path).parent() {
-        Some(dir) => dir,
-        None => return Err("无法获取游戏目录路径".to_string()),
+    let launch_target = resolve_launch_target(game.localpath.as_deref());
+    let GameLaunchTarget::NormalExecutable {
+        executable_path,
+        working_dir: game_dir,
+        ..
+    } = launch_target
+    else {
+        return match launch_target {
+            GameLaunchTarget::DirectoryOnly { game_dir } => Ok(LaunchResult {
+                success: false,
+                message: format!("请选择启动程序: {}", game_dir.display()),
+                code: Some("NEED_EXECUTABLE".to_string()),
+                process_id: None,
+                systemd_scope: None,
+            }),
+            GameLaunchTarget::MissingLocalPath => Err("游戏路径未设置".to_string()),
+            GameLaunchTarget::MissingPath { raw_path } => {
+                Err(format!("游戏路径不存在: {}", raw_path.display()))
+            }
+            GameLaunchTarget::NormalExecutable { .. } => unreachable!(),
+        };
     };
+    let game_path = executable_path.to_string_lossy().to_string();
 
-    let exe_name = match Path::new(&game_path).file_name() {
+    let exe_name = match executable_path.file_name() {
         Some(name) => name,
         None => return Err("无法获取游戏可执行文件名".to_string()),
     };
@@ -77,7 +91,7 @@ pub async fn launch_game<R: Runtime>(
             cmd.arg(&linux_launch_command);
         }
         cmd.arg(&game_path);
-        cmd.current_dir(game_dir);
+        cmd.current_dir(&game_dir);
         cmd
     };
 
@@ -124,6 +138,7 @@ pub async fn launch_game<R: Runtime>(
                     exe_name.to_string_lossy(),
                     game_dir
                 ),
+                code: None,
                 process_id: Some(process_id),
                 systemd_scope: Some(systemd_unit_name),
             })

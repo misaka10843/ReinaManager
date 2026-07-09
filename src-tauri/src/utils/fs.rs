@@ -1,14 +1,44 @@
+use crate::game::local_path::{ResolvedLocalPath, resolve_game_directory, resolve_local_path};
+
 #[cfg(target_os = "windows")]
 use crate::utils::command_ext::CommandGuiExt;
 
+use serde::Serialize;
 use std::fs;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use tauri::command;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct PortableModeResult {
     pub is_portable: bool,
+}
+
+#[derive(Debug, Serialize)]
+pub struct DroppedLocalPathResult {
+    pub kind: DroppedLocalPathKind,
+    pub path: Option<String>,
+    pub directory: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DroppedLocalPathKind {
+    Executable,
+    SingleExecutable,
+    MultipleExecutables,
+    NoExecutable,
+    Invalid,
+}
+
+const LOCAL_EXECUTABLE_EXTENSIONS: &[&str] = &["exe", "bat", "cmd"];
+
+fn is_supported_local_executable(path: &Path) -> bool {
+    path.extension().is_some_and(|ext| {
+        LOCAL_EXECUTABLE_EXTENSIONS
+            .iter()
+            .any(|expected| ext.eq_ignore_ascii_case(expected))
+    })
 }
 
 /// 打开目录
@@ -22,28 +52,44 @@ pub struct PortableModeResult {
 /// 操作结果
 #[command]
 pub async fn open_directory(dir_path: String) -> Result<(), String> {
-    // 首先检查路径是否存在
-    if !Path::new(&dir_path).exists() {
-        return Err(format!("路径不存在: {}", dir_path));
-    }
+    let (open_path, select_path) = match resolve_local_path(Some(&dir_path)) {
+        ResolvedLocalPath::Directory { game_dir } => (game_dir, None),
+        ResolvedLocalPath::File {
+            executable_path,
+            game_dir,
+        } => (game_dir, Some(executable_path)),
+        ResolvedLocalPath::Missing { raw_path } => {
+            return Err(format!("路径不存在: {}", raw_path.display()));
+        }
+        ResolvedLocalPath::Unset => return Err("路径未设置".to_string()),
+    };
 
     #[cfg(target_os = "windows")]
     {
         // Windows Explorer 在某些情况下对反斜杠的处理更稳定
         // 虽然 Windows 系统本身支持正斜杠，但 Explorer 更喜欢原生的反斜杠格式
-        let normalized_path = dir_path.replace('/', "\\");
+        // 文件路径使用 /select 打开所在目录并选中文件，目录路径直接打开目录。
+        let explorer_arg = if let Some(select_path) = &select_path {
+            format!(
+                "/select,{}",
+                select_path.to_string_lossy().replace('/', "\\")
+            )
+        } else {
+            open_path.to_string_lossy().replace('/', "\\")
+        };
 
         let result = Command::new("explorer")
-            .arg(&normalized_path)
+            .arg(&explorer_arg)
             .gui_safe()
             .spawn();
 
         match result {
             Ok(_) => Ok(()),
             Err(e) => {
-                // 如果 explorer 失败，尝试使用 cmd /c start
+                // explorer /select 失败时退回打开解析后的目录，cmd start 不稳定支持选中文件。
+                let fallback_path = open_path.to_string_lossy().to_string();
                 let fallback_result = Command::new("cmd")
-                    .args(["/c", "start", "", &normalized_path])
+                    .args(["/c", "start", "", &fallback_path])
                     .gui_safe()
                     .spawn();
 
@@ -51,7 +97,9 @@ pub async fn open_directory(dir_path: String) -> Result<(), String> {
                     Ok(_) => Ok(()),
                     Err(e2) => Err(format!(
                         "无法打开目录 '{}': explorer 失败 ({}), cmd 备用方案也失败 ({})",
-                        normalized_path, e, e2
+                        open_path.display(),
+                        e,
+                        e2
                     )),
                 }
             }
@@ -59,13 +107,80 @@ pub async fn open_directory(dir_path: String) -> Result<(), String> {
     }
     #[cfg(target_os = "linux")]
     {
-        let result = Command::new("xdg-open").arg(&dir_path).spawn();
+        let result = Command::new("xdg-open").arg(&open_path).spawn();
 
         match result {
             Ok(_) => Ok(()),
-            Err(e) => Err(format!("无法打开目录 '{}': {}", dir_path, e)),
+            Err(e) => Err(format!("无法打开目录 '{}': {}", open_path.display(), e)),
         }
     }
+}
+
+#[command]
+pub async fn resolve_local_path_directory(local_path: String) -> Result<String, String> {
+    resolve_game_directory(&local_path).map(|path| path.to_string_lossy().to_string())
+}
+
+#[command]
+pub async fn resolve_dropped_local_path(
+    dropped_path: String,
+) -> Result<DroppedLocalPathResult, String> {
+    let path = PathBuf::from(&dropped_path);
+    let metadata =
+        fs::metadata(&path).map_err(|e| format!("无法读取路径 '{}': {}", dropped_path, e))?;
+
+    if metadata.is_dir() {
+        let mut executable_count = 0;
+        let mut first_executable = None;
+        for entry in fs::read_dir(&path).map_err(|e| format!("读取目录失败: {}", e))? {
+            let entry = entry.map_err(|e| format!("读取目录项失败: {}", e))?;
+            let entry_path = entry.path();
+            if entry_path.is_file() && is_supported_local_executable(&entry_path) {
+                executable_count += 1;
+                if first_executable.is_none() {
+                    first_executable = Some(entry_path.to_string_lossy().to_string());
+                }
+            }
+        }
+
+        return match executable_count {
+            0 => Ok(DroppedLocalPathResult {
+                kind: DroppedLocalPathKind::NoExecutable,
+                path: None,
+                directory: Some(dropped_path),
+            }),
+            1 => Ok(DroppedLocalPathResult {
+                kind: DroppedLocalPathKind::SingleExecutable,
+                path: first_executable,
+                directory: Some(dropped_path),
+            }),
+            _ => Ok(DroppedLocalPathResult {
+                kind: DroppedLocalPathKind::MultipleExecutables,
+                path: None,
+                directory: Some(dropped_path),
+            }),
+        };
+    }
+
+    if metadata.is_file() && is_supported_local_executable(&path) {
+        return Ok(DroppedLocalPathResult {
+            kind: DroppedLocalPathKind::Executable,
+            path: Some(dropped_path),
+            directory: path
+                .parent()
+                .filter(|parent| !parent.as_os_str().is_empty())
+                .map(|parent| parent.to_string_lossy().to_string()),
+        });
+    }
+
+    Ok(DroppedLocalPathResult {
+        kind: DroppedLocalPathKind::Invalid,
+        path: None,
+        directory: path
+            .parent()
+            .filter(|parent| !parent.as_os_str().is_empty())
+            .map(|parent| parent.to_string_lossy().to_string()),
+    })
 }
 
 /// 判断当前是否为便携模式

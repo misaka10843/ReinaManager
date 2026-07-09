@@ -189,7 +189,7 @@ pub async fn stop_game_session(game_id: u32) -> Result<u32, String> {
 /// * `app_handle` - Tauri 应用句柄，用于发送事件到前端
 /// * `game_id` - 游戏的唯一标识符
 /// * `process_id` - 要开始监控的游戏进程的初始 PID
-/// * `executable_path` - 游戏主可执行文件的完整路径，用于在进程重启或切换后重新查找
+/// * `detection_dir` - 游戏检测目录，用于在进程重启或切换后重新查找
 ///
 /// # 工作流程
 /// 1. 创建 System 实例用于进程查询
@@ -201,7 +201,7 @@ pub async fn monitor_game<R: Runtime>(
     time_tracking_mode: TimeTrackingMode,
     game_id: u32,
     process_id: u32,
-    executable_path: String,
+    detection_dir: String,
 ) {
     let app_handle_clone = app_handle.clone();
 
@@ -212,7 +212,7 @@ pub async fn monitor_game<R: Runtime>(
             time_tracking_mode,
             game_id,
             process_id,
-            executable_path,
+            detection_dir,
         )
         .await
         {
@@ -235,7 +235,7 @@ pub async fn monitor_game<R: Runtime>(
 /// * `app_handle` - Tauri 应用句柄
 /// * `game_id` - 游戏 ID
 /// * `initial_pid` - 初始监控的进程 PID
-/// * `executable_path` - 游戏主可执行文件路径
+/// * `detection_dir` - 游戏检测目录
 /// * `sys` - System 实例的可变引用，用于进程信息查询
 ///
 /// # 返回值
@@ -255,7 +255,7 @@ async fn run_game_monitor<R: Runtime>(
     time_tracking_mode: TimeTrackingMode,
     game_id: u32,
     initial_pid: u32,
-    executable_path: String,
+    detection_dir: String,
 ) -> Result<(), String> {
     let mut accumulated_seconds = 0u64;
     let start_time = get_timestamp();
@@ -265,7 +265,7 @@ async fn run_game_monitor<R: Runtime>(
     tokio::time::sleep(Duration::from_secs(3)).await;
 
     // 初始扫描：获取所有候选 PID
-    let candidate_pids = get_all_candidate_pids(&executable_path);
+    let candidate_pids = get_all_candidate_pids(&detection_dir);
     let mut candidate_pids_set: HashSet<u32> = candidate_pids.into_iter().collect();
     // 如果初始 PID 不在候选列表中，手动添加（容错）
     if !candidate_pids_set.contains(&initial_pid) && is_process_running(initial_pid) {
@@ -278,15 +278,9 @@ async fn run_game_monitor<R: Runtime>(
     // 创建共享状态（仅包含 is_foreground 和 best_pid）
     let monitor_state = Arc::new(RwLock::new(MonitorState::new(initial_pid)));
 
-    // 获取游戏目录路径（用于逃逸检测）
-    let game_directory = Path::new(&executable_path)
-        .parent()
-        .map(|p| p.to_string_lossy().to_string())
-        .unwrap_or_else(|| executable_path.clone());
-
     info!(
         "开始监控游戏: ID={}, 初始 PID={}, 候选进程组={:?}, 游戏目录={}",
-        game_id, initial_pid, candidate_pids_set, game_directory
+        game_id, initial_pid, candidate_pids_set, detection_dir
     );
 
     // 创建停止信号
@@ -308,7 +302,7 @@ async fn run_game_monitor<R: Runtime>(
     start_foreground_hook(
         monitor_state.clone(),
         shared_candidate_pids.clone(),
-        game_directory,
+        detection_dir.clone(),
         stop_signal.clone(),
     );
 
@@ -360,7 +354,7 @@ async fn run_game_monitor<R: Runtime>(
                 warn!("最佳进程 {} 已失活，触发重新扫描", current_best_pid);
 
                 // 触发目录扫描，获取最新的候选 PID 列表
-                let new_candidate_pids_vec = get_all_candidate_pids(&executable_path);
+                let new_candidate_pids_vec = get_all_candidate_pids(&detection_dir);
 
                 if new_candidate_pids_vec.is_empty() {
                     info!("未找到可切换的活动进程，结束监控会话");
@@ -611,14 +605,14 @@ fn is_sub_path_ignore_case(path: &str, base_dir: &str) -> bool {
 /// 从游戏目录下扫描所有进程，自动过滤掉管理器自身。
 ///
 /// # Arguments
-/// * `executable_path` - 游戏可执行文件路径
+/// * `detection_dir` - 游戏检测目录
 ///
 /// # Returns
 /// 返回所有候选 PID 的列表，如果没有找到则返回空列表
-fn get_all_candidate_pids(executable_path: &str) -> Vec<u32> {
+fn get_all_candidate_pids(detection_dir: &str) -> Vec<u32> {
     let manager_pid = std::process::id();
 
-    let candidate_pids: Vec<u32> = get_processes_in_directory(executable_path)
+    let candidate_pids: Vec<u32> = get_processes_in_directory(detection_dir)
         .into_iter()
         .filter(|&pid| pid != manager_pid)
         .collect();
@@ -626,7 +620,7 @@ fn get_all_candidate_pids(executable_path: &str) -> Vec<u32> {
     if candidate_pids.is_empty() {
         debug!(
             "未通过路径 '{}' 找到匹配的进程（已排除管理器）",
-            executable_path
+            detection_dir
         );
     } else {
         debug!(
@@ -644,18 +638,16 @@ fn get_all_candidate_pids(executable_path: &str) -> Vec<u32> {
 /// 复用文件内已有的 `get_process_executable_path()` 获取路径，替代 sysinfo。
 ///
 /// # Arguments
-/// * `executable_path` - 可执行文件的完整路径（用于确定目标目录）
+/// * `detection_dir` - 游戏检测目录
 ///
 /// # Returns
 /// 返回该目录及子目录下所有正在运行进程的 PID 列表
-fn get_processes_in_directory(executable_path: &str) -> Vec<u32> {
-    let target_dir = match Path::new(executable_path).parent() {
-        Some(dir) => dir,
-        None => {
-            warn!("无法获取可执行文件 '{}' 的父目录", executable_path);
-            return Vec::new();
-        }
-    };
+fn get_processes_in_directory(detection_dir: &str) -> Vec<u32> {
+    let target_dir = Path::new(detection_dir);
+    if !target_dir.is_dir() {
+        warn!("检测目录不存在或不是目录: {}", detection_dir);
+        return Vec::new();
+    }
 
     // 双重路径预处理：保留原始字符串 + 尝试获取物理真实规范化路径
     let target_str = target_dir.to_string_lossy().to_string();

@@ -1,6 +1,7 @@
 use crate::database::dto::UpdateSettingsData;
 use crate::database::repository::games_repository::GamesRepository;
 use crate::database::repository::settings_repository::{DbSettingsExt, SettingsRepository};
+use crate::game::local_path::{GameLaunchTarget, resolve_launch_target};
 use crate::game::monitor::{TimeTrackingMode, monitor_game, stop_game_session};
 use crate::utils::command_ext::CommandGuiExt;
 use sea_orm::DatabaseConnection;
@@ -17,6 +18,7 @@ use {
 pub struct LaunchResult {
     success: bool,
     message: String,
+    code: Option<String>,
 
     process_id: Option<u32>, // 添加进程ID字段
 }
@@ -248,11 +250,28 @@ pub async fn launch_game<R: Runtime>(
         .await
         .map_err(|e| format!("查询游戏失败: {}", e))?
         .ok_or_else(|| format!("游戏不存在: {}", game_id))?;
-    let game_path = game.localpath.ok_or_else(|| "游戏路径未设置".to_string())?;
-
-    if !Path::new(&game_path).exists() {
-        return Err(format!("游戏可执行文件不存在: {}", game_path));
-    }
+    let launch_target = resolve_launch_target(game.localpath.as_deref());
+    let GameLaunchTarget::NormalExecutable {
+        executable_path,
+        working_dir: game_dir,
+        detection_dir,
+    } = launch_target
+    else {
+        return match launch_target {
+            GameLaunchTarget::DirectoryOnly { game_dir } => Ok(LaunchResult {
+                success: false,
+                message: format!("请选择启动程序: {}", game_dir.display()),
+                code: Some("NEED_EXECUTABLE".to_string()),
+                process_id: None,
+            }),
+            GameLaunchTarget::MissingLocalPath => Err("游戏路径未设置".to_string()),
+            GameLaunchTarget::MissingPath { raw_path } => {
+                Err(format!("游戏路径不存在: {}", raw_path.display()))
+            }
+            GameLaunchTarget::NormalExecutable { .. } => unreachable!(),
+        };
+    };
+    let game_path = executable_path.to_string_lossy().to_string();
 
     let use_le = game.le_launch.unwrap_or(0) == 1;
     let use_magpie = game.magpie.unwrap_or(0) == 1;
@@ -288,14 +307,8 @@ pub async fn launch_game<R: Runtime>(
         None
     };
 
-    // 获取游戏可执行文件的目录
-    let game_dir = match Path::new(&game_path).parent() {
-        Some(dir) => dir,
-        None => return Err("无法获取游戏目录路径".to_string()),
-    };
-
     // 获取游戏可执行文件名
-    let exe_name = match Path::new(&game_path).file_name() {
+    let exe_name = match executable_path.file_name() {
         Some(name) => name,
         None => return Err("无法获取游戏可执行文件名".to_string()),
     };
@@ -306,13 +319,13 @@ pub async fn launch_game<R: Runtime>(
             .as_deref()
             .ok_or_else(|| "LE转区软件路径未设置，请先配置路径".to_string())?;
         let mut cmd = Command::new(le_path);
-        cmd.current_dir(game_dir);
+        cmd.current_dir(&game_dir);
         cmd.arg(&game_path);
         cmd
     } else {
         // 普通启动
         let mut cmd = Command::new(&game_path);
-        cmd.current_dir(game_dir);
+        cmd.current_dir(&game_dir);
         cmd
     };
 
@@ -331,9 +344,9 @@ pub async fn launch_game<R: Runtime>(
         game_dir.display()
     );
 
-    let spawn_result = command.gui_safe().spawn();
-    match spawn_result {
+    match command.gui_safe().spawn() {
         Ok(child) => {
+            let detection_dir_str = detection_dir.to_string_lossy().to_string();
             let process_id = child.id();
             info!(
                 "游戏启动成功 game_id={} pid={} mode={} magpie={}",
@@ -350,7 +363,7 @@ pub async fn launch_game<R: Runtime>(
                 time_tracking_mode,
                 game_id,
                 process_id,
-                game_path.clone(),
+                detection_dir_str.clone(),
             )
             .await;
 
@@ -372,6 +385,7 @@ pub async fn launch_game<R: Runtime>(
                     game_dir,
                     if use_le { " (LE转区)" } else { "" }
                 ),
+                code: None,
                 process_id: Some(process_id),
             })
         }
@@ -402,9 +416,10 @@ pub async fn launch_game<R: Runtime>(
                 match win_elevated_launch::shell_execute_runas(
                     &exec_path,
                     exec_args.as_deref(),
-                    game_dir,
+                    &game_dir,
                 ) {
                     Ok(pid) => {
+                        let detection_dir_str = detection_dir.to_string_lossy().to_string();
                         info!(
                             "游戏提权启动成功 game_id={} pid={} mode={} magpie={}",
                             game_id,
@@ -419,7 +434,7 @@ pub async fn launch_game<R: Runtime>(
                             time_tracking_mode,
                             game_id,
                             pid,
-                            game_path.clone(),
+                            detection_dir_str,
                         )
                         .await;
 
@@ -441,6 +456,7 @@ pub async fn launch_game<R: Runtime>(
                                 if use_le { " (LE转区)" } else { "" },
                                 game_dir
                             ),
+                            code: None,
                             process_id: Some(pid),
                         })
                     }

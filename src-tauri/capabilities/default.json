@@ -12,11 +12,6 @@
 		"core:event:default",
 		"core:event:allow-listen",
 		"shell:allow-open",
-		"fs:default",
-		"fs:allow-copy-file",
-		"fs:allow-appdata-write",
-		"fs:allow-appdata-write-recursive",
-		"fs:allow-stat",
 		"clipboard-manager:allow-read-image",
 		"core:app:allow-default-window-icon",
 		"core:tray:allow-new",
@@ -38,17 +33,6 @@
 		"store:allow-set",
 		"store:allow-save",
 		"store:allow-load",
-		{
-			"identifier": "fs:scope",
-			"allow": [
-				{
-					"path": "$APPDATA"
-				},
-				{
-					"path": "$APPDATA/**"
-				}
-			]
-		},
 		{
 			"identifier": "http:default",
 			"allow": [

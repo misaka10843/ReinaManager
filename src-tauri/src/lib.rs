@@ -19,7 +19,10 @@ use tauri::Manager;
 use tauri_plugin_log::{RotationStrategy, Target, TargetKind, TimezoneStrategy};
 use utils::{
     bgm_auth::{bgm_oauth_exchange_code, bgm_oauth_refresh_token, bgm_oauth_start_login},
-    fs::{copy_file, delete_file, is_portable_mode, open_directory},
+    fs::{
+        copy_file, delete_file, is_portable_mode, open_directory, resolve_dropped_local_path,
+        resolve_local_path_directory,
+    },
     http::update_proxy_config,
     image::register_image_proxy_protocol,
     legacy_migration::run_startup_migrations,
@@ -50,7 +53,6 @@ pub fn run() {
             Some(vec!["--flag1", "--flag2"]), /* arbitrary number of args to pass to your app */
         ))
         .plugin(tauri_plugin_shell::init())
-        .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
@@ -59,6 +61,8 @@ pub fn run() {
             launch_game,
             stop_game,
             open_directory,
+            resolve_local_path_directory,
+            resolve_dropped_local_path,
             is_portable_mode,
             scan_directory_for_games,
             move_backup_folder,

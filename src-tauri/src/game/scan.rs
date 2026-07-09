@@ -1,4 +1,5 @@
 use crate::database::repository::games_repository::GamesRepository;
+use crate::game::local_path::resolve_game_directory_for_duplicate;
 use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
@@ -130,7 +131,7 @@ pub async fn scan_directory_for_games(
         .await
         .map_err(|e| format!("查询已有路径失败: {}", e))?
         .into_iter()
-        .filter_map(|lp| PathBuf::from(lp).parent().map(Path::to_path_buf))
+        .filter_map(|lp| resolve_game_directory_for_duplicate(&lp))
         .collect();
 
     let max_depth = max_depth.clamp(MIN_SCAN_MAX_DEPTH, MAX_SCAN_MAX_DEPTH);
