@@ -2,14 +2,14 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
+import { GameLocalPathDialog } from "@/components/GameLocalPathDialog";
 import { saveScrollPosition } from "@/hooks/common/useScrollRestore";
+import { useGameLaunchFlow } from "@/hooks/features/games/useGameLaunchFlow";
 import { useRemoveGamesFromCategory } from "@/hooks/queries/useCollections";
 import { useAllGameLastPlayedMap } from "@/hooks/queries/useStats";
 import { snackbar } from "@/providers/snackBar";
 import { useStore } from "@/store/appStore";
-import { useGamePlayStore } from "@/store/gamePlayStore";
 import type { GameData } from "@/types";
-import { getUserErrorMessage } from "@/utils/errors";
 import { getGameDisplayName } from "@/utils/game";
 import { CardsBatchBar } from "./CardsBatchBar";
 import { getCardSortFieldOverlay } from "./cardSortFieldOverlay";
@@ -46,7 +46,7 @@ export function useCardsController({
 			showCardSortFieldOverlay: s.showCardSortFieldOverlay,
 		})),
 	);
-	const launchGame = useGamePlayStore((s) => s.launchGame);
+	const { launchGame, localPathDialogProps } = useGameLaunchFlow();
 	const shouldShowCardSortFieldOverlay =
 		isLibraries && showCardSortFieldOverlay;
 	const shouldLoadLastPlayed =
@@ -98,21 +98,13 @@ export function useCardsController({
 	);
 
 	const handleCardDoubleClick = useCallback(
-		async (game: GameData) => {
+		(game: GameData) => {
 			if (showBatchControls) return;
-			if (!game.localpath) return;
 
 			setSelectedGameId(game.id);
-			try {
-				const result = await launchGame(game.id);
-				if (!result.success) {
-					snackbar.error(result.message);
-				}
-			} catch (error) {
-				snackbar.error(getUserErrorMessage(error, i18n.t.bind(i18n)));
-			}
+			void launchGame(game);
 		},
-		[launchGame, setSelectedGameId, showBatchControls, i18n],
+		[launchGame, setSelectedGameId, showBatchControls],
 	);
 
 	const handleContextMenu = useCallback(
@@ -231,7 +223,8 @@ export function useCardsController({
 					onRemoveFromCategory={handleRemoveFromCategory}
 				/>
 			)}
-			<RightMenuHost ref={rightMenuRef} />
+			<RightMenuHost ref={rightMenuRef} onLaunchGame={launchGame} />
+			<GameLocalPathDialog {...localPathDialogProps} />
 		</>
 	);
 

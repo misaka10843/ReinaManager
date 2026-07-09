@@ -9,6 +9,7 @@ import { BaseService } from "./base";
 export interface LaunchGameResult {
 	success: boolean;
 	message: string;
+	code?: string | null;
 	process_id?: number;
 }
 

@@ -36,12 +36,11 @@ import { LinkWithScrollSave } from "@/components/LinkWithScrollSave";
 import { useGameById } from "@/hooks/features/games/useGameFacade";
 import { useGameStatusActions } from "@/hooks/features/games/useGameStatusActions";
 import { useDeleteGame } from "@/hooks/queries/useGames";
-import { snackbar } from "@/providers/snackBar";
 import { handleOpenFolder } from "@/services/fs/fileDialog";
 import { useStore } from "@/store/appStore";
 import { useGamePlayStore } from "@/store/gamePlayStore";
+import type { GameData } from "@/types";
 import type { PlayStatus } from "@/types/collection";
-import { getUserErrorMessage } from "@/utils/errors";
 import { BaseRightMenu } from "./BaseRightMenu";
 import { PlayStatusSubmenu } from "./PlayStatusSubmenu";
 
@@ -52,6 +51,7 @@ interface RightMenuProps {
 	id: number;
 	anchorPosition: { top: number; left: number };
 	onClose: () => void;
+	onLaunchGame: (game: GameData) => void | Promise<void>;
 }
 
 /**
@@ -65,11 +65,11 @@ const RightMenu: React.FC<RightMenuProps> = ({
 	anchorPosition,
 	onClose,
 	id,
+	onLaunchGame,
 }) => {
 	const setSelectedGameId = useStore((state) => state.setSelectedGameId);
 	const deleteGameMutation = useDeleteGame();
 	const { selectedGame } = useGameById(id);
-	const launchGame = useGamePlayStore((s) => s.launchGame);
 	const isGameRunning = useGamePlayStore((s) => s.isGameRunning);
 	const [openAlert, setOpenAlert] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
@@ -79,7 +79,7 @@ const RightMenu: React.FC<RightMenuProps> = ({
 	// 使用 Feature Facade 更新游戏状态
 	const { updatePlayStatus } = useGameStatusActions();
 
-	const isThisGameCanRun = haslocalpath && !isGameRunning(id);
+	const isThisGameCanRun = Boolean(selectedGame) && !isGameRunning(id);
 
 	/**
 	 * 删除游戏操作，带删除确认弹窗
@@ -96,28 +96,6 @@ const RightMenu: React.FC<RightMenuProps> = ({
 			onClose();
 			setIsDeleting(false);
 			setOpenAlert(false);
-		}
-	};
-
-	/**
-	 * 启动游戏操作
-	 */
-	const handleStartGame = async () => {
-		try {
-			if (!selectedGame?.localpath) {
-				snackbar.error(
-					t("components.LaunchModal.gamePathNotFound", "游戏路径未找到"),
-				);
-				return;
-			}
-			const result = await launchGame(id);
-			if (!result.success) {
-				snackbar.error(result.message);
-			}
-		} catch (error) {
-			snackbar.error(
-				`${t("components.LaunchModal.launchFailed", "游戏启动失败:")}: ${getUserErrorMessage(error, t)}`,
-			);
 		}
 	};
 
@@ -153,7 +131,9 @@ const RightMenu: React.FC<RightMenuProps> = ({
 				<MenuItem
 					disabled={!isThisGameCanRun}
 					onClick={() => {
-						handleStartGame();
+						if (selectedGame) {
+							void onLaunchGame(selectedGame);
+						}
 						onClose();
 					}}
 				>

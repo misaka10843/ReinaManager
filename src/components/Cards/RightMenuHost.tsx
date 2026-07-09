@@ -6,35 +6,48 @@ import {
 	useState,
 } from "react";
 import RightMenu from "@/components/RightMenu";
+import type { GameData } from "@/types";
 import type { MenuPosition, RightMenuHostHandle } from "./types";
+
+interface RightMenuHostProps {
+	onLaunchGame: (game: GameData) => void | Promise<void>;
+}
 
 /**
  * RightMenuHost - 隔离右键菜单坐标状态，避免打开菜单时重渲染整片卡片网格
  */
 export const RightMenuHost = memo(
-	forwardRef<RightMenuHostHandle>((_, ref) => {
-		const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(null);
+	forwardRef<RightMenuHostHandle, RightMenuHostProps>(
+		({ onLaunchGame }, ref) => {
+			const [menuPosition, setMenuPosition] = useState<MenuPosition | null>(
+				null,
+			);
 
-		const closeMenu = useCallback(() => setMenuPosition(null), []);
+			const closeMenu = useCallback(() => setMenuPosition(null), []);
 
-		useImperativeHandle(
-			ref,
-			() => ({
-				open: (cardId, mouseX, mouseY) => {
-					setMenuPosition({ cardId, mouseX, mouseY });
-				},
-			}),
-			[],
-		);
+			useImperativeHandle(
+				ref,
+				() => ({
+					open: (cardId, mouseX, mouseY) => {
+						setMenuPosition({ cardId, mouseX, mouseY });
+					},
+				}),
+				[],
+			);
 
-		return menuPosition ? (
-			<RightMenu
-				id={menuPosition.cardId}
-				anchorPosition={{ top: menuPosition.mouseY, left: menuPosition.mouseX }}
-				onClose={closeMenu}
-			/>
-		) : null;
-	}),
+			return menuPosition ? (
+				<RightMenu
+					id={menuPosition.cardId}
+					anchorPosition={{
+						top: menuPosition.mouseY,
+						left: menuPosition.mouseX,
+					}}
+					onClose={closeMenu}
+					onLaunchGame={onLaunchGame}
+				/>
+			) : null;
+		},
+	),
 );
 
 RightMenuHost.displayName = "RightMenuHost";

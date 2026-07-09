@@ -9,31 +9,20 @@
  * - LaunchModal：游戏启动弹窗组件
  */
 
-import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import StopIcon from "@mui/icons-material/Stop";
 import SyncIcon from "@mui/icons-material/Sync";
 import TimerIcon from "@mui/icons-material/Timer";
-import {
-	Box,
-	Button,
-	Dialog,
-	DialogActions,
-	DialogContent,
-	DialogTitle,
-	IconButton,
-	TextField,
-	Typography,
-} from "@mui/material";
+import { Button, Typography } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
+import { GameLocalPathDialog } from "@/components/GameLocalPathDialog";
 import { SelectedGameGuard } from "@/components/SelectedGameGuard";
-import { useUpdateGame } from "@/hooks/queries/useGames";
+import { useGameLaunchFlow } from "@/hooks/features/games/useGameLaunchFlow";
 import { snackbar } from "@/providers/snackBar";
-import { handleExeFile } from "@/services/fs/fileDialog";
 import { useGamePlayStore } from "@/store/gamePlayStore";
-import type { GameData, UpdateGameParams } from "@/types";
+import type { GameData } from "@/types";
 import { getUserErrorMessage } from "@/utils/errors";
 
 /**
@@ -89,28 +78,21 @@ interface LaunchModalContentProps {
 
 function LaunchModalContent({ selectedGame }: LaunchModalContentProps) {
 	const { t } = useTranslation();
-	const updateGameMutation = useUpdateGame();
 	const selectedGameId = selectedGame.id;
-	const { launchGame, stopGame, isThisGameRunning, realTimeState } =
-		useGamePlayStore(
-			useShallow((s) => ({
-				launchGame: s.launchGame,
-				stopGame: s.stopGame,
-				isThisGameRunning: s.runningGameIds.has(selectedGameId),
-				realTimeState: s.gameRealTimeStates[selectedGameId] ?? null,
-			})),
-		);
+	const { launchGame, localPathDialogProps } = useGameLaunchFlow();
+	const { stopGame, isThisGameRunning, realTimeState } = useGamePlayStore(
+		useShallow((s) => ({
+			stopGame: s.stopGame,
+			isThisGameRunning: s.runningGameIds.has(selectedGameId),
+			realTimeState: s.gameRealTimeStates[selectedGameId] ?? null,
+		})),
+	);
 	const hasLocalPath = Boolean(selectedGame.localpath);
 	const sessionTimeTrackingMode = realTimeState?.timeTrackingMode;
 
 	// 用于 elapsed 模式下的前端计时器显示
 	const timerRef = useRef<HTMLSpanElement>(null);
 	const [stopping, setStopping] = useState(false);
-
-	// 路径设置对话框状态
-	const [pathDialogOpen, setPathDialogOpen] = useState(false);
-	const [localPath, setLocalPath] = useState<string>("");
-	const [isSaving, setIsSaving] = useState(false);
 
 	useEffect(() => {
 		if (
@@ -142,24 +124,8 @@ function LaunchModalContent({ selectedGame }: LaunchModalContentProps) {
 		};
 	}, [sessionTimeTrackingMode, isThisGameRunning, realTimeState?.startTime]);
 
-	const handleStartGame = async () => {
-		try {
-			if (!selectedGame.localpath) {
-				snackbar.error(
-					t("components.LaunchModal.gamePathNotFound", "游戏路径未找到"),
-				);
-				return;
-			}
-
-			const result = await launchGame(selectedGameId);
-			if (!result.success) {
-				snackbar.error(result.message);
-			}
-		} catch (error) {
-			snackbar.error(
-				`${t("components.LaunchModal.launchFailed", "游戏启动失败:")}: ${getUserErrorMessage(error, t)}`,
-			);
-		}
+	const handleStartGame = () => {
+		void launchGame(selectedGame);
 	};
 
 	const handleStopGame = async () => {
@@ -181,181 +147,74 @@ function LaunchModalContent({ selectedGame }: LaunchModalContentProps) {
 		}
 	};
 
-	const handleOpenPathDialog = () => {
-		try {
-			setLocalPath(selectedGame.localpath || "");
-			setPathDialogOpen(true);
-		} catch (error) {
-			console.error("Failed to load game data:", error);
-		}
-	};
-
-	const handleClosePathDialog = () => {
-		if (!isSaving) {
-			setPathDialogOpen(false);
-			setLocalPath("");
-		}
-	};
-
-	const handleSelectExecutable = async () => {
-		try {
-			const selectedPath = await handleExeFile();
-			if (selectedPath) {
-				setLocalPath(selectedPath);
-			}
-		} catch (error) {
-			snackbar.error(
-				`${t("components.LaunchModal.selectFolder", "选择文件夹")}: ${getUserErrorMessage(error, t)}`,
+	const content = (() => {
+		if (stopping) {
+			return (
+				<Button startIcon={<StopIcon />} disabled>
+					{t("components.LaunchModal.stoppingGame", "停止游戏中...")}
+				</Button>
 			);
 		}
-	};
 
-	const handleSavePath = async () => {
-		if (!localPath.trim()) {
-			snackbar.error(
-				t("components.LaunchModal.pathRequired", "请选择或输入路径"),
+		if (isThisGameRunning && realTimeState) {
+			const { currentSessionMinutes, currentSessionSeconds } = realTimeState;
+			const initialTimeDisplay = formatPlayTime(
+				currentSessionMinutes,
+				currentSessionSeconds,
 			);
-			return;
-		}
 
-		setIsSaving(true);
-		try {
-			const updateData: UpdateGameParams = {
-				localpath: localPath.trim(),
-			};
-
-			await updateGameMutation.mutateAsync({
-				gameId: selectedGameId,
-				updates: updateData,
-			});
-			snackbar.success(t("components.LaunchModal.pathSaved", "路径已保存"));
-			handleClosePathDialog();
-		} catch (error) {
-			snackbar.error(
-				`${t("components.LaunchModal.pathSaveFailed", "保存路径失败")}: ${getUserErrorMessage(error, t)}`,
+			const elapsedInitial = realTimeState.startTime
+				? Math.floor(Date.now() / 1000) - realTimeState.startTime
+				: 0;
+			const elapsedInitialDisplay = formatPlayTime(
+				Math.floor(elapsedInitial / 60),
+				elapsedInitial % 60,
 			);
-		} finally {
-			setIsSaving(false);
-		}
-	};
 
-	if (stopping) {
-		return (
-			<Button startIcon={<StopIcon />} disabled>
-				{t("components.LaunchModal.stoppingGame", "停止游戏中...")}
-			</Button>
-		);
-	}
-
-	if (isThisGameRunning && realTimeState) {
-		const { currentSessionMinutes, currentSessionSeconds } = realTimeState;
-		const initialTimeDisplay = formatPlayTime(
-			currentSessionMinutes,
-			currentSessionSeconds,
-		);
-
-		const elapsedInitial = realTimeState.startTime
-			? Math.floor(Date.now() / 1000) - realTimeState.startTime
-			: 0;
-		const elapsedInitialDisplay = formatPlayTime(
-			Math.floor(elapsedInitial / 60),
-			elapsedInitial % 60,
-		);
-
-		return (
-			<Button
-				startIcon={<StopIcon />}
-				onClick={handleStopGame}
-				className="rounded-2xl"
-				color="error"
-				variant="outlined"
-			>
-				<TimerIcon fontSize="small" color="disabled" />
-				<Typography
-					ref={timerRef}
-					className="ml-1"
-					variant="button"
-					component="span"
-					color="textDisabled"
-					sx={{ fontVariantNumeric: "tabular-nums" }}
+			return (
+				<Button
+					startIcon={<StopIcon />}
+					onClick={handleStopGame}
+					className="rounded-2xl"
+					color="error"
+					variant="outlined"
 				>
-					{sessionTimeTrackingMode === "elapsed"
-						? elapsedInitialDisplay
-						: initialTimeDisplay}
-				</Typography>
-			</Button>
-		);
-	}
+					<TimerIcon fontSize="small" color="disabled" />
+					<Typography
+						ref={timerRef}
+						className="ml-1"
+						variant="button"
+						component="span"
+						color="textDisabled"
+						sx={{ fontVariantNumeric: "tabular-nums" }}
+					>
+						{sessionTimeTrackingMode === "elapsed"
+							? elapsedInitialDisplay
+							: initialTimeDisplay}
+					</Typography>
+				</Button>
+			);
+		}
 
-	if (hasLocalPath) {
+		if (hasLocalPath) {
+			return (
+				<Button startIcon={<PlayArrowIcon />} onClick={handleStartGame}>
+					{t("components.LaunchModal.launchGame", "启动游戏")}
+				</Button>
+			);
+		}
+
 		return (
-			<Button startIcon={<PlayArrowIcon />} onClick={handleStartGame}>
-				{t("components.LaunchModal.launchGame", "启动游戏")}
+			<Button startIcon={<SyncIcon />} onClick={handleStartGame} variant="text">
+				{t("components.LaunchModal.syncLocalPath", "同步本地")}
 			</Button>
 		);
-	}
+	})();
 
 	return (
 		<>
-			<Button
-				startIcon={<SyncIcon />}
-				onClick={handleOpenPathDialog}
-				variant="text"
-			>
-				{t("components.LaunchModal.syncLocalPath", "同步本地")}
-			</Button>
-
-			<Dialog
-				open={pathDialogOpen}
-				onClose={handleClosePathDialog}
-				maxWidth="sm"
-				fullWidth
-			>
-				<DialogTitle>
-					{t("components.LaunchModal.setLocalPathTitle", "设置本地路径")}
-				</DialogTitle>
-				<DialogContent>
-					<Box sx={{ display: "flex", gap: 1, mt: 2 }}>
-						<TextField
-							label={t(
-								"components.LaunchModal.localPathLabel",
-								"可执行文件路径",
-							)}
-							variant="outlined"
-							fullWidth
-							value={localPath}
-							onChange={(e) => setLocalPath(e.target.value)}
-							disabled={isSaving}
-							onKeyDown={(e) => {
-								if (e.key === "Enter" && localPath.trim()) {
-									handleSavePath();
-								}
-							}}
-						/>
-						<IconButton
-							onClick={handleSelectExecutable}
-							disabled={isSaving}
-							color="primary"
-						>
-							<FolderOpenIcon />
-						</IconButton>
-					</Box>
-				</DialogContent>
-				<DialogActions>
-					<Button onClick={handleClosePathDialog} disabled={isSaving}>
-						{t("common.cancel", "取消")}
-					</Button>
-					<Button
-						onClick={handleSavePath}
-						variant="contained"
-						disabled={!localPath.trim() || isSaving}
-					>
-						{isSaving
-							? t("common.saving", "保存中...")
-							: t("common.confirm", "确认")}
-					</Button>
-				</DialogActions>
-			</Dialog>
+			{content}
+			<GameLocalPathDialog {...localPathDialogProps} />
 		</>
 	);
 }
