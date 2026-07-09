@@ -103,11 +103,24 @@ export function getSourceIdMap(payload: SourceRecordPayload): SourceIdMap {
 
 export function getAnySourceIdMap(payload: SourceIdentityPayload): SourceIdMap {
 	const ids: SourceIdMap = {};
-	for (const source of REGISTERED_SOURCE_KEYS) {
-		const sourceId = getAnySourceId(payload, source);
-		if (sourceId) {
-			ids[source] = sourceId;
+
+	if ("sourceIds" in payload && payload.sourceIds) {
+		for (const source of REGISTERED_SOURCE_KEYS) {
+			const sourceId = getSourceIdFromDisplay(payload, source);
+			if (sourceId) {
+				ids[source] = sourceId;
+			}
 		}
 	}
+
+	if ("sources" in payload) {
+		for (const [source, record] of getSourceRecordMap(payload)) {
+			const sourceId = record.external_id;
+			if (sourceId) {
+				ids[source] = sourceId;
+			}
+		}
+	}
+
 	return ids;
 }

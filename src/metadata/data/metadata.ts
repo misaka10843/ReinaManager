@@ -26,7 +26,7 @@ import {
 	type SourceCandidate,
 } from "../sourceCandidate";
 import {
-	getAnySourceId,
+	getAnySourceIdMap,
 	getSourceData,
 	type SourceIdentityPayload,
 } from "../sourceRecord";
@@ -397,8 +397,9 @@ export async function buildBulkImportGameData(
 }
 
 export function getGameIdentityKeys(payload: SourceIdentityPayload): string[] {
+	const sourceIds = getAnySourceIdMap(payload);
 	return REGISTERED_SOURCE_KEYS.map((source) => {
-		const sourceId = getAnySourceId(payload, source);
+		const sourceId = sourceIds[source];
 		return sourceId ? `${source}:${sourceId}` : null;
 	}).filter((value): value is string => Boolean(value));
 }
