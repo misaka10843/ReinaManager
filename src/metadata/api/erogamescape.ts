@@ -4,14 +4,13 @@ import {
 	createGameCandidate,
 	createSourceCandidateRecord,
 } from "../sourceCandidate";
-import http, { type TauriHttpOptions, USER_AGENT } from "./http";
+import http, { type TauriHttpOptions } from "./http";
 
 const EROGAMESCAPE_BASE = "https://erogamescape.org/~ap2/ero/toukei_kaiseki";
 
 const EROGAMESCAPE_HEADERS = {
 	Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 	"Accept-Language": "ja,en;q=0.8",
-	"User-Agent": USER_AGENT,
 } as const;
 
 const erogamescapeGameQueryRegex = /(?:\?|&|#|\/)game=(\d+)/i;

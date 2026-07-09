@@ -5,7 +5,7 @@ import {
 	createGameCandidate,
 	createSourceCandidateRecord,
 } from "../sourceCandidate";
-import http, { type TauriHttpOptions, USER_AGENT } from "./http";
+import http, { type TauriHttpOptions } from "./http";
 
 const DLSITE_BASE = "https://www.dlsite.com";
 const DLSITE_LOCALE = "ja";
@@ -65,7 +65,6 @@ function buildDlsiteOptions(
 			Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
 			"Accept-Language": buildAcceptLanguage(locale),
 			Cookie: `adultchecked=1; locale=${locale}`,
-			"User-Agent": USER_AGENT,
 			...options.headers,
 		},
 		rateLimit: { source: "dlsite" },
