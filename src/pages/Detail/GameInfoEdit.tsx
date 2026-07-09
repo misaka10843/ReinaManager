@@ -35,7 +35,6 @@ import { useTranslation } from "react-i18next";
 import { useImagePreview } from "@/hooks/common/useImagePreview";
 import { useProxyImageUrlResolver } from "@/hooks/common/useProxyImageUrlResolver";
 import { getRuntimeSourceAdapter, REGISTERED_SOURCE_KEYS } from "@/metadata";
-import { SOURCE_COVER_PRIORITY } from "@/metadata/data/displayMergeRules";
 import { buildGameInfoUpdatePayload } from "@/metadata/data/metadata";
 import {
 	getSourceImageMap,
@@ -159,8 +158,9 @@ function SourceCoverDialog({
 	t,
 }: SourceCoverDialogProps) {
 	const resolveImageUrl = useProxyImageUrlResolver();
-	const sourceCoverAutoRule =
-		SOURCE_COVER_PRIORITY.map(getSourceLabel).join(" > ");
+	const sourceCoverAutoRule = options
+		.map((option) => getSourceLabel(option.source))
+		.join(" > ");
 	const statusText = currentSource
 		? t(
 				"pages.Detail.GameInfoEdit.sourceCoverSelected",
@@ -831,7 +831,7 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 									<SourceCoverDialog
 										open={sourceCoverDialogOpen}
 										options={sourceImageOptions}
-										currentSource={getOriginalCoverSource()}
+										currentSource={coverSource}
 										hasCustomCover={Boolean(
 											selectedGame.custom_data?.image && !shouldDeleteImage,
 										)}
