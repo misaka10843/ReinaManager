@@ -32,6 +32,17 @@ export interface PortableModeResult {
 	is_portable: boolean;
 }
 
+export interface DroppedLocalPathResult {
+	kind:
+		| "executable"
+		| "single_executable"
+		| "multiple_executables"
+		| "no_executable"
+		| "invalid";
+	path: string | null;
+	directory: string | null;
+}
+
 class FileService extends BaseService {
 	/**
 	 * 扫描目录下的游戏文件夹
@@ -51,6 +62,24 @@ class FileService extends BaseService {
 	 */
 	async openDirectory(dirPath: string): Promise<void> {
 		return this.invoke<void>("open_directory", { dirPath });
+	}
+
+	/**
+	 * 解析本地路径对应的游戏目录
+	 */
+	async resolveLocalPathDirectory(localPath: string): Promise<string> {
+		return this.invoke<string>("resolve_local_path_directory", { localPath });
+	}
+
+	/**
+	 * 解析拖拽路径，避免前端 fs scope 限制
+	 */
+	async resolveDroppedLocalPath(
+		droppedPath: string,
+	): Promise<DroppedLocalPathResult> {
+		return this.invoke<DroppedLocalPathResult>("resolve_dropped_local_path", {
+			droppedPath,
+		});
 	}
 
 	/**

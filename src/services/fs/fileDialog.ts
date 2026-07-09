@@ -1,8 +1,5 @@
-import { path as tauriPath } from "@tauri-apps/api";
 import { open as openDirectory } from "@tauri-apps/plugin-dialog";
-import { readDir, stat } from "@tauri-apps/plugin-fs";
 import i18next, { t } from "i18next";
-import { extname, join } from "pathe";
 import { snackbar } from "@/providers/snackBar";
 import { fileService } from "@/services/invoke";
 import type { GameData } from "@/types";
@@ -18,10 +15,7 @@ export const handleOpenFolder = async (
 			);
 			return;
 		}
-		const folder = await tauriPath.dirname(selectedGame.localpath);
-		if (folder) {
-			await fileService.openDirectory(folder);
-		}
+		await fileService.openDirectory(selectedGame.localpath);
 	} catch (error) {
 		const errorMessage = getUserErrorMessage(error, i18next.t.bind(i18next));
 		snackbar.error(
@@ -32,6 +26,13 @@ export const handleOpenFolder = async (
 		);
 		console.error("打开文件夹失败:", error);
 	}
+};
+
+export const getLocalPathDirectory = async (
+	localPath?: string | null,
+): Promise<string> => {
+	if (!localPath) return "";
+	return fileService.resolveLocalPathDirectory(localPath);
 };
 
 export const handleFolder = async (defaultPath: string = "") => {
@@ -70,74 +71,40 @@ export const handleExeFile = async (defaultPath: string = "") => {
 	return selectedPath;
 };
 
-const EXECUTABLE_EXTENSIONS = [".exe", ".bat", ".cmd"];
-
-function isExecutableFile(filePath: string): boolean {
-	const ext = extname(filePath).toLowerCase();
-	return EXECUTABLE_EXTENSIONS.includes(ext);
-}
-
-async function getExecutablesInDirectory(dirPath: string): Promise<string[]> {
-	try {
-		const entries = await readDir(dirPath);
-		const executables: string[] = [];
-
-		for (const entry of entries) {
-			if (!entry.isDirectory && entry.name) {
-				const fullPath = join(dirPath, entry.name);
-				if (isExecutableFile(entry.name)) {
-					executables.push(fullPath);
-				}
-			}
-		}
-
-		return executables;
-	} catch (error) {
-		console.error("读取目录失败:", error);
-		return [];
-	}
-}
-
 export const handleDroppedPath = async (
 	droppedPath: string,
 ): Promise<string | null> => {
 	try {
-		const fileInfo = await stat(droppedPath);
+		const result = await fileService.resolveDroppedLocalPath(droppedPath);
 
-		if (fileInfo.isDirectory) {
-			const executables = await getExecutablesInDirectory(droppedPath);
-
-			if (executables.length === 0) {
+		switch (result.kind) {
+			case "executable":
+			case "single_executable":
+				return result.path;
+			case "no_executable":
 				snackbar.error(
 					t("components.AddModal.emptyFolder", "该文件夹中没有找到可执行文件"),
 				);
 				return null;
-			}
-
-			if (executables.length === 1) {
-				return executables[0];
-			}
-
-			snackbar.info(
-				t(
-					"components.AddModal.selectFromFolder",
-					"文件夹中有多个可执行文件，请选择一个",
-				),
-			);
-			return handleExeFile(droppedPath);
+			case "multiple_executables":
+				snackbar.info(
+					t(
+						"components.AddModal.selectFromFolder",
+						"文件夹中有多个可执行文件，请选择一个",
+					),
+				);
+				return handleExeFile(result.directory ?? droppedPath);
+			case "invalid":
+				snackbar.error(
+					t(
+						"components.AddModal.invalidFile",
+						"请拖入有效的可执行文件（.exe/.bat/.cmd）或文件夹",
+					),
+				);
+				return null;
+			default:
+				return null;
 		}
-
-		if (isExecutableFile(droppedPath)) {
-			return droppedPath;
-		}
-
-		snackbar.error(
-			t(
-				"components.AddModal.invalidFile",
-				"请拖入有效的可执行文件（.exe/.bat/.cmd）或文件夹",
-			),
-		);
-		return null;
 	} catch (error) {
 		console.error("处理拖拽路径失败:", error);
 		snackbar.error(

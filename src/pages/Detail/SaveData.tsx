@@ -21,7 +21,6 @@ import {
 	Tooltip,
 	Typography,
 } from "@mui/material";
-import { dirname } from "pathe";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertConfirmBox } from "@/components/AlertBox";
@@ -29,7 +28,7 @@ import { SelectedGameGuard } from "@/components/SelectedGameGuard";
 import { useUpdateGame } from "@/hooks/queries/useGames";
 import { useSaveDataResources } from "@/hooks/queries/useSavedata";
 import { snackbar } from "@/providers/snackBar";
-import { handleFolder } from "@/services/fs/fileDialog";
+import { getLocalPathDirectory, handleFolder } from "@/services/fs/fileDialog";
 import {
 	openGameBackupFolder,
 	openGameSaveDataFolder,
@@ -160,7 +159,7 @@ function SaveDataContent({ selectedGame, gameId }: SaveDataContentProps) {
 
 	// 选择存档文件夹
 	const handleSelectSaveDataPath = async () => {
-		const defaultPath = dirname(selectedGame.localpath);
+		const defaultPath = await getLocalPathDirectory(selectedGame.localpath);
 		const selectedPath = await handleFolder(defaultPath);
 		if (selectedPath) {
 			setSaveDataPath(selectedPath);

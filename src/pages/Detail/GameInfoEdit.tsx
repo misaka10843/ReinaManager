@@ -29,7 +29,7 @@ import {
 	TextField,
 	Typography,
 } from "@mui/material";
-import { basename, dirname } from "pathe";
+import { basename } from "pathe";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useImagePreview } from "@/hooks/common/useImagePreview";
@@ -44,7 +44,7 @@ import {
 } from "@/metadata/data/sourceImage";
 import { getSourceIdFromDisplay } from "@/metadata/sourceRecord";
 import { snackbar } from "@/providers/snackBar";
-import { handleExeFile } from "@/services/fs/fileDialog";
+import { getLocalPathDirectory, handleExeFile } from "@/services/fs/fileDialog";
 import {
 	deleteGameCustomCovers,
 	selectImageFile,
@@ -457,7 +457,7 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 	const handleSelectLocalPath = async () => {
 		try {
 			const selectedPath = await handleExeFile(
-				localPath ? dirname(localPath) : "",
+				await getLocalPathDirectory(localPath),
 			);
 			if (selectedPath) {
 				setLocalPath(selectedPath);
