@@ -85,16 +85,3 @@ pub fn resolve_game_directory(localpath: &str) -> Result<PathBuf, String> {
         }
     }
 }
-
-pub fn resolve_game_directory_for_duplicate(localpath: &str) -> Option<PathBuf> {
-    match resolve_local_path(Some(localpath)) {
-        ResolvedLocalPath::File { game_dir, .. } | ResolvedLocalPath::Directory { game_dir } => {
-            Some(game_dir)
-        }
-        ResolvedLocalPath::Missing { raw_path } => raw_path
-            .parent()
-            .filter(|parent| !parent.as_os_str().is_empty())
-            .map(Path::to_path_buf),
-        ResolvedLocalPath::Unset => None,
-    }
-}

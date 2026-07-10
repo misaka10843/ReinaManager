@@ -7,6 +7,7 @@ use crate::entity::custom_data::CustomData;
 use crate::entity::user::BgmAuth;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
+use std::path::PathBuf;
 
 /// 辅助函数：支持 Option<Option<T>> 的反序列化
 /// 用于区分"未提供字段"和"显式设为 null"
@@ -34,6 +35,22 @@ fn clean_double_option_string(s: Option<Option<String>>) -> Option<Option<String
     s.map(|inner| inner.filter(|v| !v.trim().is_empty()))
 }
 
+/// 清洗并按当前平台的路径组件规则规范化本地路径。
+fn clean_local_path(value: String) -> Option<String> {
+    let trimmed = value.trim();
+    let normalized: PathBuf = PathBuf::from(trimmed).components().collect();
+    let normalized = normalized.to_string_lossy().to_string();
+    (!normalized.is_empty()).then_some(normalized)
+}
+
+fn clean_option_local_path(value: Option<String>) -> Option<String> {
+    value.and_then(clean_local_path)
+}
+
+fn clean_double_option_local_path(value: Option<Option<String>>) -> Option<Option<String>> {
+    value.map(|inner| inner.and_then(clean_local_path))
+}
+
 fn clean_bgm_auth(mut auth: BgmAuth) -> Option<BgmAuth> {
     auth.access_token = auth.access_token.trim().to_string();
     if auth.access_token.is_empty() {
@@ -48,7 +65,7 @@ impl InsertGameData {
     /// 返回清洗后的数据，将空字符串转换为 None
     pub fn cleaned(mut self) -> Self {
         self.date = clean_option_string(self.date);
-        self.localpath = clean_option_string(self.localpath);
+        self.localpath = clean_option_local_path(self.localpath);
         self.savepath = clean_option_string(self.savepath);
         self.sources = self
             .sources
@@ -64,7 +81,7 @@ impl UpdateGameData {
     /// 返回清洗后的数据，将空字符串转换为 None
     pub fn cleaned(mut self) -> Self {
         self.date = clean_double_option_string(self.date);
-        self.localpath = clean_double_option_string(self.localpath);
+        self.localpath = clean_double_option_local_path(self.localpath);
         self.savepath = clean_double_option_string(self.savepath);
         self.upsert_sources = self.upsert_sources.map(|sources| {
             sources
@@ -269,4 +286,32 @@ pub struct UpdateGameData {
     pub custom_data: Option<Option<CustomData>>,
     pub upsert_sources: Option<Vec<UpsertGameSourceData>>,
     pub remove_sources: Option<Vec<String>>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{clean_double_option_local_path, clean_local_path};
+    use std::path::{MAIN_SEPARATOR, PathBuf};
+
+    #[test]
+    fn clean_local_path_removes_trailing_separator() {
+        let path = PathBuf::from("game-root").join("Aster");
+        let input = format!("{}{}", path.display(), MAIN_SEPARATOR);
+
+        assert_eq!(
+            clean_local_path(input),
+            Some(path.to_string_lossy().to_string())
+        );
+    }
+
+    #[test]
+    fn clean_local_path_preserves_root_and_explicit_null() {
+        #[cfg(windows)]
+        let root = r"E:\";
+        #[cfg(not(windows))]
+        let root = "/";
+
+        assert_eq!(clean_local_path(root.to_string()), Some(root.to_string()));
+        assert_eq!(clean_double_option_local_path(Some(None)), Some(None));
+    }
 }

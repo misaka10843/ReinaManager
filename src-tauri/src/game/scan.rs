@@ -1,9 +1,8 @@
 use crate::database::repository::games_repository::GamesRepository;
-use crate::game::local_path::resolve_game_directory_for_duplicate;
 use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use std::time::Instant;
 use tauri::{State, command};
 use walkdir::WalkDir;
@@ -21,6 +20,141 @@ pub struct ScanResult {
 const VALID_EXE_EXTENSIONS: &[&str] = &["exe", "bat", "cmd"];
 const MIN_SCAN_MAX_DEPTH: usize = 2;
 const MAX_SCAN_MAX_DEPTH: usize = 5;
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+enum ImportPathComponent {
+    Prefix(String),
+    Root,
+    Parent,
+    Normal(String),
+}
+
+#[derive(Default)]
+struct ImportPathTrieNode {
+    children: HashMap<ImportPathComponent, ImportPathTrieNode>,
+    terminal_count: usize,
+    subtree_terminal_count: usize,
+}
+
+impl ImportPathTrieNode {
+    fn insert_components<I>(&mut self, components: &mut I) -> bool
+    where
+        I: Iterator<Item = ImportPathComponent>,
+    {
+        let Some(component) = components.next() else {
+            if self.terminal_count > 0 {
+                return false;
+            }
+            self.terminal_count = 1;
+            self.subtree_terminal_count += 1;
+            return true;
+        };
+
+        let inserted = self
+            .children
+            .entry(component)
+            .or_default()
+            .insert_components(components);
+        if inserted {
+            self.subtree_terminal_count += 1;
+        }
+        inserted
+    }
+}
+
+#[derive(Default)]
+struct ImportPathIndex {
+    root: ImportPathTrieNode,
+    path_count: usize,
+}
+
+impl ImportPathIndex {
+    fn insert(&mut self, path: &Path) {
+        let Some(components) = normalize_import_path(path) else {
+            return;
+        };
+
+        if self.root.insert_components(&mut components.into_iter()) {
+            self.path_count += 1;
+        }
+    }
+
+    /// 仅判断历史路径是否等于或包含当前目录，可安全用于遍历阶段剪枝。
+    fn has_ancestor_or_exact(&self, path: &Path) -> bool {
+        let Some(components) = normalize_import_path(path) else {
+            return false;
+        };
+
+        let mut node = &self.root;
+        for component in components {
+            if node.terminal_count > 0 {
+                return true;
+            }
+            let Some(child) = node.children.get(&component) else {
+                return false;
+            };
+            node = child;
+        }
+        node.terminal_count > 0
+    }
+
+    /// 候选目录与任意历史路径相等或存在双向祖先关系时视为冲突。
+    fn conflicts_with_candidate(&self, path: &Path) -> bool {
+        let Some(components) = normalize_import_path(path) else {
+            return false;
+        };
+
+        let mut node = &self.root;
+        for component in components {
+            if node.terminal_count > 0 {
+                return true;
+            }
+            let Some(child) = node.children.get(&component) else {
+                return false;
+            };
+            node = child;
+        }
+        node.subtree_terminal_count > 0
+    }
+}
+
+fn normalize_import_path(path: &Path) -> Option<Vec<ImportPathComponent>> {
+    let mut normalized = Vec::new();
+
+    for component in path.components() {
+        match component {
+            Component::Prefix(prefix) => normalized.push(ImportPathComponent::Prefix(
+                normalize_import_component(prefix.as_os_str()),
+            )),
+            Component::RootDir => normalized.push(ImportPathComponent::Root),
+            Component::CurDir => {}
+            Component::ParentDir => {
+                // components() 会保留 `..`；这里做纯词法折叠，确保手动修改的旧数据
+                // 与 DTO 清洗后的新路径使用同一比较形式。
+                if matches!(normalized.last(), Some(ImportPathComponent::Normal(_))) {
+                    normalized.pop();
+                } else if !matches!(normalized.last(), Some(ImportPathComponent::Root)) {
+                    normalized.push(ImportPathComponent::Parent);
+                }
+            }
+            Component::Normal(value) => normalized.push(ImportPathComponent::Normal(
+                normalize_import_component(value),
+            )),
+        }
+    }
+
+    (!normalized.is_empty()).then_some(normalized)
+}
+
+#[cfg(windows)]
+fn normalize_import_component(value: &std::ffi::OsStr) -> String {
+    value.to_string_lossy().to_lowercase()
+}
+
+#[cfg(not(windows))]
+fn normalize_import_component(value: &std::ffi::OsStr) -> String {
+    value.to_string_lossy().into_owned()
+}
 
 /// 扫描时跳过的目录名（不区分大小写）
 const EXCLUDED_DIRS: &[&str] = &[
@@ -126,39 +260,40 @@ pub async fn scan_directory_for_games(
         return Err(format!("目录不存在或不是文件夹: {}", path));
     }
 
-    // 异步查询 DB，获取已导入目录集合
-    let existing_dirs: HashSet<PathBuf> = GamesRepository::get_all_localpaths(&db)
+    // 异步查询 DB；去重索引只做路径组件运算，不访问文件系统。
+    let existing_localpaths = GamesRepository::get_all_localpaths(&db)
         .await
-        .map_err(|e| format!("查询已有路径失败: {}", e))?
-        .into_iter()
-        .filter_map(|lp| resolve_game_directory_for_duplicate(&lp))
-        .collect();
+        .map_err(|e| format!("查询已有路径失败: {}", e))?;
 
     let max_depth = max_depth.clamp(MIN_SCAN_MAX_DEPTH, MAX_SCAN_MAX_DEPTH);
-    let existing_dirs_count = existing_dirs.len();
     let started_at = Instant::now();
     let path_for_log = path.clone();
-    log::debug!(
-        "开始扫描游戏目录 path={} max_depth={} existing_dirs={}",
-        path_for_log,
-        max_depth,
-        existing_dirs_count
-    );
 
     // WalkDir 大量文件系统 I/O 属于阻塞操作，
     // 放入 Tokio 革层阻塞线程池，避免占用异步运行时线程。
-    let results =
-        tokio::task::spawn_blocking(move || scan_games_blocking(path, existing_dirs, max_depth))
-            .await
-            .map_err(|e| {
-                log::error!(
-                    "扫描任务异常 path={} max_depth={}: {}",
-                    path_for_log,
-                    max_depth,
-                    e
-                );
-                format!("扫描任务异常: {}", e)
-            })??;
+    let results = tokio::task::spawn_blocking(move || {
+        let mut existing_paths = ImportPathIndex::default();
+        for localpath in existing_localpaths {
+            existing_paths.insert(Path::new(&localpath));
+        }
+        log::debug!(
+            "开始扫描游戏目录 path={} max_depth={} existing_paths={}",
+            path,
+            max_depth,
+            existing_paths.path_count
+        );
+        scan_games_blocking(path, existing_paths, max_depth)
+    })
+    .await
+    .map_err(|e| {
+        log::error!(
+            "扫描任务异常 path={} max_depth={}: {}",
+            path_for_log,
+            max_depth,
+            e
+        );
+        format!("扫描任务异常: {}", e)
+    })??;
 
     log::info!(
         "游戏目录扫描完成 max_depth={} result_count={} elapsed_ms={}",
@@ -176,7 +311,7 @@ pub async fn scan_directory_for_games(
 /// 运行在顶层阻塞线程池中而非异步运行时。
 fn scan_games_blocking(
     path: String,
-    existing_dirs: HashSet<PathBuf>,
+    existing_paths: ImportPathIndex,
     max_depth: usize,
 ) -> Result<Vec<ScanResult>, String> {
     let dir_path = PathBuf::from(&path);
@@ -214,7 +349,9 @@ fn scan_games_blocking(
             // walkdir 在 yield 目录时已将其 ReadDir 压栈，skip_current_dir() 将其弹出，
             // 从而跳过该目录的所有内容，但不影响同级其他条目。
             let should_skip = is_excluded_dir(&entry.file_name().to_string_lossy())
-                || existing_dirs.contains(entry_path)
+                // 这里只能按历史祖先剪枝；若当前目录只是历史路径的祖先，
+                // 它可能是包含多个游戏的扫描容器，不能整棵跳过。
+                || existing_paths.has_ancestor_or_exact(entry_path)
                 // 父目录已有直属 exe → 该子目录无需遍历（祖先优先短路）
                 || entry_path
                     .parent()
@@ -239,11 +376,14 @@ fn scan_games_blocking(
                     .any(|&e| ext.eq_ignore_ascii_case(e))
                 && !is_excluded_exe(entry_path)
             {
+                // 已导入目录同样视为“已有直属 exe”，避免继续扫描其子目录。
                 dirs_with_exe.insert(parent.to_path_buf());
-                exe_by_dir
-                    .entry(parent.to_path_buf())
-                    .or_default()
-                    .push(entry_path.to_path_buf());
+                if !existing_paths.conflicts_with_candidate(parent) {
+                    exe_by_dir
+                        .entry(parent.to_path_buf())
+                        .or_default()
+                        .push(entry_path.to_path_buf());
+                }
             }
         }
     }
@@ -322,7 +462,12 @@ fn scan_games_blocking(
 
 #[cfg(test)]
 mod tests {
-    use super::trim_dirname_to_search_name;
+    use super::{ImportPathIndex, trim_dirname_to_search_name};
+    use std::path::PathBuf;
+
+    fn test_path(parts: &[&str]) -> PathBuf {
+        parts.iter().collect()
+    }
 
     #[test]
     fn trim_dirname_removes_common_tags() {
@@ -339,5 +484,31 @@ mod tests {
     #[test]
     fn trim_dirname_falls_back_when_everything_is_removed() {
         assert_eq!(trim_dirname_to_search_name("[社团名]"), "[社团名]");
+    }
+
+    #[test]
+    fn import_index_matches_directory_and_direct_executable() {
+        let game_dir = test_path(&["scan-root", "Games", "A"]);
+        let executable = game_dir.join("game.exe");
+        let sibling = test_path(&["scan-root", "Games", "AB"]);
+        let mut index = ImportPathIndex::default();
+        index.insert(&executable);
+        index.insert(&executable);
+
+        assert_eq!(index.path_count, 1);
+        assert!(index.conflicts_with_candidate(&game_dir));
+        assert!(!index.conflicts_with_candidate(&sibling));
+    }
+
+    #[test]
+    fn import_index_does_not_prune_container_of_historical_path() {
+        let container = test_path(&["scan-root", "Games"]);
+        let game_dir = container.join("A");
+        let mut index = ImportPathIndex::default();
+        index.insert(&game_dir);
+
+        assert!(!index.has_ancestor_or_exact(&container));
+        assert!(index.conflicts_with_candidate(&container));
+        assert!(index.has_ancestor_or_exact(&game_dir.join("Sub")));
     }
 }
