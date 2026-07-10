@@ -234,6 +234,10 @@ class GameMetadataService {
 		signal?: AbortSignal;
 	}): Promise<GameMetadataDraft | null> {
 		const { query, source, bgmToken, signal } = params;
+		if (source === "dlsite" && this.shouldUseIdSearch(query, source)) {
+			return this.getGameById(query, source, bgmToken, signal);
+		}
+
 		const draft = await resolveAutoSelectedGameDraft({
 			query,
 			source,
