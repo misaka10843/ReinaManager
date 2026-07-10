@@ -125,62 +125,69 @@ pub async fn resolve_local_path_directory(local_path: String) -> Result<String, 
 pub async fn resolve_dropped_local_path(
     dropped_path: String,
 ) -> Result<DroppedLocalPathResult, String> {
-    let path = PathBuf::from(&dropped_path);
-    let metadata =
-        fs::metadata(&path).map_err(|e| format!("无法读取路径 '{}': {}", dropped_path, e))?;
+    tokio::task::spawn_blocking(move || {
+        let path = PathBuf::from(&dropped_path);
+        let metadata =
+            fs::metadata(&path).map_err(|e| format!("无法读取路径 '{}': {}", dropped_path, e))?;
 
-    if metadata.is_dir() {
-        let mut executable_count = 0;
-        let mut first_executable = None;
-        for entry in fs::read_dir(&path).map_err(|e| format!("读取目录失败: {}", e))? {
-            let entry = entry.map_err(|e| format!("读取目录项失败: {}", e))?;
-            let entry_path = entry.path();
-            if entry_path.is_file() && is_supported_local_executable(&entry_path) {
-                executable_count += 1;
-                if first_executable.is_none() {
-                    first_executable = Some(entry_path.to_string_lossy().to_string());
+        if metadata.is_dir() {
+            let mut executable_count = 0;
+            let mut first_executable = None;
+            for entry in fs::read_dir(&path).map_err(|e| format!("读取目录失败: {}", e))? {
+                let entry = entry.map_err(|e| format!("读取目录项失败: {}", e))?;
+                let entry_path = entry.path();
+                if entry_path.is_file() && is_supported_local_executable(&entry_path) {
+                    executable_count += 1;
+                    if first_executable.is_none() {
+                        first_executable = Some(entry_path.to_string_lossy().to_string());
+                    }
+                    if executable_count == 2 {
+                        break;
+                    }
                 }
             }
+
+            return match executable_count {
+                0 => Ok(DroppedLocalPathResult {
+                    kind: DroppedLocalPathKind::NoExecutable,
+                    path: None,
+                    directory: Some(dropped_path),
+                }),
+                1 => Ok(DroppedLocalPathResult {
+                    kind: DroppedLocalPathKind::SingleExecutable,
+                    path: first_executable,
+                    directory: Some(dropped_path),
+                }),
+                _ => Ok(DroppedLocalPathResult {
+                    kind: DroppedLocalPathKind::MultipleExecutables,
+                    path: None,
+                    directory: Some(dropped_path),
+                }),
+            };
         }
 
-        return match executable_count {
-            0 => Ok(DroppedLocalPathResult {
-                kind: DroppedLocalPathKind::NoExecutable,
-                path: None,
-                directory: Some(dropped_path),
-            }),
-            1 => Ok(DroppedLocalPathResult {
-                kind: DroppedLocalPathKind::SingleExecutable,
-                path: first_executable,
-                directory: Some(dropped_path),
-            }),
-            _ => Ok(DroppedLocalPathResult {
-                kind: DroppedLocalPathKind::MultipleExecutables,
-                path: None,
-                directory: Some(dropped_path),
-            }),
-        };
-    }
+        if metadata.is_file() && is_supported_local_executable(&path) {
+            return Ok(DroppedLocalPathResult {
+                kind: DroppedLocalPathKind::Executable,
+                path: Some(dropped_path),
+                directory: path
+                    .parent()
+                    .filter(|parent| !parent.as_os_str().is_empty())
+                    .map(|parent| parent.to_string_lossy().to_string()),
+            });
+        }
 
-    if metadata.is_file() && is_supported_local_executable(&path) {
-        return Ok(DroppedLocalPathResult {
-            kind: DroppedLocalPathKind::Executable,
-            path: Some(dropped_path),
+        Ok(DroppedLocalPathResult {
+            kind: DroppedLocalPathKind::Invalid,
+            path: None,
             directory: path
                 .parent()
                 .filter(|parent| !parent.as_os_str().is_empty())
                 .map(|parent| parent.to_string_lossy().to_string()),
-        });
-    }
-
-    Ok(DroppedLocalPathResult {
-        kind: DroppedLocalPathKind::Invalid,
-        path: None,
-        directory: path
-            .parent()
-            .filter(|parent| !parent.as_os_str().is_empty())
-            .map(|parent| parent.to_string_lossy().to_string()),
+        })
     })
+    .await
+    .map_err(|e| format!("解析拖拽路径任务失败: {}", e))?
 }
 
 /// 判断当前是否为便携模式
