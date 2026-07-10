@@ -28,11 +28,16 @@ export const handleOpenFolder = async (
 	}
 };
 
-export const getLocalPathDirectory = async (
+/** 获取文件选择器默认目录；历史路径失效时从默认位置打开。 */
+export const getLocalPathPickerDirectory = async (
 	localPath?: string | null,
 ): Promise<string> => {
 	if (!localPath) return "";
-	return fileService.resolveLocalPathDirectory(localPath);
+	try {
+		return await fileService.resolveLocalPathDirectory(localPath);
+	} catch {
+		return "";
+	}
 };
 
 export const handleFolder = async (defaultPath: string = "") => {

@@ -1,57 +1,72 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useUpdateGame } from "@/hooks/queries/useGames";
 import { snackbar } from "@/providers/snackBar";
-import { getLocalPathDirectory, handleExeFile } from "@/services/fs/fileDialog";
+import {
+	getLocalPathPickerDirectory,
+	handleExeFile,
+} from "@/services/fs/fileDialog";
 import { useGamePlayStore } from "@/store/gamePlayStore";
 import type { GameData, UpdateGameParams } from "@/types";
 import { getUserErrorMessage } from "@/utils/errors";
 
-interface PendingLocalPathDialog {
-	game: GameData;
-	retryAfterSave: boolean;
-}
-
-async function resolveExecutablePickerDefaultPath(
-	localPath?: string | null,
-): Promise<string> {
-	if (!localPath) return "";
-
-	try {
-		return await getLocalPathDirectory(localPath);
-	} catch {
-		return "";
-	}
-}
-
 export function useGameLaunchFlow() {
 	const { t } = useTranslation();
-	const updateGameMutation = useUpdateGame();
+	const { mutateAsync: updateGame } = useUpdateGame();
 	const launchGame = useGamePlayStore((s) => s.launchGame);
-	const [pendingDialog, setPendingDialog] =
-		useState<PendingLocalPathDialog | null>(null);
-	const [localPath, setLocalPath] = useState("");
-	const [isSaving, setIsSaving] = useState(false);
 
-	const openLocalPathDialog = useCallback(
-		(game: GameData, options: { retryAfterSave: boolean }) => {
-			setPendingDialog({ game, retryAfterSave: options.retryAfterSave });
-			setLocalPath(game.localpath ?? "");
+	const selectExecutableAndLaunch = useCallback(
+		async (game: GameData) => {
+			let selectedPath: string | null;
+			try {
+				const defaultPath = await getLocalPathPickerDirectory(game.localpath);
+				selectedPath = await handleExeFile(defaultPath);
+			} catch (error) {
+				snackbar.error(
+					`${t("components.LaunchModal.selectFolder", "选择文件夹")}: ${getUserErrorMessage(error, t)}`,
+				);
+				return;
+			}
+
+			if (!selectedPath) {
+				snackbar.warning(
+					t(
+						"components.LaunchModal.selectExecutableRequired",
+						"请选择可执行文件",
+					),
+				);
+				return;
+			}
+
+			try {
+				const updateData: UpdateGameParams = {
+					localpath: selectedPath,
+				};
+
+				await updateGame({
+					gameId: game.id,
+					updates: updateData,
+				});
+				snackbar.success(t("components.LaunchModal.pathSaved", "路径已保存"));
+
+				const result = await launchGame(game.id);
+				if (!result.success) {
+					snackbar.error(result.message);
+				}
+			} catch (error) {
+				snackbar.error(
+					`${t("components.LaunchModal.pathSaveFailed", "保存路径失败")}: ${getUserErrorMessage(error, t)}`,
+				);
+			}
 		},
-		[],
+		[launchGame, t, updateGame],
 	);
-
-	const closeLocalPathDialog = useCallback(() => {
-		if (isSaving) return;
-		setPendingDialog(null);
-		setLocalPath("");
-	}, [isSaving]);
 
 	const runLaunch = useCallback(
 		async (game: GameData) => {
 			try {
 				if (!game.localpath) {
-					openLocalPathDialog(game, { retryAfterSave: true });
+					await selectExecutableAndLaunch(game);
 					return;
 				}
 
@@ -59,7 +74,7 @@ export function useGameLaunchFlow() {
 				if (result.success) return;
 
 				if (result.code === "NEED_EXECUTABLE") {
-					openLocalPathDialog(game, { retryAfterSave: true });
+					await selectExecutableAndLaunch(game);
 					return;
 				}
 
@@ -70,93 +85,10 @@ export function useGameLaunchFlow() {
 				);
 			}
 		},
-		[launchGame, openLocalPathDialog, t],
-	);
-
-	const handleSelectExecutable = useCallback(async () => {
-		if (!pendingDialog) return;
-
-		try {
-			const defaultPath = await resolveExecutablePickerDefaultPath(
-				localPath || pendingDialog.game.localpath,
-			);
-			const selectedPath = await handleExeFile(defaultPath);
-			if (selectedPath) {
-				setLocalPath(selectedPath);
-			}
-		} catch (error) {
-			snackbar.error(
-				`${t("components.LaunchModal.selectFolder", "选择文件夹")}: ${getUserErrorMessage(error, t)}`,
-			);
-		}
-	}, [localPath, pendingDialog, t]);
-
-	const handleSavePath = useCallback(async () => {
-		if (!pendingDialog) return;
-
-		const nextLocalPath = localPath.trim();
-		if (!nextLocalPath) {
-			snackbar.error(
-				t("components.LaunchModal.pathRequired", "请选择或输入路径"),
-			);
-			return;
-		}
-
-		setIsSaving(true);
-		try {
-			const updateData: UpdateGameParams = {
-				localpath: nextLocalPath,
-			};
-			const retryAfterSave = pendingDialog.retryAfterSave;
-			const gameId = pendingDialog.game.id;
-
-			await updateGameMutation.mutateAsync({
-				gameId,
-				updates: updateData,
-			});
-			snackbar.success(t("components.LaunchModal.pathSaved", "路径已保存"));
-			setPendingDialog(null);
-			setLocalPath("");
-
-			if (retryAfterSave) {
-				// 保存后只自动重试一次；若仍失败，交给错误提示，不循环弹窗。
-				const retryResult = await launchGame(gameId);
-				if (!retryResult.success) {
-					snackbar.error(retryResult.message);
-				}
-			}
-		} catch (error) {
-			snackbar.error(
-				`${t("components.LaunchModal.pathSaveFailed", "保存路径失败")}: ${getUserErrorMessage(error, t)}`,
-			);
-		} finally {
-			setIsSaving(false);
-		}
-	}, [launchGame, localPath, pendingDialog, t, updateGameMutation]);
-
-	const dialogProps = useMemo(
-		() => ({
-			open: pendingDialog !== null,
-			localPath,
-			isSaving,
-			onClose: closeLocalPathDialog,
-			onLocalPathChange: setLocalPath,
-			onSelectExecutable: handleSelectExecutable,
-			onSave: handleSavePath,
-		}),
-		[
-			closeLocalPathDialog,
-			handleSavePath,
-			handleSelectExecutable,
-			isSaving,
-			localPath,
-			pendingDialog,
-		],
+		[launchGame, selectExecutableAndLaunch, t],
 	);
 
 	return {
 		launchGame: runLaunch,
-		openLocalPathDialog,
-		localPathDialogProps: dialogProps,
 	};
 }

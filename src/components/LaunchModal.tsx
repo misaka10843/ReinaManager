@@ -17,7 +17,6 @@ import { Button, Typography } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
-import { GameLocalPathDialog } from "@/components/GameLocalPathDialog";
 import { SelectedGameGuard } from "@/components/SelectedGameGuard";
 import { useGameLaunchFlow } from "@/hooks/features/games/useGameLaunchFlow";
 import { snackbar } from "@/providers/snackBar";
@@ -79,7 +78,7 @@ interface LaunchModalContentProps {
 function LaunchModalContent({ selectedGame }: LaunchModalContentProps) {
 	const { t } = useTranslation();
 	const selectedGameId = selectedGame.id;
-	const { launchGame, localPathDialogProps } = useGameLaunchFlow();
+	const { launchGame } = useGameLaunchFlow();
 	const { stopGame, isThisGameRunning, realTimeState } = useGamePlayStore(
 		useShallow((s) => ({
 			stopGame: s.stopGame,
@@ -211,10 +210,5 @@ function LaunchModalContent({ selectedGame }: LaunchModalContentProps) {
 		);
 	})();
 
-	return (
-		<>
-			{content}
-			<GameLocalPathDialog {...localPathDialogProps} />
-		</>
-	);
+	return content;
 }

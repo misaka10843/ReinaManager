@@ -22,6 +22,7 @@ import ArticleIcon from "@mui/icons-material/Article";
 import DeleteIcon from "@mui/icons-material/Delete";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
+import SyncIcon from "@mui/icons-material/Sync";
 import {
 	Divider,
 	ListItemIcon,
@@ -74,7 +75,7 @@ const RightMenu: React.FC<RightMenuProps> = ({
 	const [openAlert, setOpenAlert] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
 	const { t } = useTranslation();
-	const haslocalpath = selectedGame?.localpath;
+	const hasLocalPath = Boolean(selectedGame?.localpath);
 
 	// 使用 Feature Facade 更新游戏状态
 	const { updatePlayStatus } = useGameStatusActions();
@@ -138,10 +139,14 @@ const RightMenu: React.FC<RightMenuProps> = ({
 					}}
 				>
 					<ListItemIcon>
-						<PlayCircleOutlineIcon />
+						{hasLocalPath ? <PlayCircleOutlineIcon /> : <SyncIcon />}
 					</ListItemIcon>
 					<ListItemText
-						primary={t("components.RightMenu.startGame", "启动游戏")}
+						primary={
+							hasLocalPath
+								? t("components.RightMenu.startGame", "启动游戏")
+								: t("components.LaunchModal.syncLocalPath", "同步本地")
+						}
 					/>
 				</MenuItem>
 
@@ -174,9 +179,9 @@ const RightMenu: React.FC<RightMenuProps> = ({
 
 				{/* 打开游戏文件夹 */}
 				<MenuItem
-					disabled={!haslocalpath}
+					disabled={!hasLocalPath}
 					onClick={() => {
-						if (haslocalpath) {
+						if (hasLocalPath && selectedGame) {
 							handleOpenFolder(selectedGame);
 						}
 						onClose();

@@ -44,7 +44,10 @@ import {
 } from "@/metadata/data/sourceImage";
 import { getSourceIdFromDisplay } from "@/metadata/sourceRecord";
 import { snackbar } from "@/providers/snackBar";
-import { getLocalPathDirectory, handleExeFile } from "@/services/fs/fileDialog";
+import {
+	getLocalPathPickerDirectory,
+	handleExeFile,
+} from "@/services/fs/fileDialog";
 import {
 	deleteGameCustomCovers,
 	selectImageFile,
@@ -288,7 +291,7 @@ function stringArraysEqual(
 interface GameInfoEditProps {
 	selectedGame: GameData;
 	rawGame?: FullGameData;
-	onSave: (data: UpdateGameParams) => Promise<void>;
+	onSave: (data: UpdateGameParams) => Promise<FullGameData>;
 	disabled?: boolean;
 }
 
@@ -457,7 +460,7 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 	const handleSelectLocalPath = async () => {
 		try {
 			const selectedPath = await handleExeFile(
-				await getLocalPathDirectory(localPath),
+				await getLocalPathPickerDirectory(localPath),
 			);
 			if (selectedPath) {
 				setLocalPath(selectedPath);
@@ -712,7 +715,8 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 			}
 
 			// 3. 执行保存
-			await onSave(updateData);
+			const updatedGame = await onSave(updateData);
+			setLocalPath(updatedGame.localpath ?? "");
 
 			if (clipboardTempImagePath) {
 				await cleanupClipboardTempImage();

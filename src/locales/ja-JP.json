@@ -170,12 +170,10 @@
 			"gamePathNotFound": "ゲームパスが見つかりません",
 			"launchFailed": "ゲーム起動に失敗しました:",
 			"launchGame": "ゲームを起動",
-			"localPathLabel": "実行ファイルパス",
-			"pathRequired": "パスを選択または入力してください",
 			"pathSaved": "パスが保存されました",
 			"pathSaveFailed": "パスの保存に失敗しました",
+			"selectExecutableRequired": "実行ファイルを選択してください",
 			"selectFolder": "フォルダを選択",
-			"setLocalPathTitle": "ローカルパスを設定",
 			"stopFailed": "ゲーム停止に失敗しました:",
 			"stoppingGame": "ゲームを停止中...",
 			"syncLocalPath": "ローカル同期"

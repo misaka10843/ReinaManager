@@ -177,12 +177,10 @@
 			"gamePathNotFound": "Game path not found",
 			"launchFailed": "Failed to launch game:",
 			"launchGame": "Launch Game",
-			"localPathLabel": "Executable File Path",
-			"pathRequired": "Please select or enter a path",
 			"pathSaved": "Path saved",
 			"pathSaveFailed": "Failed to save path",
+			"selectExecutableRequired": "Please select an executable file",
 			"selectFolder": "Select Folder",
-			"setLocalPathTitle": "Set Local Path",
 			"stopFailed": "Failed to stop game:",
 			"stoppingGame": "Stopping game...",
 			"syncLocalPath": "Sync Local"

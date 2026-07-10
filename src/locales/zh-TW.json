@@ -170,12 +170,10 @@
 			"gamePathNotFound": "遊戲路徑未找到",
 			"launchFailed": "遊戲啟動失敗:",
 			"launchGame": "啟動遊戲",
-			"localPathLabel": "可執行文件路徑",
-			"pathRequired": "請選擇或輸入路徑",
 			"pathSaved": "路徑已保存",
 			"pathSaveFailed": "保存路徑失敗",
+			"selectExecutableRequired": "請選擇可執行文件",
 			"selectFolder": "選擇文件夾",
-			"setLocalPathTitle": "設置本地路徑",
 			"stopFailed": "遊戲停止失敗:",
 			"stoppingGame": "正在停止遊戲...",
 			"syncLocalPath": "同步本地"

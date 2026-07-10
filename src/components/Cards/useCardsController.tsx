@@ -2,7 +2,6 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useShallow } from "zustand/react/shallow";
-import { GameLocalPathDialog } from "@/components/GameLocalPathDialog";
 import { saveScrollPosition } from "@/hooks/common/useScrollRestore";
 import { useGameLaunchFlow } from "@/hooks/features/games/useGameLaunchFlow";
 import { useRemoveGamesFromCategory } from "@/hooks/queries/useCollections";
@@ -46,7 +45,7 @@ export function useCardsController({
 			showCardSortFieldOverlay: s.showCardSortFieldOverlay,
 		})),
 	);
-	const { launchGame, localPathDialogProps } = useGameLaunchFlow();
+	const { launchGame } = useGameLaunchFlow();
 	const shouldShowCardSortFieldOverlay =
 		isLibraries && showCardSortFieldOverlay;
 	const shouldLoadLastPlayed =
@@ -224,7 +223,6 @@ export function useCardsController({
 				/>
 			)}
 			<RightMenuHost ref={rightMenuRef} onLaunchGame={launchGame} />
-			<GameLocalPathDialog {...localPathDialogProps} />
 		</>
 	);
 
