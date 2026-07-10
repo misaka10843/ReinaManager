@@ -95,14 +95,12 @@ export function createGameCandidate(params: {
 	idType?: string;
 	source?: SourceCandidateRecord;
 	sources?: readonly SourceCandidateRecord[];
-	localpath?: string;
 	customData?: GameMetadataDraft["custom_data"];
 }): GameMetadataDraft {
 	const sources = params.sources ?? (params.source ? [params.source] : []);
 	return {
 		id_type: params.idType,
 		sources: [...sources],
-		localpath: params.localpath,
 		custom_data: params.customData,
 	};
 }
@@ -114,7 +112,6 @@ export function normalizeGameCandidateSources(
 	return createGameCandidate({
 		idType: candidate.id_type ?? fallbackIdType,
 		sources: mergeCandidateSources([candidate]),
-		localpath: candidate.localpath ?? undefined,
 		customData: candidate.custom_data,
 	});
 }
@@ -239,7 +236,6 @@ export function getSourceCandidateFromGame<TData>(
 
 export function buildGameCandidateFromSourceSelection(params: {
 	selection: Partial<Record<SourceType, SourceCandidate | null>>;
-	defaults?: Partial<GameMetadataDraft>;
 }): GameMetadataDraft {
 	const selected = SOURCE_ORDER.map(
 		(source) => params.selection[source],
@@ -262,7 +258,6 @@ export function buildGameCandidateFromSourceSelection(params: {
 	});
 
 	return {
-		...params.defaults,
 		id_type: sources.length === 1 ? sources[0].source : "mixed",
 		sources,
 	};

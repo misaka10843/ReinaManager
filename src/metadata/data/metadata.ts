@@ -103,9 +103,8 @@ export function pickFirstMixedResult(
 export function buildGameFromMixedSelection(params: {
 	selection: MixedSourceSelection;
 	enabled: MixedSourceEnabled;
-	defaults?: Partial<GameMetadataDraft>;
 }): GameMetadataDraft {
-	const { selection, enabled, defaults } = params;
+	const { selection, enabled } = params;
 	const selectedEntries = MIXED_SOURCE_KEYS.map((source) => ({
 		source,
 		candidate: enabled[source] ? selection[source] : null,
@@ -125,7 +124,6 @@ export function buildGameFromMixedSelection(params: {
 				enabled[source] ? selection[source] : null,
 			]),
 		) as MixedSourceSelection,
-		defaults,
 	});
 }
 
@@ -205,18 +203,21 @@ function getGameCandidateDate(gameData: GameMetadataDraft): string | undefined {
 
 export async function buildInsertGameData(
 	gameData: GameMetadataDraft,
-	cloudStatusContext?: CloudPlayStatusContext,
+	options: {
+		localpath?: string;
+		cloudStatusContext?: CloudPlayStatusContext;
+	} = {},
 ): Promise<InsertGameParams> {
 	const insertData: InsertGameParams = {
 		id_type: gameData.id_type || "mixed",
 		sources: candidateSourcesToGameSources(gameData.sources),
 		date: getGameCandidateDate(gameData),
-		localpath: gameData.localpath ?? undefined,
+		localpath: options.localpath,
 		custom_data: gameData.custom_data ?? undefined,
 	};
 	const cloudStatus = await resolveCloudPlayStatus(
 		insertData,
-		cloudStatusContext,
+		options.cloudStatusContext,
 	);
 
 	if (cloudStatus === undefined) {
@@ -376,14 +377,10 @@ export async function buildBulkImportGameData(
 	cloudStatusContext?: CloudPlayStatusContext,
 ): Promise<InsertGameParams> {
 	if (item.matchedData) {
-		const insertData = await buildInsertGameData(
-			item.matchedData,
-			cloudStatusContext,
-		);
-		return {
-			...insertData,
+		return buildInsertGameData(item.matchedData, {
 			localpath: getBatchImportLocalPath(item),
-		};
+			cloudStatusContext,
+		});
 	}
 
 	return {

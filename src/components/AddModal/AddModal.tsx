@@ -149,11 +149,14 @@ const AddModal: React.FC = () => {
 
 	const handleAddGame = useCallback(
 		async (gameData: GameMetadataDraft) => {
-			const game = await addGameFromMetadata(gameData);
+			const game = await addGameFromMetadata(
+				gameData,
+				addModalPath || undefined,
+			);
 			closeAddModal();
 			showGameAddedSuccess({ gameId: game.id, navigate, t });
 		},
-		[addGameFromMetadata, closeAddModal, navigate, t],
+		[addGameFromMetadata, addModalPath, closeAddModal, navigate, t],
 	);
 
 	const metadataSearchFlow = useMetadataSearchFlow({
@@ -243,9 +246,6 @@ const AddModal: React.FC = () => {
 			await metadataSearchFlow.searchMetadata({
 				query: formText,
 				source: addMode === "single" ? apiSource : "mixed",
-				defaults: {
-					localpath: addModalPath,
-				},
 				withAbort,
 			});
 		} catch (error) {

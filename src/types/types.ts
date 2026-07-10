@@ -261,10 +261,9 @@ export interface FullGameData extends GameRuntimePayload {
 
 /**
  * 游戏元数据草稿 - 来自外部 API 或添加链路，尚未写入数据库
+ * 仅包含来源与自定义元数据，本地运行配置在入库边界单独组装
  */
-export interface GameMetadataDraft
-	extends GameRuntimePayload,
-		GameCustomPayload {
+export interface GameMetadataDraft extends GameCustomPayload {
 	id_type?: IdType | string;
 	sources: SourceCandidateRecord[];
 	id?: never;

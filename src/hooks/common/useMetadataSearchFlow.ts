@@ -21,7 +21,6 @@ interface SearchResultState {
 	open: boolean;
 	results: SourceCandidate[];
 	apiSource: SourceType;
-	defaults?: Partial<GameMetadataDraft>;
 }
 
 interface MixedCandidateState {
@@ -32,7 +31,6 @@ interface MixedCandidateState {
 interface SearchMetadataParams {
 	query: string;
 	source: apiSourceType;
-	defaults?: Partial<GameMetadataDraft>;
 	withAbort?: <T>(promise: Promise<T>) => Promise<T>;
 	signal?: AbortSignal;
 }
@@ -94,9 +92,6 @@ export function useMetadataSearchFlow({
 			candidates: EMPTY_MIXED_CANDIDATES,
 		});
 	const [isSearching, setIsSearching] = useState(false);
-	const [lastMixedDefaults, setLastMixedDefaults] = useState<
-		Partial<GameMetadataDraft> | undefined
-	>();
 
 	const getNoResultsText = useCallback(
 		(source: apiSourceType) => getDefaultNoResultsMessage(t, source),
@@ -118,19 +113,11 @@ export function useMetadataSearchFlow({
 		closeSearchResult();
 		closeMixedCandidates();
 		setIsSearching(false);
-		setLastMixedDefaults(undefined);
 	}, [closeMixedCandidates, closeSearchResult]);
 
 	const searchMetadata = useCallback(
-		async ({
-			query,
-			source,
-			defaults,
-			withAbort,
-			signal,
-		}: SearchMetadataParams) => {
+		async ({ query, source, withAbort, signal }: SearchMetadataParams) => {
 			setIsSearching(true);
-			setLastMixedDefaults(defaults);
 
 			try {
 				if (source === "mixed") {
@@ -140,7 +127,6 @@ export function useMetadataSearchFlow({
 								query,
 								bgmToken,
 								mixedEnabledSources,
-								defaults,
 								signal,
 							});
 						return withAbort ? withAbort(candidatesPromise) : candidatesPromise;
@@ -167,7 +153,6 @@ export function useMetadataSearchFlow({
 							query,
 							source,
 							bgmToken,
-							defaults,
 							signal,
 						});
 						return withAbort ? withAbort(searchPromise) : searchPromise;
@@ -207,7 +192,6 @@ export function useMetadataSearchFlow({
 					open: true,
 					results,
 					apiSource: source,
-					defaults,
 				});
 			} catch (error) {
 				if (isAbortError(error)) {
@@ -235,7 +219,6 @@ export function useMetadataSearchFlow({
 				const resolvedGame =
 					await gameMetadataService.resolveSourceCandidateSelection({
 						candidate: selectedCandidate,
-						defaults: searchResultState.defaults,
 					});
 				await onResolved(resolvedGame);
 				closeSearchResult();
@@ -245,7 +228,7 @@ export function useMetadataSearchFlow({
 				setIsSearching(false);
 			}
 		},
-		[closeSearchResult, onError, onResolved, searchResultState.defaults, t],
+		[closeSearchResult, onError, onResolved, t],
 	);
 
 	const confirmMixedSelection = useCallback(
@@ -255,7 +238,6 @@ export function useMetadataSearchFlow({
 				const gameData = await gameMetadataService.resolveMixedSourceSelection({
 					selection,
 					enabled,
-					defaults: lastMixedDefaults,
 				});
 				await onResolved(gameData);
 				closeMixedCandidates();
@@ -266,7 +248,7 @@ export function useMetadataSearchFlow({
 				setIsSearching(false);
 			}
 		},
-		[closeMixedCandidates, lastMixedDefaults, onError, onResolved, t],
+		[closeMixedCandidates, onError, onResolved, t],
 	);
 
 	return useMemo(

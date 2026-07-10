@@ -136,7 +136,6 @@ export interface GameSearchParams {
 	query: string; // 搜索关键词（可以是ID或名称）
 	source?: SourceType; // 数据源（可选，不指定则为mixed）
 	bgmToken?: string; // BGM API访问令牌
-	defaults?: Partial<GameMetadataDraft>; // UI 相关默认值，会合并到返回的候选数据中
 	mixedEnabledSources?: readonly SourceType[]; // mixed 模式下允许请求的数据源
 	limit?: number; // 名称搜索返回数量上限
 	signal?: AbortSignal;
@@ -153,33 +152,19 @@ class GameMetadataService {
 	 * - source 未指定：mixed 名称搜索，返回各源第一个结果
 	 */
 	async searchGames(params: GameSearchParams): Promise<GameMetadataDraft[]> {
-		const {
-			query,
-			source,
-			bgmToken,
-			defaults,
-			mixedEnabledSources,
-			limit,
-			signal,
-		} = params;
+		const { query, source, bgmToken, mixedEnabledSources, limit, signal } =
+			params;
 
 		return source
 			? this.searchSingleSource(
 					query,
 					source,
 					bgmToken,
-					defaults,
 					this.shouldUseIdSearch(query, source),
 					limit,
 					signal,
 				)
-			: this.searchMixed(
-					query,
-					bgmToken,
-					defaults,
-					mixedEnabledSources,
-					signal,
-				);
+			: this.searchMixed(query, bgmToken, mixedEnabledSources, signal);
 	}
 
 	/**
@@ -197,14 +182,13 @@ class GameMetadataService {
 		query: string,
 		source: SourceType,
 		bgmToken: string | undefined,
-		defaults: Partial<GameMetadataDraft> | undefined,
 		isIdSearch: boolean,
 		limit?: number,
 		signal?: AbortSignal,
 	): Promise<GameMetadataDraft[]> {
 		if (isIdSearch) {
 			const game = await this.getGameById(query, source, bgmToken, signal);
-			return [this.applyDefaults(game, defaults)];
+			return [game];
 		}
 
 		const candidates = await this.searchByName({
@@ -214,9 +198,7 @@ class GameMetadataService {
 			limit,
 			signal,
 		});
-		return candidates.map((candidate) =>
-			this.applyDefaults(sourceCandidateToDraft(candidate), defaults),
-		);
+		return candidates.map(sourceCandidateToDraft);
 	}
 
 	/**
@@ -249,10 +231,9 @@ class GameMetadataService {
 		query: string;
 		source: SourceType;
 		bgmToken?: string;
-		defaults?: Partial<GameMetadataDraft>;
 		signal?: AbortSignal;
 	}): Promise<GameMetadataDraft | null> {
-		const { query, source, bgmToken, defaults, signal } = params;
+		const { query, source, bgmToken, signal } = params;
 		const draft = await resolveAutoSelectedGameDraft({
 			query,
 			source,
@@ -260,7 +241,7 @@ class GameMetadataService {
 			signal,
 		});
 
-		return draft ? this.applyDefaults(draft, defaults) : null;
+		return draft;
 	}
 
 	/**
@@ -269,7 +250,6 @@ class GameMetadataService {
 	private async searchMixed(
 		query: string,
 		bgmToken: string | undefined,
-		defaults: Partial<GameMetadataDraft> | undefined,
 		mixedEnabledSources?: readonly SourceType[],
 		signal?: AbortSignal,
 	): Promise<GameMetadataDraft[]> {
@@ -283,7 +263,7 @@ class GameMetadataService {
 			return [];
 		}
 
-		return [this.applyDefaults(result, defaults)];
+		return [result];
 	}
 
 	/**
@@ -292,7 +272,6 @@ class GameMetadataService {
 	async searchMixedSourceCandidates(params: {
 		query: string;
 		bgmToken?: string;
-		defaults?: Partial<GameMetadataDraft>;
 		mixedEnabledSources?: readonly SourceType[];
 		signal?: AbortSignal;
 	}): Promise<MixedSourceCandidates> {
@@ -357,11 +336,8 @@ class GameMetadataService {
 	 */
 	async resolveSourceCandidateSelection(params: {
 		candidate: SourceCandidate;
-		defaults?: Partial<GameMetadataDraft>;
 	}): Promise<GameMetadataDraft> {
-		const { candidate, defaults } = params;
-		const draft = await this.resolveSourceCandidateDraft(candidate);
-		return this.applyDefaults(draft, defaults);
+		return this.resolveSourceCandidateDraft(params.candidate);
 	}
 
 	private async resolveSourceCandidateDraft(
@@ -431,9 +407,8 @@ class GameMetadataService {
 	async resolveMixedSourceSelection(params: {
 		selection: MixedSourceSelection;
 		enabled: MixedSourceEnabled;
-		defaults?: Partial<GameMetadataDraft>;
 	}): Promise<GameMetadataDraft> {
-		const { selection, enabled, defaults } = params;
+		const { selection, enabled } = params;
 		const enrichedSelection = await this.enrichMixedSourceSelection(
 			selection,
 			enabled,
@@ -441,7 +416,6 @@ class GameMetadataService {
 		return buildGameFromMixedSelection({
 			selection: enrichedSelection,
 			enabled,
-			defaults,
 		});
 	}
 
@@ -473,16 +447,6 @@ class GameMetadataService {
 	}
 
 	/**
-	 * 应用默认值到游戏数据
-	 */
-	private applyDefaults(
-		game: GameMetadataDraft,
-		defaults?: Partial<GameMetadataDraft>,
-	): GameMetadataDraft {
-		return defaults ? { ...defaults, ...game } : game;
-	}
-
-	/**
 	 * 验证游戏 ID 格式
 	 */
 	isValidGameId(id: string, source: SourceType): boolean {
@@ -496,9 +460,8 @@ class GameMetadataService {
 		sourceIds?: SourceIdMap;
 		bgmToken?: string;
 		enabledSources?: readonly SourceType[];
-		defaults?: Partial<GameMetadataDraft>;
 	}): Promise<GameMetadataDraft> {
-		const { sourceIds, bgmToken, enabledSources, defaults } = params;
+		const { sourceIds, bgmToken, enabledSources } = params;
 		const enabledSourceIds = getEnabledSourceIds(sourceIds, enabledSources);
 		const providedSources = REGISTERED_SOURCE_KEYS.filter((source) =>
 			getSourceId(enabledSourceIds, source),
@@ -523,7 +486,7 @@ class GameMetadataService {
 				);
 				mergedResult.id_type = this.determineIdType(mergedResult);
 
-				return this.applyDefaults(mergedResult, defaults);
+				return mergedResult;
 			}
 
 			const results = await Promise.all(
@@ -540,9 +503,8 @@ class GameMetadataService {
 			);
 
 			const mergedGame: GameMetadataDraft = {
-				...defaults,
 				id_type: "mixed",
-				sources: defaults?.sources ?? [],
+				sources: [],
 			};
 
 			REGISTERED_SOURCE_KEYS.forEach((source, index) => {

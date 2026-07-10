@@ -78,15 +78,12 @@ export function useSingleGameAddActions() {
 	const metadataAddActionMutation = useMutation({
 		mutationFn: async ({
 			gameData,
+			localpath,
 		}: {
 			gameData: GameMetadataDraft;
-			options?: {
-				localpath?: string;
-				fallbackIdType?: string;
-				fallbackDate?: string;
-			};
+			localpath?: string;
 		}) => {
-			const insertData = await buildInsertGameData(gameData);
+			const insertData = await buildInsertGameData(gameData, { localpath });
 
 			if (checkGameExists(insertData)) {
 				throw new Error(i18n.t("components.AddModal.gameExists", "游戏已存在"));
@@ -97,9 +94,10 @@ export function useSingleGameAddActions() {
 	});
 
 	const addGameFromMetadata = useCallback(
-		async (gameData: GameMetadataDraft) => {
+		async (gameData: GameMetadataDraft, localpath?: string) => {
 			return metadataAddActionMutation.mutateAsync({
 				gameData,
+				localpath,
 			});
 		},
 		[metadataAddActionMutation],
