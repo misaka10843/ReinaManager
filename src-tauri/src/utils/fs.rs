@@ -1,4 +1,4 @@
-use crate::game::local_path::{ResolvedLocalPath, resolve_game_directory, resolve_local_path};
+use crate::game::local_path::resolve_game_directory;
 
 #[cfg(target_os = "windows")]
 use crate::utils::command_ext::CommandGuiExt;
@@ -52,44 +52,24 @@ fn is_supported_local_executable(path: &Path) -> bool {
 /// 操作结果
 #[command]
 pub async fn open_directory(dir_path: String) -> Result<(), String> {
-    let (open_path, select_path) = match resolve_local_path(Some(&dir_path)) {
-        ResolvedLocalPath::Directory { game_dir } => (game_dir, None),
-        ResolvedLocalPath::File {
-            executable_path,
-            game_dir,
-        } => (game_dir, Some(executable_path)),
-        ResolvedLocalPath::Missing { raw_path } => {
-            return Err(format!("路径不存在: {}", raw_path.display()));
-        }
-        ResolvedLocalPath::Unset => return Err("路径未设置".to_string()),
-    };
+    let open_path = resolve_game_directory(&dir_path)?;
 
     #[cfg(target_os = "windows")]
     {
         // Windows Explorer 在某些情况下对反斜杠的处理更稳定
         // 虽然 Windows 系统本身支持正斜杠，但 Explorer 更喜欢原生的反斜杠格式
-        // 文件路径使用 /select 打开所在目录并选中文件，目录路径直接打开目录。
-        let explorer_arg = if let Some(select_path) = &select_path {
-            format!(
-                "/select,{}",
-                select_path.to_string_lossy().replace('/', "\\")
-            )
-        } else {
-            open_path.to_string_lossy().replace('/', "\\")
-        };
+        let normalized_path = open_path.to_string_lossy().replace('/', "\\");
 
         let result = Command::new("explorer")
-            .arg(&explorer_arg)
+            .arg(&normalized_path)
             .gui_safe()
             .spawn();
 
         match result {
             Ok(_) => Ok(()),
             Err(e) => {
-                // explorer /select 失败时退回打开解析后的目录，cmd start 不稳定支持选中文件。
-                let fallback_path = open_path.to_string_lossy().to_string();
                 let fallback_result = Command::new("cmd")
-                    .args(["/c", "start", "", &fallback_path])
+                    .args(["/c", "start", "", &normalized_path])
                     .gui_safe()
                     .spawn();
 
