@@ -188,7 +188,14 @@ export default function BulkImportResultTable({
 										{getStatusLabel(item.status, t)}
 									</Typography>
 									<Box sx={{ minWidth: 0 }}>
-										{item.executables.length === 1 ? (
+										{item.executables.length === 0 ? (
+											<Typography variant="body2" color="text.secondary">
+												{t(
+													"components.BulkImportModal.gameDirectory",
+													"游戏目录",
+												)}
+											</Typography>
+										) : item.executables.length === 1 ? (
 											<Typography
 												variant="body2"
 												noWrap

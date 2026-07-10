@@ -34,7 +34,7 @@ import { isBgmAuthExpiredError, withBgmAuth } from "@/services/bgmAuthSession";
 import { handleFolder } from "@/services/fs/fileDialog";
 import { fileService } from "@/services/invoke";
 import { useStore } from "@/store/appStore";
-import type { GameMetadataDraft, SourceType } from "@/types";
+import type { GameMetadataDraft, GameScanMode, SourceType } from "@/types";
 import { createAbortableRunner, isAbortError } from "@/utils/async";
 import { getUserErrorMessage, isApiRateLimitError } from "@/utils/errors";
 import BulkImportResultTable, {
@@ -56,6 +56,7 @@ interface BulkImportTabProps {
 }
 
 const DEFAULT_SCAN_DEPTH = 3;
+const DEFAULT_SCAN_MODE: GameScanMode = "executable";
 const SCAN_DEPTH_OPTIONS = [2, 3, 4, 5] as const;
 const BULK_API_SOURCE_OPTIONS = SEARCHABLE_SOURCE_KEYS.map((source) => ({
 	value: source,
@@ -86,6 +87,7 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 	const [items, setItems] = useState<BulkImportItem[]>([]);
 	const [bulkApiSource, setBulkApiSource] =
 		useState<SourceType>(defaultBulkApiSource);
+	const [scanMode, setScanMode] = useState<GameScanMode>(DEFAULT_SCAN_MODE);
 	const [scanMaxDepth, setScanMaxDepth] = useState(DEFAULT_SCAN_DEPTH);
 	const [editItemPath, setEditItemPath] = useState<string | null>(null);
 	const [editName, setEditName] = useState("");
@@ -153,6 +155,7 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 		setRootPath("");
 		setItems([]);
 		setBulkApiSource(defaultBulkApiSource);
+		setScanMode(DEFAULT_SCAN_MODE);
 		setScanMaxDepth(DEFAULT_SCAN_DEPTH);
 		setEditItemPath(null);
 		setEditName("");
@@ -183,12 +186,13 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 	}, [isMatchingMetadata, onClose, t]);
 
 	const scanSelectedFolder = useCallback(
-		async (selectedRootPath: string, maxDepth: number) => {
+		async (selectedRootPath: string, maxDepth: number, mode: GameScanMode) => {
 			setIsScanningDirectories(true);
 			try {
 				const subdirs = await fileService.scanDirectoryForGames(
 					selectedRootPath,
 					maxDepth,
+					mode,
 				);
 				setItems(
 					subdirs.map((dir) => ({
@@ -212,13 +216,20 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 		if (!result) return;
 
 		setRootPath(result);
-		await scanSelectedFolder(result, scanMaxDepth);
+		await scanSelectedFolder(result, scanMaxDepth, scanMode);
 	};
 
 	const handleScanDepthChange = (nextDepth: number) => {
 		setScanMaxDepth(nextDepth);
+		if (rootPath && scanMode === "executable") {
+			void scanSelectedFolder(rootPath, nextDepth, scanMode);
+		}
+	};
+
+	const handleScanModeChange = (nextMode: GameScanMode) => {
+		setScanMode(nextMode);
 		if (rootPath) {
-			void scanSelectedFolder(rootPath, nextDepth);
+			void scanSelectedFolder(rootPath, scanMaxDepth, nextMode);
 		}
 	};
 
@@ -551,6 +562,36 @@ const BulkImportTab = ({ hidden, onClose }: BulkImportTabProps) => {
 							<FormControl
 								size="small"
 								disabled={loading}
+								className="flex-[0_0_180px]"
+							>
+								<InputLabel id="bulk-import-scan-mode-label">
+									{t("components.BulkImportModal.scanMode", "扫描模式")}
+								</InputLabel>
+								<Select
+									labelId="bulk-import-scan-mode-label"
+									value={scanMode}
+									label={t("components.BulkImportModal.scanMode", "扫描模式")}
+									onChange={(event) =>
+										handleScanModeChange(event.target.value as GameScanMode)
+									}
+								>
+									<MenuItem value="executable">
+										{t(
+											"components.BulkImportModal.scanModeExecutable",
+											"可执行文件扫描",
+										)}
+									</MenuItem>
+									<MenuItem value="first_level_directory">
+										{t(
+											"components.BulkImportModal.scanModeFirstLevel",
+											"一级目录导入",
+										)}
+									</MenuItem>
+								</Select>
+							</FormControl>
+							<FormControl
+								size="small"
+								disabled={loading || scanMode !== "executable"}
 								className="flex-[0_0_140px]"
 							>
 								<InputLabel id="bulk-import-scan-depth-label">

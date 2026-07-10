@@ -55,6 +55,8 @@ export interface ScanResult {
 	executables: string[];
 }
 
+export type GameScanMode = "executable" | "first_level_directory";
+
 export interface BgmAuth {
 	access_token: string;
 	refresh_token?: Nullable<string>;

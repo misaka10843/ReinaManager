@@ -17,6 +17,13 @@ pub struct ScanResult {
     pub executables: Vec<String>,
 }
 
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ScanMode {
+    Executable,
+    FirstLevelDirectory,
+}
+
 const VALID_EXE_EXTENSIONS: &[&str] = &["exe", "bat", "cmd"];
 const MIN_SCAN_MAX_DEPTH: usize = 2;
 const MAX_SCAN_MAX_DEPTH: usize = 5;
@@ -249,11 +256,65 @@ fn is_excluded_exe(path: &Path) -> bool {
     })
 }
 
+fn is_han_character(character: char) -> bool {
+    matches!(
+        character,
+        '\u{3400}'..='\u{4DBF}'
+            | '\u{4E00}'..='\u{9FFF}'
+            | '\u{F900}'..='\u{FAFF}'
+            | '\u{20000}'..='\u{2EBEF}'
+            | '\u{30000}'..='\u{323AF}'
+    )
+}
+
+fn is_kana_character(character: char) -> bool {
+    matches!(
+        character,
+        '\u{3040}'..='\u{30FF}'
+            | '\u{31F0}'..='\u{31FF}'
+            | '\u{FF65}'..='\u{FF9F}'
+            | '\u{1AFF0}'..='\u{1AFFF}'
+            | '\u{1B000}'..='\u{1B16F}'
+    )
+}
+
+fn is_probably_chinese_executable(value: &str) -> bool {
+    let file_name = Path::new(value)
+        .file_name()
+        .map(|name| name.to_string_lossy())
+        .unwrap_or_else(|| value.into());
+    let mut contains_han = false;
+
+    for character in file_name.chars() {
+        if is_kana_character(character) {
+            return false;
+        }
+        contains_han |= is_han_character(character);
+    }
+
+    contains_han
+}
+
+fn sort_executables(executables: &mut [String], game_name: &str) {
+    let lower_name = game_name.to_lowercase();
+    executables.sort_by_cached_key(|executable| {
+        let lower = executable.to_lowercase();
+        (
+            !lower.contains("chs"),
+            !is_probably_chinese_executable(executable),
+            !lower.contains(&lower_name),
+            executable.len(),
+            lower,
+        )
+    });
+}
+
 #[command]
 pub async fn scan_directory_for_games(
     db: State<'_, DatabaseConnection>,
     path: String,
     max_depth: usize,
+    scan_mode: ScanMode,
 ) -> Result<Vec<ScanResult>, String> {
     // 先做路径预检查（一次 syscall，可在 async 上下文进行）
     if !Path::new(&path).is_dir() {
@@ -277,18 +338,20 @@ pub async fn scan_directory_for_games(
             existing_paths.insert(Path::new(&localpath));
         }
         log::debug!(
-            "开始扫描游戏目录 path={} max_depth={} existing_paths={}",
+            "开始扫描游戏目录 path={} mode={:?} max_depth={} existing_paths={}",
             path,
+            scan_mode,
             max_depth,
             existing_paths.path_count
         );
-        scan_games_blocking(path, existing_paths, max_depth)
+        scan_games_blocking(path, existing_paths, max_depth, scan_mode)
     })
     .await
     .map_err(|e| {
         log::error!(
-            "扫描任务异常 path={} max_depth={}: {}",
+            "扫描任务异常 path={} mode={:?} max_depth={}: {}",
             path_for_log,
+            scan_mode,
             max_depth,
             e
         );
@@ -296,7 +359,8 @@ pub async fn scan_directory_for_games(
     })??;
 
     log::info!(
-        "游戏目录扫描完成 max_depth={} result_count={} elapsed_ms={}",
+        "游戏目录扫描完成 mode={:?} max_depth={} result_count={} elapsed_ms={}",
+        scan_mode,
         max_depth,
         results.len(),
         started_at.elapsed().as_millis()
@@ -310,6 +374,93 @@ pub async fn scan_directory_for_games(
 /// 由 [`scan_directory_for_games`] 通过 `tokio::task::spawn_blocking` 调用，
 /// 运行在顶层阻塞线程池中而非异步运行时。
 fn scan_games_blocking(
+    path: String,
+    existing_paths: ImportPathIndex,
+    max_depth: usize,
+    scan_mode: ScanMode,
+) -> Result<Vec<ScanResult>, String> {
+    match scan_mode {
+        ScanMode::Executable => scan_executable_games_blocking(path, existing_paths, max_depth),
+        ScanMode::FirstLevelDirectory => Ok(scan_direct_child_directories(path, existing_paths)),
+    }
+}
+
+fn scan_direct_child_directories(path: String, existing_paths: ImportPathIndex) -> Vec<ScanResult> {
+    let dir_path = PathBuf::from(path);
+    let mut executables_by_dir: HashMap<PathBuf, Vec<String>> = HashMap::new();
+    let mut walker = WalkDir::new(&dir_path)
+        .min_depth(1)
+        .max_depth(2)
+        .follow_links(false)
+        .into_iter();
+
+    while let Some(entry) = walker.next() {
+        let entry = match entry {
+            Ok(entry) => entry,
+            Err(_) => continue,
+        };
+
+        let entry_path = entry.path();
+        if entry.depth() == 1 {
+            if !entry.file_type().is_dir()
+                || is_excluded_dir(&entry.file_name().to_string_lossy())
+                || existing_paths.conflicts_with_candidate(entry_path)
+            {
+                if entry.file_type().is_dir() {
+                    walker.skip_current_dir();
+                }
+                continue;
+            }
+
+            executables_by_dir
+                .entry(entry_path.to_path_buf())
+                .or_default();
+            continue;
+        }
+
+        if !entry.file_type().is_file() || is_excluded_exe(entry_path) {
+            continue;
+        }
+        let Some(ext) = entry_path.extension() else {
+            continue;
+        };
+        if !VALID_EXE_EXTENSIONS
+            .iter()
+            .any(|expected| ext.eq_ignore_ascii_case(expected))
+        {
+            continue;
+        }
+
+        let Some(parent) = entry_path.parent() else {
+            continue;
+        };
+        let Some(executables) = executables_by_dir.get_mut(parent) else {
+            continue;
+        };
+        if let Some(file_name) = entry_path.file_name() {
+            executables.push(file_name.to_string_lossy().to_string());
+        }
+    }
+
+    let mut results: Vec<ScanResult> = executables_by_dir
+        .into_iter()
+        .filter_map(|(game_dir, mut executables)| {
+            let raw_name = game_dir.file_name()?.to_string_lossy();
+            let name = trim_dirname_to_search_name(&raw_name);
+            sort_executables(&mut executables, &name);
+            Some(ScanResult {
+                name,
+                path: game_dir.to_string_lossy().to_string(),
+                executables,
+            })
+        })
+        .collect();
+
+    results.sort_by(|a, b| a.name.cmp(&b.name));
+    results
+}
+
+fn scan_executable_games_blocking(
     path: String,
     existing_paths: ImportPathIndex,
     max_depth: usize,
@@ -414,7 +565,6 @@ fn scan_games_blocking(
             let exes = exe_by_dir.get(&game_dir)?;
             let raw_name = game_dir.file_name()?.to_string_lossy().to_string();
             let name = trim_dirname_to_search_name(&raw_name);
-            let lower_name = name.to_lowercase();
 
             let mut executables: Vec<String> = exes
                 .iter()
@@ -425,28 +575,7 @@ fn scan_games_blocking(
                         .map(|rel| rel.to_string_lossy().to_string())
                 })
                 .collect();
-
-            // 排序：含 "chs" 的靠前（忽略大小写）；其次文件名含游戏目录名的靠前；最后路径越短越靠前
-            executables.sort_by(|a, b| {
-                let a_lower = a.to_lowercase();
-                let b_lower = b.to_lowercase();
-                let a_chs = a_lower.contains("chs");
-                let b_chs = b_lower.contains("chs");
-                if a_chs != b_chs {
-                    return if a_chs {
-                        std::cmp::Ordering::Less
-                    } else {
-                        std::cmp::Ordering::Greater
-                    };
-                }
-                let a_match = a_lower.contains(&lower_name);
-                let b_match = b_lower.contains(&lower_name);
-                match (a_match, b_match) {
-                    (true, false) => std::cmp::Ordering::Less,
-                    (false, true) => std::cmp::Ordering::Greater,
-                    _ => a.len().cmp(&b.len()),
-                }
-            });
+            sort_executables(&mut executables, &name);
 
             Some(ScanResult {
                 name,
@@ -462,8 +591,13 @@ fn scan_games_blocking(
 
 #[cfg(test)]
 mod tests {
-    use super::{ImportPathIndex, trim_dirname_to_search_name};
+    use super::{
+        ImportPathIndex, scan_direct_child_directories, sort_executables,
+        trim_dirname_to_search_name,
+    };
+    use std::fs;
     use std::path::PathBuf;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     fn test_path(parts: &[&str]) -> PathBuf {
         parts.iter().collect()
@@ -484,6 +618,23 @@ mod tests {
     #[test]
     fn trim_dirname_falls_back_when_everything_is_removed() {
         assert_eq!(trim_dirname_to_search_name("[社团名]"), "[社团名]");
+    }
+
+    #[test]
+    fn executable_sort_prioritizes_han_names_without_kana() {
+        let mut executables = vec![
+            "Game.exe".to_string(),
+            "死に逝く君.exe".to_string(),
+            "Game_chs.exe".to_string(),
+            "游戏.exe".to_string(),
+        ];
+
+        sort_executables(&mut executables, "Game");
+
+        assert_eq!(
+            executables,
+            ["Game_chs.exe", "游戏.exe", "Game.exe", "死に逝く君.exe"]
+        );
     }
 
     #[test]
@@ -510,5 +661,40 @@ mod tests {
         assert!(!index.has_ancestor_or_exact(&container));
         assert!(index.conflicts_with_candidate(&container));
         assert!(index.has_ancestor_or_exact(&game_dir.join("Sub")));
+    }
+
+    #[test]
+    fn first_level_scan_imports_direct_children_and_executables() {
+        let unique = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("系统时间应晚于 Unix epoch")
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!(
+            "reina-first-level-scan-{}-{unique}",
+            std::process::id()
+        ));
+        let game_a = root.join("GameA");
+        let game_b = root.join("GameB");
+        let game_c = root.join("GameC");
+        fs::create_dir_all(game_a.join("Deep")).expect("应能创建测试目录");
+        fs::create_dir_all(&game_b).expect("应能创建测试目录");
+        fs::create_dir_all(&game_c).expect("应能创建无启动程序的测试目录");
+        fs::write(game_a.join("GameA.exe"), []).expect("应能创建直属启动程序");
+        fs::write(game_a.join("Deep").join("ignored.exe"), []).expect("应能创建深层启动程序");
+
+        let mut existing_paths = ImportPathIndex::default();
+        existing_paths.insert(&game_b.join("game.exe"));
+        let results =
+            scan_direct_child_directories(root.to_string_lossy().into_owned(), existing_paths);
+
+        assert_eq!(results.len(), 2);
+        assert_eq!(results[0].name, "GameA");
+        assert_eq!(PathBuf::from(&results[0].path), game_a);
+        assert_eq!(results[0].executables, ["GameA.exe"]);
+        assert_eq!(results[1].name, "GameC");
+        assert_eq!(PathBuf::from(&results[1].path), game_c);
+        assert!(results[1].executables.is_empty());
+
+        fs::remove_dir_all(root).expect("应能清理测试目录");
     }
 }

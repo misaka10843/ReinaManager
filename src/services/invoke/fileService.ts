@@ -3,7 +3,7 @@
  * @description 封装文件系统、目录打开与数据库备份/导入相关后端调用
  */
 
-import type { ScanResult } from "@/types";
+import type { GameScanMode, ScanResult } from "@/types";
 import { BaseService } from "./base";
 
 export interface BackupResult {
@@ -50,10 +50,12 @@ class FileService extends BaseService {
 	async scanDirectoryForGames(
 		path: string,
 		maxDepth: number,
+		scanMode: GameScanMode,
 	): Promise<ScanResult[]> {
 		return this.invoke<ScanResult[]>("scan_directory_for_games", {
 			path,
 			maxDepth,
+			scanMode,
 		});
 	}
 
