@@ -15,7 +15,7 @@ export function useGameLaunchFlow() {
 	const { mutateAsync: updateGame } = useUpdateGame();
 	const launchGame = useGamePlayStore((s) => s.launchGame);
 
-	const selectExecutableAndLaunch = useCallback(
+	const syncLocalPath = useCallback(
 		async (game: GameData) => {
 			let selectedPath: string | null;
 			try {
@@ -25,7 +25,7 @@ export function useGameLaunchFlow() {
 				snackbar.error(
 					`${t("components.LaunchModal.selectFolder", "选择文件夹")}: ${getUserErrorMessage(error, t)}`,
 				);
-				return;
+				return false;
 			}
 
 			if (!selectedPath) {
@@ -35,7 +35,7 @@ export function useGameLaunchFlow() {
 						"请选择可执行文件",
 					),
 				);
-				return;
+				return false;
 			}
 
 			try {
@@ -48,34 +48,33 @@ export function useGameLaunchFlow() {
 					updates: updateData,
 				});
 				snackbar.success(t("components.LaunchModal.pathSaved", "路径已保存"));
-
-				const result = await launchGame(game.id);
-				if (!result.success) {
-					snackbar.error(result.message);
-				}
+				return true;
 			} catch (error) {
 				snackbar.error(
 					`${t("components.LaunchModal.pathSaveFailed", "保存路径失败")}: ${getUserErrorMessage(error, t)}`,
 				);
+				return false;
 			}
 		},
-		[launchGame, t, updateGame],
+		[t, updateGame],
 	);
 
 	const runLaunch = useCallback(
 		async (game: GameData) => {
 			try {
 				if (!game.localpath) {
-					await selectExecutableAndLaunch(game);
-					return;
+					const synced = await syncLocalPath(game);
+					if (!synced) return;
 				}
 
-				const result = await launchGame(game.id);
+				let result = await launchGame(game.id);
 				if (result.success) return;
 
 				if (result.code === "NEED_EXECUTABLE") {
-					await selectExecutableAndLaunch(game);
-					return;
+					const synced = await syncLocalPath(game);
+					if (!synced) return;
+					result = await launchGame(game.id);
+					if (result.success) return;
 				}
 
 				snackbar.error(result.message);
@@ -85,10 +84,11 @@ export function useGameLaunchFlow() {
 				);
 			}
 		},
-		[launchGame, selectExecutableAndLaunch, t],
+		[launchGame, syncLocalPath, t],
 	);
 
 	return {
 		launchGame: runLaunch,
+		syncLocalPath,
 	};
 }

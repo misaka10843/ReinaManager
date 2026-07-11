@@ -78,7 +78,7 @@ interface LaunchModalContentProps {
 function LaunchModalContent({ selectedGame }: LaunchModalContentProps) {
 	const { t } = useTranslation();
 	const selectedGameId = selectedGame.id;
-	const { launchGame } = useGameLaunchFlow();
+	const { launchGame, syncLocalPath } = useGameLaunchFlow();
 	const { stopGame, isThisGameRunning, realTimeState } = useGamePlayStore(
 		useShallow((s) => ({
 			stopGame: s.stopGame,
@@ -125,6 +125,10 @@ function LaunchModalContent({ selectedGame }: LaunchModalContentProps) {
 
 	const handleStartGame = () => {
 		void launchGame(selectedGame);
+	};
+
+	const handleSyncLocalPath = () => {
+		void syncLocalPath(selectedGame);
 	};
 
 	const handleStopGame = async () => {
@@ -204,7 +208,11 @@ function LaunchModalContent({ selectedGame }: LaunchModalContentProps) {
 		}
 
 		return (
-			<Button startIcon={<SyncIcon />} onClick={handleStartGame} variant="text">
+			<Button
+				startIcon={<SyncIcon />}
+				onClick={handleSyncLocalPath}
+				variant="text"
+			>
 				{t("components.LaunchModal.syncLocalPath", "同步本地")}
 			</Button>
 		);
