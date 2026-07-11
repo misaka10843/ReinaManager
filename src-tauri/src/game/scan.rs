@@ -300,7 +300,7 @@ fn sort_executables(executables: &mut [String], game_name: &str) {
     executables.sort_by_cached_key(|executable| {
         let lower = executable.to_lowercase();
         (
-            !lower.contains("chs"),
+            !(lower.contains("chs") || lower.contains("cn")),
             !is_probably_chinese_executable(executable),
             !lower.contains(&lower_name),
             executable.len(),
