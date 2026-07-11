@@ -1,5 +1,70 @@
 import i18next from "i18next";
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+function toDate(time: string | number | Date): Date {
+	if (time instanceof Date) return time;
+	if (typeof time === "number") {
+		return new Date(time * (time.toString().length === 10 ? 1000 : 1));
+	}
+	return new Date(/^\d{4}-\d{2}-\d{2}$/.test(time) ? `${time}T00:00:00` : time);
+}
+
+function startOfLocalWeek(date: Date): Date {
+	const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+	const daysSinceMonday = (start.getDay() + 6) % 7;
+	start.setDate(start.getDate() - daysSinceMonday);
+	return start;
+}
+
+function isLastWeek(target: Date, now: Date): boolean {
+	const thisWeek = startOfLocalWeek(now);
+	const lastWeek = new Date(thisWeek);
+	lastWeek.setDate(lastWeek.getDate() - 7);
+	return target >= lastWeek && target < thisWeek;
+}
+
+function formatTime(date: Date): string {
+	return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+}
+
+interface FormatDateLabelOptions {
+	language: string;
+	todayLabel: string;
+	yesterdayLabel: string;
+	showRecentTime?: boolean;
+}
+
+export function formatDateLabel(
+	time: string | number | Date,
+	{
+		language,
+		todayLabel,
+		yesterdayLabel,
+		showRecentTime = false,
+	}: FormatDateLabelOptions,
+): string {
+	const date = toDate(time);
+	const now = new Date();
+	const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+	const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+	const diffDays = Math.round((today.getTime() - target.getTime()) / DAY_MS);
+
+	if (diffDays === 0) {
+		return showRecentTime ? formatTime(date) : todayLabel;
+	}
+	if (diffDays === 1) {
+		if (!showRecentTime) return yesterdayLabel;
+		return `${yesterdayLabel} ${formatTime(date)}`;
+	}
+
+	return new Intl.DateTimeFormat(language, {
+		year: date.getFullYear() === now.getFullYear() ? undefined : "numeric",
+		month: "long",
+		day: "numeric",
+	}).format(date);
+}
+
 export const getLocalDateString = (timestamp?: number): string => {
 	const date = timestamp ? new Date(timestamp * 1000) : new Date();
 	return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -7,12 +72,7 @@ export const getLocalDateString = (timestamp?: number): string => {
 
 export function formatRelativeTime(time: string | number | Date): string {
 	const now = new Date();
-	const target =
-		time instanceof Date
-			? time
-			: typeof time === "number"
-				? new Date(time * (time.toString().length === 10 ? 1000 : 1))
-				: new Date(time);
+	const target = toDate(time);
 
 	const diff = (now.getTime() - target.getTime()) / 1000;
 
@@ -36,22 +96,18 @@ export function formatRelativeTime(time: string | number | Date): string {
 		});
 	}
 
-	const nowWeek = getWeekNumber(now);
-	const targetWeek = getWeekNumber(target);
-	if (
-		now.getFullYear() === target.getFullYear() &&
-		nowWeek - targetWeek === 1
-	) {
+	if (isLastWeek(target, now)) {
 		return i18next.t("utils.relativetime.lastWeek", "上周");
 	}
 
 	return target.toLocaleDateString();
 }
 
-function getWeekNumber(date: Date): number {
-	const firstDay = new Date(date.getFullYear(), 0, 1);
-	const dayOfYear = (date.getTime() - firstDay.getTime()) / 86400000 + 1;
-	return Math.ceil(dayOfYear / 7);
+export function isRecentRelativeTime(time: string | number | Date): boolean {
+	const now = new Date();
+	const target = toDate(time);
+	const diff = now.getTime() - target.getTime();
+	return (diff >= 0 && diff < 7 * DAY_MS) || isLastWeek(target, now);
 }
 
 export function formatPlayTime(minutes: number): string {

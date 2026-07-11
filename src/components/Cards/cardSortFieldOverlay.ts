@@ -1,7 +1,7 @@
 import type { TFunction } from "i18next";
 import type { SortOption } from "@/services/invoke/types";
 import type { GameData } from "@/types";
-import { getLocalDateString } from "@/utils/dateTime";
+import { formatDateLabel, getLocalDateString } from "@/utils/dateTime";
 import type { CardSortFieldOverlay } from "./types";
 
 interface CardSortFieldOverlayParams {
@@ -10,16 +10,6 @@ interface CardSortFieldOverlayParams {
 	lastPlayed?: number | null;
 	language: string;
 	t: TFunction;
-}
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-function startOfLocalDay(date: Date) {
-	return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
-function formatTimeHM(date: Date) {
-	return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
 function formatScore(value: number | null | undefined) {
@@ -44,25 +34,12 @@ function formatLastPlayedOverlay(
 	t: TFunction,
 ) {
 	if (!timestamp) return null;
-
-	const date = new Date(timestamp * 1000);
-	const today = startOfLocalDay(new Date());
-	const targetDay = startOfLocalDay(date);
-	const diffDays = Math.floor((today.getTime() - targetDay.getTime()) / DAY_MS);
-	const time = formatTimeHM(date);
-
-	if (diffDays === 0) return time;
-	if (diffDays === 1) {
-		return `${t("components.Cards.sortOverlay.yesterday", "昨天")} ${time}`;
-	}
-	if (diffDays > 1 && diffDays < 7) {
-		const weekday = new Intl.DateTimeFormat(language, {
-			weekday: "short",
-		}).format(date);
-		return `${weekday} ${time}`;
-	}
-
-	return getLocalDateString(timestamp);
+	return formatDateLabel(timestamp, {
+		language,
+		todayLabel: t("home.activity.today", "今天"),
+		yesterdayLabel: t("components.Cards.sortOverlay.yesterday", "昨天"),
+		showRecentTime: true,
+	});
 }
 
 export function getCardSortFieldOverlay({

@@ -51,9 +51,11 @@ import { useGamePlayStore } from "@/store/gamePlayStore";
 import type { GameData, GameSession } from "@/types";
 import { PlayStatus } from "@/types/collection";
 import {
+	formatDateLabel,
 	formatPlayTime,
 	formatRelativeTime,
 	getLocalDateString,
+	isRecentRelativeTime,
 } from "@/utils/dateTime";
 import { getUserErrorMessage } from "@/utils/errors";
 import {
@@ -449,18 +451,11 @@ export const Home: React.FC = () => {
 	}, [focusGame, stopGame, t]);
 
 	const getActivityDateLabel = (date: string) => {
-		const today = getLocalDateString();
-		const yesterdayDate = new Date();
-		yesterdayDate.setDate(yesterdayDate.getDate() - 1);
-		const yesterday = getLocalDateString(
-			Math.floor(yesterdayDate.getTime() / 1000),
-		);
-		if (date === today) return t("home.activity.today", "今天");
-		if (date === yesterday) return t("home.activity.yesterday", "昨天");
-		return new Intl.DateTimeFormat(i18n.language, {
-			month: "long",
-			day: "numeric",
-		}).format(new Date(`${date}T00:00:00`));
+		return formatDateLabel(date, {
+			language: i18n.language,
+			todayLabel: t("home.activity.today", "今天"),
+			yesterdayLabel: t("home.activity.yesterday", "昨天"),
+		});
 	};
 
 	const getActivityPlaySummary = (activity: ActivityItem) => {
@@ -1027,22 +1022,27 @@ export const Home: React.FC = () => {
 																			{ title: activity.gameTitle },
 																		)}
 															</Typography>
-															<Typography
-																variant="caption"
-																color="text.secondary"
-																noWrap
-																className="block"
-															>
-																{activity.type === "play"
-																	? getActivityPlaySummary(activity)
-																	: t(
-																			"home.activity.addedAt",
-																			"添加于 {{time}}",
-																			{
-																				time: formatRelativeTime(activity.time),
-																			},
-																		)}
-															</Typography>
+															{activity.type === "play" ||
+															isRecentRelativeTime(activity.time) ? (
+																<Typography
+																	variant="caption"
+																	color="text.secondary"
+																	noWrap
+																	className="block"
+																>
+																	{activity.type === "play"
+																		? getActivityPlaySummary(activity)
+																		: t(
+																				"home.activity.addedAt",
+																				"添加于 {{time}}",
+																				{
+																					time: formatRelativeTime(
+																						activity.time,
+																					),
+																				},
+																			)}
+																</Typography>
+															) : null}
 														</Box>
 													</ButtonBase>
 												</Box>
