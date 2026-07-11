@@ -683,15 +683,15 @@ impl GamesRepository {
         .order_by_asc(games::Column::Id)
     }
 
-    /// 最近游玩排序：无游玩记录始终置末尾，升序按最近优先，降序按最久优先。
+    /// 最近游玩排序：无游玩记录始终置末尾，升序按最久优先，降序按最近优先。
     fn apply_last_played_order(query: Select<Games>, sort_order: SortOrder) -> Select<Games> {
         let query = query.left_join(game_statistics::Entity).order_by(
             Expr::col(game_statistics::Column::LastPlayed).is_null(),
             Order::Asc,
         );
         match sort_order {
-            SortOrder::Asc => query.order_by_desc(game_statistics::Column::LastPlayed),
-            SortOrder::Desc => query.order_by_asc(game_statistics::Column::LastPlayed),
+            SortOrder::Asc => query.order_by_asc(game_statistics::Column::LastPlayed),
+            SortOrder::Desc => query.order_by_desc(game_statistics::Column::LastPlayed),
         }
         .order_by_asc(games::Column::Id)
     }
@@ -1227,5 +1227,54 @@ mod tests {
         .await
         .unwrap();
         assert_eq!(ids, vec![high.id, low.id]);
+    }
+
+    #[tokio::test]
+    async fn sorts_last_played_chronologically_with_unplayed_last() {
+        let database = setup_database().await;
+        let oldest = GamesRepository::insert(&database, insert_data("custom", None, Vec::new()))
+            .await
+            .unwrap();
+        let newest = GamesRepository::insert(&database, insert_data("custom", None, Vec::new()))
+            .await
+            .unwrap();
+        let unplayed = GamesRepository::insert(&database, insert_data("custom", None, Vec::new()))
+            .await
+            .unwrap();
+
+        for (game_id, last_played) in [(oldest.id, 100), (newest.id, 200)] {
+            game_statistics::ActiveModel {
+                game_id: Set(game_id),
+                total_time: Set(Some(0)),
+                session_count: Set(Some(1)),
+                last_played: Set(Some(last_played)),
+                daily_stats: Set(None),
+            }
+            .insert(&database)
+            .await
+            .unwrap();
+        }
+
+        let ascending = GamesRepository::find_ids(
+            &database,
+            GameType::All,
+            SortOption::LastPlayed,
+            SortOrder::Asc,
+            None,
+        )
+        .await
+        .unwrap();
+        assert_eq!(ascending, vec![oldest.id, newest.id, unplayed.id]);
+
+        let descending = GamesRepository::find_ids(
+            &database,
+            GameType::All,
+            SortOption::LastPlayed,
+            SortOrder::Desc,
+            None,
+        )
+        .await
+        .unwrap();
+        assert_eq!(descending, vec![newest.id, oldest.id, unplayed.id]);
     }
 }
