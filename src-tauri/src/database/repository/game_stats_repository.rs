@@ -443,6 +443,7 @@ impl GameStatsRepository {
         db: &DatabaseConnection,
         game_ids: Vec<i32>,
         limit: u64,
+        offset: u64,
     ) -> Result<Vec<game_sessions::Model>, DbErr> {
         if game_ids.is_empty() {
             return Ok(Vec::new());
@@ -452,6 +453,7 @@ impl GameStatsRepository {
             .filter(game_sessions::Column::GameId.is_in(game_ids))
             .order_by_desc(game_sessions::Column::StartTime)
             .limit(limit)
+            .offset(offset)
             .all(db)
             .await?;
 

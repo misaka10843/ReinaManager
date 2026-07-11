@@ -186,6 +186,7 @@
 			"selectExecutableRequired": "Please select an executable file",
 			"selectFolder": "Select Folder",
 			"stopFailed": "Failed to stop game:",
+			"stopGame": "Stop Game",
 			"stoppingGame": "Stopping game...",
 			"syncLocalPath": "Sync Local"
 		},
@@ -368,28 +369,46 @@
 		"activity": {
 			"added": "Added {{title}}",
 			"addedAt": "Added at {{time}}",
-			"duration": "Play duration: {{duration}}",
+			"empty": "No activity yet",
+			"filters": {
+				"add": "Added",
+				"all": "All",
+				"play": "Played"
+			},
 			"played": "Played {{title}}",
-			"playedAtTime": "Played at {{time}}"
+			"playSummary_one": "{{time}} · {{count}} session · {{duration}} total",
+			"playSummary_other": "{{time}} · {{count}} sessions · {{duration}} total",
+			"playSummaryCompact_one": "{{count}} session · {{duration}} total",
+			"playSummaryCompact_other": "{{count}} sessions · {{duration}} total",
+			"today": "Today",
+			"yesterday": "Yesterday"
 		},
 		"activityTitle": "Activity",
-		"addedAt": "Added at: {{time}}",
-		"lastPlayed": "Last played: {{time}}",
-		"recentlyAdded": "Recently Added",
-		"recentlyPlayed": "Recently Played",
-		"repository": "Game Repository",
+		"focus": {
+			"continue": "Continue Game",
+			"currentSession": "Current session {{time}}",
+			"details": "View Details",
+			"lastPlayed": "Last played: {{time}}",
+			"notPlayed": "No play history yet",
+			"notPlayedShort": "Not played",
+			"playTime": "This week {{week}} · {{total}} total",
+			"recent": "Recently Played",
+			"running": "Running"
+		},
+		"random": {
+			"shuffle": "Shuffle",
+			"start": "Launch Game",
+			"title": "Random Game"
+		},
 		"stats": {
-			"completedGames": "Completed Games",
-			"localGames": "Local Games",
+			"month": "Month",
 			"monthPlayTime": "Monthly Play Time",
-			"switchToMonth": "Switch to this month",
-			"switchToWeek": "Switch to this week",
-			"todayPlayTime": "Today's Play Time",
+			"todayPlayTime": "Today",
 			"totalGames": "Total Games",
 			"totalPlayTime": "Total Play Time",
-			"weekPlayTime": "Weekly Play Time"
-		},
-		"title": "Home"
+			"week": "Week",
+			"weekPlayTime": "This Week"
+		}
 	},
 	"pages": {
 		"Collection": {

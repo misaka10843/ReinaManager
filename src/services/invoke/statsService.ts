@@ -80,10 +80,12 @@ class StatsService extends BaseService {
 	async getRecentSessionsForAll(
 		gameIds: number[],
 		limit: number = 10,
+		offset: number = 0,
 	): Promise<GameSession[]> {
 		return this.invoke<GameSession[]>("get_recent_sessions_for_all", {
 			gameIds,
 			limit,
+			offset,
 		});
 	}
 

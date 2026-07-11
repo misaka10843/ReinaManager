@@ -179,6 +179,7 @@
 			"selectExecutableRequired": "請選擇可執行文件",
 			"selectFolder": "選擇文件夾",
 			"stopFailed": "遊戲停止失敗:",
+			"stopGame": "停止遊戲",
 			"stoppingGame": "正在停止遊戲...",
 			"syncLocalPath": "同步本地"
 		},
@@ -356,28 +357,44 @@
 		"activity": {
 			"added": "添加了 {{title}}",
 			"addedAt": "添加於 {{time}}",
-			"duration": "遊戲時長: {{duration}}",
+			"empty": "暫無動態",
+			"filters": {
+				"add": "添加",
+				"all": "全部",
+				"play": "遊玩"
+			},
 			"played": "遊玩了 {{title}}",
-			"playedAtTime": "遊玩於 {{time}}"
+			"playSummary_other": "{{time}} · {{count}}次 · 共{{duration}}",
+			"playSummaryCompact_other": "{{count}}次 · 共{{duration}}",
+			"today": "今天",
+			"yesterday": "昨天"
 		},
 		"activityTitle": "動態",
-		"addedAt": "添加時間: {{time}}",
-		"lastPlayed": "最後遊玩: {{time}}",
-		"recentlyAdded": "最近添加",
-		"recentlyPlayed": "最近遊玩",
-		"repository": "遊戲倉庫",
+		"focus": {
+			"continue": "繼續遊戲",
+			"currentSession": "本次遊玩 {{time}}",
+			"details": "查看詳情",
+			"lastPlayed": "上次遊玩：{{time}}",
+			"notPlayed": "還沒有遊玩記錄",
+			"notPlayedShort": "未遊玩",
+			"playTime": "本週 {{week}} · 總計 {{total}}",
+			"recent": "最近玩過",
+			"running": "正在執行"
+		},
+		"random": {
+			"shuffle": "換一個",
+			"start": "啟動遊戲",
+			"title": "隨機遊戲"
+		},
 		"stats": {
-			"completedGames": "通關遊戲數",
-			"localGames": "本地遊戲數",
+			"month": "月",
 			"monthPlayTime": "本月遊戲時長",
-			"switchToMonth": "切換到本月",
-			"switchToWeek": "切換到本週",
-			"todayPlayTime": "今日遊戲時長",
+			"todayPlayTime": "今日時長",
 			"totalGames": "總遊戲數",
 			"totalPlayTime": "總遊戲時長",
-			"weekPlayTime": "本週遊戲時長"
-		},
-		"title": "首頁"
+			"week": "週",
+			"weekPlayTime": "本週時長"
+		}
 	},
 	"pages": {
 		"Collection": {

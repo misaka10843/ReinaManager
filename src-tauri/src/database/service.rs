@@ -275,8 +275,9 @@ pub async fn get_recent_sessions_for_all(
     db: State<'_, DatabaseConnection>,
     game_ids: Vec<i32>,
     limit: u64,
+    offset: u64,
 ) -> Result<Vec<crate::entity::game_sessions::Model>, String> {
-    GameStatsRepository::get_recent_sessions_for_all(&db, game_ids, limit)
+    GameStatsRepository::get_recent_sessions_for_all(&db, game_ids, limit, offset)
         .await
         .map_err(|e| format!("获取最近会话失败: {}", e))
 }

@@ -1,633 +1,1066 @@
 /**
  * @file Home 页面
- * @description 应用首页，展示游戏统计信息、动态、最近游玩、最近添加等内容，支持国际化。
- * @module src/pages/Home/index
- * @author ReinaManager
- * @copyright AGPL-3.0
- *
- * 主要导出：
- * - Home：主页主组件
- *
- * 依赖：
- * - @mui/material
- * - @mui/icons-material
- * - @/store
- * - @/store/gamePlayStore
- * - @/services/game/gameStats
- * - @/utils
- * - @/types
- * - react-i18next
- * - react-router
+ * @description 应用首页，展示继续游戏、核心统计、动态与随机游戏。
  */
 
-import {
-	Notifications as ActivityIcon,
-	EmojiEvents as CompletedIcon,
-	SportsEsports as GamesIcon,
-	Storage as LocalIcon,
-	CalendarMonth as MonthIcon,
-	AddCircle as RecentlyAddedIcon,
-	Gamepad as RecentlyPlayedIcon,
-	Inventory as RepositoryIcon,
-	SwapHoriz as SwitchIcon,
-	AccessTime as TimeIcon,
-	Today as TodayIcon,
-	DateRange as WeekIcon,
-} from "@mui/icons-material";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import CasinoOutlinedIcon from "@mui/icons-material/CasinoOutlined";
+import HistoryIcon from "@mui/icons-material/History";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import SportsEsportsIcon from "@mui/icons-material/SportsEsports";
+import StopIcon from "@mui/icons-material/Stop";
+import SyncIcon from "@mui/icons-material/Sync";
+import TimerIcon from "@mui/icons-material/Timer";
+import TodayIcon from "@mui/icons-material/Today";
 import {
 	Avatar,
 	Box,
 	Button,
-	Card,
-	CardContent,
-	Divider,
+	ButtonBase,
+	Chip,
+	CircularProgress,
 	IconButton,
-	List,
-	ListItem,
-	ListItemAvatar,
-	ListItemText,
+	Paper,
 	Skeleton,
+	ToggleButton,
+	ToggleButtonGroup,
 	Tooltip,
 	Typography,
 } from "@mui/material";
-import React, { useMemo, useState } from "react";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { Virtuoso } from "react-virtuoso";
+import { useShallow } from "zustand/react/shallow";
+import { useGameLaunchFlow } from "@/hooks/features/games/useGameLaunchFlow";
 import { useGameIndex } from "@/hooks/features/games/useGameListFacade";
 import {
+	statsKeys,
+	useAllGameLastPlayedMap,
+	useGameStats,
 	usePlayTimeSummary,
-	useRecentSessionsForGames,
 } from "@/hooks/queries/useStats";
+import { snackbar } from "@/providers/snackBar";
+import { statsService } from "@/services/invoke";
 import { useStore } from "@/store/appStore";
+import { useGamePlayStore } from "@/store/gamePlayStore";
 import type { GameData, GameSession } from "@/types";
 import { PlayStatus } from "@/types/collection";
-import { formatPlayTime, formatRelativeTime } from "@/utils/dateTime";
-import { getGameCover, getGameDisplayName } from "@/utils/game";
+import {
+	formatPlayTime,
+	formatRelativeTime,
+	getLocalDateString,
+} from "@/utils/dateTime";
+import { getUserErrorMessage } from "@/utils/errors";
+import {
+	applyNsfwFilter,
+	getGameCover,
+	getGameDisplayName,
+	getGameNsfwStatus,
+} from "@/utils/game";
 
-/**
- * 最近游玩会话类型
- */
-interface RecentSession {
-	session_id: number;
-	game_id: number;
-	end_time: number;
-	gameTitle: string;
-	imageUrl: string;
-}
-/**
- * 最近添加游戏类型
- */
-interface RecentGame {
-	id: number;
-	title: string;
-	imageUrl: string;
-	time: Date;
-}
-/**
- * 动态项类型
- */
+const RANDOM_GAME_SESSION_KEY = "reina-home-random-game";
+const NSFW_COVER = "/images/NR18.png";
+const ACTIVITY_PAGE_SIZE = 12;
+const EMPTY_LAST_PLAYED = new Map<number, number>();
+
+type ActivityFilter = "all" | "play" | "add";
+
 interface ActivityItem {
 	id: string;
-	type: "add" | "play";
+	type: Exclude<ActivityFilter, "all">;
 	gameId: number;
 	gameTitle: string;
 	imageUrl: string;
 	time: number;
-	duration?: number; // 仅游玩记录有
+	date: string;
+	duration?: number;
+	count?: number;
 }
 
-/**
- * 根据游戏列表和最近会话派生活动数据。
- */
-function buildGameActivities(
+interface RunningGameTimerProps {
+	currentSessionMinutes: number;
+	currentSessionSeconds: number;
+	startTime: number;
+	timeTrackingMode: "playtime" | "elapsed";
+}
+
+function formatSessionTime(totalSeconds: number): string {
+	const hours = Math.floor(totalSeconds / 3600);
+	const minutes = Math.floor((totalSeconds % 3600) / 60);
+	const seconds = totalSeconds % 60;
+	return hours > 0
+		? `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+		: `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function RunningGameTimer({
+	currentSessionMinutes,
+	currentSessionSeconds,
+	startTime,
+	timeTrackingMode,
+}: RunningGameTimerProps) {
+	const { t } = useTranslation();
+	const [elapsedSeconds, setElapsedSeconds] = useState(() =>
+		Math.max(0, Math.floor(Date.now() / 1000) - startTime),
+	);
+
+	useEffect(() => {
+		if (timeTrackingMode !== "elapsed") return;
+		const updateElapsed = () =>
+			setElapsedSeconds(Math.max(0, Math.floor(Date.now() / 1000) - startTime));
+		updateElapsed();
+		const intervalId = window.setInterval(updateElapsed, 1000);
+		return () => window.clearInterval(intervalId);
+	}, [startTime, timeTrackingMode]);
+
+	const totalSeconds =
+		timeTrackingMode === "elapsed"
+			? elapsedSeconds
+			: currentSessionMinutes * 60 + currentSessionSeconds;
+
+	return (
+		<Box className="flex items-center gap-1.5">
+			<TimerIcon fontSize="small" />
+			<Typography className="text-[rgba(255,255,255,.78)] tabular-nums">
+				{t("home.focus.currentSession", "本次游玩 {{time}}", {
+					time: formatSessionTime(totalSeconds),
+				})}
+			</Typography>
+		</Box>
+	);
+}
+
+function getVisibleCover(game: GameData, replaceNsfwCover: boolean): string {
+	return replaceNsfwCover && getGameNsfwStatus(game)
+		? NSFW_COVER
+		: getGameCover(game);
+}
+
+function buildActivities(
 	games: GameData[],
-	recentSessions: GameSession[],
-): {
-	sessions: RecentSession[];
-	added: RecentGame[];
-	activities: ActivityItem[];
-} {
-	const playItems: ActivityItem[] = [];
-	const sessions: RecentSession[] = [];
+	sessions: GameSession[],
+	replaceNsfwCover: boolean,
+): ActivityItem[] {
 	const gameById = new Map(games.map((game) => [game.id, game]));
+	const activities = new Map<string, ActivityItem>();
 
-	for (const s of recentSessions) {
-		if (typeof s.end_time !== "number") continue;
-
-		const game = gameById.get(s.game_id);
+	for (const session of sessions) {
+		if (typeof session.end_time !== "number") continue;
+		const game = gameById.get(session.game_id);
 		if (!game) continue;
 
-		const gameTitle = getGameDisplayName(game);
-		const imageUrl = getGameCover(game);
+		const date = getLocalDateString(session.end_time);
+		const key = `play-${game.id}-${date}`;
+		const current = activities.get(key);
+		if (current) {
+			current.duration = (current.duration ?? 0) + (session.duration ?? 0);
+			current.count = (current.count ?? 1) + 1;
+			current.time = Math.max(current.time, session.end_time);
+			continue;
+		}
 
-		const item: ActivityItem = {
-			id: `play-${s.session_id || game.id}-${s.end_time}`,
+		activities.set(key, {
+			id: key,
 			type: "play",
 			gameId: game.id,
-			gameTitle,
-			imageUrl,
-			time: s.end_time,
-			duration: s.duration,
-		};
-		playItems.push(item);
-
-		sessions.push({
-			session_id: s.session_id,
-			game_id: game.id,
-			end_time: s.end_time,
-			gameTitle,
-			imageUrl,
+			gameTitle: getGameDisplayName(game),
+			imageUrl: getVisibleCover(game, replaceNsfwCover),
+			time: session.end_time,
+			date,
+			duration: session.duration ?? 0,
+			count: 1,
 		});
 	}
 
-	// 处理添加记录
-	const addItems: ActivityItem[] = [];
-	const added: RecentGame[] = [];
-
-	for (const game of games.filter((game) => game.created_at)) {
-		const timestamp = game.created_at as number;
-		const addedDate = new Date(timestamp * 1000);
-		const gameTitle = getGameDisplayName(game);
-		const imageUrl = getGameCover(game);
-
-		const item: ActivityItem = {
+	for (const game of games) {
+		if (!game.created_at) continue;
+		activities.set(`add-${game.id}`, {
 			id: `add-${game.id}`,
 			type: "add",
 			gameId: game.id,
-			gameTitle,
-			imageUrl,
-			time: timestamp,
-		};
-		addItems.push(item);
-
-		added.push({
-			id: game.id,
-			title: gameTitle,
-			imageUrl,
-			time: addedDate,
+			gameTitle: getGameDisplayName(game),
+			imageUrl: getVisibleCover(game, replaceNsfwCover),
+			time: game.created_at,
+			date: getLocalDateString(game.created_at),
 		});
 	}
 
-	const allActivities = [...playItems, ...addItems].toSorted(
-		(a, b) => b.time - a.time,
-	);
+	return Array.from(activities.values()).toSorted((a, b) => b.time - a.time);
+}
 
-	const sortedSessions = sessions.toSorted((a, b) => b.end_time - a.end_time);
-	const sortedAdded = added.toSorted(
-		(a, b) => b.time.getTime() - a.time.getTime(),
+function getFocusGame(
+	games: GameData[],
+	lastPlayedMap: ReadonlyMap<number, number>,
+	runningGameIds: Set<number>,
+): GameData | null {
+	if (games.length === 0) return null;
+	const gamesByLastPlayed = games.toSorted(
+		(a, b) => (lastPlayedMap.get(b.id) ?? 0) - (lastPlayedMap.get(a.id) ?? 0),
 	);
+	const runningGame = gamesByLastPlayed.find((game) =>
+		runningGameIds.has(game.id),
+	);
+	if (runningGame) return runningGame;
+	const latestPlayedGame = gamesByLastPlayed.find((game) =>
+		lastPlayedMap.has(game.id),
+	);
+	if (latestPlayedGame) return latestPlayedGame;
 
-	return {
-		sessions: sortedSessions.slice(0, 10),
-		added: sortedAdded.slice(0, 10),
-		activities: allActivities.slice(0, 15),
-	};
+	return (
+		games.find((game) => game.clear === PlayStatus.PLAYING) ??
+		games.find((game) => Boolean(game.localpath)) ??
+		games[0]
+	);
+}
+
+function getRecentGames(
+	games: GameData[],
+	lastPlayedMap: ReadonlyMap<number, number>,
+): GameData[] {
+	return games
+		.filter((game) => lastPlayedMap.has(game.id))
+		.toSorted(
+			(a, b) => (lastPlayedMap.get(b.id) ?? 0) - (lastPlayedMap.get(a.id) ?? 0),
+		)
+		.slice(0, 4);
+}
+
+function pickRandomGame(
+	games: GameData[],
+	excludedId?: number,
+): GameData | null {
+	const pool =
+		games.length > 1 && excludedId !== undefined
+			? games.filter((game) => game.id !== excludedId)
+			: games;
+	if (pool.length === 0) return null;
+	return pool[Math.floor(Math.random() * pool.length)] ?? null;
+}
+
+function getWeekPlayTime(
+	dailyStats: Array<{ date: string; playtime: number }> | undefined,
+): number {
+	if (!dailyStats) return 0;
+	const now = new Date();
+	const weekStart = new Date(now);
+	const daysFromMonday = now.getDay() === 0 ? 6 : now.getDay() - 1;
+	weekStart.setDate(now.getDate() - daysFromMonday);
+	weekStart.setHours(0, 0, 0, 0);
+	const startDate = getLocalDateString(Math.floor(weekStart.getTime() / 1000));
+	return dailyStats.reduce(
+		(total, item) => total + (item.date >= startDate ? item.playtime : 0),
+		0,
+	);
 }
 
 export const Home: React.FC = () => {
+	const { t, i18n } = useTranslation();
 	const { index, isLoading: isGameIndexLoading } = useGameIndex();
-	const displayAllGames = index.displayList;
-	const openAddModal = useStore((state) => state.openAddModal);
+	const { launchGame, syncLocalPath } = useGameLaunchFlow();
+	const { nsfwFilter, nsfwCoverReplace, openAddModal } = useStore(
+		useShallow((state) => ({
+			nsfwFilter: state.nsfwFilter,
+			nsfwCoverReplace: state.nsfwCoverReplace,
+			openAddModal: state.openAddModal,
+		})),
+	);
+	const { gameRealTimeStates, runningGameIds, stopGame } = useGamePlayStore(
+		useShallow((state) => ({
+			gameRealTimeStates: state.gameRealTimeStates,
+			runningGameIds: state.runningGameIds,
+			stopGame: state.stopGame,
+		})),
+	);
 	const {
 		totalPlayTime,
 		weekPlayTime,
 		monthPlayTime,
 		todayPlayTime,
-		isLoading,
+		isLoading: isStatsLoading,
 	} = usePlayTimeSummary();
 	const [playTimePeriod, setPlayTimePeriod] = useState<"week" | "month">(
 		"week",
 	);
+	const [activityFilter, setActivityFilter] = useState<ActivityFilter>("all");
+	const [visibleActivityCount, setVisibleActivityCount] =
+		useState(ACTIVITY_PAGE_SIZE);
+	const [selectedFocusGameId, setSelectedFocusGameId] = useState<number | null>(
+		null,
+	);
+	const [randomGameId, setRandomGameId] = useState<number | null>(() => {
+		if (typeof window === "undefined") return null;
+		const stored = Number.parseInt(
+			window.sessionStorage.getItem(RANDOM_GAME_SESSION_KEY) ?? "",
+			10,
+		);
+		return Number.isFinite(stored) ? stored : null;
+	});
+	const [isStopping, setIsStopping] = useState(false);
+	const activityScrollRef = useRef<HTMLDivElement>(null);
+	const activitySentinelRef = useRef<HTMLDivElement>(null);
+
+	const visibleGames = useMemo(
+		() => applyNsfwFilter(index.displayList, nsfwFilter),
+		[index.displayList, nsfwFilter],
+	);
 	const gameIds = useMemo(
-		() => displayAllGames.map((game) => game.id),
-		[displayAllGames],
+		() => visibleGames.map((game) => game.id),
+		[visibleGames],
 	);
-	const recentSessionsQuery = useRecentSessionsForGames(gameIds, 10);
-	const activityData = useMemo(
-		() => buildGameActivities(displayAllGames, recentSessionsQuery.data ?? []),
-		[displayAllGames, recentSessionsQuery.data],
+	const recentSessionsQuery = useInfiniteQuery({
+		queryKey: [...statsKeys.all, "homeActivity", gameIds],
+		queryFn: ({ pageParam }) =>
+			statsService.getRecentSessionsForAll(
+				gameIds,
+				ACTIVITY_PAGE_SIZE,
+				pageParam,
+			),
+		initialPageParam: 0,
+		getNextPageParam: (lastPage, pages) =>
+			lastPage.length < ACTIVITY_PAGE_SIZE
+				? undefined
+				: pages.length * ACTIVITY_PAGE_SIZE,
+		enabled: gameIds.length > 0,
+	});
+	const sessions = useMemo(
+		() => recentSessionsQuery.data?.pages.flat() ?? [],
+		[recentSessionsQuery.data],
 	);
-	const isActivityLoading = recentSessionsQuery.isLoading;
-
-	const { t } = useTranslation();
-
-	// 同步计算的数据 - 立即显示，无需 loading 状态
-	const gamesList = useMemo(
+	const lastPlayedQuery = useAllGameLastPlayedMap({
+		enabled: visibleGames.length > 0,
+	});
+	const lastPlayedMap = lastPlayedQuery.data ?? EMPTY_LAST_PLAYED;
+	const automaticFocusGame = useMemo(() => {
+		if (lastPlayedQuery.isLoading && runningGameIds.size === 0) return null;
+		return getFocusGame(visibleGames, lastPlayedMap, runningGameIds);
+	}, [visibleGames, lastPlayedMap, lastPlayedQuery.isLoading, runningGameIds]);
+	const focusGame = useMemo(
 		() =>
-			displayAllGames.map((game) => ({
-				title: getGameDisplayName(game),
-				id: game.id,
-				isLocal: !!game.localpath,
-				imageUrl: getGameCover(game),
-			})),
-		[displayAllGames],
+			visibleGames.find((game) => game.id === selectedFocusGameId) ??
+			automaticFocusGame,
+		[visibleGames, selectedFocusGameId, automaticFocusGame],
 	);
-	const gamesLocalCount = useMemo(
-		() => gamesList.filter((game) => game.isLocal).length,
-		[gamesList],
+	const focusStatsQuery = useGameStats(focusGame?.id ?? null);
+	const recentGames = useMemo(
+		() => getRecentGames(visibleGames, lastPlayedMap),
+		[visibleGames, lastPlayedMap],
 	);
-	const completedGamesCount = useMemo(
+	const activities = useMemo(
+		() => buildActivities(visibleGames, sessions, nsfwCoverReplace),
+		[visibleGames, sessions, nsfwCoverReplace],
+	);
+	const filteredActivities = useMemo(
 		() =>
-			displayAllGames.filter((game) => game.clear === PlayStatus.PLAYED).length,
-		[displayAllGames],
+			activityFilter === "all"
+				? activities
+				: activities.filter((activity) => activity.type === activityFilter),
+		[activities, activityFilter],
 	);
-	const isLibraryEmpty = !isGameIndexLoading && displayAllGames.length === 0;
-	const isWeekPlayTime = playTimePeriod === "week";
+	const visibleActivities = useMemo(
+		() => filteredActivities.slice(0, visibleActivityCount),
+		[filteredActivities, visibleActivityCount],
+	);
+	const activityGroups = useMemo(() => {
+		const groups: Array<{ date: string; items: ActivityItem[] }> = [];
+		for (const activity of visibleActivities) {
+			const lastGroup = groups.at(-1);
+			if (lastGroup?.date === activity.date) {
+				lastGroup.items.push(activity);
+			} else {
+				groups.push({ date: activity.date, items: [activity] });
+			}
+		}
+		return groups;
+	}, [visibleActivities]);
+	const randomGame = useMemo(
+		() => visibleGames.find((game) => game.id === randomGameId) ?? null,
+		[visibleGames, randomGameId],
+	);
 
-	// 统计卡片数据 - 区分同步和异步数据
-	const statsCards = useMemo(
-		() => [
-			// 同步数据 - 立即显示
-			{
-				title: t("home.stats.totalGames", "总游戏数"),
-				value: displayAllGames.length,
-				icon: <GamesIcon />,
-				isAsync: false,
+	useEffect(() => {
+		if (visibleGames.length === 0 || randomGame) return;
+		const nextGame = pickRandomGame(visibleGames);
+		if (!nextGame) return;
+		setRandomGameId(nextGame.id);
+		window.sessionStorage.setItem(RANDOM_GAME_SESSION_KEY, String(nextGame.id));
+	}, [visibleGames, randomGame]);
+
+	useEffect(() => {
+		const root = activityScrollRef.current;
+		const sentinel = activitySentinelRef.current;
+		const canRevealLoadedItems =
+			visibleActivityCount < filteredActivities.length;
+		const canFetchSessions =
+			activityFilter !== "add" &&
+			recentSessionsQuery.hasNextPage &&
+			!recentSessionsQuery.isFetchingNextPage;
+		if (!root || !sentinel || (!canRevealLoadedItems && !canFetchSessions)) {
+			return;
+		}
+
+		const observer = new IntersectionObserver(
+			(entries) => {
+				if (!entries[0]?.isIntersecting) return;
+				if (canRevealLoadedItems || canFetchSessions) {
+					setVisibleActivityCount((count) => count + ACTIVITY_PAGE_SIZE);
+				}
+				if (canFetchSessions) {
+					void recentSessionsQuery.fetchNextPage();
+				}
 			},
-			{
-				title: t("home.stats.localGames", "本地游戏数"),
-				value: gamesLocalCount,
-				icon: <LocalIcon />,
-				isAsync: false,
-			},
-			{
-				title: t("home.stats.completedGames", "通关游戏数"),
-				value: completedGamesCount,
-				icon: <CompletedIcon />,
-				isAsync: false,
-			},
-			// 异步数据 - 可能需要 loading
-			{
-				title: t("home.stats.totalPlayTime", "总游戏时长"),
-				value: formatPlayTime(totalPlayTime),
-				icon: <TimeIcon />,
-				isAsync: true,
-			},
-			{
-				title: isWeekPlayTime
-					? t("home.stats.weekPlayTime", "本周游戏时长")
-					: t("home.stats.monthPlayTime", "本月游戏时长"),
-				value: formatPlayTime(isWeekPlayTime ? weekPlayTime : monthPlayTime),
-				icon: isWeekPlayTime ? <WeekIcon /> : <MonthIcon />,
-				isAsync: true,
-				action: (
-					<Tooltip
-						title={
-							isWeekPlayTime
-								? t("home.stats.switchToMonth", "切换到本月")
-								: t("home.stats.switchToWeek", "切换到本周")
-						}
-					>
-						<IconButton
-							size="small"
-							aria-label={
-								isWeekPlayTime
-									? t("home.stats.switchToMonth", "切换到本月")
-									: t("home.stats.switchToWeek", "切换到本周")
-							}
-							onClick={() =>
-								setPlayTimePeriod(isWeekPlayTime ? "month" : "week")
-							}
-							className="absolute right-1 top-1"
-						>
-							<SwitchIcon fontSize="small" />
-						</IconButton>
-					</Tooltip>
-				),
-			},
-			{
-				title: t("home.stats.todayPlayTime", "今日游戏时长"),
-				value: formatPlayTime(todayPlayTime),
-				icon: <TodayIcon />,
-				isAsync: true,
-			},
-		],
-		[
-			t,
-			displayAllGames.length,
-			gamesLocalCount,
-			completedGamesCount,
-			totalPlayTime,
-			weekPlayTime,
-			monthPlayTime,
-			todayPlayTime,
-			isWeekPlayTime,
-		],
-	);
+			{ root, rootMargin: "120px 0px" },
+		);
+		observer.observe(sentinel);
+		return () => observer.disconnect();
+	}, [
+		activityFilter,
+		filteredActivities.length,
+		visibleActivityCount,
+		recentSessionsQuery.fetchNextPage,
+		recentSessionsQuery.hasNextPage,
+		recentSessionsQuery.isFetchingNextPage,
+	]);
+
+	const handleShuffle = useCallback(() => {
+		const nextGame = pickRandomGame(visibleGames, randomGameId ?? undefined);
+		if (!nextGame) return;
+		setRandomGameId(nextGame.id);
+		window.sessionStorage.setItem(RANDOM_GAME_SESSION_KEY, String(nextGame.id));
+	}, [visibleGames, randomGameId]);
+
+	const handleStopFocusGame = useCallback(async () => {
+		if (!focusGame) return;
+		setIsStopping(true);
+		try {
+			const result = await stopGame(focusGame.id);
+			if (!result.success) snackbar.error(result.message);
+		} catch (error) {
+			snackbar.error(
+				`${t("components.LaunchModal.stopFailed", "游戏停止失败:")}: ${getUserErrorMessage(error, t)}`,
+			);
+		} finally {
+			setIsStopping(false);
+		}
+	}, [focusGame, stopGame, t]);
+
+	const getActivityDateLabel = (date: string) => {
+		const today = getLocalDateString();
+		const yesterdayDate = new Date();
+		yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+		const yesterday = getLocalDateString(
+			Math.floor(yesterdayDate.getTime() / 1000),
+		);
+		if (date === today) return t("home.activity.today", "今天");
+		if (date === yesterday) return t("home.activity.yesterday", "昨天");
+		return new Intl.DateTimeFormat(i18n.language, {
+			month: "long",
+			day: "numeric",
+		}).format(new Date(`${date}T00:00:00`));
+	};
+
+	const getActivityPlaySummary = (activity: ActivityItem) => {
+		const relativeTime = formatRelativeTime(activity.time);
+		const count = activity.count ?? 1;
+		const duration = formatPlayTime(activity.duration ?? 0);
+		const absoluteTime = new Date(activity.time * 1000).toLocaleDateString();
+
+		if (relativeTime === absoluteTime) {
+			return t(
+				"home.activity.playSummaryCompact",
+				"{{count}}次 · 共{{duration}}",
+				{ count, duration },
+			);
+		}
+
+		return t(
+			"home.activity.playSummary",
+			"{{time}} · {{count}}次 · 共{{duration}}",
+			{ time: relativeTime, count, duration },
+		);
+	};
+
+	const focusIsRunning = focusGame ? runningGameIds.has(focusGame.id) : false;
+	const focusRealTimeState = focusGame
+		? gameRealTimeStates[focusGame.id]
+		: undefined;
+	const focusLastPlayed = focusGame
+		? lastPlayedMap.get(focusGame.id)
+		: undefined;
+	const focusHasPlayed = focusLastPlayed !== undefined;
+	const focusWeekTime = getWeekPlayTime(focusStatsQuery.data?.daily_stats);
+	const periodValue = playTimePeriod === "week" ? weekPlayTime : monthPlayTime;
+	const stats = [
+		{
+			key: "games",
+			label: t("home.stats.totalGames", "总游戏数"),
+			value: visibleGames.length,
+			icon: <SportsEsportsIcon />,
+			loading: isGameIndexLoading,
+		},
+		{
+			key: "total",
+			label: t("home.stats.totalPlayTime", "总游戏时长"),
+			value: formatPlayTime(totalPlayTime),
+			icon: <AccessTimeIcon />,
+			loading: isStatsLoading,
+		},
+		{
+			key: "today",
+			label: t("home.stats.todayPlayTime", "今日时长"),
+			value: formatPlayTime(todayPlayTime),
+			icon: <TodayIcon />,
+			loading: isStatsLoading,
+		},
+		{
+			key: "period",
+			label:
+				playTimePeriod === "week"
+					? t("home.stats.weekPlayTime", "本周时长")
+					: t("home.stats.monthPlayTime", "本月时长"),
+			value: formatPlayTime(periodValue),
+			icon: <CalendarMonthIcon />,
+			loading: isStatsLoading,
+		},
+	];
 
 	return (
-		<Box className="min-h-[calc(100dvh-64px)] p-6 pt-4 flex flex-col gap-4">
-			<Typography variant="h4">{t("home.title", "主页")}</Typography>
-
-			{/* 数据统计卡片 */}
-			<Box className="grid grid-cols-12 gap-6">
-				{statsCards.map((card) => (
+		<Box className="box-border h-[calc(100dvh-64px)] max-h-[calc(100dvh-64px)] flex flex-col overflow-hidden bg-[var(--mui-palette-background-default)] p-3 min-[600px]:p-4 min-[1200px]:p-5">
+			<Paper
+				variant="outlined"
+				className="grid shrink-0 grid-cols-1 overflow-hidden min-[600px]:grid-cols-2 min-[900px]:grid-cols-4"
+			>
+				{stats.map((stat, index) => (
 					<Box
-						key={card.title}
-						className="col-span-12 sm:col-span-6 md:col-span-4 lg:col-span-2"
+						key={stat.key}
+						className={[
+							"relative min-h-[82px] min-w-0 flex items-center gap-2 border-0 border-solid border-[var(--mui-palette-divider)] px-3 py-3.5 min-[900px]:min-h-[88px] min-[1200px]:gap-3.5 min-[1200px]:px-4 min-[1536px]:px-6",
+							index > 0 ? "border-t min-[600px]:border-t-0" : "border-t-0",
+							index > 1 ? "min-[600px]:border-t" : "",
+							index % 2 === 1 ? "min-[600px]:border-l" : "",
+							"min-[900px]:border-l-0 min-[900px]:border-t-0",
+						].join(" ")}
+						sx={{
+							"&::before": {
+								content: '""',
+								position: "absolute",
+								left: 0,
+								top: 18,
+								bottom: 18,
+								width: "1px",
+								bgcolor: "divider",
+								opacity: 0.55,
+								display: {
+									xs: "none",
+									md: index > 0 ? "block" : "none",
+								},
+							},
+						}}
 					>
-						<Card className="h-full flex flex-col group transition-transform">
-							<CardContent className="relative flex flex-col items-center text-center">
-								{"action" in card ? card.action : null}
-								{card.icon}
+						<Box className="h-[42px] w-[42px] shrink-0 grid place-items-center min-[1200px]:h-12 min-[1200px]:w-12">
+							{stat.icon}
+						</Box>
+						<Box className="min-w-0 flex-1">
+							<Box className="flex w-full items-center gap-2">
 								<Typography
-									title={String(card.value)}
-									variant="h6"
-									className="font-bold mb-1 w-full whitespace-nowrap overflow-hidden text-ellipsis"
+									variant="body2"
+									color="text.secondary"
+									className="text-[13px] min-[1200px]:text-sm"
+									noWrap
 								>
-									{/* 异步数据显示 loading，同步数据直接显示 */}
-									{card.isAsync && isLoading ? (
-										<Skeleton width={60} />
-									) : (
-										card.value
-									)}
+									{stat.label}
 								</Typography>
-								<Typography variant="body2" color="text.secondary">
-									{card.title}
-								</Typography>
-							</CardContent>
-						</Card>
+								{stat.key === "period" ? (
+									<ToggleButtonGroup
+										exclusive
+										size="small"
+										value={playTimePeriod}
+										onChange={(_, value: "week" | "month" | null) => {
+											if (value) setPlayTimePeriod(value);
+										}}
+										className="ml-auto shrink-0"
+									>
+										<ToggleButton
+											value="week"
+											className="!px-1.5 !py-0.5 !leading-6"
+										>
+											{t("home.stats.week", "周")}
+										</ToggleButton>
+										<ToggleButton
+											value="month"
+											className="!px-1.5 !py-0.5 !leading-6"
+										>
+											{t("home.stats.month", "月")}
+										</ToggleButton>
+									</ToggleButtonGroup>
+								) : null}
+							</Box>
+							<Typography
+								variant="h5"
+								fontWeight={700}
+								className="text-[22px] min-[1200px]:text-2xl"
+								noWrap
+								title={String(stat.value)}
+							>
+								{stat.loading ? <Skeleton width={90} /> : stat.value}
+							</Typography>
+						</Box>
 					</Box>
 				))}
-			</Box>
+			</Paper>
 
-			{/* 详细信息卡片 */}
-			{isLibraryEmpty ? (
-				<Card>
-					<CardContent className="min-h-[220px] flex flex-col items-center justify-center gap-4 text-center">
-						<RepositoryIcon className="text-amber-500 text-5xl" />
-						<Typography variant="h6" className="font-bold">
-							{t("components.Toolbar.Category.noGames", "暂无游戏")}
-						</Typography>
-						<Button
-							variant="contained"
-							startIcon={<RecentlyAddedIcon />}
-							onClick={() => openAddModal("")}
-						>
-							{t("components.AddModal.addGame", "添加游戏")}
-						</Button>
-					</CardContent>
-				</Card>
+			{!isGameIndexLoading && visibleGames.length === 0 ? (
+				<Paper
+					variant="outlined"
+					className="mt-4 min-h-0 flex flex-1 flex-col items-center justify-center gap-4"
+				>
+					<SportsEsportsIcon className="!text-[52px] text-[var(--mui-palette-text-disabled)]" />
+					<Typography variant="h6" fontWeight={700}>
+						{t("components.Toolbar.Category.noGames", "暂无游戏")}
+					</Typography>
+					<Button
+						variant="contained"
+						startIcon={<AddCircleOutlineIcon />}
+						onClick={() => openAddModal("")}
+					>
+						{t("components.AddModal.addGame", "添加游戏")}
+					</Button>
+				</Paper>
 			) : (
-				<Box className="grid grid-cols-12 gap-6 flex-1 min-h-0 auto-rows-fr">
-					{/* 游戏仓库 */}
-					<Box className="col-span-12 md:col-span-6 lg:col-span-3 min-h-0">
-						<Card className="h-full">
-							<CardContent className="h-full min-h-0 flex flex-col">
-								<Box
-									component={Link}
-									to="/libraries"
-									className="flex items-center mb-3 text-inherit decoration-none hover:text-[--mui-palette-primary-main] cursor-pointer"
-								>
-									<RepositoryIcon className="mr-2 text-amber-500" />
-									<Typography variant="h6" className="font-bold">
-										{t("home.repository", "游戏仓库")}
-									</Typography>
-								</Box>
-								<Virtuoso
-									className="min-h-0 flex-1 pr-1"
-									style={{ height: "100%" }}
-									data={gamesList}
-									computeItemKey={(_, category) => category.id}
-									itemContent={(_, category) => (
-										<Box className="pb-1 pt-1">
-											<Card
-												variant="outlined"
-												component={Link}
-												to={`/libraries/${category.id}`}
-												className="block p-2 text-center text-inherit decoration-none translate-y-0 cursor-pointer hover:-translate-y-0.5 hover:shadow-md"
-											>
-												<Typography variant="body2">
-													{category.title}
+				<Box className="mt-4 min-h-0 flex-1 grid grid-cols-1 items-stretch gap-4 min-[900px]:grid-cols-[minmax(0,1.7fr)_minmax(300px,0.9fr)]">
+					<Box className="min-h-0 min-w-0 grid grid-rows-[minmax(0,1fr)_150px] gap-4">
+						<Paper
+							variant="outlined"
+							className="relative h-full min-h-0 overflow-hidden !bg-[var(--mui-palette-grey-900)] !text-white"
+						>
+							{focusGame ? (
+								<>
+									<Box
+										component="img"
+										src={getVisibleCover(focusGame, nsfwCoverReplace)}
+										alt=""
+										className="absolute inset-0 h-full w-full object-cover"
+									/>
+									<Box
+										className="absolute inset-0"
+										sx={{
+											background:
+												"linear-gradient(90deg, rgba(7, 13, 27, .94) 0%, rgba(7, 13, 27, .76) 42%, rgba(7, 13, 27, .18) 76%, rgba(7, 13, 27, .32) 100%)",
+										}}
+									/>
+									<Box className="relative z-1 h-full flex flex-col p-4 min-[900px]:p-5">
+										<Chip
+											label={
+												focusIsRunning
+													? t("home.focus.running", "正在运行")
+													: focusHasPlayed
+														? t("home.focus.continue", "继续游戏")
+														: t("home.random.start", "启动游戏")
+											}
+											size="small"
+											className="!self-start !bg-[rgba(37,99,235,.72)] !font-700 !text-white"
+										/>
+										<Typography
+											component="h1"
+											className="mt-3 max-w-[72%] text-[26px] leading-[1.2] font-800 min-[1200px]:text-[34px]"
+										>
+											{getGameDisplayName(focusGame)}
+										</Typography>
+										<Box className="mt-2">
+											{focusIsRunning && focusRealTimeState ? (
+												<RunningGameTimer
+													currentSessionMinutes={
+														focusRealTimeState.currentSessionMinutes
+													}
+													currentSessionSeconds={
+														focusRealTimeState.currentSessionSeconds
+													}
+													startTime={focusRealTimeState.startTime}
+													timeTrackingMode={focusRealTimeState.timeTrackingMode}
+												/>
+											) : (
+												<Typography className="text-[rgba(255,255,255,.78)]">
+													{focusLastPlayed
+														? t("home.focus.lastPlayed", "上次游玩：{{time}}", {
+																time: formatRelativeTime(focusLastPlayed),
+															})
+														: t("home.focus.notPlayed", "还没有游玩记录")}
 												</Typography>
-											</Card>
+											)}
 										</Box>
-									)}
-								/>
-							</CardContent>
-						</Card>
-					</Box>
+										<Typography className="mt-1 text-[rgba(255,255,255,.78)]">
+											{t(
+												"home.focus.playTime",
+												"本周 {{week}} · 总计 {{total}}",
+												{
+													week: formatPlayTime(focusWeekTime),
+													total:
+														focusStatsQuery.data?.totalPlayTime ??
+														formatPlayTime(0),
+												},
+											)}
+										</Typography>
+										<Box className="mt-3 flex flex-wrap gap-2.5">
+											{focusIsRunning ? (
+												<Button
+													variant="contained"
+													color="error"
+													startIcon={
+														isStopping ? (
+															<CircularProgress size={16} color="inherit" />
+														) : (
+															<StopIcon />
+														)
+													}
+													disabled={isStopping}
+													onClick={() => void handleStopFocusGame()}
+												>
+													{isStopping
+														? t(
+																"components.LaunchModal.stoppingGame",
+																"停止游戏中...",
+															)
+														: t("components.LaunchModal.stopGame", "停止游戏")}
+												</Button>
+											) : (
+												<Button
+													variant="contained"
+													startIcon={<PlayArrowIcon />}
+													onClick={() => void launchGame(focusGame)}
+												>
+													{t("home.random.start", "启动游戏")}
+												</Button>
+											)}
+											<Button
+												component={Link}
+												to={`/libraries/${focusGame.id}`}
+												variant="outlined"
+												startIcon={<InfoOutlinedIcon />}
+												className="!border-[rgba(255,255,255,.55)] !text-white hover:!border-white hover:!bg-[rgba(255,255,255,.08)]"
+											>
+												{t("home.focus.details", "查看详情")}
+											</Button>
+										</Box>
 
-					{/* 动态 */}
-					<Box className="col-span-12 md:col-span-6 lg:col-span-3 min-h-0">
-						<Card className="h-full shadow-md">
-							<CardContent className="h-full min-h-0 flex flex-col">
-								<Box className="flex items-center mb-3">
-									<ActivityIcon className="mr-2 text-purple-500" />
-									<Typography variant="h6" className="font-bold">
-										{t("home.activityTitle", "动态")}
-									</Typography>
-								</Box>
-								{isActivityLoading ? (
-									<Box className="min-h-0 flex-1 overflow-y-auto pr-1">
-										{[1, 2, 3, 4].map((index) => (
-											<Box key={index} className="flex items-center mb-3">
-												<Skeleton
-													variant="rounded"
-													width={40}
-													height={40}
-													className="mr-3"
-												/>
-												<Box className="flex-1">
-													<Skeleton width="80%" height={20} />
-													<Skeleton width="60%" height={16} />
+										{recentGames.length > 0 ? (
+											<Box className="mt-auto pt-2">
+												<Box className="mb-1.5 flex items-center gap-2">
+													<HistoryIcon fontSize="small" />
+													<Typography variant="body2" fontWeight={700}>
+														{t("home.focus.recent", "最近玩过")}
+													</Typography>
+												</Box>
+												<Box className="grid grid-cols-2 gap-2 min-[600px]:grid-cols-4">
+													{recentGames.map((game, gameIndex) => {
+														const lastPlayed = lastPlayedMap.get(game.id);
+														return (
+															<ButtonBase
+																key={game.id}
+																onClick={() => setSelectedFocusGameId(game.id)}
+																className={`h-13 min-w-0 flex justify-start overflow-hidden rounded-2xl border border-solid bg-[rgba(7,13,27,.48)] text-left ${
+																	gameIndex === 3
+																		? "min-[900px]:hidden min-[1200px]:flex"
+																		: ""
+																}`}
+																sx={{
+																	borderColor:
+																		focusGame.id === game.id
+																			? "primary.light"
+																			: "rgba(255,255,255,.22)",
+																}}
+															>
+																<Box
+																	component="img"
+																	src={getVisibleCover(game, nsfwCoverReplace)}
+																	alt=""
+																	className="h-full w-[50px] shrink-0 object-cover"
+																/>
+																<Box className="min-w-0 px-2">
+																	<Typography
+																		variant="body2"
+																		fontWeight={700}
+																		noWrap
+																	>
+																		{getGameDisplayName(game)}
+																	</Typography>
+																	<Typography
+																		variant="caption"
+																		className="text-[rgba(255,255,255,.66)]"
+																		noWrap
+																	>
+																		{lastPlayed
+																			? formatRelativeTime(lastPlayed)
+																			: t(
+																					"home.focus.notPlayedShort",
+																					"未游玩",
+																				)}
+																	</Typography>
+																</Box>
+															</ButtonBase>
+														);
+													})}
 												</Box>
 											</Box>
-										))}
+										) : null}
 									</Box>
-								) : (
-									<List className="min-h-0 flex-1 overflow-y-auto pr-1">
-										{activityData.activities.map((activity, idx) => (
-											<React.Fragment key={activity.id}>
-												<ListItem
-													className="px-0 text-inherit"
-													component={Link}
-													to={`/libraries/${activity.gameId}`}
-												>
-													<ListItemAvatar>
-														<Avatar variant="rounded" src={activity.imageUrl} />
-													</ListItemAvatar>
-													<Box>
-														<Typography variant="body1">
-															{activity.type === "add"
-																? t("home.activity.added", "添加了 {{title}}", {
-																		title: activity.gameTitle,
-																	})
-																: t(
-																		"home.activity.played",
-																		"游玩了 {{title}}",
-																		{
-																			title: activity.gameTitle,
-																		},
-																	)}
-														</Typography>
+								</>
+							) : (
+								<Skeleton variant="rectangular" width="100%" height="100%" />
+							)}
+						</Paper>
 
-														<Typography variant="body2" color="text.secondary">
-															{activity.type === "add"
-																? t(
-																		"home.activity.addedAt",
-																		"添加于 {{time}}",
-																		{
-																			time: formatRelativeTime(activity.time),
-																		},
-																	)
-																: t(
-																		"home.activity.playedAtTime",
-																		"游玩于 {{time}}",
-																		{
-																			time: formatRelativeTime(activity.time),
-																		},
-																	)}
-														</Typography>
-
-														{activity.type === "play" &&
-															activity.duration !== undefined && (
-																<Typography
-																	variant="body2"
-																	color="text.secondary"
-																>
-																	{t(
-																		"home.activity.duration",
-																		"游戏时长: {{duration}}",
-																		{
-																			duration: formatPlayTime(
-																				activity.duration,
-																			),
-																		},
-																	)}
-																</Typography>
-															)}
-													</Box>
-												</ListItem>
-												{idx !== activityData.activities.length - 1 && (
-													<Divider />
-												)}
-											</React.Fragment>
-										))}
-									</List>
-								)}
-							</CardContent>
-						</Card>
-					</Box>
-
-					{/* 最近游玩 */}
-					<Box className="col-span-12 md:col-span-6 lg:col-span-3 min-h-0">
-						<Card className="h-full shadow-md">
-							<CardContent className="h-full min-h-0 flex flex-col">
-								<Box className="flex items-center mb-3">
-									<RecentlyPlayedIcon className="mr-2 text-[--mui-palette-primary-main]" />
-									<Typography variant="h6" className="font-bold">
-										{t("home.recentlyPlayed", "最近游玩")}
-									</Typography>
-								</Box>
-								{isActivityLoading ? (
-									<Box className="min-h-0 flex-1 overflow-y-auto pr-1">
-										{[1, 2, 3, 4].map((index) => (
-											<Box key={index} className="flex items-center mb-3">
-												<Skeleton
-													variant="rounded"
-													width={40}
-													height={40}
-													className="mr-3"
+						<Paper
+							variant="outlined"
+							className="h-full min-h-0 overflow-hidden p-3"
+						>
+							<Box className="mb-4 flex items-center gap-2">
+								<CasinoOutlinedIcon />
+								<Typography variant="h6" fontWeight={700}>
+									{t("home.random.title", "随机游戏")}
+								</Typography>
+								<Button
+									size="small"
+									startIcon={<RefreshIcon />}
+									onClick={handleShuffle}
+									className="ml-auto"
+								>
+									{t("home.random.shuffle", "换一个")}
+								</Button>
+							</Box>
+							{randomGame ? (
+								<Box className="grid grid-cols-[96px_minmax(0,1fr)] items-center gap-4 min-[600px]:grid-cols-[112px_minmax(0,1fr)_auto] min-[1200px]:grid-cols-[140px_minmax(0,1fr)_auto]">
+									<Box
+										component="img"
+										src={getVisibleCover(randomGame, nsfwCoverReplace)}
+										alt=""
+										className="h-21 w-full rounded-2xl object-cover"
+									/>
+									<Box className="min-w-0">
+										<Typography
+											variant="h6"
+											fontWeight={700}
+											noWrap
+											title={getGameDisplayName(randomGame)}
+										>
+											{getGameDisplayName(randomGame)}
+										</Typography>
+										{randomGame.developer ? (
+											<Typography
+												variant="body2"
+												color="text.secondary"
+												noWrap
+												className="mt-0.5"
+											>
+												{randomGame.developer}
+											</Typography>
+										) : null}
+										<Box className="mt-2 flex gap-1.5 overflow-hidden">
+											{randomGame.tags?.slice(0, 3).map((tag) => (
+												<Chip
+													key={tag}
+													label={tag}
+													size="small"
+													variant="outlined"
 												/>
-												<Box className="flex-1">
-													<Skeleton width="80%" height={20} />
-													<Skeleton width="60%" height={16} />
-												</Box>
-											</Box>
-										))}
+											))}
+										</Box>
 									</Box>
-								) : (
-									<List className="min-h-0 flex-1 overflow-y-auto pr-1">
-										{activityData.sessions.map((session, idx) => (
-											<React.Fragment key={session.session_id}>
-												<ListItem
-													className="px-0 text-inherit"
-													component={Link}
-													to={`/libraries/${session.game_id}`}
-												>
-													<ListItemAvatar>
-														<Avatar variant="rounded" src={session.imageUrl} />
-													</ListItemAvatar>
-													<ListItemText
-														primary={session.gameTitle}
-														secondary={t(
-															"home.lastPlayed",
-															"最后游玩: {{time}}",
-															{
-																time: formatRelativeTime(session.end_time),
-															},
+									<Box className="col-span-full flex gap-2 min-[600px]:col-auto min-[600px]:justify-end">
+										<Tooltip title={t("home.focus.details", "查看详情")}>
+											<IconButton
+												component={Link}
+												to={`/libraries/${randomGame.id}`}
+												aria-label={t("home.focus.details", "查看详情")}
+												className="!border border-solid border-[var(--mui-palette-divider)]"
+											>
+												<InfoOutlinedIcon />
+											</IconButton>
+										</Tooltip>
+										<Button
+											variant="contained"
+											startIcon={
+												randomGame.localpath ? <PlayArrowIcon /> : <SyncIcon />
+											}
+											disabled={runningGameIds.has(randomGame.id)}
+											onClick={() =>
+												void (randomGame.localpath
+													? launchGame(randomGame)
+													: syncLocalPath(randomGame))
+											}
+											className="flex-1 min-[600px]:flex-initial"
+										>
+											{runningGameIds.has(randomGame.id)
+												? t("home.focus.running", "正在运行")
+												: randomGame.localpath
+													? t("home.random.start", "启动游戏")
+													: t(
+															"components.LaunchModal.syncLocalPath",
+															"同步本地",
 														)}
-													/>
-												</ListItem>
-												{idx !== activityData.sessions.length - 1 && (
-													<Divider />
-												)}
-											</React.Fragment>
-										))}
-									</List>
-								)}
-							</CardContent>
-						</Card>
+										</Button>
+									</Box>
+								</Box>
+							) : (
+								<Skeleton variant="rounded" height={104} />
+							)}
+						</Paper>
 					</Box>
 
-					{/* 最近添加 */}
-					<Box className="col-span-12 md:col-span-6 lg:col-span-3 min-h-0">
-						<Card className="h-full shadow-md">
-							<CardContent className="h-full min-h-0 flex flex-col">
-								<Box className="flex items-center mb-3">
-									<RecentlyAddedIcon className="mr-2 text-green-500" />
-									<Typography variant="h6" className="font-bold">
-										{t("home.recentlyAdded", "最近添加")}
+					<Paper
+						variant="outlined"
+						className="h-full min-h-0 flex flex-col overflow-hidden p-3 min-[1200px]:p-4"
+					>
+						<Box className="mb-4 flex items-center gap-2">
+							<HistoryIcon color="primary" />
+							<Typography variant="h6" fontWeight={700}>
+								{t("home.activityTitle", "动态")}
+							</Typography>
+							<ToggleButtonGroup
+								exclusive
+								size="small"
+								value={activityFilter}
+								onChange={(_, value: ActivityFilter | null) => {
+									if (!value) return;
+									setActivityFilter(value);
+									setVisibleActivityCount(ACTIVITY_PAGE_SIZE);
+									activityScrollRef.current?.scrollTo({ top: 0 });
+								}}
+								className="ml-auto"
+							>
+								<ToggleButton value="all" className="!px-2.5 !py-0.5">
+									{t("home.activity.filters.all", "全部")}
+								</ToggleButton>
+								<ToggleButton value="play" className="!px-2.5 !py-0.5">
+									{t("home.activity.filters.play", "游玩")}
+								</ToggleButton>
+								<ToggleButton value="add" className="!px-2.5 !py-0.5">
+									{t("home.activity.filters.add", "添加")}
+								</ToggleButton>
+							</ToggleButtonGroup>
+						</Box>
+
+						<Box
+							ref={activityScrollRef}
+							className="min-h-0 flex-1 overflow-y-auto pr-1"
+						>
+							{recentSessionsQuery.isLoading ? (
+								<Box className="grid gap-4">
+									{[1, 2, 3, 4, 5].map((item) => (
+										<Skeleton key={item} variant="rounded" height={58} />
+									))}
+								</Box>
+							) : activityGroups.length === 0 ? (
+								<Box className="h-full min-h-60 grid place-items-center text-[var(--mui-palette-text-secondary)]">
+									<Typography>
+										{t("home.activity.empty", "暂无动态")}
 									</Typography>
 								</Box>
-								{isActivityLoading ? (
-									<Box className="min-h-0 flex-1 overflow-y-auto pr-1">
-										{[1, 2, 3, 4].map((index) => (
-											<Box key={index} className="flex items-center mb-3">
-												<Skeleton
-													variant="rounded"
-													width={40}
-													height={40}
-													className="mr-3"
-												/>
-												<Box className="flex-1">
-													<Skeleton width="80%" height={20} />
-													<Skeleton width="60%" height={16} />
+							) : (
+								activityGroups.map((group) => (
+									<Box key={group.date} className="mb-4.5">
+										<Typography
+											variant="body2"
+											fontWeight={700}
+											color="text.secondary"
+											className="mb-2.5"
+										>
+											{getActivityDateLabel(group.date)}
+										</Typography>
+										<Box
+											className="relative pl-7"
+											sx={{
+												"&::before": {
+													content: '""',
+													position: "absolute",
+													left: 13,
+													top: 7,
+													bottom: 7,
+													width: "2px",
+													bgcolor: "divider",
+												},
+											}}
+										>
+											{group.items.map((activity) => (
+												<Box key={activity.id} className="relative">
+													<Box
+														className={`pointer-events-none absolute -left-6 top-5 z-1 grid h-5 w-5 place-items-center rounded-full bg-[var(--mui-palette-background-paper)] shadow-sm ${
+															activity.type === "play"
+																? "text-[var(--mui-palette-primary-main)]"
+																: "text-[var(--mui-palette-success-main)]"
+														}`}
+													>
+														{activity.type === "play" ? (
+															<SportsEsportsIcon fontSize="small" />
+														) : (
+															<AddCircleOutlineIcon fontSize="small" />
+														)}
+													</Box>
+													<ButtonBase
+														component={Link}
+														to={`/libraries/${activity.gameId}`}
+														className="w-full justify-start rounded-2xl p-1.5 text-left hover:bg-[var(--mui-palette-action-hover)]"
+													>
+														<Avatar
+															variant="rounded"
+															src={activity.imageUrl}
+															className="mr-3 h-12 w-12"
+														/>
+														<Box className="min-w-0">
+															<Typography
+																variant="body2"
+																fontWeight={700}
+																noWrap
+															>
+																{activity.type === "play"
+																	? t(
+																			"home.activity.played",
+																			"游玩了 {{title}}",
+																			{ title: activity.gameTitle },
+																		)
+																	: t(
+																			"home.activity.added",
+																			"添加了 {{title}}",
+																			{ title: activity.gameTitle },
+																		)}
+															</Typography>
+															<Typography
+																variant="caption"
+																color="text.secondary"
+																noWrap
+																className="block"
+															>
+																{activity.type === "play"
+																	? getActivityPlaySummary(activity)
+																	: t(
+																			"home.activity.addedAt",
+																			"添加于 {{time}}",
+																			{
+																				time: formatRelativeTime(activity.time),
+																			},
+																		)}
+															</Typography>
+														</Box>
+													</ButtonBase>
 												</Box>
-											</Box>
-										))}
+											))}
+										</Box>
 									</Box>
-								) : (
-									<List className="min-h-0 flex-1 overflow-y-auto pr-1">
-										{activityData.added.map((game, idx) => (
-											<React.Fragment key={game.id}>
-												<ListItem
-													className="px-0 text-inherit"
-													component={Link}
-													to={`/libraries/${game.id}`}
-												>
-													<ListItemAvatar>
-														<Avatar variant="rounded" src={game.imageUrl} />
-													</ListItemAvatar>
-													<ListItemText
-														primary={game.title}
-														secondary={t("home.addedAt", "添加时间: {{time}}", {
-															time: game.time
-																? formatRelativeTime(game.time)
-																: "",
-														})}
-													/>
-												</ListItem>
-												{idx !== activityData.added.length - 1 && <Divider />}
-											</React.Fragment>
-										))}
-									</List>
-								)}
-							</CardContent>
-						</Card>
-					</Box>
+								))
+							)}
+							<Box
+								ref={activitySentinelRef}
+								className="h-6 grid place-items-center"
+							>
+								{recentSessionsQuery.isFetchingNextPage ? (
+									<CircularProgress size={18} />
+								) : null}
+							</Box>
+						</Box>
+					</Paper>
 				</Box>
 			)}
 		</Box>
