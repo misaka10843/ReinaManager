@@ -233,6 +233,36 @@ export const CloseBtnSettings = () => {
 	);
 };
 
+
+export const ExternalLaunchMonitorSettings = () => {
+	const { t } = useTranslation();
+	const { externalLaunchMonitorEnabled, setExternalLaunchMonitorEnabled } = useStore(
+		useShallow((s) => ({
+			externalLaunchMonitorEnabled: s.externalLaunchMonitorEnabled,
+			setExternalLaunchMonitorEnabled: s.setExternalLaunchMonitorEnabled,
+		})),
+	);
+
+	return (
+		<SettingsItem
+			title={t(
+				"pages.Settings.externalLaunchMonitor.title",
+				"监控外部启动的游戏",
+			)}
+			description={t(
+				"pages.Settings.externalLaunchMonitor.description",
+				"开启后，ReinaManager 会定时扫描本机正在运行的游戏进程，并在匹配到游戏库中的本地路径时自动接管计时。默认关闭。",
+			)}
+		>
+			<Switch
+				checked={externalLaunchMonitorEnabled}
+				onChange={(e) => setExternalLaunchMonitorEnabled(e.target.checked)}
+				color="primary"
+			/>
+		</SettingsItem>
+	);
+};
+
 export const TimeTrackingModeSettings = () => {
 	const { t } = useTranslation();
 	const timeTrackingMode = useStore((s) => s.timeTrackingMode);

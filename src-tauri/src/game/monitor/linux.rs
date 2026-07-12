@@ -80,6 +80,13 @@ pub async fn monitor_game<R: Runtime>(
 // 公共 API
 // ============================================================================
 
+/// 判断指定游戏是否已经有活跃监控会话。
+/// Linux 版本的监控由 systemd scope 管理，此处外部启动接管暂不支持。
+pub fn is_game_monitored(_game_id: u32) -> bool {
+    false
+}
+
+
 /// 停止指定游戏的监控并终止所有相关进程
 ///
 /// # Arguments

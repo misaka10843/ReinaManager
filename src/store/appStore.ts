@@ -34,7 +34,11 @@ import {
 	APP_STORE_VERSION,
 	migrateAppStorePersistedState,
 } from "./appStoreMigrations";
-import { initializeGamePlayTracking } from "./gamePlayStore";
+import {
+	disposeExternalRunningGameScan,
+	initializeExternalRunningGameScan,
+	initializeGamePlayTracking,
+} from "./gamePlayStore";
 
 export type SelectedCategory =
 	| { type: "real"; id: number }
@@ -153,6 +157,10 @@ export interface AppState {
 	// 计时模式：playtime = 真实游戏时间（仅活跃时），elapsed = 游戏启动时间（从启动到结束）
 	timeTrackingMode: "playtime" | "elapsed";
 	setTimeTrackingMode: (mode: "playtime" | "elapsed") => void;
+
+	// 外部启动游戏自动监控（默认关闭）
+	externalLaunchMonitorEnabled: boolean;
+	setExternalLaunchMonitorEnabled: (enabled: boolean) => void;
 
 	// 更新窗口状态管理
 	showUpdateModal: boolean;
@@ -322,6 +330,17 @@ export const useStore = create<AppState>()(
 			setTimeTrackingMode: (mode: "playtime" | "elapsed") => {
 				set({ timeTrackingMode: mode });
 			},
+
+			// 外部启动游戏自动监控：默认关闭，用户在设置中显式开启
+			externalLaunchMonitorEnabled: false,
+			setExternalLaunchMonitorEnabled: (enabled: boolean) => {
+				set({ externalLaunchMonitorEnabled: enabled });
+				if (enabled) {
+					initializeExternalRunningGameScan();
+				} else {
+					disposeExternalRunningGameScan();
+				}
+			},
 			setSearchInput: (input: string) => {
 				set({ searchInput: input });
 			},
@@ -445,6 +464,9 @@ export const useStore = create<AppState>()(
 			initialize: async () => {
 				// 初始化游戏时间跟踪（数据获取由 React Query 自动触发）
 				initializeGamePlayTracking();
+				if (get().externalLaunchMonitorEnabled) {
+					initializeExternalRunningGameScan();
+				}
 
 				// 启动时同步代理设置到后端
 				const { proxyConfig } = get();
@@ -493,6 +515,8 @@ export const useStore = create<AppState>()(
 				spoilerLevel: state.spoilerLevel,
 				// 计时模式：playtime 或 elapsed
 				timeTrackingMode: state.timeTrackingMode,
+				// 外部启动游戏自动监控
+				externalLaunchMonitorEnabled: state.externalLaunchMonitorEnabled,
 				// 跳过的更新版本
 				skippedUpdateVersion: state.skippedUpdateVersion,
 				// 分组分类选择状态

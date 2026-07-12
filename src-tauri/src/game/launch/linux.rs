@@ -25,6 +25,23 @@ pub struct StopResult {
     terminated_count: u32,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ExternalRunningGameMatch {
+    game_id: u32,
+    process_id: u32,
+    message: String,
+}
+
+#[command]
+pub async fn adopt_external_running_games<R: Runtime>(
+    _app_handle: AppHandle<R>,
+    _db: State<'_, DatabaseConnection>,
+    _time_tracking_mode: TimeTrackingMode,
+) -> Result<Vec<ExternalRunningGameMatch>, String> {
+    // linux的tauri权限可能有点复杂,暂时不动linux
+    Ok(Vec::new())
+}
+
 #[command]
 pub async fn launch_game<R: Runtime>(
     app_handle: AppHandle<R>,

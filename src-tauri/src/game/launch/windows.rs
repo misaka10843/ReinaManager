@@ -1,12 +1,13 @@
 use crate::database::dto::UpdateSettingsData;
 use crate::database::repository::games_repository::GamesRepository;
+use crate::entity::prelude::Games;
 use crate::database::repository::settings_repository::{DbSettingsExt, SettingsRepository};
 use crate::game::local_path::{GameLaunchTarget, resolve_launch_target};
-use crate::game::monitor::{TimeTrackingMode, monitor_game, stop_game_session};
+use crate::game::monitor::{TimeTrackingMode, is_game_monitored, monitor_game, stop_game_session};
 use crate::utils::command_ext::CommandGuiExt;
-use sea_orm::DatabaseConnection;
+use sea_orm::{DatabaseConnection, EntityTrait};
 use serde::{Deserialize, Serialize};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 use tauri::{AppHandle, Runtime, State, command};
 use {
@@ -57,6 +58,247 @@ pub struct StopResult {
     success: bool,
     message: String,
     terminated_count: u32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ExternalRunningGameMatch {
+    game_id: u32,
+    process_id: u32,
+    message: String,
+}
+
+#[command]
+pub async fn adopt_external_running_games<R: Runtime>(
+    app_handle: AppHandle<R>,
+    db: State<'_, DatabaseConnection>,
+    time_tracking_mode: TimeTrackingMode,
+) -> Result<Vec<ExternalRunningGameMatch>, String> {
+    let games = Games::find()
+        .all(db.inner())
+        .await
+        .map_err(|e| format!("查询游戏列表失败: {}", e))?;
+
+    let mut matches = Vec::new();
+    for game in games {
+        let Some(localpath) = game.localpath.as_deref() else {
+            continue;
+        };
+        let launch_target = resolve_launch_target(Some(localpath));
+        let GameLaunchTarget::NormalExecutable {
+            executable_path,
+            detection_dir,
+            ..
+        } = launch_target
+        else {
+            continue;
+        };
+
+        let game_id = match u32::try_from(game.id) {
+            Ok(id) => id,
+            Err(_) => continue,
+        };
+        if is_game_monitored(game_id) {
+            continue;
+        }
+
+        let Some(process_id) = find_external_process_for_game(&executable_path, &detection_dir) else {
+            continue;
+        };
+
+        let detection_dir_str = detection_dir.to_string_lossy().to_string();
+        info!(
+            "检测到外部启动游戏 game_id={} pid={} detection_dir={}",
+            game_id, process_id, detection_dir_str
+        );
+
+        monitor_game(
+            app_handle.clone(),
+            db.inner().clone(),
+            time_tracking_mode,
+            game_id,
+            process_id,
+            detection_dir_str,
+        )
+        .await;
+
+        matches.push(ExternalRunningGameMatch {
+            game_id,
+            process_id,
+            message: format!("已接管外部启动的游戏 {}", game_id),
+        });
+    }
+
+    Ok(matches)
+}
+
+fn find_external_process_for_game(executable_path: &Path, detection_dir: &Path) -> Option<u32> {
+    let manager_pid = std::process::id();
+    let executable_name = executable_path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .map(|name| name.to_string());
+    let target_exe = normalize_path_string(executable_path);
+    let target_dir = normalize_path_string(detection_dir);
+    let canonical_exe = std::fs::canonicalize(executable_path)
+        .ok()
+        .map(|path| normalize_path_string(&path));
+    let canonical_dir = std::fs::canonicalize(detection_dir)
+        .ok()
+        .map(|path| normalize_path_string(&path));
+    // 支持官方启动器安装的路径(即防止启动器中的路径是给的官方启动器，从而直接查找官方启动器下的子目录exe)
+    let parent_dir = detection_dir.parent().map(normalize_path_string);
+    let canonical_parent_dir = detection_dir
+        .parent()
+        .and_then(|path| std::fs::canonicalize(path).ok())
+        .map(|path| normalize_path_string(&path));
+
+    enumerate_processes()
+        .into_iter()
+        .filter(|process| process.pid != manager_pid)
+        .find(|process| {
+            let path_str = normalize_path_string(&process.path);
+            let process_name_matches = executable_name
+                .as_ref()
+                .is_some_and(|name| process.name.eq_ignore_ascii_case(name));
+            path_str.eq_ignore_ascii_case(&target_exe)
+                || canonical_exe
+                    .as_ref()
+                    .is_some_and(|path| path_str.eq_ignore_ascii_case(path))
+                || is_sub_path_ignore_case(&path_str, &target_dir)
+                || canonical_dir
+                    .as_ref()
+                    .is_some_and(|path| is_sub_path_ignore_case(&path_str, path))
+                || parent_dir
+                    .as_ref()
+                    .is_some_and(|path| is_sub_path_ignore_case(&path_str, path))
+                || canonical_parent_dir
+                    .as_ref()
+                    .is_some_and(|path| is_sub_path_ignore_case(&path_str, path))
+                || (process_name_matches
+                    && process
+                        .path
+                        .parent()
+                        .is_some_and(|parent| is_sub_path_ignore_case(&normalize_path_string(parent), &target_dir)))
+        })
+        .map(|process| process.pid)
+}
+
+#[derive(Debug)]
+struct RunningProcessInfo {
+    pid: u32,
+    name: String,
+    path: PathBuf,
+}
+
+fn enumerate_processes() -> Vec<RunningProcessInfo> {
+    use std::mem;
+    use windows::Win32::{
+        Foundation::CloseHandle,
+        System::Diagnostics::ToolHelp::{
+            CREATE_TOOLHELP_SNAPSHOT_FLAGS, CreateToolhelp32Snapshot, PROCESSENTRY32W,
+            Process32FirstW, Process32NextW,
+        },
+    };
+
+    let mut processes = Vec::new();
+    unsafe {
+        let snapshot = match CreateToolhelp32Snapshot(
+            CREATE_TOOLHELP_SNAPSHOT_FLAGS(0x00000002),
+            0,
+        ) {
+            Ok(h) if !h.is_invalid() => h,
+            _ => return processes,
+        };
+
+        let mut entry = PROCESSENTRY32W {
+            dwSize: mem::size_of::<PROCESSENTRY32W>() as u32,
+            ..Default::default()
+        };
+
+        if Process32FirstW(snapshot, &mut entry).is_ok() {
+            loop {
+                let pid = entry.th32ProcessID;
+                let name_end = entry
+                    .szExeFile
+                    .iter()
+                    .position(|&c| c == 0)
+                    .unwrap_or(entry.szExeFile.len());
+                let name = String::from_utf16_lossy(&entry.szExeFile[..name_end]);
+                if pid > 0 && let Some(path) = get_process_executable_path(pid) {
+                    processes.push(RunningProcessInfo { pid, name, path });
+                }
+
+                if Process32NextW(snapshot, &mut entry).is_err() {
+                    break;
+                }
+            }
+        }
+
+        let _ = CloseHandle(snapshot);
+    }
+
+    processes
+}
+
+fn normalize_path_string(path: &Path) -> String {
+    path.to_string_lossy().replace('/', "\\")
+}
+
+fn is_sub_path_ignore_case(path: &str, base_dir: &str) -> bool {
+    let path_bytes = path.as_bytes();
+    let base_bytes = base_dir.as_bytes();
+    let path_len = path_bytes.len();
+    let base_len = base_bytes.len();
+
+    if path_len < base_len {
+        return false;
+    }
+
+    if !path_bytes[..base_len].eq_ignore_ascii_case(base_bytes) {
+        return false;
+    }
+
+    if path_len == base_len {
+        return true;
+    }
+
+    if base_dir.ends_with('\\') || base_dir.ends_with('/') {
+        return true;
+    }
+
+    let next_char = path_bytes[base_len];
+    next_char == b'\\' || next_char == b'/'
+}
+
+fn get_process_executable_path(pid: u32) -> Option<PathBuf> {
+    use windows::Win32::{
+        Foundation::CloseHandle,
+        System::Threading::{OpenProcess, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION, QueryFullProcessImageNameW},
+    };
+
+    unsafe {
+        let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid).ok()?;
+        if handle.is_invalid() {
+            return None;
+        }
+
+        let mut buffer = vec![0u16; 32768];
+        let mut size = buffer.len() as u32;
+        let result = QueryFullProcessImageNameW(
+            handle,
+            PROCESS_NAME_WIN32,
+            windows::core::PWSTR(buffer.as_mut_ptr()),
+            &mut size,
+        );
+        let _ = CloseHandle(handle);
+
+        if result.is_err() || size == 0 {
+            return None;
+        }
+
+        buffer.truncate(size as usize);
+        Some(PathBuf::from(String::from_utf16_lossy(&buffer)))
+    }
 }
 
 // ================= Windows键盘模拟支持 =================
@@ -115,7 +357,7 @@ mod keyboard_simulator {
 mod win_elevated_launch {
     use std::ffi::OsStr;
     use std::os::windows::ffi::OsStrExt;
-    use std::path::Path;
+    use std::path::{Path, PathBuf};
 
     use windows::Win32::Foundation::CloseHandle;
     use windows::Win32::System::Threading::GetProcessId;

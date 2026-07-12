@@ -19,6 +19,12 @@ export interface StopGameResult {
 	terminated_count: number;
 }
 
+export interface ExternalRunningGameMatch {
+	game_id: number;
+	process_id: number;
+	message: string;
+}
+
 class StatsService extends BaseService {
 	/**
 	 * 启动游戏并开始监控
@@ -42,6 +48,18 @@ class StatsService extends BaseService {
 		return this.invoke<StopGameResult>("stop_game", {
 			gameId,
 		});
+	}
+
+	/**
+	 * 扫描并接管外部启动的游戏进程
+	 */
+	async adoptExternalRunningGames(
+		timeTrackingMode: "playtime" | "elapsed",
+	): Promise<ExternalRunningGameMatch[]> {
+		return this.invoke<ExternalRunningGameMatch[]>(
+			"adopt_external_running_games",
+			{ timeTrackingMode },
+		);
 	}
 
 	/**

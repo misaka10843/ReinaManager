@@ -33,6 +33,7 @@ import {
 	LinuxLaunchCommandSettings,
 	LogLevelSettings,
 	ProxySettings,
+	ExternalLaunchMonitorSettings,
 	TimeTrackingModeSettings,
 } from "./SystemSettings";
 
@@ -163,6 +164,7 @@ export const Settings: React.FC = () => {
 						<CloseBtnSettings />
 						<SettingsDivider />
 						<TimeTrackingModeSettings />
+						<ExternalLaunchMonitorSettings />
 						{import.meta.env.TAURI_ENV_PLATFORM === "linux" && (
 							<>
 								<SettingsDivider />

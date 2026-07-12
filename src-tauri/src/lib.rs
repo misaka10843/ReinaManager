@@ -12,7 +12,7 @@ use backup::savedata::{
 use database::*;
 use game::cover::custom::{delete_game_covers, import_clipboard_image_to_temp};
 use game::cover::{delete_cloud_cache, register_game_cover_protocol};
-use game::launch::{launch_game, stop_game};
+use game::launch::{adopt_external_running_games, launch_game, stop_game};
 use game::scan::scan_directory_for_games;
 use migration::MigratorTrait;
 use tauri::Manager;
@@ -60,6 +60,7 @@ pub fn run() {
             // 工具类 commands
             launch_game,
             stop_game,
+            adopt_external_running_games,
             open_directory,
             resolve_local_path_directory,
             resolve_dropped_local_path,

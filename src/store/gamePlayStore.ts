@@ -22,6 +22,7 @@ import { create } from "zustand";
 import { gameKeys } from "@/hooks/queries/useGames";
 import { settingsKeys } from "@/hooks/queries/useSettings";
 import { queryClient } from "@/providers/queryClient";
+import { statsService } from "@/services/invoke";
 import {
 	launchGameWithTracking,
 	stopGameWithTracking,
@@ -68,6 +69,7 @@ interface GamePlayState {
 	initTimeTracking: () => void;
 	clearActiveGame: () => void;
 	getGameRealTimeState: (gameId: number) => GameRealTimeState | null;
+	scanExternalRunningGames: () => Promise<void>;
 }
 
 /**
@@ -286,6 +288,29 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
 					}
 					// ====== END ======
 				},
+				// 支持外部启动游戏被后端接管时同步前端运行状态
+				(gameId: number, processId: number, startTime: number) => {
+					const timeTrackingMode = useStore.getState().timeTrackingMode;
+					set((state) => {
+						const existing = state.gameRealTimeStates[gameId];
+						const newRunningGames = new Set(state.runningGameIds);
+						newRunningGames.add(gameId);
+						return {
+							runningGameIds: newRunningGames,
+							gameRealTimeStates: {
+								...state.gameRealTimeStates,
+								[gameId]: {
+									isRunning: true,
+									currentSessionMinutes: existing?.currentSessionMinutes ?? 0,
+									currentSessionSeconds: existing?.currentSessionSeconds ?? 0,
+									startTime,
+									timeTrackingMode: existing?.timeTrackingMode ?? timeTrackingMode,
+									processId,
+								},
+							},
+						};
+					});
+				},
 			);
 
 			// 设置初始化标志
@@ -306,6 +331,42 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
 	/**
 	 * 清除所有运行中游戏状态
 	 */
+	scanExternalRunningGames: async () => {
+		try {
+			const timeTrackingMode = useStore.getState().timeTrackingMode;
+			const matches = await statsService.adoptExternalRunningGames(timeTrackingMode);
+			if (matches.length === 0) return;
+
+			const now = Math.floor(Date.now() / 1000);
+			set((state) => {
+				const newRunningGames = new Set(state.runningGameIds);
+				const newRealTimeStates = { ...state.gameRealTimeStates };
+				for (const match of matches) {
+					newRunningGames.add(match.game_id);
+					newRealTimeStates[match.game_id] = {
+						isRunning: true,
+						currentSessionMinutes: 0,
+						currentSessionSeconds: 0,
+						startTime: now,
+						timeTrackingMode,
+						processId: match.process_id,
+					};
+				}
+				return {
+					runningGameIds: newRunningGames,
+					gameRealTimeStates: newRealTimeStates,
+				};
+			});
+
+			await queryClient.invalidateQueries({ queryKey: gameKeys.idLists() });
+		} catch (error) {
+			console.debug(
+				"扫描外部启动游戏失败:",
+				toError(error, "Failed to scan external running games").message,
+			);
+		}
+	},
+
 	clearActiveGame: () => {
 		set({
 			runningGameIds: new Set<number>(),
@@ -320,4 +381,23 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
  */
 export const initializeGamePlayTracking = (): void => {
 	useGamePlayStore.getState().initTimeTracking();
+};
+
+
+let externalRunningGameScanIntervalId: number | null = null;
+
+export const initializeExternalRunningGameScan = (): void => {
+	if (externalRunningGameScanIntervalId !== null) return;
+	const runScan = () => {
+		if (!useStore.getState().externalLaunchMonitorEnabled) return;
+		void useGamePlayStore.getState().scanExternalRunningGames();
+	};
+	runScan();
+	externalRunningGameScanIntervalId = window.setInterval(runScan, 6000);
+};
+
+export const disposeExternalRunningGameScan = (): void => {
+	if (externalRunningGameScanIntervalId === null) return;
+	window.clearInterval(externalRunningGameScanIntervalId);
+	externalRunningGameScanIntervalId = null;
 };

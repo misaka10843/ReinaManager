@@ -14,6 +14,7 @@ export type TimeUpdateCallback = (
 	seconds: number,
 ) => void;
 export type SessionEndCallback = (gameId: number, minutes: number) => void;
+export type SessionStartCallback = (gameId: number, processId: number, startTime: number) => void;
 
 // 获取游戏统计信息 - 使用后端服务
 export async function getGameStatistics(
@@ -144,6 +145,7 @@ export async function getFormattedGameStats(
 export function initGameTimeTracking(
 	onTimeUpdate?: TimeUpdateCallback,
 	onSessionEnd?: SessionEndCallback,
+	onSessionStart?: SessionStartCallback,
 ): () => void {
 	// 游戏会话开始
 	const unlistenStart = listen<{
@@ -151,8 +153,9 @@ export function initGameTimeTracking(
 		processId: number;
 		startTime: number;
 	}>("game-session-started", (event) => {
-		const { gameId } = event.payload;
+		const { gameId, processId, startTime } = event.payload;
 		console.log(`游戏 ${gameId} 开始运行`);
+		onSessionStart?.(gameId, processId, startTime);
 	});
 
 	// 游戏时间更新事件监听

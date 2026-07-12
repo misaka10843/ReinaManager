@@ -131,6 +131,11 @@ fn unregister_session(game_id: u32) {
     get_sessions().write().remove(&game_id);
 }
 
+/// 判断指定游戏是否已经有活跃监控会话。
+pub fn is_game_monitored(game_id: u32) -> bool {
+    get_sessions().read().contains_key(&game_id)
+}
+
 // ============================================================================
 // 公共 API
 // ============================================================================
