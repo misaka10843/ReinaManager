@@ -357,7 +357,7 @@ mod keyboard_simulator {
 mod win_elevated_launch {
     use std::ffi::OsStr;
     use std::os::windows::ffi::OsStrExt;
-    use std::path::{Path, PathBuf};
+    use std::path::{Path};
 
     use windows::Win32::Foundation::CloseHandle;
     use windows::Win32::System::Threading::GetProcessId;
