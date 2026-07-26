@@ -12,6 +12,7 @@ import {
 	Skeleton,
 	Typography,
 } from "@mui/material";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import type { GameData, TimeTrackingMode } from "@/types";
@@ -60,6 +61,13 @@ export function FocusGamePanel({
 }: FocusGamePanelProps) {
 	const { t } = useTranslation();
 	const hasPlayed = lastPlayed !== undefined;
+	const coverUrl = game ? getVisibleCover(game, replaceNsfwCover) : "";
+	const [coverLayout, setCoverLayout] = useState<{
+		url: string;
+		isPortrait: boolean;
+	} | null>(null);
+	const isPortraitCover =
+		coverLayout?.url === coverUrl && coverLayout.isPortrait;
 
 	return (
 		<Paper
@@ -70,15 +78,40 @@ export function FocusGamePanel({
 				<>
 					<Box
 						component="img"
-						src={getVisibleCover(game, replaceNsfwCover)}
+						src={coverUrl}
 						alt=""
-						className="absolute inset-0 h-full w-full object-cover"
+						className={`absolute inset-0 h-full w-full object-cover ${
+							isPortraitCover ? "scale-110 blur-2xl" : ""
+						}`}
+						onLoad={(event) => {
+							const image = event.currentTarget;
+							setCoverLayout({
+								url: coverUrl,
+								isPortrait: image.naturalHeight > image.naturalWidth,
+							});
+						}}
 					/>
+					{isPortraitCover ? (
+						<Box
+							className="absolute inset-y-3 right-3 w-[48%]"
+							sx={{
+								maskImage: "linear-gradient(90deg, transparent 0%, black 28%)",
+							}}
+						>
+							<Box
+								component="img"
+								src={coverUrl}
+								alt=""
+								className="h-full w-full object-contain object-right drop-shadow-[0_8px_24px_rgba(0,0,0,.45)]"
+							/>
+						</Box>
+					) : null}
 					<Box
 						className="absolute inset-0"
 						sx={{
-							background:
-								"linear-gradient(90deg, rgba(7, 13, 27, .94) 0%, rgba(7, 13, 27, .76) 42%, rgba(7, 13, 27, .18) 76%, rgba(7, 13, 27, .32) 100%)",
+							background: isPortraitCover
+								? "linear-gradient(90deg, rgba(7, 13, 27, .96) 0%, rgba(7, 13, 27, .82) 42%, rgba(7, 13, 27, .24) 72%, rgba(7, 13, 27, .34) 100%)"
+								: "linear-gradient(90deg, rgba(7, 13, 27, .94) 0%, rgba(7, 13, 27, .76) 42%, rgba(7, 13, 27, .18) 76%, rgba(7, 13, 27, .32) 100%)",
 						}}
 					/>
 					<Box className="relative z-1 h-full flex flex-col p-5">
@@ -95,7 +128,9 @@ export function FocusGamePanel({
 						/>
 						<Typography
 							component="h1"
-							className="mt-3 max-w-[72%] line-clamp-2 text-[26px] leading-[1.2] font-800 min-[1200px]:text-[34px]"
+							className={`mt-3 line-clamp-2 text-[26px] leading-[1.2] font-800 min-[1200px]:text-[34px] ${
+								isPortraitCover ? "max-w-[58%]" : "max-w-[72%]"
+							}`}
 							title={getGameDisplayName(game)}
 						>
 							{getGameDisplayName(game)}
