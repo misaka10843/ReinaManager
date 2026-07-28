@@ -34,7 +34,7 @@ interface FocusGamePanelProps {
 	realTimeState?: FocusRealTimeState;
 	lastPlayed?: number;
 	weekPlayTime: number;
-	totalPlayTime?: string;
+	totalPlayTime?: number;
 	recentGames: GameData[];
 	lastPlayedMap: ReadonlyMap<number, number>;
 	replaceNsfwCover: boolean;
@@ -151,7 +151,7 @@ export function FocusGamePanel({
 						<Typography className="mt-1 text-[rgba(255,255,255,.78)]">
 							{t("home.focus.playTime", "本周 {{week}} · 总计 {{total}}", {
 								week: formatPlayTime(weekPlayTime),
-								total: totalPlayTime ?? formatPlayTime(0),
+								total: formatPlayTime(totalPlayTime ?? 0),
 							})}
 						</Typography>
 						<Box className="mt-3 flex flex-wrap gap-2.5">

@@ -285,7 +285,7 @@ export const Home: React.FC = () => {
 							realTimeState={focusRealTimeState}
 							lastPlayed={focusLastPlayed}
 							weekPlayTime={focusWeekTime}
-							totalPlayTime={focusStatsQuery.data?.totalPlayTime}
+							totalPlayTime={focusStatsQuery.data?.totalMinutes}
 							recentGames={recentGames}
 							lastPlayedMap={lastPlayedMap}
 							replaceNsfwCover={nsfwCoverReplace}
