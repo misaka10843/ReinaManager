@@ -1,3 +1,19 @@
+## [0.26.3](https://github.com/huoshen80/ReinaManager/compare/v0.26.2...v0.26.3) (2026-07-28)
+
+<details>
+<summary>查看中文版本</summary>
+
+### 🐛 Bug 修复
+
+- *(home)* 修复封面比例闪烁与面板边距布局 ([88fd2b5](https://github.com/huoshen80/ReinaManager/commit/88fd2b560d9e0996dd33022689a4fbb2aeeb3239))
+
+</details>
+
+### 🐛 Bug Fixes
+
+- *(home)* Fix cover aspect flash and panel layout ([88fd2b5](https://github.com/huoshen80/ReinaManager/commit/88fd2b560d9e0996dd33022689a4fbb2aeeb3239))
+
+
 ## [0.26.2](https://github.com/huoshen80/ReinaManager/compare/v0.26.1...v0.26.2) (2026-07-28)
 
 <details>
