@@ -418,10 +418,11 @@ async fn ensure_games_column(
         return Ok(());
     }
 
-    sqlx::query(&format!(
+    // 列名和类型仅由上方迁移中的固定字面量传入，已确认不存在外部输入。
+    sqlx::query(sqlx::AssertSqlSafe(format!(
         r#"ALTER TABLE games ADD COLUMN "{}" {}"#,
         column_name, column_type
-    ))
+    )))
     .execute(pool)
     .await
     .map_err(|e| DbErr::Custom(format!("Failed to add games.{}: {}", column_name, e)))?;

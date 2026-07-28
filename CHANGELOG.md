@@ -1,3 +1,29 @@
+## [0.26.2](https://github.com/huoshen80/ReinaManager/compare/v0.26.1...v0.26.2) (2026-07-28)
+
+<details>
+<summary>查看中文版本</summary>
+
+### ✨ 新功能
+
+- *(home)* 适配竖版封面的焦点卡片 ([035a7ca](https://github.com/huoshen80/ReinaManager/commit/035a7ca0b9cd5a2129fbe1e9555c366c280db5c8))
+
+### 🐛 Bug 修复
+
+- *(home)* 防止随机游戏标签被裁切 ([9b79028](https://github.com/huoshen80/ReinaManager/commit/9b79028ecee6191191a80362115e2fa7f3765ba2))
+- *(home)* 在渲染时本地化焦点游玩时长 ([ae70aec](https://github.com/huoshen80/ReinaManager/commit/ae70aec1ed955125411761685eb64524a61a2428))
+
+</details>
+
+### ✨ Features
+
+- *(home)* Adapt focus card to portrait covers ([035a7ca](https://github.com/huoshen80/ReinaManager/commit/035a7ca0b9cd5a2129fbe1e9555c366c280db5c8))
+
+### 🐛 Bug Fixes
+
+- *(home)* Prevent random game tag clipping ([9b79028](https://github.com/huoshen80/ReinaManager/commit/9b79028ecee6191191a80362115e2fa7f3765ba2))
+- *(home)* Localize focus playtime on render ([ae70aec](https://github.com/huoshen80/ReinaManager/commit/ae70aec1ed955125411761685eb64524a61a2428))
+
+
 ## [0.26.1](https://github.com/huoshen80/ReinaManager/compare/v0.26.0...v0.26.1) (2026-07-24)
 
 <details>
