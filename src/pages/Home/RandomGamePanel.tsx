@@ -39,8 +39,11 @@ export function RandomGamePanel({
 	const { t } = useTranslation();
 
 	return (
-		<Paper variant="outlined" className="h-full min-h-0 overflow-hidden p-3">
-			<Box className="mb-4 flex items-center gap-2">
+		<Paper
+			variant="outlined"
+			className="flex h-full min-h-0 flex-col justify-between overflow-hidden p-3 min-[1200px]:p-3.5"
+		>
+			<Box className="mb-2 flex items-center gap-2">
 				<CasinoOutlinedIcon />
 				<Typography variant="h6" fontWeight={700}>
 					{t("home.random.title", "随机游戏")}
@@ -81,7 +84,7 @@ export function RandomGamePanel({
 								{game.developer}
 							</Typography>
 						) : null}
-						<Box className="mt-2 flex min-w-0 gap-1.5 overflow-hidden">
+						<Box className="mt-1.5 flex min-w-0 gap-1.5 overflow-hidden">
 							{game.tags?.slice(0, 3).map((tag) => (
 								<Chip
 									key={tag}

@@ -12,7 +12,7 @@ import {
 	Skeleton,
 	Typography,
 } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import type { GameData, TimeTrackingMode } from "@/types";
@@ -44,6 +44,26 @@ interface FocusGamePanelProps {
 	onSelectRecent: (gameId: number) => void;
 }
 
+// 缓存封面方向（竖屏/横屏），防止游戏切换时因异步 onLoad 导致 1 帧平铺闪烁
+const coverAspectCache = new Map<string, boolean>();
+
+function getCoverIsPortrait(url: string): boolean | undefined {
+	if (!url) return undefined;
+	if (coverAspectCache.has(url)) {
+		return coverAspectCache.get(url);
+	}
+	if (typeof window !== "undefined") {
+		const img = new Image();
+		img.src = url;
+		if (img.complete && img.naturalWidth > 0) {
+			const isPortrait = img.naturalHeight > img.naturalWidth;
+			coverAspectCache.set(url, isPortrait);
+			return isPortrait;
+		}
+	}
+	return undefined;
+}
+
 export function FocusGamePanel({
 	game,
 	isRunning,
@@ -62,12 +82,33 @@ export function FocusGamePanel({
 	const { t } = useTranslation();
 	const hasPlayed = lastPlayed !== undefined;
 	const coverUrl = game ? getVisibleCover(game, replaceNsfwCover) : "";
+
+	const cachedIsPortrait = getCoverIsPortrait(coverUrl);
 	const [coverLayout, setCoverLayout] = useState<{
 		url: string;
 		isPortrait: boolean;
 	} | null>(null);
+
 	const isPortraitCover =
-		coverLayout?.url === coverUrl && coverLayout.isPortrait;
+		cachedIsPortrait ??
+		(coverLayout?.url === coverUrl ? coverLayout.isPortrait : false);
+
+	// 预加载 recentGames 的封面宽高比，消除点击最近游戏列表时的布局闪烁
+	useEffect(() => {
+		for (const recentGame of recentGames) {
+			const url = getVisibleCover(recentGame, replaceNsfwCover);
+			getCoverIsPortrait(url);
+		}
+	}, [recentGames, replaceNsfwCover]);
+
+	// 当 coverUrl 变化时，若浏览器已缓存该图片则同步更新布局状态
+	useLayoutEffect(() => {
+		if (!coverUrl) return;
+		const isPortrait = getCoverIsPortrait(coverUrl);
+		if (isPortrait !== undefined) {
+			setCoverLayout({ url: coverUrl, isPortrait });
+		}
+	}, [coverUrl]);
 
 	return (
 		<Paper
@@ -85,10 +126,14 @@ export function FocusGamePanel({
 						}`}
 						onLoad={(event) => {
 							const image = event.currentTarget;
-							setCoverLayout({
-								url: coverUrl,
-								isPortrait: image.naturalHeight > image.naturalWidth,
-							});
+							if (image.naturalWidth > 0) {
+								const isPortrait = image.naturalHeight > image.naturalWidth;
+								coverAspectCache.set(coverUrl, isPortrait);
+								setCoverLayout({
+									url: coverUrl,
+									isPortrait,
+								});
+							}
 						}}
 					/>
 					{isPortraitCover ? (
