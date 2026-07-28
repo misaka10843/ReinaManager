@@ -81,9 +81,23 @@ export function RandomGamePanel({
 								{game.developer}
 							</Typography>
 						) : null}
-						<Box className="mt-2 flex gap-1.5 overflow-hidden">
+						<Box className="mt-2 flex min-w-0 gap-1.5 overflow-hidden">
 							{game.tags?.slice(0, 3).map((tag) => (
-								<Chip key={tag} label={tag} size="small" variant="outlined" />
+								<Chip
+									key={tag}
+									label={tag}
+									title={tag}
+									size="small"
+									variant="outlined"
+									className="min-w-0 shrink"
+									sx={{
+										"& .MuiChip-label": {
+											overflow: "hidden",
+											textOverflow: "ellipsis",
+											whiteSpace: "nowrap",
+										},
+									}}
+								/>
 							))}
 						</Box>
 					</Box>
