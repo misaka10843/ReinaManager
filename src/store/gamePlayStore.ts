@@ -69,6 +69,16 @@ interface GamePlayState {
 	getGameRealTimeState: (gameId: number) => GameRealTimeState | null;
 }
 
+const removeGameRuntimeState = (state: GamePlayState, gameId: number) => {
+	const runningGameIds = new Set(state.runningGameIds);
+	runningGameIds.delete(gameId);
+
+	const gameRealTimeStates = { ...state.gameRealTimeStates };
+	delete gameRealTimeStates[gameId];
+
+	return { runningGameIds, gameRealTimeStates };
+};
+
 let trackingInitialization: Promise<() => void> | null = null;
 
 /**
@@ -151,18 +161,7 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
 
 			if (!result.success) {
 				// 启动失败，恢复状态
-				set((state) => {
-					const newRunningGames = new Set(state.runningGameIds);
-					newRunningGames.delete(gameId);
-
-					const newRealTimeStates = { ...state.gameRealTimeStates };
-					delete newRealTimeStates[gameId];
-
-					return {
-						runningGameIds: newRunningGames,
-						gameRealTimeStates: newRealTimeStates,
-					};
-				});
+				set((state) => removeGameRuntimeState(state, gameId));
 			} else {
 				// 启动成功，更新进程 ID
 				set((state) => {
@@ -184,18 +183,7 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
 			});
 
 			// 启动异常，恢复状态
-			set((state) => {
-				const newRunningGames = new Set(state.runningGameIds);
-				newRunningGames.delete(gameId);
-
-				const newRealTimeStates = { ...state.gameRealTimeStates };
-				delete newRealTimeStates[gameId];
-
-				return {
-					runningGameIds: newRunningGames,
-					gameRealTimeStates: newRealTimeStates,
-				};
-			});
+			set((state) => removeGameRuntimeState(state, gameId));
 
 			const errorMessage = toError(error, "Failed to launch game").message;
 			return { success: false, message: errorMessage };
@@ -218,6 +206,9 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
 
 			// 调用工具函数停止游戏
 			const result = await stopGameWithTracking(gameId);
+			if (result.success) {
+				set((state) => removeGameRuntimeState(state, gameId));
+			}
 
 			return result;
 		} catch (error) {
@@ -266,30 +257,15 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
 					});
 				},
 				// 会话结束回调
-				async (gameId: number, minutes: number) => {
-					// 只清除运行状态
-					set((state) => {
-						const newRunningGames = new Set(state.runningGameIds);
-						newRunningGames.delete(gameId);
-						// 移除对应游戏条目
-						const newRealTimeStates = { ...state.gameRealTimeStates };
-						delete newRealTimeStates[gameId];
-						return {
-							runningGameIds: newRunningGames,
-							gameRealTimeStates: newRealTimeStates,
-						};
-					});
-					await queryClient.invalidateQueries({ queryKey: ["stats"] });
-					// ====== 游戏结束后刷新Cards组件 ======
-					// 获取主store的状态，检查当前排序选项
-					const store = useStore.getState();
-					if (minutes && store.sortOption === "lastplayed") {
-						// 如果当前排序是"最近游玩"，刷新游戏列表查询以更新顺序
+				async (gameId, { recorded }) => {
+					// 先清除运行状态；只有最近游玩排序依赖本次结算结果。
+					set((state) => removeGameRuntimeState(state, gameId));
+
+					if (recorded && useStore.getState().sortOption === "lastplayed") {
 						await queryClient.invalidateQueries({
 							queryKey: gameKeys.idLists(),
 						});
 					}
-					// ====== END ======
 				},
 			);
 

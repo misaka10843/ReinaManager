@@ -427,11 +427,18 @@ export interface GameTimeStats {
 export type TimeUpdateCallback = (gameId: number, minutes: number) => void;
 
 /**
- * 游戏会话结束回调类型
- * @param gameId 游戏ID
- * @param minutes 本次会话时长（分钟）
+ * 游戏会话结束结果
  */
-export type SessionEndCallback = (gameId: number, minutes: number) => void;
+export interface SessionEndResult {
+	recorded: boolean;
+	durationMinutes: number;
+}
+
+/** 游戏会话结束回调类型 */
+export type SessionEndCallback = (
+	gameId: number,
+	result: SessionEndResult,
+) => void | Promise<void>;
 
 /**
  * 停止游戏结果类型

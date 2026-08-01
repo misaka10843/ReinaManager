@@ -4,7 +4,12 @@ import { createBackupAndSync } from "@/hooks/queries/useSavedata";
 import { queryClient } from "@/providers/queryClient";
 import { snackbar } from "@/providers/snackBar";
 import { gameService, statsService } from "@/services/invoke";
-import type { GameSession, GameStatistics, GameTimeStats } from "@/types";
+import type {
+	GameSession,
+	GameStatistics,
+	GameTimeStats,
+	SessionEndCallback,
+} from "@/types";
 import { formatPlayTime, getLocalDateString } from "@/utils/dateTime";
 
 // 类型定义
@@ -13,7 +18,6 @@ export type TimeUpdateCallback = (
 	minutes: number,
 	seconds: number,
 ) => void;
-export type SessionEndCallback = (gameId: number, minutes: number) => void;
 
 // 获取游戏统计信息 - 使用后端服务
 export async function getGameStatistics(
@@ -193,7 +197,11 @@ export async function initGameTimeTracking(
 			console.log("收到游戏会话结束事件:", event.payload);
 
 			if (onSessionEnd) {
-				onSessionEnd(gameId, recorded ? durationMinutes : 0);
+				try {
+					await onSessionEnd(gameId, { recorded, durationMinutes });
+				} catch (callbackError) {
+					console.error("处理游戏会话结束回调失败:", callbackError);
+				}
 			}
 
 			if (recordError) {
@@ -210,10 +218,8 @@ export async function initGameTimeTracking(
 				return;
 			}
 
-			await Promise.all([
-				queryClient.invalidateQueries({ queryKey: ["stats"] }),
-				queryClient.invalidateQueries({ queryKey: ["games", "idList"] }),
-			]);
+			// 后端完成会话结算后，由事件层统一刷新统计查询缓存。
+			await queryClient.invalidateQueries({ queryKey: ["stats"] });
 
 			void (async () => {
 				try {
@@ -238,10 +244,6 @@ export async function initGameTimeTracking(
 			})();
 		} catch (error) {
 			console.error("处理游戏结束事件失败:", error);
-
-			if (onSessionEnd) {
-				onSessionEnd(gameId, 0);
-			}
 		}
 	});
 
