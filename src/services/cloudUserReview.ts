@@ -9,6 +9,7 @@ import {
 } from "@/metadata/sourceRecord";
 import { withBgmAuth } from "@/services/bgmAuthSession";
 import { getVndbToken } from "@/services/cloudPlayStatus/shared";
+import { getNetworkRequestContext } from "@/services/requestContext";
 import { AppError } from "@/utils/errors";
 
 export type UserReviewPushSource = "bgm" | "vndb";
@@ -79,6 +80,7 @@ export async function pushGameUserReviewToBgm(
 				private: payload.bgmPrivate,
 			},
 			token,
+			getNetworkRequestContext(),
 		);
 	});
 }
@@ -103,7 +105,10 @@ export async function pushGameUserReviewToVndb(
 		});
 	}
 
-	const profile = await fetchVndbCurrentUserProfile(token);
+	const profile = await fetchVndbCurrentUserProfile(
+		token,
+		getNetworkRequestContext(),
+	);
 	if (!profile?.permissions.includes("listwrite")) {
 		throw new AppError({
 			code: "vndb_listwrite_missing",
@@ -119,6 +124,7 @@ export async function pushGameUserReviewToVndb(
 			notes: review ? review : null,
 		},
 		token,
+		getNetworkRequestContext(),
 	);
 }
 

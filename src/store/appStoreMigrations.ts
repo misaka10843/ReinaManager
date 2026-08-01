@@ -1,4 +1,7 @@
-import { DEFAULT_MIXED_SOURCE_KEYS, MIXED_SOURCE_KEYS } from "@/metadata";
+import {
+	DEFAULT_MIXED_SOURCE_KEYS,
+	MIXED_SOURCE_KEYS,
+} from "@/metadata/constants";
 import type { SourceType } from "@/types";
 import { DefaultGroup } from "@/types/collection";
 

@@ -1,49 +1,35 @@
-import type { GameMetadataDraft, SourceType } from "@/types";
+import type { GameMetadataDraft } from "@/types";
 import {
 	getCandidateSourceData,
 	getSourceCandidateFromGame,
 	type SourceCandidate,
 	sourceCandidateToDraft,
 } from "./sourceCandidate";
-import { getRuntimeSourceAdapter } from "./sourceRegistry";
+import type { RuntimeBoundSourceAdapter } from "./sourceRegistry";
 
 export interface AutoResolveSourceCandidateParams {
 	query: string;
-	source: SourceType;
-	bgmToken?: string;
+	adapter: RuntimeBoundSourceAdapter;
 	enrichCrossSource?: boolean;
-	signal?: AbortSignal;
 }
 
 async function searchFirstSourceCandidate({
 	query,
-	source,
-	bgmToken,
-	signal,
+	adapter,
 }: AutoResolveSourceCandidateParams): Promise<SourceCandidate | null> {
-	const adapter = getRuntimeSourceAdapter(source);
-	const [candidate] = await adapter.searchByName(query, {
-		bgmToken,
-		limit: 1,
-		signal,
-	});
+	const [candidate] = await adapter.searchByName(query, { limit: 1 });
 
 	return candidate ?? null;
 }
 
 export async function resolveAutoSelectedSourceCandidate({
 	query,
-	source,
-	bgmToken,
+	adapter,
 	enrichCrossSource = true,
-	signal,
 }: AutoResolveSourceCandidateParams): Promise<SourceCandidate | null> {
-	const adapter = getRuntimeSourceAdapter(source);
 	const candidate = await searchFirstSourceCandidate({
 		query,
-		source,
-		bgmToken,
-		signal,
+		adapter,
 	});
 
 	if (!candidate) {
@@ -54,12 +40,8 @@ export async function resolveAutoSelectedSourceCandidate({
 		return candidate;
 	}
 
-	const draft = await adapter.enrichOnSelect(candidate, {
-		bgmToken,
-		enrichCrossSource,
-		signal,
-	});
-	const data = getCandidateSourceData(draft, source) ?? candidate.data;
+	const draft = await adapter.enrichOnSelect(candidate, { enrichCrossSource });
+	const data = getCandidateSourceData(draft, adapter.key) ?? candidate.data;
 
 	return getSourceCandidateFromGame(
 		draft,
@@ -76,14 +58,12 @@ export async function resolveAutoSelectedGameDraft(
 		return null;
 	}
 
-	const adapter = getRuntimeSourceAdapter(params.source);
+	const { adapter } = params;
 	if (!adapter.enrichOnSelect || !candidate.externalId) {
 		return sourceCandidateToDraft(candidate);
 	}
 
 	return adapter.enrichOnSelect(candidate, {
-		bgmToken: params.bgmToken,
 		enrichCrossSource: params.enrichCrossSource ?? true,
-		signal: params.signal,
 	});
 }

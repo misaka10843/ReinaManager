@@ -31,10 +31,7 @@ import {
 	getSourceCandidateFromGame,
 	type SourceCandidate,
 } from "../sourceCandidate";
-import {
-	getEnabledMixedAdapters,
-	type RuntimeSourceAdapter,
-} from "../sourceRegistry";
+import type { RuntimeBoundSourceAdapter } from "../sourceRegistry";
 
 interface SafeFetchResult {
 	source: SourceType;
@@ -55,13 +52,11 @@ export interface MixedSourceFetchResult {
 interface FetchMixedDataOptions {
 	sourceIds?: Partial<Record<SourceType, string>>;
 	name?: string;
-	bgmToken?: string;
-	enabledSources?: readonly SourceType[];
-	signal?: AbortSignal;
+	adapters: RuntimeBoundSourceAdapter[];
 }
 
 async function fetchAdapterSafely(
-	adapter: RuntimeSourceAdapter,
+	adapter: RuntimeBoundSourceAdapter,
 	task: () => Promise<SourceCandidate[]>,
 ): Promise<SafeFetchResult> {
 	try {
@@ -78,7 +73,9 @@ async function fetchAdapterSafely(
 	}
 }
 
-function createEmptyResult(adapter: RuntimeSourceAdapter): SafeFetchResult {
+function createEmptyResult(
+	adapter: RuntimeBoundSourceAdapter,
+): SafeFetchResult {
 	return { source: adapter.key, data: [], failed: false, attempted: false };
 }
 
@@ -124,7 +121,7 @@ function extractNameFromApi(
 }
 
 function getSourceCandidateFromDraft(
-	adapter: RuntimeSourceAdapter,
+	adapter: RuntimeBoundSourceAdapter,
 	draft: GameMetadataDraft,
 ): SourceCandidate {
 	const data = getCandidateSourceData(draft, adapter.key);
@@ -141,15 +138,20 @@ function getSourceCandidateFromDraft(
 
 function getProvidedSourceIds(
 	options: FetchMixedDataOptions,
-	adapters: RuntimeSourceAdapter[],
+	adapters: RuntimeBoundSourceAdapter[],
 ) {
 	return adapters
 		.map((adapter) => ({
 			adapter,
 			id: options.sourceIds?.[adapter.key],
 		}))
-		.filter((entry): entry is { adapter: RuntimeSourceAdapter; id: string } =>
-			Boolean(entry.id),
+		.filter(
+			(
+				entry,
+			): entry is {
+				adapter: RuntimeBoundSourceAdapter;
+				id: string;
+			} => Boolean(entry.id),
 		);
 }
 
@@ -162,12 +164,10 @@ function getProvidedSourceIds(
  * @param options 配置选项
  * @param options.sourceIds 按 source 传入的外部 ID（可选）
  * @param options.name 游戏名称（可选）
- * @param options.bgmToken Bangumi API 访问令牌（可选）
  * @returns 返回按 source 分组的候选列表
  */
 export async function fetchMixedData(options: FetchMixedDataOptions) {
-	const { name, bgmToken, enabledSources, signal } = options;
-	const adapters = getEnabledMixedAdapters(enabledSources);
+	const { name, adapters } = options;
 	const providedSourceIds = getProvidedSourceIds(options, adapters);
 	const providedIds = providedSourceIds.length;
 
@@ -181,9 +181,7 @@ export async function fetchMixedData(options: FetchMixedDataOptions) {
 			getSourceCandidateFromDraft(
 				sourceAdapter,
 				await sourceAdapter.fetchById(sourceId, {
-					bgmToken,
 					enrichCrossSource: false,
-					signal,
 				}),
 			),
 		]);
@@ -199,10 +197,8 @@ export async function fetchMixedData(options: FetchMixedDataOptions) {
 						return fetchAdapterSafely(adapter, async () => {
 							const candidate = await resolveAutoSelectedSourceCandidate({
 								query: searchName,
-								source: adapter.key,
-								bgmToken,
+								adapter,
 								enrichCrossSource: false,
-								signal,
 							});
 							return candidate ? [candidate] : [];
 						});
@@ -227,10 +223,7 @@ export async function fetchMixedData(options: FetchMixedDataOptions) {
 		const results = await Promise.all(
 			adapters.map((adapter) => {
 				return fetchAdapterSafely(adapter, () =>
-					adapter.searchByName(searchName, {
-						bgmToken,
-						signal,
-					}),
+					adapter.searchByName(searchName),
 				);
 			}),
 		);

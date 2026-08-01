@@ -35,7 +35,7 @@ import {
 	MIXED_SOURCE_KEYS,
 	REGISTERED_SOURCE_KEYS,
 } from "../sourceRegistry";
-import { gameMetadataService } from "./gameMetadataService";
+import type { GameMetadataSession } from "./gameMetadataService";
 
 export interface GameInfoUpdateDraft {
 	newLocalPath: string;
@@ -65,7 +65,7 @@ interface SourceUpdateParams {
 	idType: string;
 	sourceIds?: SourceIdMap;
 	enabledSources?: readonly SourceType[];
-	bgmToken?: string;
+	session: GameMetadataSession;
 }
 
 export type MixedSourceResult = Partial<
@@ -140,7 +140,7 @@ export async function fetchMetadataForUpdate({
 	idType,
 	sourceIds,
 	enabledSources,
-	bgmToken,
+	session,
 }: SourceUpdateParams): Promise<MetadataFetchResult> {
 	if (!selectedGame) {
 		throw new Error(
@@ -158,10 +158,8 @@ export async function fetchMetadataForUpdate({
 	}
 
 	if (idType === "mixed") {
-		const enabled = new Set(enabledSources ?? MIXED_SOURCE_KEYS);
-		return gameMetadataService.getGameByIds({
+		return session.getGameByIds({
 			sourceIds,
-			bgmToken: enabled.has("bgm") ? bgmToken : undefined,
 			enabledSources,
 		});
 	}
@@ -175,7 +173,7 @@ export async function fetchMetadataForUpdate({
 			);
 		}
 
-		apiData = await gameMetadataService.getGameById(sourceId, idType, bgmToken);
+		apiData = await session.getGameById(sourceId, idType);
 	} else {
 		throw new Error(
 			i18n.t("pages.Detail.DataSourceUpdate.invalidIdType", "无效的ID类型"),

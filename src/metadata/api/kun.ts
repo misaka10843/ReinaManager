@@ -7,9 +7,10 @@
  */
 
 import i18next from "i18next";
-import { useStore } from "@/store/appStore";
 import type { GameMetadataDraft, KunData } from "@/types";
 import { AppError } from "@/utils/errors";
+import { USER_AGENT } from "../constants";
+import type { MetadataRequestContext } from "../sourceAdapter";
 import {
 	createGameCandidate,
 	createSourceCandidateRecord,
@@ -17,7 +18,7 @@ import {
 	getCandidateSourceId,
 	mergeCandidateSources,
 } from "../sourceCandidate";
-import http, { type TauriHttpOptions, USER_AGENT } from "./http";
+import http, { type TauriHttpOptions } from "./http";
 import { fetchVndbById } from "./vndb";
 
 const KUN_API_BASE = "https://www.kungal.com/api";
@@ -78,9 +79,8 @@ export interface KunPaginatedData<T> {
 
 type KunLocaleKey = keyof KunLanguage;
 
-interface KunFetchOptions {
+interface KunFetchOptions extends MetadataRequestContext {
 	enrichVndb?: boolean;
-	signal?: AbortSignal;
 }
 
 const KUN_LOCALE_ORDER: KunLocaleKey[] = ["zh-cn", "ja-jp", "en-us", "zh-tw"];
@@ -140,12 +140,13 @@ function extractAllTitles(localized?: Partial<KunLanguage>): string[] {
 	);
 }
 
-function extractKunTags(tags?: GalgameDetailTag[]): string[] {
+function extractKunTags(
+	tags: GalgameDetailTag[] | undefined,
+	filterLevel: number,
+): string[] {
 	if (!Array.isArray(tags) || tags.length === 0) {
 		return [];
 	}
-
-	const filterLevel = useStore.getState().spoilerLevel;
 
 	return tags
 		.toSorted((a, b) => (b.galgame_count || 0) - (a.galgame_count || 0))
@@ -202,6 +203,7 @@ function buildKunRateLimitedOptions(
  */
 const transformKunData = (
 	kunData: GalgameDetailResponse,
+	filterLevel: number,
 ): GameMetadataDraft => {
 	const summary = pickLocalizedText(kunData.markdown);
 
@@ -217,7 +219,9 @@ const transformKunData = (
 			new Set((kunData.alias || []).map((alias) => alias.trim())),
 		),
 		summary,
-		tags: kunData.vndb_id ? undefined : extractKunTags(kunData.tag),
+		tags: kunData.vndb_id
+			? undefined
+			: extractKunTags(kunData.tag, filterLevel),
 		developer: extractDeveloper(kunData.official),
 		nsfw: computeNsfw(kunData),
 		date: kunData.release_date ?? undefined,
@@ -247,9 +251,9 @@ const transformKunData = (
  */
 export async function fetchGalgameById(
 	id: string,
-	options: KunFetchOptions = {},
+	options: KunFetchOptions,
 ): Promise<GameMetadataDraft> {
-	const { enrichVndb = true, signal } = options;
+	const { enrichVndb = true, proxyUrl, signal, spoilerLevel } = options;
 	const url = `${KUN_API_BASE}/galgame/${id}`;
 
 	const resp = await http.get<KunApiResponse<GalgameDetailResponse>>(
@@ -259,6 +263,7 @@ export async function fetchGalgameById(
 				galgame_id: Number(id),
 			},
 			signal,
+			proxyUrl,
 		}),
 	);
 
@@ -271,7 +276,7 @@ export async function fetchGalgameById(
 		});
 	}
 
-	const kunResult = transformKunData(kunData);
+	const kunResult = transformKunData(kunData, spoilerLevel);
 	const vndbId = kunData.vndb_id;
 
 	if (!enrichVndb || !vndbId) {
@@ -279,7 +284,7 @@ export async function fetchGalgameById(
 	}
 
 	try {
-		const vndbResult = await fetchVndbById(vndbId, signal);
+		const vndbResult = await fetchVndbById(vndbId, options);
 
 		return {
 			...kunResult,
@@ -306,7 +311,7 @@ export async function fetchGalgameById(
 							{
 								...kunSourceData,
 								// VNDB 不可用时，保留鲲源自身 tags，避免 kun 源整体失效。
-								tags: extractKunTags(kunData.tag),
+								tags: extractKunTags(kunData.tag, spoilerLevel),
 							},
 						),
 					]
@@ -328,7 +333,7 @@ export async function searchGalgame(
 	page = 1,
 	limit = 12,
 	fetchDetailById = false,
-	options: KunFetchOptions = {},
+	options: KunFetchOptions,
 ): Promise<GameMetadataDraft[]> {
 	const resp = await http.get<
 		KunApiResponse<KunPaginatedData<SearchResultGalgame>>
@@ -342,6 +347,7 @@ export async function searchGalgame(
 				limit,
 			},
 			signal: options.signal,
+			proxyUrl: options.proxyUrl,
 		}),
 	);
 

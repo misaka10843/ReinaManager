@@ -15,6 +15,7 @@ import { fetchCurrentUserProfile } from "@/metadata/api/bgm";
 import { fetchVndbCurrentUserProfile } from "@/metadata/api/vndb";
 import { remoteQueryOptions } from "@/providers/queryClient";
 import { settingsService } from "@/services/invoke";
+import { getNetworkRequestContext } from "@/services/requestContext";
 import type { LogLevel, UpdateSettingsParams } from "@/types";
 
 // ============================================================================
@@ -53,7 +54,7 @@ function allSettingsQueryOptions() {
 function bgmCurrentUserProfileQueryOptions(token: string) {
 	return queryOptions({
 		queryKey: settingsKeys.bgmCurrentUserProfileByToken(token),
-		queryFn: () => fetchCurrentUserProfile(token),
+		queryFn: () => fetchCurrentUserProfile(token, getNetworkRequestContext()),
 		...remoteQueryOptions,
 	});
 }
@@ -90,7 +91,8 @@ export function useVndbCurrentUserProfile(options?: SettingsQueryOptions) {
 
 	return useQuery({
 		queryKey: settingsKeys.vndbCurrentUserProfileByToken(vndbToken),
-		queryFn: () => fetchVndbCurrentUserProfile(vndbToken),
+		queryFn: () =>
+			fetchVndbCurrentUserProfile(vndbToken, getNetworkRequestContext()),
 		enabled: (options?.enabled ?? true) && Boolean(vndbToken),
 		...remoteQueryOptions,
 	});

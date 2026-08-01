@@ -1,7 +1,6 @@
 import type { TFunction } from "i18next";
 import { useCallback, useMemo, useState } from "react";
 import {
-	gameMetadataService,
 	getRuntimeSourceAdapter,
 	REGISTERED_SOURCE_KEYS,
 	SEARCHABLE_SOURCE_KEYS,
@@ -13,6 +12,7 @@ import type {
 	MixedSourceSelection,
 } from "@/metadata/data/metadata";
 import { isBgmAuthExpiredError, withBgmAuth } from "@/services/bgmAuthSession";
+import { createMetadataSession } from "@/services/requestContext";
 import type { apiSourceType, GameMetadataDraft, SourceType } from "@/types";
 import { isAbortError } from "@/utils/async";
 import { getUserErrorMessage } from "@/utils/errors";
@@ -128,13 +128,11 @@ export function useMetadataSearchFlow({
 			try {
 				if (source === "mixed") {
 					const searchMixedCandidates = (bgmToken?: string) => {
-						const candidatesPromise =
-							gameMetadataService.searchMixedSourceCandidates({
-								query,
-								bgmToken,
-								mixedEnabledSources,
-								signal,
-							});
+						const session = createMetadataSession({ bgmToken, signal });
+						const candidatesPromise = session.searchMixedSourceCandidates({
+							query,
+							mixedEnabledSources,
+						});
 						return withAbort ? withAbort(candidatesPromise) : candidatesPromise;
 					};
 					const result =
@@ -154,13 +152,14 @@ export function useMetadataSearchFlow({
 					return;
 				}
 
-				if (gameMetadataService.shouldUseIdSearch(query, source)) {
+				if (getRuntimeSourceAdapter(source).validateId(query.trim())) {
 					const searchById = (bgmToken?: string) => {
-						const searchPromise = gameMetadataService.searchGames({
-							query,
-							source,
+						const searchPromise = createMetadataSession({
 							bgmToken,
 							signal,
+						}).searchGames({
+							query,
+							source,
 						});
 						return withAbort ? withAbort(searchPromise) : searchPromise;
 					};
@@ -178,11 +177,12 @@ export function useMetadataSearchFlow({
 				}
 
 				const searchCandidates = (bgmToken?: string) => {
-					const searchPromise = gameMetadataService.searchByName({
-						query,
-						source,
+					const searchPromise = createMetadataSession({
 						bgmToken,
 						signal,
+					}).searchByName({
+						query,
+						source,
 					});
 					return withAbort ? withAbort(searchPromise) : searchPromise;
 				};
@@ -224,7 +224,7 @@ export function useMetadataSearchFlow({
 			setIsSearching(true);
 			try {
 				const resolvedGame =
-					await gameMetadataService.resolveSourceCandidateSelection({
+					await createMetadataSession().resolveSourceCandidateSelection({
 						candidate: selectedCandidate,
 					});
 				await onResolved(resolvedGame);
@@ -242,10 +242,11 @@ export function useMetadataSearchFlow({
 		async (selection: MixedSourceSelection, enabled: MixedSourceEnabled) => {
 			setIsSearching(true);
 			try {
-				const gameData = await gameMetadataService.resolveMixedSourceSelection({
-					selection,
-					enabled,
-				});
+				const gameData =
+					await createMetadataSession().resolveMixedSourceSelection({
+						selection,
+						enabled,
+					});
 				await onResolved(gameData, mixedCandidateState.failedSources);
 				closeMixedCandidates();
 			} catch (error) {

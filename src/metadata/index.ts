@@ -1,8 +1,18 @@
+export {
+	DEFAULT_MIXED_SOURCE_KEYS,
+	MIXED_SOURCE_KEYS,
+	MIXED_SOURCE_MAX_COUNT,
+	MIXED_SOURCE_MIN_COUNT,
+	REGISTERED_SOURCE_KEYS,
+	SEARCHABLE_SOURCE_KEYS,
+} from "./constants";
 export type { GameSearchParams } from "./data/gameMetadataService";
-export { gameMetadataService } from "./data/gameMetadataService";
+export { GameMetadataSession } from "./data/gameMetadataService";
 export type {
+	BoundMetadataSourceAdapter,
 	MetadataSourceAdapter,
 	MetadataSourceContext,
+	MetadataSourceOptions,
 	SourceIdMap,
 } from "./sourceAdapter";
 export type { AutoResolveSourceCandidateParams } from "./sourceAutoResolve";
@@ -29,16 +39,14 @@ export {
 	normalizeGameCandidateSources,
 	sourceCandidateToDraft,
 } from "./sourceCandidate";
-export type { RuntimeSourceAdapter } from "./sourceRegistry";
+export type {
+	BoundSourceAdapterMap,
+	RuntimeBoundSourceAdapter,
+	RuntimeSourceAdapter,
+} from "./sourceRegistry";
 export {
-	DEFAULT_MIXED_SOURCE_KEYS,
-	getEnabledMixedAdapters,
+	bindSourceAdapters,
 	getRuntimeSourceAdapter,
 	getSourceAdapter,
-	MIXED_SOURCE_KEYS,
-	MIXED_SOURCE_MAX_COUNT,
-	MIXED_SOURCE_MIN_COUNT,
-	REGISTERED_SOURCE_KEYS,
-	SEARCHABLE_SOURCE_KEYS,
 	SOURCE_ADAPTERS,
 } from "./sourceRegistry";

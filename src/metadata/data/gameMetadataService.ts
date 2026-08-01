@@ -9,7 +9,11 @@
 import type { apiSourceType, GameMetadataDraft, SourceType } from "@/types";
 import { AppError, toError } from "@/utils/errors";
 import { fetchMixedData } from "../api/mixed";
-import type { MetadataSourceContext, SourceIdMap } from "../sourceAdapter";
+import type {
+	MetadataRequestContext,
+	MetadataSourceOptions,
+	SourceIdMap,
+} from "../sourceAdapter";
 import { resolveAutoSelectedGameDraft } from "../sourceAutoResolve";
 import {
 	getCandidateSourceData,
@@ -21,9 +25,12 @@ import {
 	sourceCandidateToDraft,
 } from "../sourceCandidate";
 import {
-	getRuntimeSourceAdapter,
+	type BoundSourceAdapterMap,
+	bindSourceAdapters,
 	getSourceAdapter,
+	MIXED_SOURCE_KEYS,
 	REGISTERED_SOURCE_KEYS,
+	type RuntimeBoundSourceAdapter,
 } from "../sourceRegistry";
 import {
 	buildGameFromMixedSelection,
@@ -136,36 +143,52 @@ function ensureMixedResult(
 export interface GameSearchParams {
 	query: string; // 搜索关键词（可以是ID或名称）
 	source?: SourceType; // 数据源（可选，不指定则为mixed）
-	bgmToken?: string; // BGM API访问令牌
 	mixedEnabledSources?: readonly SourceType[]; // mixed 模式下允许请求的数据源
 	limit?: number; // 名称搜索返回数量上限
-	signal?: AbortSignal;
 }
 
 /**
- * 游戏元数据服务类
- * 提供统一的游戏数据获取接口，封装各数据源的差异性
+ * 单次元数据操作会话。
+ * 构造时固定请求上下文，后续业务链路只传递已绑定的数据源适配器。
  */
-class GameMetadataService {
+export class GameMetadataSession {
+	private readonly adapters: BoundSourceAdapterMap;
+	private readonly hasBgmToken: boolean;
+
+	constructor(context: MetadataRequestContext) {
+		this.adapters = bindSourceAdapters(context);
+		this.hasBgmToken = Boolean(context.bgmToken);
+	}
+
+	private getRuntimeAdapter(source: SourceType): RuntimeBoundSourceAdapter {
+		return this.adapters[source] as RuntimeBoundSourceAdapter;
+	}
+
+	private getEnabledMixedAdapters(
+		enabledSources?: readonly SourceType[],
+	): RuntimeBoundSourceAdapter[] {
+		const enabledSet = enabledSources ? new Set(enabledSources) : undefined;
+		return MIXED_SOURCE_KEYS.filter(
+			(source) => !enabledSet || enabledSet.has(source),
+		).map((source) => this.getRuntimeAdapter(source));
+	}
+
 	/**
 	 * 游戏搜索主入口
 	 * - source 指定：按当前数据源自动判断 ID 搜索，否则按名称返回列表
 	 * - source 未指定：mixed 名称搜索，返回各源第一个结果
 	 */
 	async searchGames(params: GameSearchParams): Promise<GameMetadataDraft[]> {
-		const { query, source, bgmToken, mixedEnabledSources, limit, signal } =
-			params;
+		const { query, source, mixedEnabledSources, limit } = params;
 
 		return source
 			? this.searchSingleSource(
 					query,
 					source,
-					bgmToken,
 					this.shouldUseIdSearch(query, source),
 					limit,
-					signal,
 				)
-			: this.searchMixed(query, bgmToken, mixedEnabledSources, signal);
+			: this.searchMixed(query, mixedEnabledSources);
 	}
 
 	/**
@@ -182,22 +205,18 @@ class GameMetadataService {
 	private async searchSingleSource(
 		query: string,
 		source: SourceType,
-		bgmToken: string | undefined,
 		isIdSearch: boolean,
 		limit?: number,
-		signal?: AbortSignal,
 	): Promise<GameMetadataDraft[]> {
 		if (isIdSearch) {
-			const game = await this.getGameById(query, source, bgmToken, signal);
+			const game = await this.getGameById(query, source);
 			return [game];
 		}
 
 		const candidates = await this.searchByName({
 			query,
 			source,
-			bgmToken,
 			limit,
-			signal,
 		});
 		return candidates.map(sourceCandidateToDraft);
 	}
@@ -208,16 +227,12 @@ class GameMetadataService {
 	async searchByName(params: {
 		query: string;
 		source: SourceType;
-		bgmToken?: string;
 		limit?: number;
-		signal?: AbortSignal;
 	}): Promise<SourceCandidate[]> {
-		const { query, source, bgmToken, limit, signal } = params;
+		const { query, source, limit } = params;
 		try {
-			return await getSourceAdapter(source).searchByName(query, {
-				bgmToken,
+			return await this.getRuntimeAdapter(source).searchByName(query, {
 				limit,
-				signal,
 			});
 		} catch (error) {
 			throw createMetadataError(
@@ -231,19 +246,15 @@ class GameMetadataService {
 	async searchBestMatch(params: {
 		query: string;
 		source: SourceType;
-		bgmToken?: string;
-		signal?: AbortSignal;
 	}): Promise<GameMetadataDraft | null> {
-		const { query, source, bgmToken, signal } = params;
+		const { query, source } = params;
 		if (source === "dlsite" && this.shouldUseIdSearch(query, source)) {
-			return this.getGameById(query, source, bgmToken, signal);
+			return this.getGameById(query, source);
 		}
 
 		const draft = await resolveAutoSelectedGameDraft({
 			query,
-			source,
-			bgmToken,
-			signal,
+			adapter: this.getRuntimeAdapter(source),
 		});
 
 		return draft;
@@ -254,16 +265,9 @@ class GameMetadataService {
 	 */
 	private async searchMixed(
 		query: string,
-		bgmToken: string | undefined,
 		mixedEnabledSources?: readonly SourceType[],
-		signal?: AbortSignal,
 	): Promise<GameMetadataDraft[]> {
-		const result = await this.getMixedGameByName(
-			query,
-			bgmToken,
-			mixedEnabledSources,
-			signal,
-		);
+		const result = await this.getMixedGameByName(query, mixedEnabledSources);
 		if (!result) {
 			return [];
 		}
@@ -276,21 +280,17 @@ class GameMetadataService {
 	 */
 	async searchMixedSourceCandidates(params: {
 		query: string;
-		bgmToken?: string;
 		mixedEnabledSources?: readonly SourceType[];
-		signal?: AbortSignal;
 	}): Promise<{
 		candidates: MixedSourceCandidates;
 		failedSources: SourceType[];
 	}> {
-		const { query, bgmToken, mixedEnabledSources, signal } = params;
+		const { query, mixedEnabledSources } = params;
 
 		try {
 			const result = await fetchMixedData({
 				name: query,
-				bgmToken,
-				enabledSources: mixedEnabledSources,
-				signal,
+				adapters: this.getEnabledMixedAdapters(mixedEnabledSources),
 			});
 
 			return {
@@ -317,21 +317,16 @@ class GameMetadataService {
 	async getGameById(
 		id: string,
 		source: SourceType,
-		bgmToken?: string,
-		signal?: AbortSignal,
 	): Promise<GameMetadataDraft> {
 		if (import.meta.env.DEV) {
 			console.log(`[MetadataService] getGameById called:`, {
 				id,
 				source,
-				hasBgmToken: !!bgmToken,
+				hasBgmToken: this.hasBgmToken,
 			});
 		}
 		try {
-			const candidate = await getSourceAdapter(source).fetchById(id, {
-				bgmToken,
-				signal,
-			});
+			const candidate = await this.getRuntimeAdapter(source).fetchById(id);
 			return candidate;
 		} catch (error) {
 			throw createMetadataError(
@@ -356,22 +351,24 @@ class GameMetadataService {
 
 	private async resolveSourceCandidateDraft(
 		candidate: SourceCandidate,
-		ctx: MetadataSourceContext = {},
+		options: MetadataSourceOptions = {},
 	): Promise<GameMetadataDraft> {
-		const adapter = getRuntimeSourceAdapter(candidate.source);
+		const adapter = this.getRuntimeAdapter(candidate.source);
+		// BGM 未实现 enrichOnSelect，确认阶段不会发起 BGM 请求，
+		// 因此调用方无需为 resolve 单独获取 BGM token。
 		if (!adapter.enrichOnSelect || !candidate.externalId) {
 			return sourceCandidateToDraft(candidate);
 		}
 
-		return adapter.enrichOnSelect(candidate, ctx);
+		return adapter.enrichOnSelect(candidate, options);
 	}
 
 	private async enrichSourceCandidateDetails(
 		candidate: SourceCandidate,
-		ctx: MetadataSourceContext = {},
+		options: MetadataSourceOptions = {},
 	): Promise<SourceCandidate> {
-		const draft = await this.resolveSourceCandidateDraft(candidate, ctx);
-		const adapter = getRuntimeSourceAdapter(candidate.source);
+		const draft = await this.resolveSourceCandidateDraft(candidate, options);
+		const adapter = this.getRuntimeAdapter(candidate.source);
 		return getSourceCandidateFromGame(
 			draft,
 			adapter,
@@ -404,9 +401,7 @@ class GameMetadataService {
 
 				nextSelection[source] = await this.enrichSourceCandidateDetails(
 					selectedCandidate,
-					{
-						enrichCrossSource: false,
-					},
+					{ enrichCrossSource: false },
 				);
 			}),
 		);
@@ -438,16 +433,12 @@ class GameMetadataService {
 	 */
 	private async getMixedGameByName(
 		name: string,
-		bgmToken?: string,
 		enabledSources?: readonly SourceType[],
-		signal?: AbortSignal,
 	): Promise<GameMetadataDraft | null> {
 		try {
 			const result = await fetchMixedData({
 				name,
-				bgmToken,
-				enabledSources,
-				signal,
+				adapters: this.getEnabledMixedAdapters(enabledSources),
 			});
 
 			return mergeMixedResult(pickFirstMixedResult(result.candidates));
@@ -472,10 +463,9 @@ class GameMetadataService {
 	 */
 	async getGameByIds(params: {
 		sourceIds?: SourceIdMap;
-		bgmToken?: string;
 		enabledSources?: readonly SourceType[];
 	}): Promise<MetadataFetchResult> {
-		const { sourceIds, bgmToken, enabledSources } = params;
+		const { sourceIds, enabledSources } = params;
 		const enabledSourceIds = getEnabledSourceIds(sourceIds, enabledSources);
 		const providedSources = REGISTERED_SOURCE_KEYS.filter((source) =>
 			getSourceId(enabledSourceIds, source),
@@ -492,8 +482,7 @@ class GameMetadataService {
 			if (providedSources.length === 1) {
 				const result = await fetchMixedData({
 					sourceIds: enabledSourceIds,
-					bgmToken,
-					enabledSources,
+					adapters: this.getEnabledMixedAdapters(enabledSources),
 				});
 				const mergedResult = ensureMixedResult(
 					mergeMixedResult(pickFirstMixedResult(result.candidates)),
@@ -510,11 +499,7 @@ class GameMetadataService {
 				REGISTERED_SOURCE_KEYS.map((source) => {
 					const sourceId = getSourceId(enabledSourceIds, source);
 					return sourceId
-						? this.getGameById(
-								sourceId,
-								source,
-								source === "bgm" ? bgmToken : undefined,
-							)
+						? this.getGameById(sourceId, source)
 						: Promise.resolve(null);
 				}),
 			);
@@ -573,6 +558,3 @@ class GameMetadataService {
 		return matchedSources[0] ?? "unknown";
 	}
 }
-
-export const gameMetadataService = new GameMetadataService();
-export default gameMetadataService;

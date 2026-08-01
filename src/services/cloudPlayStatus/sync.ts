@@ -8,6 +8,7 @@ import {
 	type SourceIdentityPayload,
 } from "@/metadata/sourceRecord";
 import { withBgmAuth } from "@/services/bgmAuthSession";
+import { getNetworkRequestContext } from "@/services/requestContext";
 import { useStore } from "@/store/appStore";
 import type { PlayStatus } from "@/types/collection";
 import {
@@ -32,7 +33,12 @@ async function resolveBgmPlayStatus(game: SourceIdentityPayload) {
 			if (!token) return undefined;
 
 			const username = await getBgmUsername(token);
-			return fetchUserCollection(username, bgmId, token);
+			return fetchUserCollection(
+				username,
+				bgmId,
+				token,
+				getNetworkRequestContext(),
+			);
 		});
 		return mapBgmTypeToPlayStatus(collection?.type);
 	} catch (error) {
@@ -49,7 +55,12 @@ async function resolveVndbPlayStatus(game: SourceIdentityPayload) {
 		const token = await getVndbToken();
 		if (!token) return undefined;
 
-		const collection = await fetchVndbUserCollection(vndbId, token);
+		const collection = await fetchVndbUserCollection(
+			vndbId,
+			token,
+			undefined,
+			getNetworkRequestContext(),
+		);
 		return mapVndbCollectionToPlayStatus(collection);
 	} catch (error) {
 		console.error("解析 VNDB 收藏状态失败:", error);
@@ -93,7 +104,12 @@ async function syncPlayStatusToBgm(
 		return await withBgmAuth((token) => {
 			if (!token) return Promise.resolve(true);
 
-			return updateUserCollection(bgmId, { type: newStatus }, token);
+			return updateUserCollection(
+				bgmId,
+				{ type: newStatus },
+				token,
+				getNetworkRequestContext(),
+			);
 		});
 	} catch (error) {
 		console.error("同步 BGM 收藏状态失败:", error);
@@ -124,6 +140,7 @@ async function syncPlayStatusToVndb(
 				),
 			},
 			token,
+			getNetworkRequestContext(),
 		);
 	} catch (error) {
 		console.error("同步 VNDB 收藏状态失败:", error);

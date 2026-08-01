@@ -15,11 +15,15 @@
 
 import type { BgmAuth, BgmData, GameMetadataDraft } from "@/types";
 import { AppError, isApiRateLimitError, isHttpStatus } from "@/utils/errors";
+import { USER_AGENT } from "../constants";
 import {
 	createGameCandidate,
 	createSourceCandidateRecord,
 } from "../sourceCandidate";
-import http, { type TauriHttpOptions, USER_AGENT } from "./http";
+import http, {
+	type NetworkRequestContext,
+	type TauriHttpOptions,
+} from "./http";
 
 const BGM_API_BASE_URL = "https://api.bgm.tv/v0";
 const BGM_OAUTH_BASE_URL = "https://bgm.tv/oauth";
@@ -113,12 +117,12 @@ function buildBgmAuthHeaders(token?: string) {
 
 function buildBgmRateLimitedOptions(
 	token?: string,
-	signal?: AbortSignal,
+	context: NetworkRequestContext = {},
 ): TauriHttpOptions {
 	return {
 		...buildBgmAuthHeaders(token),
+		...context,
 		rateLimit: { source: "bgm" as const },
-		signal,
 	};
 }
 
@@ -201,12 +205,12 @@ const transformBgmData = (BGMdata: BgmSubjectResponse): GameMetadataDraft => {
 export async function fetchBgmById(
 	id: string,
 	token?: string,
-	signal?: AbortSignal,
+	context: NetworkRequestContext = {},
 ): Promise<GameMetadataDraft> {
 	const BGMdata = (
 		await http.get<BgmSubjectResponse>(
 			`${BGM_API_BASE_URL}/subjects/${id}`,
-			buildBgmRateLimitedOptions(token, signal),
+			buildBgmRateLimitedOptions(token, context),
 		)
 	).data;
 
@@ -232,7 +236,7 @@ export async function fetchBgmByName(
 	name: string,
 	token?: string,
 	limit = 25,
-	signal?: AbortSignal,
+	context: NetworkRequestContext = {},
 ): Promise<GameMetadataDraft[]> {
 	const keyword = name.trim();
 	const resp = (
@@ -245,7 +249,7 @@ export async function fetchBgmByName(
 				},
 			},
 			{
-				...buildBgmRateLimitedOptions(token, signal),
+				...buildBgmRateLimitedOptions(token, context),
 				params: { limit },
 			},
 		)
@@ -273,7 +277,7 @@ export async function fetchBgmByName(
 export async function fetchBgmByIds(
 	ids: string[],
 	token?: string,
-	signal?: AbortSignal,
+	context: NetworkRequestContext = {},
 ): Promise<GameMetadataDraft[]> {
 	if (ids.length === 0) {
 		return [];
@@ -287,7 +291,7 @@ export async function fetchBgmByIds(
 			const BGMdata = (
 				await http.get<BgmSubjectResponse>(
 					`${BGM_API_BASE_URL}/subjects/${id}`,
-					buildBgmRateLimitedOptions(token, signal),
+					buildBgmRateLimitedOptions(token, context),
 				)
 			).data;
 
@@ -318,22 +322,23 @@ export async function fetchBgmByIds(
  */
 export async function fetchCurrentUserProfile(
 	token: string,
-	signal?: AbortSignal,
+	context: NetworkRequestContext = {},
 ) {
 	const res = await http.get<BgmUserProfile>(
 		`${BGM_API_BASE_URL}/me`,
-		buildBgmRateLimitedOptions(token, signal),
+		buildBgmRateLimitedOptions(token, context),
 	);
 	return res.data;
 }
 
 export async function fetchBgmTokenStatus(
 	token: string,
+	context: NetworkRequestContext = {},
 ): Promise<BgmTokenStatus> {
 	const res = await http.post<BgmTokenStatus>(
 		`${BGM_OAUTH_BASE_URL}/token_status`,
 		null,
-		buildBgmAuthHeaders(token),
+		{ ...buildBgmAuthHeaders(token), ...context },
 	);
 	return res.data;
 }
@@ -346,12 +351,13 @@ export function getBgmAvatarUrl(username?: string | null) {
 
 export async function buildManualBgmAuth(
 	accessToken: string,
+	context: NetworkRequestContext = {},
 ): Promise<BgmAuth | null> {
 	if (!accessToken) return null;
 
 	const [tokenStatus, profile] = await Promise.all([
-		fetchBgmTokenStatus(accessToken),
-		fetchCurrentUserProfile(accessToken),
+		fetchBgmTokenStatus(accessToken, context),
+		fetchCurrentUserProfile(accessToken, context),
 	]);
 
 	return {
@@ -363,14 +369,17 @@ export async function buildManualBgmAuth(
 	};
 }
 
-export async function completeBgmAuth(auth: BgmAuth): Promise<BgmAuth> {
+export async function completeBgmAuth(
+	auth: BgmAuth,
+	context: NetworkRequestContext = {},
+): Promise<BgmAuth> {
 	const [tokenStatus, profile] = await Promise.all([
 		auth.expires_at == null
-			? fetchBgmTokenStatus(auth.access_token)
+			? fetchBgmTokenStatus(auth.access_token, context)
 			: Promise.resolve(null),
 		auth.username && auth.nickname
 			? Promise.resolve(null)
-			: fetchCurrentUserProfile(auth.access_token),
+			: fetchCurrentUserProfile(auth.access_token, context),
 	]);
 
 	return {
@@ -392,7 +401,7 @@ export async function fetchUserCollection(
 	username: string,
 	subjectId: string,
 	token: string,
-	signal?: AbortSignal,
+	context: NetworkRequestContext = {},
 ) {
 	try {
 		const res = await http.get<{
@@ -401,7 +410,7 @@ export async function fetchUserCollection(
 			comment?: string;
 		}>(
 			`${BGM_API_BASE_URL}/users/${username}/collections/${subjectId}`,
-			buildBgmRateLimitedOptions(token, signal),
+			buildBgmRateLimitedOptions(token, context),
 		);
 		return res.data;
 	} catch (error) {
@@ -413,13 +422,19 @@ export async function fetchUserCollection(
 export async function fetchUserGameCollections(
 	username: string,
 	token: string,
+	context: NetworkRequestContext = {},
 ): Promise<BgmUserCollection[]> {
 	const collections: BgmUserCollection[] = [];
 	const limit = 50;
-	let page = await fetchUserGameCollectionsPage(username, token, {
-		limit,
-		offset: 0,
-	});
+	let page = await fetchUserGameCollectionsPage(
+		username,
+		token,
+		{
+			limit,
+			offset: 0,
+		},
+		context,
+	);
 	collections.push(...page.data);
 
 	while (true) {
@@ -427,10 +442,15 @@ export async function fetchUserGameCollections(
 		if (page.data.length === 0 || nextOffset >= page.total) {
 			break;
 		}
-		page = await fetchUserGameCollectionsPage(username, token, {
-			limit,
-			offset: nextOffset,
-		});
+		page = await fetchUserGameCollectionsPage(
+			username,
+			token,
+			{
+				limit,
+				offset: nextOffset,
+			},
+			context,
+		);
 		collections.push(...page.data);
 	}
 
@@ -441,12 +461,12 @@ export async function fetchUserGameCollectionsPage(
 	username: string,
 	token: string,
 	params: { limit: number; offset: number },
-	signal?: AbortSignal,
+	context: NetworkRequestContext = {},
 ): Promise<BgmUserCollectionsPage> {
 	const res = await http.get<BgmUserCollectionsResponse>(
 		`${BGM_API_BASE_URL}/users/${username}/collections`,
 		{
-			...buildBgmRateLimitedOptions(token, signal),
+			...buildBgmRateLimitedOptions(token, context),
 			params: {
 				subject_type: 4,
 				limit: params.limit,
@@ -472,12 +492,12 @@ export async function updateUserCollection(
 	subjectId: string,
 	payload: BgmUserCollectionModifyPayload,
 	token: string,
-	signal?: AbortSignal,
+	context: NetworkRequestContext = {},
 ): Promise<boolean> {
 	await http.post(
 		`${BGM_API_BASE_URL}/users/-/collections/${subjectId}`,
 		payload,
-		buildBgmRateLimitedOptions(token, signal),
+		buildBgmRateLimitedOptions(token, context),
 	);
 	// HTTP 204 does not return response body
 	return true;

@@ -14,14 +14,18 @@
  * - http: 封装的 HTTP 请求工具
  */
 
-import { useStore } from "@/store/appStore";
 import type { GameMetadataDraft, VndbData } from "@/types";
 import { AppError, isApiRateLimitError } from "@/utils/errors";
+import { USER_AGENT } from "../constants";
+import type { MetadataRequestContext } from "../sourceAdapter";
 import {
 	createGameCandidate,
 	createSourceCandidateRecord,
 } from "../sourceCandidate";
-import http, { type TauriHttpOptions, USER_AGENT } from "./http";
+import http, {
+	type NetworkRequestContext,
+	type TauriHttpOptions,
+} from "./http";
 
 const VNDB_API_BASE = "https://api.vndb.org/kana";
 const VNDB_JSON_HEADERS = {
@@ -34,27 +38,29 @@ const VNDB_FIELDS =
 	"id,titles{title,lang,main},aliases,image{url},released,rating,tags{name,rating,spoiler},description,developers{name},length_minutes";
 const VNDB_USER_COLLECTION_FIELDS = "id, labels{id, label}";
 
-function buildVndbRateLimitedOptions(signal?: AbortSignal): TauriHttpOptions {
+function buildVndbRateLimitedOptions(
+	context: NetworkRequestContext = {},
+): TauriHttpOptions {
 	return {
+		...context,
 		headers: {
 			...VNDB_JSON_HEADERS,
 		},
 		rateLimit: { source: "vndb" as const },
-		signal,
 	};
 }
 
 function buildVndbRateLimitedAuthOptions(
 	token: string,
-	signal?: AbortSignal,
+	context: NetworkRequestContext = {},
 ): TauriHttpOptions {
 	return {
+		...context,
 		headers: {
 			...VNDB_JSON_HEADERS,
 			Authorization: `Token ${token}`,
 		},
 		rateLimit: { source: "vndb" as const },
-		signal,
 	};
 }
 
@@ -135,13 +141,13 @@ export interface UpdateVndbUserCollectionPayload {
 async function resolveVndbUserId(
 	token: string,
 	userId?: string,
-	signal?: AbortSignal,
+	context: NetworkRequestContext = {},
 ) {
 	if (userId) {
 		return userId;
 	}
 
-	const authInfo = await fetchVndbCurrentUserProfile(token, signal);
+	const authInfo = await fetchVndbCurrentUserProfile(token, context);
 	return authInfo?.id ?? null;
 }
 
@@ -151,6 +157,7 @@ async function resolveVndbUserId(
  */
 function transformVndbData(
 	VNDBdata: VndbVisualNovelResponse,
+	filterLevel: number,
 	update_batch?: boolean,
 ): GameMetadataDraft {
 	// 处理标题信息
@@ -174,7 +181,6 @@ function transformVndbData(
 	const allTitles: string[] = titles.map((title: VndbTitle) => title.title);
 
 	// 根据 spoilerLevel 过滤标签
-	const filterLevel = useStore.getState().spoilerLevel;
 	const filtered_tags = VNDBdata.tags
 		.toSorted((a, b) => b.rating - a.rating)
 		.filter(({ spoiler }) => spoiler <= filterLevel)
@@ -225,9 +231,9 @@ function transformVndbData(
  */
 export async function fetchVndbByName(
 	name: string,
+	context: MetadataRequestContext,
 	id?: string,
 	limit = 25,
-	signal?: AbortSignal,
 ): Promise<GameMetadataDraft[]> {
 	// 构建 API 请求体
 	const requestBody = {
@@ -243,7 +249,7 @@ export async function fetchVndbByName(
 		await http.post<VndbQueryResponse<VndbVisualNovelResponse>>(
 			`${VNDB_API_BASE}/vn`,
 			requestBody,
-			buildVndbRateLimitedOptions(signal),
+			buildVndbRateLimitedOptions(context),
 		)
 	).data.results;
 
@@ -251,7 +257,9 @@ export async function fetchVndbByName(
 		return [];
 	}
 
-	return rawResults.map((VNDBdata) => transformVndbData(VNDBdata));
+	return rawResults.map((VNDBdata) =>
+		transformVndbData(VNDBdata, context.spoilerLevel),
+	);
 }
 
 /**
@@ -262,9 +270,9 @@ export async function fetchVndbByName(
  */
 export async function fetchVndbById(
 	id: string,
-	signal?: AbortSignal,
+	context: MetadataRequestContext,
 ): Promise<GameMetadataDraft> {
-	const result = await fetchVndbByName("", id, 25, signal);
+	const result = await fetchVndbByName("", context, id, 25);
 	if (result.length === 0) {
 		throw new AppError({
 			code: "metadata_not_found",
@@ -290,7 +298,7 @@ export async function fetchVndbById(
  */
 export async function fetchVNDBByIds(
 	ids: string[],
-	signal?: AbortSignal,
+	context: MetadataRequestContext,
 ): Promise<GameMetadataDraft[]> {
 	if (ids.length === 0) {
 		return [];
@@ -319,7 +327,7 @@ export async function fetchVNDBByIds(
 
 		const response = await http.post<
 			VndbQueryResponse<VndbVisualNovelResponse>
-		>(`${VNDB_API_BASE}/vn`, requestBody, buildVndbRateLimitedOptions(signal));
+		>(`${VNDB_API_BASE}/vn`, requestBody, buildVndbRateLimitedOptions(context));
 
 		const results = response.data.results;
 
@@ -328,7 +336,7 @@ export async function fetchVNDBByIds(
 		}
 
 		return results.map((vndbData: VndbVisualNovelResponse) =>
-			transformVndbData(vndbData, true),
+			transformVndbData(vndbData, context.spoilerLevel, true),
 		);
 	};
 
@@ -357,14 +365,14 @@ export async function fetchVNDBByIds(
  */
 export async function fetchVndbCurrentUserProfile(
 	token: string,
-	signal?: AbortSignal,
+	context: NetworkRequestContext = {},
 ): Promise<VndbAuthInfo | null> {
 	if (!token) return null;
 
 	try {
 		const response = await http.get<VndbAuthInfo>(
 			`${VNDB_API_BASE}/authinfo`,
-			buildVndbRateLimitedAuthOptions(token, signal),
+			buildVndbRateLimitedAuthOptions(token, context),
 		);
 		return response.data;
 	} catch (error) {
@@ -382,7 +390,7 @@ export async function fetchVndbCurrentUserProfile(
 export async function fetchVndbUserLabels(
 	token: string,
 	userId?: string,
-	signal?: AbortSignal,
+	context: NetworkRequestContext = {},
 ): Promise<VndbUserLabel[]> {
 	if (!token) return [];
 
@@ -390,7 +398,7 @@ export async function fetchVndbUserLabels(
 		const response = await http.get<VndbUserLabelsResponse>(
 			`${VNDB_API_BASE}/ulist_labels`,
 			{
-				...buildVndbRateLimitedAuthOptions(token, signal),
+				...buildVndbRateLimitedAuthOptions(token, context),
 				params: userId
 					? { user: userId, fields: "count" }
 					: { fields: "count" },
@@ -414,12 +422,12 @@ export async function fetchVndbUserCollection(
 	vndbId: string,
 	token: string,
 	userId?: string,
-	signal?: AbortSignal,
+	context: NetworkRequestContext = {},
 ): Promise<VndbUserCollectionItem | null> {
 	if (!token || !vndbId) return null;
 
 	try {
-		const resolvedUserId = await resolveVndbUserId(token, userId, signal);
+		const resolvedUserId = await resolveVndbUserId(token, userId, context);
 		if (!resolvedUserId) return null;
 
 		const response = await http.post<VndbQueryResponse<VndbUserCollectionItem>>(
@@ -430,7 +438,7 @@ export async function fetchVndbUserCollection(
 				fields: VNDB_USER_COLLECTION_FIELDS,
 				results: 1,
 			},
-			buildVndbRateLimitedAuthOptions(token, signal),
+			buildVndbRateLimitedAuthOptions(token, context),
 		);
 
 		const results = Array.isArray(response.data?.results)
@@ -447,21 +455,26 @@ export async function fetchVndbUserCollection(
 export async function fetchVndbUserCollections(
 	token: string,
 	userId?: string,
+	context: NetworkRequestContext = {},
 ): Promise<VndbUserCollectionItem[]> {
 	if (!token) return [];
 
 	try {
-		const resolvedUserId = await resolveVndbUserId(token, userId);
+		const resolvedUserId = await resolveVndbUserId(token, userId, context);
 		if (!resolvedUserId) return [];
 
 		const collections: VndbUserCollectionItem[] = [];
 		let page = 1;
 
 		while (true) {
-			const response = await fetchVndbUserCollectionsPage(token, {
-				userId: resolvedUserId,
-				page,
-			});
+			const response = await fetchVndbUserCollectionsPage(
+				token,
+				{
+					userId: resolvedUserId,
+					page,
+				},
+				context,
+			);
 			collections.push(...response.results);
 
 			if (!response.more || response.results.length === 0) {
@@ -484,7 +497,7 @@ export async function fetchVndbUserCollectionsPage(
 		page: number;
 		count?: boolean;
 	},
-	signal?: AbortSignal,
+	context: NetworkRequestContext = {},
 ): Promise<VndbUserCollectionsPage> {
 	const response = await http.post<VndbQueryResponse<VndbUserCollectionItem>>(
 		`${VNDB_API_BASE}/ulist`,
@@ -495,7 +508,7 @@ export async function fetchVndbUserCollectionsPage(
 			page: params.page,
 			...(params.count ? { count: true } : {}),
 		},
-		buildVndbRateLimitedAuthOptions(token, signal),
+		buildVndbRateLimitedAuthOptions(token, context),
 	);
 
 	return {
@@ -516,7 +529,7 @@ export async function updateVndbUserCollection(
 	vndbId: string,
 	payload: UpdateVndbUserCollectionPayload,
 	token: string,
-	signal?: AbortSignal,
+	context: NetworkRequestContext = {},
 ): Promise<boolean> {
 	if (!token || !vndbId) return false;
 
@@ -524,7 +537,7 @@ export async function updateVndbUserCollection(
 		await http.patch(
 			`${VNDB_API_BASE}/ulist/${vndbId}`,
 			payload,
-			buildVndbRateLimitedAuthOptions(token, signal),
+			buildVndbRateLimitedAuthOptions(token, context),
 		);
 		return true;
 	} catch (error) {

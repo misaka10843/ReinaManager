@@ -4,6 +4,7 @@ import { gameKeys } from "@/hooks/queries/useGames";
 import { queryClient } from "@/providers/queryClient";
 import { withBgmAuth } from "@/services/bgmAuthSession";
 import { gameService } from "@/services/invoke";
+import { getMetadataRequestContext } from "@/services/requestContext";
 import type { GameMetadataDraft, UpdateGameParams } from "@/types";
 import { toError } from "@/utils/errors";
 import { fetchBgmByIds } from "../api/bgm";
@@ -87,7 +88,7 @@ export async function batchUpdateVndbData(): Promise<{
 }> {
 	return batchUpdateCommon(
 		"vndb",
-		fetchVNDBByIds,
+		(ids) => fetchVNDBByIds(ids, getMetadataRequestContext()),
 		() => gameService.getAllVndbIds(),
 		"vndb",
 	);
@@ -101,7 +102,12 @@ export async function batchUpdateBgmData(): Promise<{
 	return withBgmAuth((token) =>
 		batchUpdateCommon(
 			"bgm",
-			(ids: string[]) => fetchBgmByIds(ids, token),
+			(ids: string[]) =>
+				fetchBgmByIds(
+					ids,
+					token,
+					getMetadataRequestContext({ bgmToken: token }),
+				),
 			() => gameService.getAllBgmIds(),
 			"bgm",
 		),

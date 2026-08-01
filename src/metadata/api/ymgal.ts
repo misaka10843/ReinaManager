@@ -17,13 +17,17 @@
 
 import type { GameMetadataDraft, YmgalData } from "@/types";
 import { AppError, isHttpStatus, toError } from "@/utils/errors";
+import { USER_AGENT } from "../constants";
 import {
 	createGameCandidate,
 	createSourceCandidateRecord,
 	getCandidateSourceData,
 	getCandidateSourceId,
 } from "../sourceCandidate";
-import http, { type TauriHttpOptions, USER_AGENT } from "./http";
+import http, {
+	type NetworkRequestContext,
+	type TauriHttpOptions,
+} from "./http";
 
 /**
  * YMGal API 全局配置
@@ -85,7 +89,7 @@ interface YmPageResponse<T> {
  */
 async function getAccessToken(
 	forceRefresh = false,
-	signal?: AbortSignal,
+	context: NetworkRequestContext = {},
 ): Promise<string> {
 	if (!forceRefresh && tokenCache?.token) return tokenCache.token;
 
@@ -99,7 +103,7 @@ async function getAccessToken(
 					client_secret: YMGAL_CONFIG.clientSecret,
 					scope: YMGAL_CONFIG.scope,
 				},
-				signal,
+				...context,
 			}),
 		);
 
@@ -130,13 +134,13 @@ async function ymApiRequest<T>(
 	path: string,
 	params: Record<string, unknown> = {},
 	maxRetries = 2,
-	signal?: AbortSignal,
+	context: NetworkRequestContext = {},
 ): Promise<T> {
 	let lastError: unknown;
 
 	for (let attempt = 0; attempt <= maxRetries; attempt++) {
 		try {
-			const token = await getAccessToken(attempt > 0, signal); // 第一次尝试使用缓存，失败后强制刷新
+			const token = await getAccessToken(attempt > 0, context); // 第一次尝试使用缓存，失败后强制刷新
 			const response = await http.get<YmApiEnvelope<T>>(
 				`${YMGAL_CONFIG.baseUrl}${path}`,
 				buildYmgalRateLimitedOptions({
@@ -147,7 +151,7 @@ async function ymApiRequest<T>(
 						version: "1",
 					},
 					allowRetry: true, // 允许上层处理重试
-					signal,
+					...context,
 				}),
 			);
 
@@ -203,7 +207,7 @@ async function ymApiRequest<T>(
  */
 async function fetchOrganizationName(
 	orgId?: number,
-	signal?: AbortSignal,
+	context: NetworkRequestContext = {},
 ): Promise<string | undefined> {
 	if (!orgId) return undefined;
 	try {
@@ -211,7 +215,7 @@ async function fetchOrganizationName(
 			"/open/archive",
 			{ orgId },
 			2,
-			signal,
+			context,
 		);
 		const org = data?.org;
 		return org?.chineseName || org?.name || undefined;
@@ -312,7 +316,7 @@ export async function fetchYmByName(
 	pageNum = 1,
 	pageSize = 20,
 	fetchDetailById = false,
-	signal?: AbortSignal,
+	context: NetworkRequestContext = {},
 ): Promise<GameMetadataDraft[]> {
 	const data = await ymApiRequest<YmPageResponse<YmGameListItem>>(
 		"/open/archive/search-game",
@@ -323,7 +327,7 @@ export async function fetchYmByName(
 			pageSize: pageSize,
 		},
 		2,
-		signal,
+		context,
 	);
 
 	if (data.result.length === 0) {
@@ -359,7 +363,7 @@ export async function fetchYmByName(
 		: undefined;
 	if (fetchDetailById && firstResultId) {
 		try {
-			const detailedData = await fetchYmById(firstResultId, signal);
+			const detailedData = await fetchYmById(firstResultId, context);
 			return [detailedData];
 		} catch {
 			return [results[0]];
@@ -377,14 +381,14 @@ export async function fetchYmByName(
  */
 export async function fetchYmById(
 	gid: string,
-	signal?: AbortSignal,
+	context: NetworkRequestContext = {},
 ): Promise<GameMetadataDraft> {
 	const id = Number(gid.replace(/^ga/i, ""));
 	const data = await ymApiRequest<YmGameArchiveResponse>(
 		"/open/archive",
 		{ gid: id },
 		2,
-		signal,
+		context,
 	);
 
 	if (!data?.game) {
@@ -399,7 +403,7 @@ export async function fetchYmById(
 	if (ymgalData) {
 		ymgalData.developer = await fetchOrganizationName(
 			data.game?.developerId,
-			signal,
+			context,
 		);
 	}
 

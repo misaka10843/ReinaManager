@@ -39,8 +39,6 @@ export const dlsiteAdapter: MetadataSourceAdapter<DlsiteData> = {
 	key: "dlsite",
 	label: "DLsite",
 	iconUrl: "https://www.dlsite.com/images/web/common/favicon.ico",
-	participatesInMixed: true,
-	defaultMixedEnabled: false,
 	validateId: (id) => Boolean(normalizeDlsiteId(id)),
 	getExternalUrl: (id) => {
 		const normalizedId = normalizeDlsiteId(id) ?? id;
@@ -48,14 +46,14 @@ export const dlsiteAdapter: MetadataSourceAdapter<DlsiteData> = {
 		return `https://www.dlsite.com/${section}/work/=/product_id/${normalizedId}.html?locale=ja`;
 	},
 	async fetchById(id, ctx) {
-		const game = await fetchDlsiteById(id, ctx.signal);
+		const game = await fetchDlsiteById(id, ctx);
 		return normalizeGameCandidateSources(game, "dlsite");
 	},
 	async searchByName(name, ctx) {
 		const games = await fetchDlsiteByName(
 			name,
 			ctx.limit ?? DEFAULT_METADATA_SEARCH_LIMIT,
-			ctx.signal,
+			ctx,
 		);
 		return games.map(toDlsiteCandidate);
 	},
@@ -64,7 +62,7 @@ export const dlsiteAdapter: MetadataSourceAdapter<DlsiteData> = {
 			return sourceCandidateToDraft(candidate);
 		}
 
-		const game = await fetchDlsiteById(candidate.externalId, ctx.signal);
+		const game = await fetchDlsiteById(candidate.externalId, ctx);
 		return mergeCandidateDetailData(candidate, game);
 	},
 	toDisplayFields: (data): SourceDisplayFields => ({

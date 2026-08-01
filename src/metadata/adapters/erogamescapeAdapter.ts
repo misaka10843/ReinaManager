@@ -39,22 +39,20 @@ export const erogamescapeAdapter: MetadataSourceAdapter<ErogameScapeData> = {
 	key: "erogamescape",
 	label: "ErogameScape",
 	iconUrl: "https://erogamescape.org/favicon.ico",
-	participatesInMixed: true,
-	defaultMixedEnabled: false,
 	validateId: (id) => Boolean(normalizeErogameScapeId(id)),
 	getExternalUrl: (id) => {
 		const normalizedId = normalizeErogameScapeId(id) ?? id;
 		return `https://erogamescape.org/~ap2/ero/toukei_kaiseki/game.php?game=${normalizedId}`;
 	},
 	async fetchById(id, ctx) {
-		const game = await fetchErogameScapeById(id, ctx.signal);
+		const game = await fetchErogameScapeById(id, ctx);
 		return normalizeGameCandidateSources(game, "erogamescape");
 	},
 	async searchByName(name, ctx) {
 		const games = await fetchErogameScapeByName(
 			name,
 			ctx.limit ?? DEFAULT_METADATA_SEARCH_LIMIT,
-			ctx.signal,
+			ctx,
 		);
 		return games.map(toErogameScapeCandidate);
 	},
@@ -63,7 +61,7 @@ export const erogamescapeAdapter: MetadataSourceAdapter<ErogameScapeData> = {
 			return sourceCandidateToDraft(candidate);
 		}
 
-		const game = await fetchErogameScapeById(candidate.externalId, ctx.signal);
+		const game = await fetchErogameScapeById(candidate.externalId, ctx);
 		return mergeCandidateDetailData(candidate, game);
 	},
 	toDisplayFields: (data): SourceDisplayFields => ({

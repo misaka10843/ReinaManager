@@ -28,6 +28,7 @@ import {
 import { getSourceIdFromDisplay } from "@/metadata/sourceRecord";
 import { snackbar } from "@/providers/snackBar";
 import { isBgmAuthExpiredError, withBgmAuth } from "@/services/bgmAuthSession";
+import { createMetadataSession } from "@/services/requestContext";
 import { useStore } from "@/store/appStore";
 import type {
 	apiSourceType,
@@ -182,7 +183,7 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 					idType,
 					sourceIds,
 					enabledSources: idType === "mixed" ? mixedEnabledSources : undefined,
-					bgmToken,
+					session: createMetadataSession({ bgmToken }),
 				});
 			const usesBgmSource =
 				idType === "bgm" || (idType === "mixed" && isMixedSourceEnabled("bgm"));

@@ -13,7 +13,21 @@ import { erogamescapeAdapter } from "./adapters/erogamescapeAdapter";
 import { kunAdapter } from "./adapters/kunAdapter";
 import { vndbAdapter } from "./adapters/vndbAdapter";
 import { ymgalAdapter } from "./adapters/ymgalAdapter";
-import type { MetadataSourceAdapter } from "./sourceAdapter";
+import {
+	type BoundMetadataSourceAdapter,
+	bindMetadataSourceAdapter,
+	type MetadataRequestContext,
+	type MetadataSourceAdapter,
+} from "./sourceAdapter";
+
+export {
+	DEFAULT_MIXED_SOURCE_KEYS,
+	MIXED_SOURCE_KEYS,
+	MIXED_SOURCE_MAX_COUNT,
+	MIXED_SOURCE_MIN_COUNT,
+	REGISTERED_SOURCE_KEYS,
+	SEARCHABLE_SOURCE_KEYS,
+} from "./constants";
 
 export type SourceAdapterMap = {
 	bgm: MetadataSourceAdapter<BgmData>;
@@ -35,25 +49,14 @@ export const SOURCE_ADAPTERS = {
 
 export type RegisteredSourceAdapter = SourceAdapterMap[SourceType];
 export type RuntimeSourceAdapter = MetadataSourceAdapter<unknown>;
-
-export const REGISTERED_SOURCE_KEYS = Object.keys(
-	SOURCE_ADAPTERS,
-) as SourceType[];
-
-export const SEARCHABLE_SOURCE_KEYS = REGISTERED_SOURCE_KEYS.filter(
-	(source) => !SOURCE_ADAPTERS[source].isBanned,
-);
-
-export const MIXED_SOURCE_KEYS = REGISTERED_SOURCE_KEYS.filter(
-	(source) => SOURCE_ADAPTERS[source].participatesInMixed,
-);
-
-export const DEFAULT_MIXED_SOURCE_KEYS = MIXED_SOURCE_KEYS.filter(
-	(source) => SOURCE_ADAPTERS[source].defaultMixedEnabled,
-);
-
-export const MIXED_SOURCE_MIN_COUNT = 2;
-export const MIXED_SOURCE_MAX_COUNT = 4;
+type BindSourceAdapter<TAdapter> =
+	TAdapter extends MetadataSourceAdapter<infer TData>
+		? BoundMetadataSourceAdapter<TData>
+		: never;
+export type BoundSourceAdapterMap = {
+	[TSource in SourceType]: BindSourceAdapter<SourceAdapterMap[TSource]>;
+};
+export type RuntimeBoundSourceAdapter = BoundMetadataSourceAdapter<unknown>;
 
 export function getSourceAdapter<TSource extends SourceType>(
 	source: TSource,
@@ -61,13 +64,15 @@ export function getSourceAdapter<TSource extends SourceType>(
 	return SOURCE_ADAPTERS[source];
 }
 
-export function getEnabledMixedAdapters(
-	enabledSources?: readonly SourceType[],
-): RuntimeSourceAdapter[] {
-	const enabledSet = enabledSources ? new Set(enabledSources) : undefined;
-	return MIXED_SOURCE_KEYS.filter(
-		(source) => !enabledSet || enabledSet.has(source),
-	).map((source) => SOURCE_ADAPTERS[source]);
+export function bindSourceAdapters(
+	context: MetadataRequestContext,
+): BoundSourceAdapterMap {
+	return Object.fromEntries(
+		Object.entries(SOURCE_ADAPTERS).map(([source, adapter]) => [
+			source,
+			bindMetadataSourceAdapter(adapter as RuntimeSourceAdapter, context),
+		]),
+	) as BoundSourceAdapterMap;
 }
 
 export function getRuntimeSourceAdapter(

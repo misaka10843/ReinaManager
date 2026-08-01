@@ -33,14 +33,12 @@ export const kunAdapter: MetadataSourceAdapter<KunData> = {
 	key: "kun",
 	label: "Kungal",
 	iconUrl: "https://www.kungal.com/favicon.ico",
-	participatesInMixed: true,
-	defaultMixedEnabled: false,
 	validateId: (id) => /^\d+$/.test(id),
 	getExternalUrl: (id) => `https://www.kungal.com/galgame/${id}`,
 	async fetchById(id, ctx) {
 		const game = await fetchGalgameById(id, {
+			...ctx,
 			enrichVndb: ctx.enrichCrossSource ?? true,
-			signal: ctx.signal,
 		});
 		return normalizeGameCandidateSources(game, "kun");
 	},
@@ -50,7 +48,7 @@ export const kunAdapter: MetadataSourceAdapter<KunData> = {
 			1,
 			ctx.limit ?? DEFAULT_METADATA_SEARCH_LIMIT,
 			false,
-			{ signal: ctx.signal },
+			ctx,
 		);
 		return games.map(toKunCandidate);
 	},
@@ -60,8 +58,8 @@ export const kunAdapter: MetadataSourceAdapter<KunData> = {
 		}
 
 		const game = await fetchGalgameById(candidate.externalId, {
+			...ctx,
 			enrichVndb: ctx.enrichCrossSource ?? true,
-			signal: ctx.signal,
 		});
 		return mergeCandidateDetailData(candidate, game);
 	},

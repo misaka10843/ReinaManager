@@ -33,12 +33,10 @@ export const ymgalAdapter: MetadataSourceAdapter<YmgalData> = {
 	key: "ymgal",
 	label: "YMGal",
 	iconUrl: "https://www.ymgal.games/favicon.ico",
-	participatesInMixed: true,
-	defaultMixedEnabled: false,
 	validateId: (id) => /^(ga)?\d+$/i.test(id),
 	getExternalUrl: (id) => `https://www.ymgal.games/ga${id}`,
 	async fetchById(id, ctx) {
-		const game = await fetchYmById(id, ctx.signal);
+		const game = await fetchYmById(id, ctx);
 		return normalizeGameCandidateSources(game, "ymgal");
 	},
 	async searchByName(name, ctx) {
@@ -47,7 +45,7 @@ export const ymgalAdapter: MetadataSourceAdapter<YmgalData> = {
 			1,
 			ctx.limit ?? DEFAULT_METADATA_SEARCH_LIMIT,
 			false,
-			ctx.signal,
+			ctx,
 		);
 		return games.map(toYmgalCandidate);
 	},
@@ -56,7 +54,7 @@ export const ymgalAdapter: MetadataSourceAdapter<YmgalData> = {
 			return sourceCandidateToDraft(candidate);
 		}
 
-		const game = await fetchYmById(candidate.externalId, ctx.signal);
+		const game = await fetchYmById(candidate.externalId, ctx);
 		return mergeCandidateDetailData(candidate, game);
 	},
 	toDisplayFields: (data): SourceDisplayFields => ({

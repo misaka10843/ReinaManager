@@ -10,6 +10,7 @@ import {
 	type VndbUserCollectionItem,
 } from "@/metadata/api/vndb";
 import { withBgmAuth } from "@/services/bgmAuthSession";
+import { getNetworkRequestContext } from "@/services/requestContext";
 import { useStore } from "@/store/appStore";
 import type { PlayStatus } from "@/types/collection";
 import {
@@ -47,7 +48,12 @@ async function fetchBgmCollectionPage(
 	token: string,
 	params: { limit: number; offset: number },
 ): Promise<BgmCollectionPage> {
-	const page = await fetchUserGameCollectionsPage(username, token, params);
+	const page = await fetchUserGameCollectionsPage(
+		username,
+		token,
+		params,
+		getNetworkRequestContext(),
+	);
 	return {
 		offset: page.offset ?? params.offset,
 		limit: page.limit ?? params.limit,
@@ -60,7 +66,11 @@ async function fetchVndbCollectionPage(
 	token: string,
 	params: { userId: string; page: number; count?: boolean },
 ): Promise<VndbCollectionPage> {
-	const page = await fetchVndbUserCollectionsPage(token, params);
+	const page = await fetchVndbUserCollectionsPage(
+		token,
+		params,
+		getNetworkRequestContext(),
+	);
 	return {
 		results: Array.isArray(page.results) ? page.results : [],
 		more: Boolean(page.more),
@@ -99,7 +109,12 @@ async function createBgmDirectPlayStatusMap(
 ) {
 	const statusMap = new Map<string, PlayStatus>();
 	for (const id of ids) {
-		const collection = await fetchUserCollection(username, id, token);
+		const collection = await fetchUserCollection(
+			username,
+			id,
+			token,
+			getNetworkRequestContext(),
+		);
 		const status = mapBgmTypeToPlayStatus(collection?.type);
 		if (status !== undefined) {
 			statusMap.set(id, status);
@@ -179,7 +194,12 @@ async function createVndbDirectPlayStatusMap(
 ) {
 	const statusMap = new Map<string, PlayStatus>();
 	for (const id of ids) {
-		const collection = await fetchVndbUserCollection(id, token, userId);
+		const collection = await fetchVndbUserCollection(
+			id,
+			token,
+			userId,
+			getNetworkRequestContext(),
+		);
 		const status = mapVndbCollectionToPlayStatus(collection);
 		if (status !== undefined) {
 			statusMap.set(id, status);
@@ -225,7 +245,10 @@ async function createVndbPlayStatusMap(ids: Iterable<string>) {
 		const token = await getVndbToken();
 		if (!token) return undefined;
 
-		const profile = await fetchVndbCurrentUserProfile(token);
+		const profile = await fetchVndbCurrentUserProfile(
+			token,
+			getNetworkRequestContext(),
+		);
 		const userId = profile?.id;
 		if (!userId || !profile.permissions.includes("listread")) {
 			return undefined;

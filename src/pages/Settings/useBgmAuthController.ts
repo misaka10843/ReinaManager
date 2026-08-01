@@ -7,6 +7,7 @@ import { buildManualBgmAuth, completeBgmAuth } from "@/metadata/api/bgm";
 import { snackbar } from "@/providers/snackBar";
 import { logoutBgmAuth } from "@/services/bgmAuthSession";
 import { settingsService } from "@/services/invoke";
+import { getNetworkRequestContext } from "@/services/requestContext";
 import { toError } from "@/utils/errors";
 
 let isBgmOAuthRunning = false;
@@ -66,7 +67,10 @@ export function useBgmAuthController() {
 				return;
 			}
 
-			const auth = await buildManualBgmAuth(accessToken);
+			const auth = await buildManualBgmAuth(
+				accessToken,
+				getNetworkRequestContext(),
+			);
 
 			await updateSettingsMutation.mutateAsync({
 				bgmAuth: auth,
@@ -137,7 +141,7 @@ export function useBgmAuthController() {
 							event.payload,
 						);
 						await updateSettingsMutation.mutateAsync({
-							bgmAuth: await completeBgmAuth(auth),
+							bgmAuth: await completeBgmAuth(auth, getNetworkRequestContext()),
 						});
 						snackbar.success(
 							t(
@@ -213,7 +217,7 @@ export function useBgmAuthController() {
 			setIsCompletingAuth(true);
 
 			await updateSettingsMutation.mutateAsync({
-				bgmAuth: await completeBgmAuth(bgmAuth),
+				bgmAuth: await completeBgmAuth(bgmAuth, getNetworkRequestContext()),
 			});
 			snackbar.success(
 				t(

@@ -24,7 +24,7 @@ import {
 	MIXED_SOURCE_MAX_COUNT,
 	MIXED_SOURCE_MIN_COUNT,
 	SEARCHABLE_SOURCE_KEYS,
-} from "@/metadata";
+} from "@/metadata/constants";
 import { type ProxyConfig, settingsService } from "@/services/invoke";
 import type { GameType, SortOption, SortOrder } from "@/services/invoke/types";
 import type { SourceType } from "@/types";

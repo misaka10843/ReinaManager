@@ -5,7 +5,10 @@ import {
 	createGameCandidate,
 	createSourceCandidateRecord,
 } from "../sourceCandidate";
-import http, { type TauriHttpOptions } from "./http";
+import http, {
+	type NetworkRequestContext,
+	type TauriHttpOptions,
+} from "./http";
 
 const DLSITE_BASE = "https://www.dlsite.com";
 const DLSITE_LOCALE = "ja";
@@ -101,25 +104,22 @@ function parseHtml(html: string): Document {
 
 async function fetchDocument(
 	url: string,
-	signal?: AbortSignal,
+	context: NetworkRequestContext = {},
 	locale = DLSITE_LOCALE,
 ) {
-	const response = await http.getText(
-		url,
-		buildDlsiteOptions({ signal }, locale),
-	);
+	const response = await http.getText(url, buildDlsiteOptions(context, locale));
 	return parseHtml(response.data);
 }
 
 async function fetchProductInfo(
 	sourceId: string,
-	signal?: AbortSignal,
+	context: NetworkRequestContext = {},
 ): Promise<RawDlsiteProductInfo | undefined> {
 	const response = await http.get<RawDlsiteProductInfoResponse>(
 		`${DLSITE_BASE}/maniax/product/info/ajax`,
 		buildDlsiteOptions(
 			{
-				signal,
+				...context,
 				params: {
 					product_id: sourceId,
 					locale: DLSITE_LOCALE,
@@ -429,14 +429,14 @@ function transformDetailDocument(
 export async function fetchDlsiteByName(
 	name: string,
 	limit = 8,
-	signal?: AbortSignal,
+	context: NetworkRequestContext = {},
 ): Promise<GameMetadataDraft[]> {
 	const keyword = name.trim().normalize("NFKC");
 	if (!keyword) return [];
 
 	const searchUrl = buildSearchUrl(keyword);
 	for (const locale of buildSearchLocales()) {
-		const doc = await fetchDocument(searchUrl(locale), signal, locale);
+		const doc = await fetchDocument(searchUrl(locale), context, locale);
 		const results = parseSearchDocument(doc);
 		if (results.length > 0) {
 			return results.slice(0, limit).map(searchItemToDraft);
@@ -448,7 +448,7 @@ export async function fetchDlsiteByName(
 
 export async function fetchDlsiteById(
 	id: string,
-	signal?: AbortSignal,
+	context: NetworkRequestContext = {},
 ): Promise<GameMetadataDraft> {
 	const normalizedId = normalizeDlsiteId(id);
 	if (!normalizedId) {
@@ -461,14 +461,14 @@ export async function fetchDlsiteById(
 	let info: RawDlsiteProductInfo | undefined;
 	let infoError: unknown;
 	try {
-		info = await fetchProductInfo(normalizedId, signal);
+		info = await fetchProductInfo(normalizedId, context);
 	} catch (error) {
 		infoError = error;
 	}
 
 	let doc: Document | undefined;
 	try {
-		doc = await fetchDocument(buildWorkUrl(normalizedId), signal);
+		doc = await fetchDocument(buildWorkUrl(normalizedId), context);
 	} catch (error) {
 		if (!info) throw infoError ?? error;
 	}

@@ -27,15 +27,12 @@ import { AlertBox } from "@/components/AlertBox";
 import { useBulkGameAddActions } from "@/hooks/features/games/useGameMetadataFacade";
 import { useMetadataSearchFlow } from "@/hooks/features/games/useMetadataSearchFlow";
 import { useAllSettings } from "@/hooks/queries/useSettings";
-import {
-	gameMetadataService,
-	getRuntimeSourceAdapter,
-	SEARCHABLE_SOURCE_KEYS,
-} from "@/metadata";
+import { getRuntimeSourceAdapter, SEARCHABLE_SOURCE_KEYS } from "@/metadata";
 import { snackbar } from "@/providers/snackBar";
 import { isBgmAuthExpiredError, withBgmAuth } from "@/services/bgmAuthSession";
 import { handleFolder } from "@/services/fs/fileDialog";
 import { fileService } from "@/services/invoke";
+import { createMetadataSession } from "@/services/requestContext";
 import { useStore } from "@/store/appStore";
 import type { GameMetadataDraft, GameScanMode, SourceType } from "@/types";
 import { createAbortableRunner, isAbortError } from "@/utils/async";
@@ -278,19 +275,21 @@ const BulkImportTab = ({
 						bulkApiSource === "bgm"
 							? await withBgmAuth((token) =>
 									withAbort(
-										gameMetadataService.searchBestMatch({
-											query: nextItems[index].name,
-											source: bulkApiSource,
+										createMetadataSession({
 											bgmToken: token,
 											signal: controller.signal,
+										}).searchBestMatch({
+											query: nextItems[index].name,
+											source: bulkApiSource,
 										}),
 									),
 								)
 							: await withAbort(
-									gameMetadataService.searchBestMatch({
+									createMetadataSession({
+										signal: controller.signal,
+									}).searchBestMatch({
 										query: nextItems[index].name,
 										source: bulkApiSource,
-										signal: controller.signal,
 									}),
 								);
 

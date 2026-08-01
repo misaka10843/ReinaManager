@@ -4,7 +4,10 @@ import {
 	createGameCandidate,
 	createSourceCandidateRecord,
 } from "../sourceCandidate";
-import http, { type TauriHttpOptions } from "./http";
+import http, {
+	type NetworkRequestContext,
+	type TauriHttpOptions,
+} from "./http";
 
 const EROGAMESCAPE_BASE = "https://erogamescape.org/~ap2/ero/toukei_kaiseki";
 
@@ -81,11 +84,11 @@ function buildUrl(path: string, params: Record<string, string>) {
 async function fetchDocument(
 	path: string,
 	params: Record<string, string>,
-	signal?: AbortSignal,
+	context: NetworkRequestContext = {},
 ): Promise<Document> {
 	const response = await http.getText(
 		buildUrl(path, params),
-		buildErogameScapeOptions({ signal }),
+		buildErogameScapeOptions(context),
 	);
 	return parseHtml(response.data);
 }
@@ -289,7 +292,7 @@ function transformDetailDocument(
 export async function fetchErogameScapeByName(
 	name: string,
 	limit = 8,
-	signal?: AbortSignal,
+	context: NetworkRequestContext = {},
 ): Promise<GameMetadataDraft[]> {
 	const keyword = name.trim();
 	if (!keyword) return [];
@@ -302,7 +305,7 @@ export async function fetchErogameScapeByName(
 			mode: "normal",
 			word: keyword,
 		},
-		signal,
+		context,
 	);
 
 	return parseSearchDocument(doc).slice(0, limit).map(searchItemToDraft);
@@ -310,7 +313,7 @@ export async function fetchErogameScapeByName(
 
 export async function fetchErogameScapeById(
 	id: string,
-	signal?: AbortSignal,
+	context: NetworkRequestContext = {},
 ): Promise<GameMetadataDraft> {
 	const normalizedId = normalizeErogameScapeId(id);
 	if (!normalizedId) {
@@ -325,7 +328,7 @@ export async function fetchErogameScapeById(
 		{
 			game: normalizedId,
 		},
-		signal,
+		context,
 	);
 
 	return transformDetailDocument(doc, normalizedId);
