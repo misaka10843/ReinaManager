@@ -1,7 +1,9 @@
 use crate::database::dto::UpdateSettingsData;
 use crate::database::repository::games_repository::GamesRepository;
 use crate::database::repository::settings_repository::{DbSettingsExt, SettingsRepository};
-use crate::game::monitor::{TimeTrackingMode, monitor_game, stop_game_session};
+use crate::game::monitor::{
+    TimeTrackingMode, is_game_foreground, monitor_game, stop_game_session, wait_for_game_foreground,
+};
 use crate::utils::command_ext::CommandGuiExt;
 use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
@@ -357,7 +359,7 @@ pub async fn launch_game<R: Runtime>(
             if let Some(magpie_path) = magpie_path.clone() {
                 tokio::spawn(async move {
                     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-                    if let Err(e) = start_magpie_for_game(&magpie_path).await {
+                    if let Err(e) = start_magpie_for_game(game_id, &magpie_path).await {
                         warn!("启动Magpie失败: {}", e);
                     }
                 });
@@ -427,7 +429,7 @@ pub async fn launch_game<R: Runtime>(
                         if let Some(magpie_path) = magpie_path.clone() {
                             tokio::spawn(async move {
                                 time::sleep(time::Duration::from_secs(1)).await;
-                                if let Err(e) = start_magpie_for_game(&magpie_path).await {
+                                if let Err(e) = start_magpie_for_game(game_id, &magpie_path).await {
                                     warn!("启动Magpie失败: {}", e);
                                 }
                             });
@@ -478,7 +480,11 @@ pub async fn stop_game(game_id: u32) -> Result<StopResult, String> {
 }
 
 /// 为游戏启动Magpie放大
-async fn start_magpie_for_game(magpie_path: &str) -> Result<(), String> {
+async fn start_magpie_for_game(game_id: u32, magpie_path: &str) -> Result<(), String> {
+    if !wait_for_game_foreground(game_id).await {
+        return Ok(());
+    }
+
     // 检查Magpie是否已经在运行
     let magpie_was_running = is_process_running("Magpie.exe");
 
@@ -500,8 +506,13 @@ async fn start_magpie_for_game(magpie_path: &str) -> Result<(), String> {
         debug!("Magpie已经在运行中，准备激活放大...");
     }
 
-    // 等待游戏窗口加载（无论Magpie是否新启动）
+    // 等待 Magpie 就绪后再次确认游戏仍在前台，避免向其他窗口发送快捷键。
     tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+
+    if !is_game_foreground(game_id) {
+        info!("游戏 {} 已退出或不在前台，跳过Magpie放大", game_id);
+        return Ok(());
+    }
 
     // 模拟Win+Shift+A快捷键激活放大
     match keyboard_simulator::simulate_win_shift_a() {

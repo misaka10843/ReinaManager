@@ -19,7 +19,7 @@ use std::sync::{
 use std::time::SystemTime;
 use std::time::{Duration, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter, Runtime};
-use tokio::time::{MissedTickBehavior, interval};
+use tokio::time::{Instant, MissedTickBehavior, interval};
 
 use {
     log::warn, parking_lot::RwLock, std::collections::HashSet, std::path::Path, std::sync::OnceLock,
@@ -53,6 +53,12 @@ const TIME_UPDATE_INTERVAL_SECS: u64 = 1;
 /// 监控循环检查间隔（秒）
 const MONITOR_CHECK_INTERVAL_SECS: u64 = 1;
 
+/// 等待游戏正式获得前台窗口的最长时间（秒）
+const STARTUP_TIMEOUT_SECS: u64 = 60;
+
+/// 等待监控会话注册的最长时间（秒）
+const SESSION_REGISTRATION_TIMEOUT_SECS: u64 = 10;
+
 // ============================================================================
 // 数据结构定义
 // ============================================================================
@@ -63,6 +69,8 @@ pub struct ActiveSession {
     pub stop_signal: Arc<AtomicBool>,
     /// 候选进程 PID 列表
     pub candidate_pids: Arc<RwLock<HashSet<u32>>>,
+    /// 与前台 Hook 共享的监控状态
+    monitor_state: Arc<RwLock<MonitorState>>,
 }
 
 /// 监控状态（线程安全的共享状态）
@@ -76,6 +84,8 @@ struct MonitorState {
     is_foreground: bool,
     /// 当前活跃的游戏进程 PID
     best_pid: u32,
+    /// 游戏是否曾经获得过前台窗口
+    has_started: bool,
 }
 
 impl MonitorState {
@@ -84,7 +94,17 @@ impl MonitorState {
         Self {
             is_foreground: false,
             best_pid: initial_pid,
+            has_started: false,
         }
+    }
+
+    fn mark_started(&mut self) {
+        if self.has_started {
+            return;
+        }
+
+        self.has_started = true;
+        info!("检测到游戏前台窗口，确认游戏正式启动");
     }
 }
 
@@ -145,9 +165,10 @@ fn unregister_session(game_id: u32) {
 pub async fn stop_game_session(game_id: u32) -> Result<u32, String> {
     // 获取会话信息
     let sessions = get_sessions().read();
-    let session = sessions
-        .get(&game_id)
-        .ok_or_else(|| format!("未找到游戏 {} 的监控会话", game_id))?;
+    let Some(session) = sessions.get(&game_id) else {
+        info!("游戏 {} 当前没有监控会话，视为已经停止", game_id);
+        return Ok(0);
+    };
 
     // 发送停止信号
     session.stop_signal.store(true, Ordering::Release);
@@ -175,10 +196,85 @@ pub async fn stop_game_session(game_id: u32) -> Result<u32, String> {
     }
 
     info!(
-        "游戏 {} 停止完成，共终止 {} 个进程",
+        "游戏 {} 停止监控成功，实际终止 {} 个进程",
         game_id, terminated_count
     );
     Ok(terminated_count)
+}
+
+/// 等待游戏确认启动并处于前台，供 Magpie 安全触发放大。
+///
+/// 最多等待 10 秒注册会话；会话出现后继续等待游戏启动超时时间。
+/// 会话停止或在观察到之后消失时提前返回。
+pub async fn wait_for_game_foreground(game_id: u32) -> bool {
+    let registration_started_at = Instant::now();
+    let mut foreground_wait_started_at = None;
+    let mut has_seen_session = false;
+
+    loop {
+        let session = get_sessions()
+            .read()
+            .get(&game_id)
+            .map(|session| (session.stop_signal.clone(), session.monitor_state.clone()));
+
+        if let Some((stop_signal, monitor_state)) = session {
+            has_seen_session = true;
+            foreground_wait_started_at.get_or_insert_with(Instant::now);
+            if stop_signal.load(Ordering::Acquire) {
+                debug!("游戏 {} 的监控会话已停止，取消Magpie放大", game_id);
+                return false;
+            }
+
+            let (has_started, is_foreground, best_pid) = {
+                let state = monitor_state.read();
+                (state.has_started, state.is_foreground, state.best_pid)
+            };
+            if has_started && is_foreground && is_process_running(best_pid) {
+                return true;
+            }
+        } else if has_seen_session {
+            debug!("游戏 {} 的监控会话已结束，取消Magpie放大", game_id);
+            return false;
+        } else if registration_started_at.elapsed()
+            >= Duration::from_secs(SESSION_REGISTRATION_TIMEOUT_SECS)
+        {
+            debug!(
+                "等待游戏 {} 监控会话注册超过 {} 秒，取消Magpie放大",
+                game_id, SESSION_REGISTRATION_TIMEOUT_SECS
+            );
+            return false;
+        }
+
+        if foreground_wait_started_at.is_some_and(|started_at: Instant| {
+            started_at.elapsed() >= Duration::from_secs(STARTUP_TIMEOUT_SECS)
+        }) {
+            debug!(
+                "等待游戏 {} 前台窗口超过 {} 秒，取消Magpie放大",
+                game_id, STARTUP_TIMEOUT_SECS
+            );
+            return false;
+        }
+
+        tokio::time::sleep(Duration::from_millis(200)).await;
+    }
+}
+
+/// 判断游戏当前是否仍可安全接收 Magpie 放大快捷键。
+pub fn is_game_foreground(game_id: u32) -> bool {
+    let Some(monitor_state) = get_sessions()
+        .read()
+        .get(&game_id)
+        .filter(|session| !session.stop_signal.load(Ordering::Acquire))
+        .map(|session| session.monitor_state.clone())
+    else {
+        return false;
+    };
+
+    let (has_started, is_foreground, best_pid) = {
+        let state = monitor_state.read();
+        (state.has_started, state.is_foreground, state.best_pid)
+    };
+    has_started && is_foreground && is_process_running(best_pid)
 }
 
 /// 启动指定游戏进程的监控
@@ -242,13 +338,12 @@ pub async fn monitor_game<R: Runtime>(
 /// 成功返回 `Ok(())`，失败返回包含错误信息的 `Err(String)`
 ///
 /// # 工作流程
-/// 1. 等待 3 秒让游戏充分启动
-/// 2. 扫描游戏目录获取所有候选进程
-/// 3. 创建共享状态和停止信号
-/// 4. 启动 Hook 线程监听前台窗口变化
-/// 5. 主循环每秒检查状态并累计时间
-/// 6. 进程失活时触发重新扫描
-/// 7. 会话结束时发送结束事件
+/// 1. 创建共享状态、停止信号和候选进程集合
+/// 2. 注册监控会话并启动 Hook 线程
+/// 3. 等待 3 秒让游戏充分启动
+/// 4. 主循环每秒检查状态并累计时间
+/// 5. 进程失活时触发重新扫描
+/// 6. 会话结束时发送结束事件
 async fn run_game_monitor<R: Runtime>(
     app_handle: AppHandle<R>,
     db: DatabaseConnection,
@@ -259,31 +354,15 @@ async fn run_game_monitor<R: Runtime>(
 ) -> Result<(), String> {
     let mut accumulated_seconds = 0u64;
     let start_time = get_timestamp();
+    let startup_started_at = Instant::now();
 
-    // 等待游戏进程充分启动（例如 Launcher -> Game 的切换）
-    debug!("等待 3 秒以便游戏进程充分启动...");
-    tokio::time::sleep(Duration::from_secs(3)).await;
-
-    // 初始扫描：获取所有候选 PID
-    let candidate_pids = get_all_candidate_pids(&detection_dir);
-    let mut candidate_pids_set: HashSet<u32> = candidate_pids.into_iter().collect();
-    // 如果初始 PID 不在候选列表中，手动添加（容错）
-    if !candidate_pids_set.contains(&initial_pid) && is_process_running(initial_pid) {
+    // 先用初始进程创建会话；目录扫描仍在原有 3 秒等待后执行。
+    let mut candidate_pids_set = HashSet::new();
+    if is_process_running(initial_pid) {
         candidate_pids_set.insert(initial_pid);
     }
-
-    // 创建共享的候选 PID 列表（用于 Hook 线程和停止功能）
     let shared_candidate_pids = Arc::new(RwLock::new(candidate_pids_set.clone()));
-
-    // 创建共享状态（仅包含 is_foreground 和 best_pid）
     let monitor_state = Arc::new(RwLock::new(MonitorState::new(initial_pid)));
-
-    info!(
-        "开始监控游戏: ID={}, 初始 PID={}, 候选进程组={:?}, 游戏目录={}",
-        game_id, initial_pid, candidate_pids_set, detection_dir
-    );
-
-    // 创建停止信号
     let stop_signal = Arc::new(AtomicBool::new(false));
 
     // 注册会话到全局管理器
@@ -292,6 +371,7 @@ async fn run_game_monitor<R: Runtime>(
         ActiveSession {
             stop_signal: stop_signal.clone(),
             candidate_pids: shared_candidate_pids.clone(),
+            monitor_state: monitor_state.clone(),
         },
     );
 
@@ -306,14 +386,46 @@ async fn run_game_monitor<R: Runtime>(
         stop_signal.clone(),
     );
 
+    info!(
+        "开始监控游戏: ID={}, 初始 PID={}, 候选进程组={:?}, 游戏目录={}",
+        game_id, initial_pid, candidate_pids_set, detection_dir
+    );
+
+    // 保留 3 秒启动等待；Hook 已运行，同时轮询停止信号以便立即取消等待。
+    debug!("等待 3 秒以便游戏进程充分启动...");
+    let startup_wait = tokio::time::sleep(Duration::from_secs(3));
+    tokio::pin!(startup_wait);
+    let mut stop_check_interval = interval(Duration::from_millis(200));
+    stop_check_interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
+    loop {
+        tokio::select! {
+            _ = &mut startup_wait => break,
+            _ = stop_check_interval.tick() => {
+                if stop_signal.load(Ordering::Acquire) {
+                    debug!("启动等待期间收到停止信号，结束监控游戏 {}", game_id);
+                    break;
+                }
+            }
+        }
+    }
+
+    // 合并等待期间出现的目录进程，不覆盖 Hook 已发现的候选 PID。
+    if !stop_signal.load(Ordering::Acquire) {
+        shared_candidate_pids
+            .write()
+            .extend(get_all_candidate_pids(&detection_dir));
+    }
+
     // 获取当前最佳 PID
     let best_pid = monitor_state.read().best_pid;
 
     // 通知前端会话开始
-    if let Err(error) = app_handle.emit(
-        "game-session-started",
-        json!({ "gameId": game_id, "processId": best_pid, "startTime": start_time }),
-    ) {
+    if !stop_signal.load(Ordering::Acquire)
+        && let Err(error) = app_handle.emit(
+            "game-session-started",
+            json!({ "gameId": game_id, "processId": best_pid, "startTime": start_time }),
+        )
+    {
         warn!("无法发送 game-session-started 事件: {error}");
     }
 
@@ -335,10 +447,16 @@ async fn run_game_monitor<R: Runtime>(
         }
 
         // 读取共享状态（使用 RwLock 读锁，不会阻塞 Hook 线程的写操作太久）
-        let (is_foreground, current_best_pid) = {
+        let (is_foreground, current_best_pid, has_started) = {
             let state = monitor_state.read();
-            (state.is_foreground, state.best_pid)
+            (state.is_foreground, state.best_pid, state.has_started)
         };
+
+        if !has_started && startup_started_at.elapsed() >= Duration::from_secs(STARTUP_TIMEOUT_SECS)
+        {
+            info!("游戏启动等待超过 {} 秒，结束监控", STARTUP_TIMEOUT_SECS);
+            break;
+        }
 
         // 检查当前最佳 PID 是否还在运行
         let best_pid_running = is_process_running(current_best_pid);
@@ -357,6 +475,14 @@ async fn run_game_monitor<R: Runtime>(
                 let new_candidate_pids_vec = get_all_candidate_pids(&detection_dir);
 
                 if new_candidate_pids_vec.is_empty() {
+                    if !has_started
+                        && startup_started_at.elapsed() < Duration::from_secs(STARTUP_TIMEOUT_SECS)
+                    {
+                        debug!("游戏尚未确认启动，目录暂时无活动进程，继续等待");
+                        consecutive_failures = 0;
+                        continue;
+                    }
+
                     info!("未找到可切换的活动进程，结束监控会话");
                     break;
                 }
@@ -534,6 +660,7 @@ fn update_foreground_state(
         *last_pid = Some(new_pid);
         let mut session_state = state.write();
         session_state.is_foreground = true;
+        session_state.mark_started();
         if session_state.best_pid != new_pid {
             session_state.best_pid = new_pid;
             debug!("前台窗口切换到已知游戏进程: PID {}", new_pid);
@@ -564,6 +691,7 @@ fn update_foreground_state(
             let mut session_state = state.write();
             session_state.is_foreground = true;
             session_state.best_pid = new_pid;
+            session_state.mark_started();
             return;
         }
     }
@@ -842,12 +970,21 @@ fn get_timestamp() -> u64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::sync::atomic::AtomicU32;
+
+    static NEXT_TEST_GAME_ID: AtomicU32 = AtomicU32::new(u32::MAX);
+
+    fn next_test_game_id() -> u32 {
+        NEXT_TEST_GAME_ID.fetch_sub(1, std::sync::atomic::Ordering::Relaxed)
+    }
 
     #[test]
     fn same_pid_recovers_after_foreground_becomes_unavailable() {
         let state = RwLock::new(MonitorState::new(123));
         let candidate_pids = RwLock::new(HashSet::from([123]));
         let mut last_pid = None;
+
+        assert!(!state.read().has_started);
 
         update_foreground_state(
             &state,
@@ -858,6 +995,7 @@ mod tests {
             Some(123),
         );
         assert!(state.read().is_foreground);
+        assert!(state.read().has_started);
 
         update_foreground_state(
             &state,
@@ -868,6 +1006,7 @@ mod tests {
             None,
         );
         assert!(!state.read().is_foreground);
+        assert!(state.read().has_started);
         assert_eq!(last_pid, None);
 
         update_foreground_state(
@@ -901,5 +1040,59 @@ mod tests {
         let state = state.read();
         assert!(state.is_foreground);
         assert_eq!(state.best_pid, 123);
+        assert!(state.has_started);
+    }
+
+    #[tokio::test]
+    async fn stopping_missing_session_is_successful() {
+        let game_id = next_test_game_id();
+        unregister_session(game_id);
+
+        assert_eq!(stop_game_session(game_id).await, Ok(0));
+    }
+
+    #[tokio::test]
+    async fn stopping_empty_session_sets_stop_signal() {
+        let game_id = next_test_game_id();
+        let stop_signal = Arc::new(AtomicBool::new(false));
+        register_session(
+            game_id,
+            ActiveSession {
+                stop_signal: stop_signal.clone(),
+                candidate_pids: Arc::new(RwLock::new(HashSet::new())),
+                monitor_state: Arc::new(RwLock::new(MonitorState::new(0))),
+            },
+        );
+
+        let result = stop_game_session(game_id).await;
+        unregister_session(game_id);
+
+        assert_eq!(result, Ok(0));
+        assert!(stop_signal.load(Ordering::Acquire));
+    }
+
+    #[tokio::test]
+    async fn magpie_requires_live_foreground_session() {
+        let game_id = next_test_game_id();
+        let stop_signal = Arc::new(AtomicBool::new(false));
+        let mut state = MonitorState::new(std::process::id());
+        state.has_started = true;
+        state.is_foreground = true;
+        register_session(
+            game_id,
+            ActiveSession {
+                stop_signal: stop_signal.clone(),
+                candidate_pids: Arc::new(RwLock::new(HashSet::new())),
+                monitor_state: Arc::new(RwLock::new(state)),
+            },
+        );
+
+        let ready = wait_for_game_foreground(game_id).await;
+        stop_signal.store(true, Ordering::Release);
+        let ready_after_stop = is_game_foreground(game_id);
+        unregister_session(game_id);
+
+        assert!(ready);
+        assert!(!ready_after_stop);
     }
 }
