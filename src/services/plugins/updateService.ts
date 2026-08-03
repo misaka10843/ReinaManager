@@ -18,7 +18,11 @@ export interface UpdateCallbacks {
 
 function getUpdaterCheckOptions() {
 	const { proxyConfig } = useStore.getState();
-	return proxyConfig.url ? { proxy: proxyConfig.url } : undefined;
+
+	return {
+		timeout: 5_000,
+		...(proxyConfig.url ? { proxy: proxyConfig.url } : {}),
+	};
 }
 
 // 检查更新的主函数
