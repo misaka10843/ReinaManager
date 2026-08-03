@@ -36,15 +36,7 @@ import {
 } from "@/services/fs/savedataBackup";
 import type { GameData, SavedataRecord } from "@/types";
 import { getUserErrorMessage } from "@/utils/errors";
-
-/** 格式化文件大小 */
-const formatFileSize = (bytes: number): string => {
-	if (bytes === 0) return "0 B";
-	const k = 1024;
-	const sizes = ["B", "KB", "MB", "GB"];
-	const i = Math.floor(Math.log(bytes) / Math.log(k));
-	return `${Number.parseFloat((bytes / k ** i).toFixed(2))} ${sizes[i]}`;
-};
+import { formatFileSize } from "@/utils/fileSize";
 
 /** 格式化时间戳 */
 const formatDate = (timestamp: number): string => {
