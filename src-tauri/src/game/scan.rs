@@ -239,6 +239,7 @@ fn sort_executables(executables: &mut [String], game_name: &str) {
     executables.sort_by_cached_key(|executable| {
         let lower = executable.to_lowercase();
         (
+            lower.contains("startup"),
             !(lower.contains("chs") || lower.contains("cn")),
             !is_probably_chinese_executable(executable),
             !lower.contains(&lower_name),
@@ -247,6 +248,8 @@ fn sort_executables(executables: &mut [String], game_name: &str) {
         )
     });
 }
+
+
 
 #[command]
 pub async fn scan_directory_for_games(
@@ -571,6 +574,22 @@ mod tests {
         assert_eq!(
             executables,
             ["Game_chs.exe", "游戏.exe", "Game.exe", "死に逝く君.exe"]
+        );
+    }
+
+    #[test]
+    fn executable_sort_deprioritizes_startup() {
+        let mut executables = vec![
+            "Game_startup.exe".to_string(),
+            "Game_chs.exe".to_string(),
+            "Game.exe".to_string(),
+        ];
+
+        sort_executables(&mut executables, "Game");
+
+        assert_eq!(
+            executables,
+            ["Game_chs.exe", "Game.exe", "Game_startup.exe"]
         );
     }
 
