@@ -138,6 +138,11 @@ jobs:
           key: ${{ matrix.rust_target }}
           shared-key: ${{ matrix.rust_target }}
           save-if: false
+      - name: 7-Zip cache
+        uses: actions/cache@v4
+        with:
+          path: src-tauri/target/7zip
+          key: 7zip-${{ runner.os }}-${{ matrix.rust_target }}-${{ hashFiles('src-tauri/build.rs') }}
       - name: Install Mold
         uses: rui314/setup-mold@v1
       - name: Install system dependencies
@@ -209,6 +214,11 @@ jobs:
           workspaces: "./src-tauri -> target"
           shared-key: ${{ matrix.rust_target }}
           save-if: false
+      - name: 7-Zip cache
+        uses: actions/cache@v4
+        with:
+          path: src-tauri/target/7zip
+          key: 7zip-${{ runner.os }}-${{ matrix.rust_target }}-${{ hashFiles('src-tauri/build.rs') }}
       - name: Configure Rust linker (Windows lld)
         shell: bash
         run: |
@@ -266,7 +276,9 @@ jobs:
           $short = "${{ steps.short.outputs.SHORT }}"
           $target = "${{ matrix.rust_target }}"
           $portableRoot = "src-tauri/target/$target/release/portable/ReinaManager_${version}_${short}"
-          $resourcesDataDir = Join-Path $portableRoot "resources/data"
+          $bundledResources = "src-tauri/target/$target/release/resources"
+          $portableResources = Join-Path $portableRoot "resources"
+          $resourcesDataDir = Join-Path $portableResources "data"
           $zipPath = "src-tauri/target/$target/release/ReinaManager_${version}_${short}-portable.zip"
 
           if (Test-Path $portableRoot) {
@@ -276,6 +288,18 @@ jobs:
             Remove-Item $zipPath -Force
           }
 
+          if (-not (Test-Path $bundledResources)) {
+            throw "Tauri 构建资源目录不存在: $bundledResources"
+          }
+          if (-not (Test-Path (Join-Path $bundledResources "tools/7zip"))) {
+            throw "Tauri 构建资源中缺少 7-Zip: $(Join-Path $bundledResources 'tools/7zip')"
+          }
+
+          New-Item -ItemType Directory -Path $portableResources -Force | Out-Null
+          Copy-Item (Join-Path $bundledResources "*") $portableResources -Recurse -Force
+          if (-not (Test-Path (Join-Path $portableResources "tools/7zip"))) {
+            throw "便携版资源中缺少 7-Zip: $(Join-Path $portableResources 'tools/7zip')"
+          }
           New-Item -ItemType Directory -Path $resourcesDataDir -Force | Out-Null
           @"
           该文件夹为数据库文件夹，删除该文件夹则退出便携模式，反之则保持便携模式。

@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use std::net::SocketAddr;
 use std::sync::{OnceLock, RwLock};
 use std::time::Duration;
 use tauri_plugin_http::reqwest::{Client, NoProxy, Proxy};
@@ -18,23 +19,46 @@ pub struct ProxyConfig {
     pub url: String,
 }
 
-static GLOBAL_HTTP_CLIENT: OnceLock<RwLock<Client>> = OnceLock::new();
+struct HttpClientState {
+    client: Client,
+    proxy_url: String,
+}
+
+static GLOBAL_HTTP_CLIENT: OnceLock<RwLock<HttpClientState>> = OnceLock::new();
 
 #[tauri::command]
 pub fn update_proxy_config(config: ProxyConfig) -> Result<(), String> {
-    let client = build_client(config.url.trim())?;
+    let proxy_url = config.url.trim();
+    let client = build_client(proxy_url, true, true, None)?;
     let mut guard = http_client()
         .write()
         .map_err(|_| "更新 HTTP 客户端失败".to_string())?;
-    *guard = client;
+    *guard = HttpClientState {
+        client,
+        proxy_url: proxy_url.to_string(),
+    };
     Ok(())
 }
 
-fn build_client(proxy_url: &str) -> Result<Client, String> {
+fn build_client(
+    proxy_url: &str,
+    request_timeout: bool,
+    follow_redirects: bool,
+    dns_override: Option<(&str, &[SocketAddr])>,
+) -> Result<Client, String> {
     let mut builder = Client::builder()
         .connect_timeout(Duration::from_secs(DEFAULT_CONNECT_TIMEOUT_SECS))
-        .timeout(Duration::from_secs(DEFAULT_TIMEOUT_SECS))
         .user_agent(GLOBAL_USER_AGENT);
+
+    if request_timeout {
+        builder = builder.timeout(Duration::from_secs(DEFAULT_TIMEOUT_SECS));
+    }
+    if !follow_redirects {
+        builder = builder.redirect(tauri_plugin_http::reqwest::redirect::Policy::none());
+    }
+    if let Some((host, addresses)) = dns_override {
+        builder = builder.resolve_to_addrs(host, addresses);
+    }
 
     if !proxy_url.is_empty() {
         let proxy = Proxy::all(proxy_url)
@@ -48,14 +72,34 @@ fn build_client(proxy_url: &str) -> Result<Client, String> {
         .map_err(|e| format!("创建 HTTP 客户端失败: {e}"))
 }
 
-fn http_client() -> &'static RwLock<Client> {
-    GLOBAL_HTTP_CLIENT
-        .get_or_init(|| RwLock::new(build_client("").expect("failed to build default http client")))
+fn http_client() -> &'static RwLock<HttpClientState> {
+    GLOBAL_HTTP_CLIENT.get_or_init(|| {
+        RwLock::new(HttpClientState {
+            client: build_client("", true, true, None)
+                .expect("failed to build default http client"),
+            proxy_url: String::new(),
+        })
+    })
 }
 
 pub fn get_client() -> Client {
     http_client()
         .read()
         .unwrap_or_else(|e| e.into_inner())
+        .client
         .clone()
+}
+
+/// 下载大型文件时不设置总请求超时，但继续沿用连接超时与用户代理设置。
+/// 同时把当前 DNS 校验得到的地址固定到连接层，避免发送请求时再次解析域名。
+pub fn get_download_client_with_dns_override(
+    host: &str,
+    addresses: &[SocketAddr],
+) -> Result<Client, String> {
+    let proxy_url = http_client()
+        .read()
+        .unwrap_or_else(|error| error.into_inner())
+        .proxy_url
+        .clone();
+    build_client(&proxy_url, false, false, Some((host, addresses)))
 }
