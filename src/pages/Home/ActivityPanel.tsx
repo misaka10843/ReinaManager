@@ -47,8 +47,8 @@ export function ActivityPanel({
 	const getDateLabel = (date: string) =>
 		formatDateLabel(date, {
 			language: i18n.language,
-			todayLabel: t("home.activity.today", "今天"),
-			yesterdayLabel: t("home.activity.yesterday", "昨天"),
+			todayLabel: t("common.today", "今天"),
+			yesterdayLabel: t("common.yesterday", "昨天"),
 		});
 
 	const getPlaySummary = (activity: ActivityItem) => {

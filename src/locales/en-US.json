@@ -18,11 +18,14 @@
 		"unknownDeveloper": "Unknown Developer"
 	},
 	"common": {
+		"browse": "Browse",
 		"cancel": "Cancel",
 		"changePlayStatus": "Change Play Status",
 		"confirm": "Confirm",
 		"locale": "en-US",
-		"saving": "Saving..."
+		"saving": "Saving...",
+		"today": "Today",
+		"yesterday": "Yesterday"
 	},
 	"components": {
 		"AddModal": {
@@ -116,10 +119,7 @@
 		"Cards": {
 			"removeFromCategory": "Remove from Current Category",
 			"removeFromCategoryFailed": "Failed to remove from category",
-			"removeFromCategorySuccess": "Removed from current category",
-			"sortOverlay": {
-				"yesterday": "Yesterday"
-			}
+			"removeFromCategorySuccess": "Removed from current category"
 		},
 		"Collection": {
 			"errors": {
@@ -178,6 +178,37 @@
 		"GameListStateView": {
 			"empty": "No matching games found"
 		},
+		"InstallRequest": {
+			"close": "Close",
+			"confirm": "Confirm Installation",
+			"confirmNotice": "ReinaManager downloads and installs only after confirmation. Cancelling creates no installation task.",
+			"installPath": "Installation Path",
+			"installPathPlaceholder": "Select directory for game installation",
+			"metadataLabel": "Metadata: ",
+			"pathRequired": "Please select or enter an installation path",
+			"preparing": "Preparing installation…",
+			"providerLabel": "Source: ",
+			"queued": "Added to Download Tasks. Progress continues in the background.",
+			"saveAsDefaultPath": "Set as default path",
+			"stage": {
+				"downloading": "Downloading",
+				"extracting": "Extracting",
+				"importing_game": "Importing game",
+				"matching_metadata": "Fetching and matching metadata",
+				"organizing": "Organizing game directory",
+				"scanning": "Detecting executable",
+				"verifying": "Verifying"
+			},
+			"status": {
+				"cancelled": "Cancelled",
+				"completed": "Completed",
+				"failed": "Failed",
+				"paused": "Paused",
+				"pending": "Pending",
+				"running": "Running"
+			},
+			"title": "Install Game"
+		},
 		"LaunchModal": {
 			"gamePathNotFound": "Game path not found",
 			"launchFailed": "Failed to launch game:",
@@ -199,6 +230,13 @@
 				"pathPlaceholder": "Leave empty to use default path",
 				"selectBtn": "Select Directory",
 				"title": "Database Backup Path"
+			},
+			"installRootPath": {
+				"note": "One-click installations from Shionlib and other providers extract games into this directory",
+				"pathLabel": "Game Installation Root",
+				"pathPlaceholder": "Select a directory for installed games",
+				"selectBtn": "Select Directory",
+				"title": "One-click Installation Directory"
 			},
 			"lePath": {
 				"note": "Set the executable file path for LE region switching software, used for region switching when launching games",
@@ -256,6 +294,19 @@
 			"failedOpenGameFolder": "Failed to open the game folder",
 			"gameAddedSuccess": "Game added successfully",
 			"viewDetails": "View Details"
+		},
+		"TaskManager": {
+			"cancel": "Cancel Task",
+			"close": "Close",
+			"delete": "Delete Task",
+			"empty": "No download tasks",
+			"gameInstallSource": "Game installation · {{provider}} · {{size}}",
+			"installPath": "Installation Path: {{path}}",
+			"openFolder": "Open Folder",
+			"pause": "Pause",
+			"resume": "Resume",
+			"retry": "Retry",
+			"title": "Download Tasks"
 		},
 		"Toolbar": {
 			"Batch": {
@@ -382,9 +433,7 @@
 			"playSummary_one": "{{time}} · {{count}} session · {{duration}} total",
 			"playSummary_other": "{{time}} · {{count}} sessions · {{duration}} total",
 			"playSummaryCompact_one": "{{count}} session · {{duration}} total",
-			"playSummaryCompact_other": "{{count}} sessions · {{duration}} total",
-			"today": "Today",
-			"yesterday": "Yesterday"
+			"playSummaryCompact_other": "{{count}} sessions · {{duration}} total"
 		},
 		"activityTitle": "Activity",
 		"focus": {

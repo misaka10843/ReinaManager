@@ -36,8 +36,8 @@ function formatLastPlayedOverlay(
 	if (!timestamp) return null;
 	return formatDateLabel(timestamp, {
 		language,
-		todayLabel: t("home.activity.today", "今天"),
-		yesterdayLabel: t("components.Cards.sortOverlay.yesterday", "昨天"),
+		todayLabel: t("common.today", "今天"),
+		yesterdayLabel: t("common.yesterday", "昨天"),
 		showRecentTime: true,
 	});
 }

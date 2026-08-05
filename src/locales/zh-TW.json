@@ -18,11 +18,14 @@
 		"unknownDeveloper": "未知開發商"
 	},
 	"common": {
+		"browse": "瀏覽",
 		"cancel": "取消",
 		"changePlayStatus": "修改遊戲狀態",
 		"confirm": "確認",
 		"locale": "zh-TW",
-		"saving": "保存中..."
+		"saving": "保存中...",
+		"today": "今天",
+		"yesterday": "昨天"
 	},
 	"components": {
 		"AddModal": {
@@ -112,10 +115,7 @@
 		"Cards": {
 			"removeFromCategory": "移出目前分類",
 			"removeFromCategoryFailed": "移出分類失敗",
-			"removeFromCategorySuccess": "已從目前分類移除",
-			"sortOverlay": {
-				"yesterday": "昨天"
-			}
+			"removeFromCategorySuccess": "已從目前分類移除"
 		},
 		"Collection": {
 			"errors": {
@@ -171,6 +171,37 @@
 		"GameListStateView": {
 			"empty": "沒有找到符合條件的遊戲"
 		},
+		"InstallRequest": {
+			"close": "關閉",
+			"confirm": "確認安裝",
+			"confirmNotice": "確認後 ReinaManager 才會下載並安裝；取消不會產生安裝任務。",
+			"installPath": "安裝路徑",
+			"installPathPlaceholder": "選擇用於安裝遊戲的目錄",
+			"metadataLabel": "中繼資料：",
+			"pathRequired": "請先選擇或輸入安裝路徑",
+			"preparing": "正在準備安裝…",
+			"providerLabel": "來源：",
+			"queued": "已添加到下載任務，可在背景查看進度",
+			"saveAsDefaultPath": "設為預設路徑",
+			"stage": {
+				"downloading": "正在下載",
+				"extracting": "正在解壓縮",
+				"importing_game": "正在匯入遊戲",
+				"matching_metadata": "正在取得並比對中繼資料",
+				"organizing": "正在整理遊戲目錄",
+				"scanning": "正在識別啟動程式",
+				"verifying": "正在驗證"
+			},
+			"status": {
+				"cancelled": "已取消",
+				"completed": "已完成",
+				"failed": "失敗",
+				"paused": "已暫停",
+				"pending": "等待執行",
+				"running": "執行中"
+			},
+			"title": "安裝遊戲"
+		},
 		"LaunchModal": {
 			"gamePathNotFound": "遊戲路徑未找到",
 			"launchFailed": "遊戲啟動失敗:",
@@ -192,6 +223,13 @@
 				"pathPlaceholder": "留空使用默認路徑",
 				"selectBtn": "選擇目錄",
 				"title": "數據庫備份路徑"
+			},
+			"installRootPath": {
+				"note": "書音等來源的一鍵安裝會把遊戲解壓縮到此目錄",
+				"pathLabel": "遊戲安裝根目錄",
+				"pathPlaceholder": "選擇用於安裝遊戲的目錄",
+				"selectBtn": "選擇目錄",
+				"title": "一鍵安裝遊戲目錄"
 			},
 			"lePath": {
 				"note": "設置LE轉區軟體的可執行文件路徑，用於遊戲啟動時的轉區功能",
@@ -249,6 +287,19 @@
 			"failedOpenGameFolder": "打開遊戲文件夾失敗",
 			"gameAddedSuccess": "遊戲添加成功",
 			"viewDetails": "查看詳情"
+		},
+		"TaskManager": {
+			"cancel": "取消任務",
+			"close": "關閉",
+			"delete": "刪除任務",
+			"empty": "暫無下載任務",
+			"gameInstallSource": "遊戲安裝 · {{provider}} · {{size}}",
+			"installPath": "安裝路徑：{{path}}",
+			"openFolder": "開啟資料夾",
+			"pause": "暫停",
+			"resume": "繼續",
+			"retry": "重試",
+			"title": "下載任務"
 		},
 		"Toolbar": {
 			"Batch": {
@@ -367,9 +418,7 @@
 			},
 			"played": "遊玩了 {{title}}",
 			"playSummary_other": "{{time}} · {{count}}次 · 共{{duration}}",
-			"playSummaryCompact_other": "{{count}}次 · 共{{duration}}",
-			"today": "今天",
-			"yesterday": "昨天"
+			"playSummaryCompact_other": "{{count}}次 · 共{{duration}}"
 		},
 		"activityTitle": "動態",
 		"focus": {

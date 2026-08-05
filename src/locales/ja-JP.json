@@ -18,11 +18,14 @@
 		"unknownDeveloper": "不明な開発者"
 	},
 	"common": {
+		"browse": "参照",
 		"cancel": "キャンセル",
 		"changePlayStatus": "プレイ状態を変更",
 		"confirm": "確認",
 		"locale": "ja-JP",
-		"saving": "保存中..."
+		"saving": "保存中...",
+		"today": "今日",
+		"yesterday": "昨日"
 	},
 	"components": {
 		"AddModal": {
@@ -112,10 +115,7 @@
 		"Cards": {
 			"removeFromCategory": "現在のカテゴリから削除",
 			"removeFromCategoryFailed": "カテゴリからの削除に失敗しました",
-			"removeFromCategorySuccess": "現在のカテゴリから削除しました",
-			"sortOverlay": {
-				"yesterday": "昨日"
-			}
+			"removeFromCategorySuccess": "現在のカテゴリから削除しました"
 		},
 		"Collection": {
 			"errors": {
@@ -171,6 +171,37 @@
 		"GameListStateView": {
 			"empty": "条件に一致するゲームが見つかりません"
 		},
+		"InstallRequest": {
+			"close": "閉じる",
+			"confirm": "インストールを確認",
+			"confirmNotice": "確認後にのみ ReinaManager がダウンロードとインストールを開始します。キャンセルした場合、タスクは作成されません。",
+			"installPath": "インストールパス",
+			"installPathPlaceholder": "ゲームのインストールに使用するディレクトリを選択",
+			"metadataLabel": "メタデータ：",
+			"pathRequired": "インストールパスを選択または入力してください",
+			"preparing": "インストールを準備しています…",
+			"providerLabel": "提供元：",
+			"queued": "ダウンロードタスクに追加しました。バックグラウンドで進行状況を確認できます",
+			"saveAsDefaultPath": "既定のパスに設定",
+			"stage": {
+				"downloading": "ダウンロード中",
+				"extracting": "展開中",
+				"importing_game": "ゲームをインポート中",
+				"matching_metadata": "メタデータを取得・照合中",
+				"organizing": "ゲームディレクトリを整理中",
+				"scanning": "実行ファイルを検出中",
+				"verifying": "検証中"
+			},
+			"status": {
+				"cancelled": "キャンセル済み",
+				"completed": "完了",
+				"failed": "失敗",
+				"paused": "一時停止中",
+				"pending": "実行待ち",
+				"running": "実行中"
+			},
+			"title": "ゲームをインストール"
+		},
 		"LaunchModal": {
 			"gamePathNotFound": "ゲームパスが見つかりません",
 			"launchFailed": "ゲーム起動に失敗しました:",
@@ -192,6 +223,13 @@
 				"pathPlaceholder": "空のままにするとデフォルトパスを使用",
 				"selectBtn": "ディレクトリを選択",
 				"title": "データベースバックアップパス"
+			},
+			"installRootPath": {
+				"note": "書音などからのワンクリックインストールは、このディレクトリへゲームを展開します",
+				"pathLabel": "ゲームインストールルート",
+				"pathPlaceholder": "ゲームのインストール先を選択",
+				"selectBtn": "ディレクトリを選択",
+				"title": "ワンクリックインストール先"
 			},
 			"lePath": {
 				"note": "ゲーム起動時の地域切り替えに使用するLE地域切り替えソフトウェアの実行ファイルパスを設定します",
@@ -249,6 +287,19 @@
 			"failedOpenGameFolder": "ゲームフォルダの開けに失敗しました",
 			"gameAddedSuccess": "ゲームが正常に追加されました",
 			"viewDetails": "詳細を表示"
+		},
+		"TaskManager": {
+			"cancel": "タスクをキャンセル",
+			"close": "閉じる",
+			"delete": "タスクを削除",
+			"empty": "ダウンロードタスクはありません",
+			"gameInstallSource": "ゲームインストール · {{provider}} · {{size}}",
+			"installPath": "インストール先：{{path}}",
+			"openFolder": "フォルダを開く",
+			"pause": "一時停止",
+			"resume": "再開",
+			"retry": "再試行",
+			"title": "ダウンロードタスク"
 		},
 		"Toolbar": {
 			"Batch": {
@@ -367,9 +418,7 @@
 			},
 			"played": "{{title}}をプレイしました",
 			"playSummary_other": "{{time}} · {{count}}回 · 合計{{duration}}",
-			"playSummaryCompact_other": "{{count}}回 · 合計{{duration}}",
-			"today": "今日",
-			"yesterday": "昨日"
+			"playSummaryCompact_other": "{{count}}回 · 合計{{duration}}"
 		},
 		"activityTitle": "アクティビティ",
 		"focus": {
