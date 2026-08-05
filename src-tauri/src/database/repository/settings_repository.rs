@@ -32,6 +32,7 @@ impl SettingsRepository {
                 vndb_token: Set(None),
                 save_root_path: Set(None),
                 db_backup_path: Set(None),
+                install_root_path: Set(None),
                 le_path: Set(None),
                 magpie_path: Set(None),
             };
@@ -82,6 +83,10 @@ impl SettingsRepository {
 
         if let Some(path) = data.db_backup_path {
             active.db_backup_path = Set(path);
+        }
+
+        if let Some(path) = data.install_root_path {
+            active.install_root_path = Set(path);
         }
 
         if let Some(path) = data.le_path {

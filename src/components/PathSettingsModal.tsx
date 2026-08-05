@@ -54,6 +54,7 @@ interface PathSettingsModalProps {
 }
 
 interface PathSettingsDraft {
+	installRootPath: string;
 	savePath: string;
 	lePath: string;
 	magpiePath: string;
@@ -61,6 +62,7 @@ interface PathSettingsDraft {
 }
 
 const EMPTY_DRAFT: PathSettingsDraft = {
+	installRootPath: "",
 	savePath: "",
 	lePath: "",
 	magpiePath: "",
@@ -90,6 +92,9 @@ export const PathSettingsModal: React.FC<PathSettingsModalProps> = ({
 	const initDraft = useCallback(
 		(settings: NonNullable<typeof settingsData>) => {
 			const nextDraft: PathSettingsDraft = {
+				installRootPath: inSettingsPage
+					? (settings.install_root_path ?? "")
+					: "",
 				savePath: inSettingsPage ? (settings.save_root_path ?? "") : "",
 				lePath: settings.le_path ?? "",
 				magpiePath: settings.magpie_path ?? "",
@@ -125,6 +130,7 @@ export const PathSettingsModal: React.FC<PathSettingsModalProps> = ({
 	const saveDraft = async (nextDraft: PathSettingsDraft) => {
 		const previousDraft = initialDraftRef.current;
 		const isDirty =
+			nextDraft.installRootPath !== previousDraft.installRootPath ||
 			nextDraft.savePath !== previousDraft.savePath ||
 			nextDraft.lePath !== previousDraft.lePath ||
 			nextDraft.magpiePath !== previousDraft.magpiePath ||
@@ -136,6 +142,9 @@ export const PathSettingsModal: React.FC<PathSettingsModalProps> = ({
 			isSubmittingRef.current = true;
 			setIsSubmitting(true);
 			await updateSettingsMutation.mutateAsync({
+				installRootPath: inSettingsPage
+					? nextDraft.installRootPath || null
+					: undefined,
 				saveRootPath: inSettingsPage ? nextDraft.savePath || null : undefined,
 				dbBackupPath: inSettingsPage
 					? nextDraft.dbBackupPath || null
@@ -273,6 +282,73 @@ export const PathSettingsModal: React.FC<PathSettingsModalProps> = ({
 				<Box className="space-y-6">
 					{inSettingsPage && (
 						<>
+							{/* 一键安装游戏目录设置 */}
+							<Box>
+								<InputLabel className="font-semibold mb-4">
+									{t(
+										"components.PathSettingsModal.installRootPath.title",
+										"一键安装游戏目录",
+									)}
+								</InputLabel>
+								<Typography
+									variant="caption"
+									color="text.secondary"
+									className="block mb-3"
+								>
+									{t(
+										"components.PathSettingsModal.installRootPath.note",
+										"书音等来源的一键安装会把游戏解压到此目录",
+									)}
+								</Typography>
+								<TextField
+									label={t(
+										"components.PathSettingsModal.installRootPath.pathLabel",
+										"游戏安装根目录",
+									)}
+									variant="outlined"
+									value={draft.installRootPath}
+									onChange={(event) =>
+										updateDraft("installRootPath", event.target.value)
+									}
+									onBlur={() => void saveDraft(draft)}
+									onKeyDown={(event) =>
+										handlePathKeyDown(event, "installRootPath")
+									}
+									fullWidth
+									className="mb-2"
+									placeholder={t(
+										"components.PathSettingsModal.installRootPath.pathPlaceholder",
+										"选择用于安装游戏的目录",
+									)}
+									disabled={isLoading}
+									size="small"
+									InputProps={{
+										endAdornment: (
+											<InputAdornment position="end">
+												<Tooltip
+													title={t(
+														"components.PathSettingsModal.installRootPath.selectBtn",
+														"选择目录",
+													)}
+												>
+													<IconButton
+														onMouseDown={(event) => event.preventDefault()}
+														onClick={() =>
+															handleSelectFolder("installRootPath")
+														}
+														disabled={isLoading}
+														edge="end"
+														size="small"
+													>
+														<FolderOpenIcon fontSize="small" />
+													</IconButton>
+												</Tooltip>
+											</InputAdornment>
+										),
+									}}
+								/>
+							</Box>
+
 							{/* 游戏存档备份路径设置 */}
 							<Box>
 								<InputLabel className="font-semibold mb-4">

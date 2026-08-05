@@ -6,11 +6,10 @@ import { CircularProgress, Switch, TextField, Typography } from "@mui/material";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
-import { useQueryClient } from "@tanstack/react-query";
 import { type ChangeEvent, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
-import { settingsKeys } from "@/hooks/queries/useSettings";
+import { useRefreshSettings } from "@/hooks/queries/useSettings";
 import { snackbar } from "@/providers/snackBar";
 import { restartApp } from "@/services/appExit";
 import {
@@ -25,7 +24,7 @@ import { SettingsGroup, SettingsItem } from "./SettingsLayout";
 
 export const DatabaseBackupSettings = () => {
 	const { t } = useTranslation();
-	const queryClient = useQueryClient();
+	const refreshSettings = useRefreshSettings();
 	const [isBackingUp, setIsBackingUp] = useState(false);
 	const [isBackingCovers, setIsBackingCovers] = useState(false);
 	const [isImporting, setIsImporting] = useState(false);
@@ -54,10 +53,6 @@ export const DatabaseBackupSettings = () => {
 			setAutoBackupRetentionCount: s.setAutoBackupRetentionCount,
 		})),
 	);
-
-	const refreshSettings = () => {
-		queryClient.invalidateQueries({ queryKey: settingsKeys.allSettings() });
-	};
 
 	const handleMinIntervalChange = (event: ChangeEvent<HTMLInputElement>) => {
 		setAutoBackupMinIntervalHours(Number(event.target.value));

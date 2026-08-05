@@ -206,6 +206,8 @@ pub struct UpdateSettingsData {
     #[serde(default, deserialize_with = "double_option")]
     pub db_backup_path: Option<Option<String>>,
     #[serde(default, deserialize_with = "double_option")]
+    pub install_root_path: Option<Option<String>>,
+    #[serde(default, deserialize_with = "double_option")]
     pub le_path: Option<Option<String>>,
     #[serde(default, deserialize_with = "double_option")]
     pub magpie_path: Option<Option<String>>,
@@ -219,6 +221,7 @@ impl UpdateSettingsData {
         self.vndb_token = clean_double_option_string(self.vndb_token);
         self.save_root_path = clean_double_option_string(self.save_root_path);
         self.db_backup_path = clean_double_option_string(self.db_backup_path);
+        self.install_root_path = clean_double_option_local_path(self.install_root_path);
         self.le_path = clean_double_option_string(self.le_path);
         self.magpie_path = clean_double_option_string(self.magpie_path);
         self

@@ -31,6 +31,8 @@ pub struct Model {
     #[sea_orm(column_type = "Text", nullable)]
     pub db_backup_path: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
+    pub install_root_path: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
     pub le_path: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub magpie_path: Option<String>,
@@ -43,6 +45,10 @@ impl Model {
 
     pub fn db_backup_path_value(&self) -> Option<&str> {
         self.db_backup_path.as_deref()
+    }
+
+    pub fn install_root_path_value(&self) -> Option<&str> {
+        self.install_root_path.as_deref()
     }
 
     #[cfg(target_os = "windows")]

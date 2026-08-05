@@ -11,6 +11,7 @@ import {
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
+import { useCallback } from "react";
 import { fetchCurrentUserProfile } from "@/metadata/api/bgm";
 import { fetchVndbCurrentUserProfile } from "@/metadata/api/vndb";
 import { remoteQueryOptions } from "@/providers/queryClient";
@@ -117,6 +118,21 @@ export function useAllSettings(options?: SettingsQueryOptions) {
 		...allSettingsQueryOptions(),
 		enabled: options?.enabled,
 	});
+}
+
+/**
+ * 刷新所有设置缓存
+ */
+export function useRefreshSettings() {
+	const queryClient = useQueryClient();
+
+	return useCallback(
+		() =>
+			queryClient.invalidateQueries({
+				queryKey: settingsKeys.allSettings(),
+			}),
+		[queryClient],
+	);
 }
 
 // ============================================================================

@@ -11,6 +11,7 @@ export interface UserSettings {
 	vndb_token?: string | null;
 	save_root_path?: string | null;
 	db_backup_path?: string | null;
+	install_root_path?: string | null;
 	le_path?: string | null;
 	magpie_path?: string | null;
 }

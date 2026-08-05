@@ -6,13 +6,15 @@ use crate::database::dto::{
 };
 use crate::entity::prelude::*;
 use crate::entity::{game_sources, game_statistics, games, savedata};
+use crate::utils::fs::validate_executable_name;
 use sea_orm::sea_query::{Expr, OnConflict};
 use sea_orm::*;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
-use std::path::{Component, Path};
+#[cfg(test)]
+use std::path::Path;
 
 /// 游戏数据排序选项
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -152,15 +154,7 @@ impl GamesRepository {
             ));
         }
         if let Some(executable) = executable {
-            let mut components = Path::new(executable).components();
-            let is_single_file_name = matches!(components.next(), Some(Component::Normal(_)))
-                && components.next().is_none()
-                && !executable.contains(['/', '\\']);
-            if !is_single_file_name {
-                return Err(DbErr::Custom(
-                    "executable 必须是单个文件名，不能包含路径".to_string(),
-                ));
-            }
+            validate_executable_name(executable).map_err(DbErr::Custom)?;
         }
         Ok(())
     }
@@ -387,7 +381,7 @@ impl GamesRepository {
         Ok(())
     }
 
-    async fn insert_aggregate<C>(
+    pub(crate) async fn insert_aggregate<C>(
         db: &C,
         mut game: InsertGameData,
         now: i32,
@@ -488,7 +482,7 @@ impl GamesRepository {
         }
     }
 
-    async fn update_aggregate<C>(
+    pub(crate) async fn update_aggregate<C>(
         db: &C,
         game_id: i32,
         updates: UpdateGameData,

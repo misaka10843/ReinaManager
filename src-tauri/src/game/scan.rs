@@ -249,7 +249,45 @@ fn sort_executables(executables: &mut [String], game_name: &str) {
     });
 }
 
+/// 复用批量导入的过滤和排序规则，只扫描游戏根目录直属的启动程序。
+pub fn scan_executable_candidates(root: &Path) -> Result<Vec<String>, String> {
+    if !root.is_dir() {
+        return Err(format!("游戏目录不存在: {}", root.display()));
+    }
 
+    let mut candidates = Vec::new();
+    for entry in std::fs::read_dir(root).map_err(|error| format!("读取游戏目录失败: {error}"))?
+    {
+        let entry = entry.map_err(|error| format!("读取游戏目录项失败: {error}"))?;
+        let path = entry.path();
+        let file_type = entry
+            .file_type()
+            .map_err(|error| format!("读取游戏目录项类型失败: {error}"))?;
+        if !file_type.is_file() || file_type.is_symlink() || is_excluded_exe(&path) {
+            continue;
+        }
+        let Some(extension) = path.extension() else {
+            continue;
+        };
+        if !VALID_EXE_EXTENSIONS
+            .iter()
+            .any(|expected| extension.eq_ignore_ascii_case(expected))
+        {
+            continue;
+        }
+        let Some(file_name) = path.file_name() else {
+            continue;
+        };
+        candidates.push(file_name.to_string_lossy().to_string());
+    }
+
+    let game_name = root
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or_default();
+    sort_executables(&mut candidates, game_name);
+    Ok(candidates)
+}
 
 #[command]
 pub async fn scan_directory_for_games(
