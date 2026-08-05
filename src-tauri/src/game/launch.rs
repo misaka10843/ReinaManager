@@ -1,4 +1,7 @@
 #[cfg(target_os = "windows")]
+mod magpie;
+
+#[cfg(target_os = "windows")]
 mod windows;
 
 #[cfg(target_os = "linux")]

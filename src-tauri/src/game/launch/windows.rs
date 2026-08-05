@@ -1,3 +1,4 @@
+use super::magpie;
 use crate::database::dto::UpdateSettingsData;
 use crate::database::repository::games_repository::GamesRepository;
 use crate::database::repository::settings_repository::{DbSettingsExt, SettingsRepository};
@@ -56,57 +57,6 @@ pub struct StopResult {
     success: bool,
     message: String,
     terminated_count: u32,
-}
-
-// ================= Windows键盘模拟支持 =================
-mod keyboard_simulator {
-    use windows::Win32::UI::Input::KeyboardAndMouse::{
-        INPUT, INPUT_0, INPUT_KEYBOARD, KEYBD_EVENT_FLAGS, KEYBDINPUT, KEYEVENTF_EXTENDEDKEY,
-        KEYEVENTF_KEYUP, SendInput, VIRTUAL_KEY,
-    };
-
-    /// 创建键盘输入事件
-    fn create_keyboard_input(vk: VIRTUAL_KEY, flags: KEYBD_EVENT_FLAGS) -> INPUT {
-        INPUT {
-            r#type: INPUT_KEYBOARD,
-            Anonymous: INPUT_0 {
-                ki: KEYBDINPUT {
-                    wVk: vk,
-                    wScan: 0,
-                    dwFlags: flags,
-                    time: 0,
-                    dwExtraInfo: 0,
-                },
-            },
-        }
-    }
-
-    /// 模拟Win+Shift+A快捷键
-    pub fn simulate_win_shift_a() -> Result<(), String> {
-        unsafe {
-            // 定义按键序列：Win按下, Shift按下, A按下, A释放, Shift释放, Win释放
-            let inputs = [
-                create_keyboard_input(VIRTUAL_KEY(0x5B), KEYEVENTF_EXTENDEDKEY), // Win按下
-                create_keyboard_input(VIRTUAL_KEY(0xA0), KEYEVENTF_EXTENDEDKEY), // Shift按下
-                create_keyboard_input(VIRTUAL_KEY(0x41), KEYBD_EVENT_FLAGS(0)),  // A按下
-                create_keyboard_input(VIRTUAL_KEY(0x41), KEYEVENTF_KEYUP),       // A释放
-                create_keyboard_input(VIRTUAL_KEY(0xA0), KEYEVENTF_KEYUP | KEYEVENTF_EXTENDEDKEY), // Shift释放
-                create_keyboard_input(VIRTUAL_KEY(0x5B), KEYEVENTF_KEYUP | KEYEVENTF_EXTENDEDKEY), // Win释放
-            ];
-
-            // 发送所有输入事件
-            let result = SendInput(&inputs, std::mem::size_of::<INPUT>() as i32);
-            if result == inputs.len() as u32 {
-                Ok(())
-            } else {
-                Err(format!(
-                    "键盘模拟失败，只发送了{}个事件中的{}个",
-                    result,
-                    inputs.len()
-                ))
-            }
-        }
-    }
 }
 
 // ================= Windows 提权启动（ShellExecuteExW with "runas"）支持 =================
@@ -358,9 +308,8 @@ pub async fn launch_game<R: Runtime>(
             // 如果需要Magpie放大，在后台启动
             if let Some(magpie_path) = magpie_path.clone() {
                 tokio::spawn(async move {
-                    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
                     if let Err(e) = start_magpie_for_game(game_id, &magpie_path).await {
-                        warn!("启动Magpie失败: {}", e);
+                        warn!("启动 Magpie 全屏缩放失败 game_id={}: {}", game_id, e);
                     }
                 });
             }
@@ -428,9 +377,8 @@ pub async fn launch_game<R: Runtime>(
                         // 如果需要Magpie放大，在后台启动
                         if let Some(magpie_path) = magpie_path.clone() {
                             tokio::spawn(async move {
-                                time::sleep(time::Duration::from_secs(1)).await;
                                 if let Err(e) = start_magpie_for_game(game_id, &magpie_path).await {
-                                    warn!("启动Magpie失败: {}", e);
+                                    warn!("启动 Magpie 全屏缩放失败 game_id={}: {}", game_id, e);
                                 }
                             });
                         }
@@ -481,106 +429,35 @@ pub async fn stop_game(game_id: u32) -> Result<StopResult, String> {
 
 /// 为游戏启动Magpie放大
 async fn start_magpie_for_game(game_id: u32, magpie_path: &str) -> Result<(), String> {
+    let was_running = magpie::ensure_running(magpie_path)?;
+    debug!(
+        "Magpie 状态 game_id={} was_running={}",
+        game_id, was_running
+    );
+
+    magpie::wait_until_ready(time::Duration::from_secs(5)).await?;
+
     if !wait_for_game_foreground(game_id).await {
+        info!("游戏 {} 未进入前台，取消 Magpie 全屏缩放", game_id);
         return Ok(());
     }
 
-    // 检查Magpie是否已经在运行
-    let magpie_was_running = is_process_running("Magpie.exe");
+    debug!("游戏 {} 已进入前台", game_id);
+    debug!("游戏 {} 将在固定 2 秒后触发 Magpie 全屏缩放", game_id);
+    time::sleep(time::Duration::from_secs(2)).await;
 
-    if !magpie_was_running {
-        // Magpie没有运行，启动它
-        let mut command = Command::new(magpie_path);
-        command.arg("-t"); // tray mode
-
-        let spawn_result = command.gui_safe().spawn();
-        match spawn_result {
-            Ok(_child) => {
-                debug!("Magpie启动成功，等待游戏窗口加载...");
-            }
-            Err(e) => {
-                return Err(format!("启动Magpie失败: {}", e));
-            }
-        }
-    } else {
-        debug!("Magpie已经在运行中，准备激活放大...");
-    }
-
-    // 等待 Magpie 就绪后再次确认游戏仍在前台，避免向其他窗口发送快捷键。
-    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-
-    if !is_game_foreground(game_id) {
-        info!("游戏 {} 已退出或不在前台，跳过Magpie放大", game_id);
+    let game_is_foreground = is_game_foreground(game_id);
+    debug!(
+        "Magpie 延迟结束 game_id={} game_foreground={}",
+        game_id, game_is_foreground
+    );
+    if !game_is_foreground {
+        info!("游戏 {} 在 Magpie 延迟期间离开前台，取消全屏缩放", game_id);
         return Ok(());
     }
 
-    // 模拟Win+Shift+A快捷键激活放大
-    match keyboard_simulator::simulate_win_shift_a() {
-        Ok(_) => {
-            debug!("Magpie放大激活成功");
-            Ok(())
-        }
-        Err(e) => {
-            let error_msg = format!("Magpie放大激活失败: {}", e);
-            if magpie_was_running {
-                warn!("{}（Magpie进程已在运行）", error_msg);
-                // 如果Magpie本来就在运行，键盘模拟失败也不算严重错误
-                Ok(())
-            } else {
-                warn!("{}，但Magpie进程已启动", error_msg);
-                // 如果Magpie是刚启动的，键盘模拟失败也不算严重错误
-                Ok(())
-            }
-        }
-    }
-}
+    magpie::trigger_fullscreen_scaling()?;
 
-/// 检查指定名称的进程是否在运行（使用 Windows ToolHelp API）
-fn is_process_running(process_name: &str) -> bool {
-    use std::mem;
-    use windows::Win32::{
-        Foundation::CloseHandle,
-        System::Diagnostics::ToolHelp::{
-            CREATE_TOOLHELP_SNAPSHOT_FLAGS, CreateToolhelp32Snapshot, PROCESSENTRY32W,
-            Process32FirstW, Process32NextW,
-        },
-    };
-
-    unsafe {
-        let snapshot = match CreateToolhelp32Snapshot(
-            CREATE_TOOLHELP_SNAPSHOT_FLAGS(0x00000002), // TH32CS_SNAPPROCESS
-            0,
-        ) {
-            Ok(h) if !h.is_invalid() => h,
-            _ => return false,
-        };
-
-        let mut entry = PROCESSENTRY32W {
-            dwSize: mem::size_of::<PROCESSENTRY32W>() as u32,
-            ..Default::default()
-        };
-
-        let mut found = false;
-        if Process32FirstW(snapshot, &mut entry).is_ok() {
-            loop {
-                // th32ExeFile 是以 null 结尾的 UTF-16 进程名（不含路径）
-                let name_end = entry
-                    .szExeFile
-                    .iter()
-                    .position(|&c| c == 0)
-                    .unwrap_or(entry.szExeFile.len());
-                let name = String::from_utf16_lossy(&entry.szExeFile[..name_end]);
-                if name.eq_ignore_ascii_case(process_name) {
-                    found = true;
-                    break;
-                }
-                if Process32NextW(snapshot, &mut entry).is_err() {
-                    break;
-                }
-            }
-        }
-
-        let _ = CloseHandle(snapshot);
-        found
-    }
+    info!("已触发 Magpie 全屏缩放 game_id={}", game_id);
+    Ok(())
 }
