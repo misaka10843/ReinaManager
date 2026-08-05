@@ -53,7 +53,7 @@ jobs:
 
       # build.rs 首次构建需要下载 7-Zip；单独缓存其 target 目录，降低外部下载不可用对 CI 的影响。
       - name: 7-Zip cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: src-tauri/target/7zip
           key: 7zip-${{ runner.os }}-${{ matrix.rust_target }}-${{ hashFiles('src-tauri/build.rs') }}
@@ -93,7 +93,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libsoup-3.0-dev libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf clang
+          sudo apt-get install -y libgtk-3-dev libsoup-3.0-dev libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf clang xdg-utils
 
       # 配置链接器 (核心逻辑)
       - name: Configure Rust linker
@@ -157,7 +157,9 @@ jobs:
           $target = "${{ matrix.rust_target }}"
           $portableRoot = "src-tauri/target/$target/release/portable/ReinaManager-$version-$short"
           $bundledResources = "src-tauri/target/$target/release/resources"
+          $bundledSevenZip = Join-Path $bundledResources "tools/7zip"
           $portableResources = Join-Path $portableRoot "resources"
+          $portableSevenZip = Join-Path $portableResources "tools/7zip"
           $resourcesDataDir = Join-Path $portableResources "data"
 
           if (Test-Path $portableRoot) {
@@ -167,14 +169,15 @@ jobs:
           if (-not (Test-Path $bundledResources)) {
             throw "Tauri 构建资源目录不存在: $bundledResources"
           }
-          if (-not (Test-Path (Join-Path $bundledResources "tools/7zip"))) {
-            throw "Tauri 构建资源中缺少 7-Zip: $(Join-Path $bundledResources 'tools/7zip')"
+          if (-not (Test-Path $bundledSevenZip)) {
+            throw "Tauri 构建资源中缺少 7-Zip: $bundledSevenZip"
           }
 
-          New-Item -ItemType Directory -Path $portableResources -Force | Out-Null
-          Copy-Item (Join-Path $bundledResources "*") $portableResources -Recurse -Force
-          if (-not (Test-Path (Join-Path $portableResources "tools/7zip"))) {
-            throw "便携版资源中缺少 7-Zip: $(Join-Path $portableResources 'tools/7zip')"
+          New-Item -ItemType Directory -Path $portableSevenZip -Force | Out-Null
+          Get-ChildItem -LiteralPath $bundledSevenZip -Force |
+            Copy-Item -Destination $portableSevenZip -Recurse -Force
+          if (-not (Test-Path $portableSevenZip)) {
+            throw "便携版资源中缺少 7-Zip: $portableSevenZip"
           }
           New-Item -ItemType Directory -Path $resourcesDataDir -Force | Out-Null
           @"
