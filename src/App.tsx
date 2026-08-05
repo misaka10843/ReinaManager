@@ -5,6 +5,7 @@ import { SnackbarProvider } from "notistack";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet } from "react-router-dom";
+import { InstallRequestHandler } from "@/components/InstallRequestHandler";
 import WindowsHandler from "@/components/Windows";
 import { appRoutes } from "@/providers/router"; // 引入新的统一配置
 import { SnackbarUtilsConfigurator } from "@/providers/snackBar";
@@ -37,6 +38,7 @@ const App: React.FC = () => {
 			<SnackbarUtilsConfigurator />
 			<ToolpadReactRouterAppProvider navigation={Navigation}>
 				{isTauri() && <WindowsHandler />}
+				{isTauri() && <InstallRequestHandler />}
 				<Outlet />
 			</ToolpadReactRouterAppProvider>
 		</SnackbarProvider>

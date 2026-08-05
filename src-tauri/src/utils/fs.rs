@@ -3,7 +3,7 @@ use crate::utils::command_ext::CommandGuiExt;
 
 use serde::Serialize;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 use std::process::Command;
 use tauri::command;
 
@@ -30,6 +30,39 @@ pub enum DroppedLocalPathKind {
 }
 
 const LOCAL_EXECUTABLE_EXTENSIONS: &[&str] = &["exe", "bat", "cmd"];
+
+/// 校验跨协议、压缩包和数据库共用的安全相对文件路径。
+pub fn validate_safe_relative_path(value: &str) -> Result<(), String> {
+    if value.is_empty() || value.contains('\0') || value.starts_with(['/', '\\']) {
+        return Err("路径必须是安全相对路径".to_string());
+    }
+    let normalized = value.replace('\\', "/");
+    if normalized
+        .split('/')
+        .any(|part| part.is_empty() || matches!(part, "." | "..") || part.contains(':'))
+    {
+        return Err("路径包含不安全组件".to_string());
+    }
+    if Path::new(&normalized)
+        .components()
+        .any(|component| !matches!(component, Component::Normal(_)))
+    {
+        return Err("路径包含不安全组件".to_string());
+    }
+    Ok(())
+}
+
+/// 校验游戏启动程序字段，只允许保存单个文件名。
+pub fn validate_executable_name(value: &str) -> Result<(), String> {
+    let mut components = Path::new(value).components();
+    let is_single_file_name = matches!(components.next(), Some(Component::Normal(_)))
+        && components.next().is_none()
+        && !value.contains(['/', '\\']);
+    if !is_single_file_name {
+        return Err("executable 必须是单个文件名，不能包含路径".to_string());
+    }
+    Ok(())
+}
 
 fn is_supported_local_executable(path: &Path) -> bool {
     path.extension().is_some_and(|ext| {

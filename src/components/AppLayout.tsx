@@ -1,7 +1,9 @@
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
+import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 import KeyboardArrowUpRoundedIcon from "@mui/icons-material/KeyboardArrowUpRounded";
-import { Avatar, Fab, Fade, Link } from "@mui/material";
+import { Avatar, Box, Fab, Fade, Link } from "@mui/material";
 import AppBar from "@mui/material/AppBar";
+import Badge from "@mui/material/Badge";
 import Chip from "@mui/material/Chip";
 import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
@@ -15,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import AddModal from "@/components/AddModal";
 import { SearchBox } from "@/components/SearchBox";
+import { TaskManagerDialog } from "@/components/TaskManagerDialog";
 import { Toolbars } from "@/components/Toolbar";
 import {
 	saveScrollPosition,
@@ -22,6 +25,7 @@ import {
 	setScrollPosition,
 } from "@/hooks/common/useScrollRestore";
 import { useGameIndex } from "@/hooks/features/games/useGameListFacade";
+import { useActiveTaskCount } from "@/hooks/queries/useTasks";
 import { type SelectedCategory, useStore } from "@/store/appStore";
 import { DefaultGroup } from "@/types/collection";
 import { getDeveloperCategoryGameIds } from "@/utils/game/gameIndex";
@@ -31,20 +35,42 @@ import { getDeveloperCategoryGameIds } from "@/utils/game/gameIndex";
  * @returns {JSX.Element}
  */
 function SidebarFooter() {
+	const { t } = useTranslation();
+	const openTaskManager = useStore((s) => s.openTaskManager);
+	const { data: activeTaskCount = 0 } = useActiveTaskCount();
+	const taskManagerLabel = t("components.TaskManager.title", "下载任务");
+	const accessibleLabel = activeTaskCount
+		? `${taskManagerLabel} (${activeTaskCount})`
+		: taskManagerLabel;
+
 	return (
-		<Typography
-			variant="caption"
-			className="absolute bottom-0 left-0 right-0 w-full text-center border-t whitespace-nowrap overflow-hidden select-none"
-		>
-			<Link
-				href="https://github.com/huoshen80"
-				target="_blank"
-				color="textPrimary"
-				underline="hover"
+		<Box className="absolute bottom-0 left-0 right-0 w-full text-center border-t select-none py-1 gap-4 flex flex-col items-center justify-center">
+			<Tooltip title={accessibleLabel}>
+				<IconButton
+					onClick={openTaskManager}
+					color="inherit"
+					aria-label={accessibleLabel}
+					size="large"
+				>
+					<Badge badgeContent={activeTaskCount} color="primary" max={99}>
+						<DownloadRoundedIcon />
+					</Badge>
+				</IconButton>
+			</Tooltip>
+			<Typography
+				variant="caption"
+				className="w-full text-center whitespace-nowrap overflow-hidden"
 			>
-				© huoshen80
-			</Link>
-		</Typography>
+				<Link
+					href="https://github.com/huoshen80"
+					target="_blank"
+					color="textPrimary"
+					underline="hover"
+				>
+					© huoshen80
+				</Link>
+			</Typography>
+		</Box>
 	);
 }
 
@@ -322,10 +348,13 @@ const BackToTopButton = () => {
 export const Layout: React.FC = () => {
 	const location = useLocation();
 	const isLibraries = location.pathname === "/libraries";
+	const taskManagerOpen = useStore((s) => s.taskManagerOpen);
+	const closeTaskManager = useStore((s) => s.closeTaskManager);
 
 	return (
 		<>
 			<AddModal />
+			<TaskManagerDialog open={taskManagerOpen} onClose={closeTaskManager} />
 			<DashboardLayout
 				slots={{
 					header: Header,

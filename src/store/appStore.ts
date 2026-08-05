@@ -59,6 +59,7 @@ export interface AppState {
 	selectedGameId: number | null;
 	addModalOpen: boolean;
 	addModalPath: string;
+	taskManagerOpen: boolean;
 
 	// 排序选项
 	sortOption: SortOption;
@@ -94,6 +95,8 @@ export interface AppState {
 	openAddModal: (path?: string) => void;
 	closeAddModal: () => void;
 	setAddModalPath: (path: string) => void;
+	openTaskManager: () => void;
+	closeTaskManager: () => void;
 
 	// 初始化
 	initialize: () => Promise<void>;
@@ -203,6 +206,7 @@ export const useStore = create<AppState>()(
 			selectedGameId: null,
 			addModalOpen: false,
 			addModalPath: "",
+			taskManagerOpen: false,
 
 			searchInput: "",
 			searchKeyword: "",
@@ -294,6 +298,12 @@ export const useStore = create<AppState>()(
 			},
 			setAddModalPath: (path: string) => {
 				set({ addModalPath: path });
+			},
+			openTaskManager: () => {
+				set({ taskManagerOpen: true });
+			},
+			closeTaskManager: () => {
+				set({ taskManagerOpen: false });
 			},
 
 			// NSFW相关

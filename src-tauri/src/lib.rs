@@ -2,6 +2,7 @@ mod backup;
 mod database;
 mod entity;
 mod game;
+mod install;
 mod utils;
 
 use backup::covers::backup_custom_covers;
@@ -14,6 +15,15 @@ use game::cover::custom::{delete_game_covers, import_clipboard_image_to_temp};
 use game::cover::{delete_cloud_cache, register_game_cover_protocol};
 use game::launch::{launch_game, stop_game};
 use game::scan::scan_directory_for_games;
+use install::protocol::{
+    InstallProtocolState, setup_install_protocol, take_pending_install_rejections,
+    take_pending_install_requests,
+};
+use install::{
+    TaskRuntimeState, cancel_task, complete_game_install_task, create_game_install_task,
+    delete_task, fail_game_install_metadata, list_tasks, pause_task, recover_interrupted_tasks,
+    resume_pending_tasks, resume_task, retry_task,
+};
 use migration::MigratorTrait;
 use tauri::Manager;
 use tauri_plugin_log::{RotationStrategy, Target, TargetKind, TimezoneStrategy};
@@ -37,9 +47,7 @@ fn restart_app(app: tauri::AppHandle) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     register_image_proxy_protocol(register_game_cover_protocol(tauri::Builder::default()))
-        .plugin(tauri_plugin_store::Builder::new().build())
-        .plugin(tauri_plugin_window_state::Builder::new().build())
-        .plugin(tauri_plugin_updater::Builder::new().build())
+        // 单实例插件必须最先注册，第二实例传入的深链接才能稳定转交给主实例。
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.show();
@@ -47,6 +55,12 @@ pub fn run() {
                 let _ = window.set_focus();
             }
         }))
+        .manage(InstallProtocolState::default())
+        .manage(TaskRuntimeState::default())
+        .plugin(tauri_plugin_store::Builder::new().build())
+        .plugin(tauri_plugin_window_state::Builder::new().build())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec!["--flag1", "--flag2"]), /* arbitrary number of args to pass to your app */
@@ -62,6 +76,17 @@ pub fn run() {
             resolve_dropped_local_path,
             is_portable_mode,
             scan_directory_for_games,
+            take_pending_install_requests,
+            take_pending_install_rejections,
+            create_game_install_task,
+            list_tasks,
+            retry_task,
+            pause_task,
+            resume_task,
+            cancel_task,
+            delete_task,
+            complete_game_install_task,
+            fail_game_install_metadata,
             move_backup_folder,
             copy_file,
             create_savedata_backup,
@@ -177,6 +202,9 @@ pub fn run() {
                 log::set_max_level(log::LevelFilter::Info);
             }
 
+            // 日志插件初始化后再注册协议，确保注册失败信息能够写入日志。
+            setup_install_protocol(app);
+
             match run_startup_migrations() {
                 Ok(result) if result.executed == 0 => {
                     log::debug!("启动迁移检查完成，无需执行");
@@ -215,6 +243,11 @@ pub fn run() {
 
                         // 将数据库连接注册到 Tauri 状态管理
                         app_handle.manage(conn.clone());
+
+                        match recover_interrupted_tasks(&conn).await {
+                            Ok(task_ids) => resume_pending_tasks(&app_handle, &conn, task_ids),
+                            Err(error) => log::error!("恢复中断任务失败: {error}"),
+                        }
                     }
                     Err(e) => {
                         log::error!("无法建立数据库连接: {}", e);

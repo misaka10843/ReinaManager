@@ -13,6 +13,20 @@ export type {
 export { fileService } from "./fileService";
 // 导出所有服务
 export { gameService } from "./gameService";
+export {
+	type GameInstallMetadataRequestedEvent,
+	type GameInstallResultV1,
+	type GameInstallStage,
+	type GameInstallTask,
+	type InstallCompletedEvent,
+	type InstallFailedEvent,
+	type InstallRequest,
+	isGameInstallTask,
+	type Task,
+	type TaskProgressEvent,
+	type TaskStatus,
+	taskService,
+} from "./installService";
 export { savedataService } from "./savedataService";
 export type { ProxyConfig, UserSettings } from "./settingsService";
 export { settingsService } from "./settingsService";
