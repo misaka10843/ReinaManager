@@ -18,6 +18,7 @@ mod m20260706_000014_migrate_game_sources;
 mod m20260712_000015_split_game_local_path;
 mod m20260722_000016_backfill_game_defaults;
 mod m20260801_000017_add_tasks;
+mod m20260806_000018_add_steam_launch;
 
 pub struct Migrator;
 
@@ -42,6 +43,7 @@ impl MigratorTrait for Migrator {
             Box::new(m20260712_000015_split_game_local_path::Migration),
             Box::new(m20260722_000016_backfill_game_defaults::Migration),
             Box::new(m20260801_000017_add_tasks::Migration),
+            Box::new(m20260806_000018_add_steam_launch::Migration),
         ]
     }
 }

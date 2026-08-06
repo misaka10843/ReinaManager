@@ -74,8 +74,24 @@ export interface GameInstallTask extends Task {
 	result_json?: GameInstallResultV1 | null;
 }
 
+export interface SteamLaunchTaskPayloadV1 {
+	version: 1;
+	game_id: number;
+	steam_app_id: number;
+	time_tracking_mode: "playtime" | "elapsed";
+}
+
+export interface SteamLaunchTask extends Task {
+	task_type: "steam_launch";
+	payload_json: SteamLaunchTaskPayloadV1;
+}
+
 export function isGameInstallTask(task: Task): task is GameInstallTask {
 	return task.task_type === "game_install";
+}
+
+export function isSteamLaunchTask(task: Task): task is SteamLaunchTask {
+	return task.task_type === "steam_launch";
 }
 
 export interface InstallRequestRejection {

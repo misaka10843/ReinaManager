@@ -148,6 +148,22 @@ export async function getFormattedGameStats(
 export async function initGameTimeTracking(
 	onTimeUpdate?: TimeUpdateCallback,
 	onSessionEnd?: SessionEndCallback,
+	onSessionStart?: (payload: {
+		gameId: number;
+		processId: number;
+		startTime: number;
+	}) => void,
+	onSteamStatus?: (payload: {
+		gameId: number;
+		status: string;
+		stage: string;
+		progressCurrent: number;
+		progressTotal: number | null;
+	}) => void,
+	onSteamProcessDetected?: (payload: {
+		gameId: number;
+		processPath: string;
+	}) => void,
 ): Promise<() => void> {
 	// 游戏会话开始
 	const unlistenStart = listen<{
@@ -157,6 +173,24 @@ export async function initGameTimeTracking(
 	}>("game-session-started", (event) => {
 		const { gameId } = event.payload;
 		console.log(`游戏 ${gameId} 开始运行`);
+		onSessionStart?.(event.payload);
+	});
+
+	const unlistenSteamStatus = listen<{
+		gameId: number;
+		status: string;
+		stage: string;
+		progressCurrent: number;
+		progressTotal: number | null;
+	}>("steam-launch-status", (event) => {
+		onSteamStatus?.(event.payload);
+	});
+
+	const unlistenSteamProcess = listen<{
+		gameId: number;
+		processPath: string;
+	}>("steam-process-detected", (event) => {
+		onSteamProcessDetected?.(event.payload);
 	});
 
 	// 游戏时间更新事件监听
@@ -251,6 +285,8 @@ export async function initGameTimeTracking(
 		unlistenStart,
 		unlistenUpdate,
 		unlistenEnd,
+		unlistenSteamStatus,
+		unlistenSteamProcess,
 	]);
 	const unlisteners: UnlistenFn[] = [];
 	let registrationFailed = false;

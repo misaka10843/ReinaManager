@@ -1,0 +1,9 @@
+"AppState"
+{
+    "appid" "456789"
+    "name" "Validating Fixture"
+    "installdir" "Nested\\Validating Fixture"
+    "StateFlags" "131072"
+    "BytesDownloaded" "0"
+    "BytesToDownload" "0"
+}

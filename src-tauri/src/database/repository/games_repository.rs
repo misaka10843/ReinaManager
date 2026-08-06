@@ -6,7 +6,7 @@ use crate::database::dto::{
 };
 use crate::entity::prelude::*;
 use crate::entity::{game_sources, game_statistics, games, savedata};
-use crate::utils::fs::validate_executable_name;
+use crate::utils::fs::{validate_executable_name, validate_safe_relative_path};
 use sea_orm::sea_query::{Expr, OnConflict};
 use sea_orm::*;
 use serde::{Deserialize, Serialize};
@@ -60,6 +60,9 @@ impl GamesRepository {
             g.date,
             g.localpath,
             g.executable,
+            g.launch_type,
+            g.steam_app_id,
+            g.steam_process_path,
             g.savepath,
             g.autosave,
             g.maxbackups,
@@ -147,7 +150,19 @@ impl GamesRepository {
         Ok(())
     }
 
-    fn validate_path_state(localpath: Option<&str>, executable: Option<&str>) -> Result<(), DbErr> {
+    fn validate_launch_state(
+        launch_type: &str,
+        localpath: Option<&str>,
+        executable: Option<&str>,
+        steam_app_id: Option<i64>,
+        steam_process_path: Option<&str>,
+        le_launch: Option<i32>,
+    ) -> Result<(), DbErr> {
+        if !matches!(launch_type, "local" | "steam") {
+            return Err(DbErr::Custom(format!(
+                "不支持的 launch_type: {launch_type}"
+            )));
+        }
         if localpath.is_none() && executable.is_some() {
             return Err(DbErr::Custom(
                 "executable 不能在 localpath 为空时单独存在".to_string(),
@@ -155,6 +170,42 @@ impl GamesRepository {
         }
         if let Some(executable) = executable {
             validate_executable_name(executable).map_err(DbErr::Custom)?;
+        }
+        if let Some(process_path) = steam_process_path {
+            validate_safe_relative_path(process_path).map_err(DbErr::Custom)?;
+            if !process_path.to_ascii_lowercase().ends_with(".exe") {
+                return Err(DbErr::Custom(
+                    "steam_process_path 必须指向 .exe 文件".to_string(),
+                ));
+            }
+        }
+        match launch_type {
+            "local" => {
+                if steam_app_id.is_some() || steam_process_path.is_some() {
+                    return Err(DbErr::Custom("local 启动不能设置 Steam 字段".to_string()));
+                }
+            }
+            "steam" => {
+                if !steam_app_id.is_some_and(|id| id > 0) {
+                    return Err(DbErr::Custom(
+                        "steam 启动必须设置有效的 steam_app_id".to_string(),
+                    ));
+                }
+                if localpath.is_none() {
+                    return Err(DbErr::Custom(
+                        "steam 启动必须设置 Steam 游戏安装目录".to_string(),
+                    ));
+                }
+                if le_launch.unwrap_or(0) == 1 {
+                    return Err(DbErr::Custom("Steam 启动不支持 LE 转区".to_string()));
+                }
+                if steam_process_path.is_some() && localpath.is_none() {
+                    return Err(DbErr::Custom(
+                        "steam_process_path 需要有效的安装目录".to_string(),
+                    ));
+                }
+            }
+            _ => unreachable!(),
         }
         Ok(())
     }
@@ -168,6 +219,20 @@ impl GamesRepository {
             .sources
             .iter()
             .find_map(|source| Self::extract_source_date(source.data.as_ref()));
+    }
+
+    fn normalize_insert_launch_state(game: &mut InsertGameData) {
+        match game.launch_type.as_str() {
+            "steam" => {
+                game.executable = None;
+                game.le_launch = Some(0);
+            }
+            "local" => {
+                game.steam_app_id = None;
+                game.steam_process_path = None;
+            }
+            _ => {}
+        }
     }
 
     fn extract_source_date(data: Option<&Value>) -> Option<String> {
@@ -255,7 +320,7 @@ impl GamesRepository {
         Ok(updates)
     }
 
-    async fn normalize_update_path_state<C>(
+    async fn normalize_update_launch_state<C>(
         db: &C,
         game_id: i32,
         mut updates: UpdateGameData,
@@ -263,7 +328,13 @@ impl GamesRepository {
     where
         C: ConnectionTrait,
     {
-        if updates.localpath.is_none() && updates.executable.is_none() {
+        if updates.localpath.is_none()
+            && updates.executable.is_none()
+            && updates.launch_type.is_none()
+            && updates.steam_app_id.is_none()
+            && updates.steam_process_path.is_none()
+            && updates.le_launch.is_none()
+        {
             return Ok(updates);
         }
 
@@ -275,11 +346,45 @@ impl GamesRepository {
         // 清空目录意味着游戏不再位于本地，启动文件名必须同步清空。
         if matches!(updates.localpath, Some(None)) {
             updates.executable = Some(None);
+            updates.steam_process_path = Some(None);
+        }
+
+        let target_launch_type = updates
+            .launch_type
+            .as_deref()
+            .unwrap_or(&current.launch_type);
+        match target_launch_type {
+            "steam" => {
+                updates.executable = Some(None);
+                updates.le_launch = Some(Some(0));
+            }
+            "local" => {
+                updates.steam_app_id = Some(None);
+                updates.steam_process_path = Some(None);
+            }
+            _ => {}
         }
 
         let final_localpath = updates.localpath.clone().unwrap_or(current.localpath);
         let final_executable = updates.executable.clone().unwrap_or(current.executable);
-        Self::validate_path_state(final_localpath.as_deref(), final_executable.as_deref())?;
+        let final_launch_type = updates
+            .launch_type
+            .as_deref()
+            .unwrap_or(&current.launch_type);
+        let final_steam_app_id = updates.steam_app_id.unwrap_or(current.steam_app_id);
+        let final_process_path = updates
+            .steam_process_path
+            .clone()
+            .unwrap_or(current.steam_process_path);
+        let final_le_launch = updates.le_launch.unwrap_or(current.le_launch);
+        Self::validate_launch_state(
+            final_launch_type,
+            final_localpath.as_deref(),
+            final_executable.as_deref(),
+            final_steam_app_id,
+            final_process_path.as_deref(),
+            final_le_launch,
+        )?;
         Ok(updates)
     }
 
@@ -290,6 +395,9 @@ impl GamesRepository {
             date: Set(game.date.clone()),
             localpath: Set(game.localpath.clone()),
             executable: Set(game.executable.clone()),
+            launch_type: Set(game.launch_type.clone()),
+            steam_app_id: Set(game.steam_app_id),
+            steam_process_path: Set(game.steam_process_path.clone()),
             savepath: Set(game.savepath.clone()),
             autosave: NotSet,
             maxbackups: NotSet,
@@ -314,6 +422,9 @@ impl GamesRepository {
             date: updates.date.clone().map_or(NotSet, Set),
             localpath: updates.localpath.clone().map_or(NotSet, Set),
             executable: updates.executable.clone().map_or(NotSet, Set),
+            launch_type: updates.launch_type.clone().map_or(NotSet, Set),
+            steam_app_id: updates.steam_app_id.map_or(NotSet, Set),
+            steam_process_path: updates.steam_process_path.clone().map_or(NotSet, Set),
             savepath: updates.savepath.clone().map_or(NotSet, Set),
             autosave: updates.autosave.map_or(NotSet, Set),
             maxbackups: updates.maxbackups.map_or(NotSet, Set),
@@ -390,7 +501,15 @@ impl GamesRepository {
         C: ConnectionTrait,
     {
         Self::validate_source_changes(&game.sources, &[])?;
-        Self::validate_path_state(game.localpath.as_deref(), game.executable.as_deref())?;
+        Self::normalize_insert_launch_state(&mut game);
+        Self::validate_launch_state(
+            &game.launch_type,
+            game.localpath.as_deref(),
+            game.executable.as_deref(),
+            game.steam_app_id,
+            game.steam_process_path.as_deref(),
+            game.le_launch,
+        )?;
         Self::normalize_insert_date(&mut game);
 
         let model = Self::build_insert_active_model(&game, now)
@@ -496,7 +615,7 @@ impl GamesRepository {
             updates.remove_sources.as_deref().unwrap_or_default(),
         )?;
         let updates = Self::normalize_update_date(db, game_id, updates).await?;
-        let updates = Self::normalize_update_path_state(db, game_id, updates).await?;
+        let updates = Self::normalize_update_launch_state(db, game_id, updates).await?;
 
         Self::build_update_active_model(game_id, &updates, now)
             .update(db)
@@ -647,6 +766,9 @@ impl GamesRepository {
             date: row.try_get("", "date")?,
             localpath: row.try_get("", "localpath")?,
             executable: row.try_get("", "executable")?,
+            launch_type: row.try_get("", "launch_type")?,
+            steam_app_id: row.try_get("", "steam_app_id")?,
+            steam_process_path: row.try_get("", "steam_process_path")?,
             savepath: row.try_get("", "savepath")?,
             autosave: row.try_get("", "autosave")?,
             maxbackups: row.try_get("", "maxbackups")?,
@@ -691,6 +813,18 @@ impl GamesRepository {
             .into_tuple::<(i32, String)>()
             .all(db)
             .await
+    }
+
+    pub async fn get_steam_bindings(db: &DatabaseConnection) -> Result<HashMap<i64, i32>, DbErr> {
+        Games::find()
+            .select_only()
+            .column(games::Column::SteamAppId)
+            .column(games::Column::Id)
+            .filter(games::Column::SteamAppId.is_not_null())
+            .into_tuple::<(i64, i32)>()
+            .all(db)
+            .await
+            .map(|items| items.into_iter().collect())
     }
 
     /// 获取所有非空游戏目录，用于扫描去重
@@ -1029,6 +1163,9 @@ mod tests {
                     date TEXT,
                     localpath TEXT,
                     executable TEXT,
+                    launch_type TEXT NOT NULL DEFAULT 'local',
+                    steam_app_id INTEGER,
+                    steam_process_path TEXT,
                     savepath TEXT,
                     autosave INTEGER DEFAULT 0,
                     maxbackups INTEGER DEFAULT 20,
@@ -1066,15 +1203,18 @@ mod tests {
                     daily_stats TEXT,
                     FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE
                 );
-                CREATE TABLE savedata (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    game_id INTEGER NOT NULL,
-                    file TEXT NOT NULL,
-                    backup_time INTEGER NOT NULL,
-                    file_size INTEGER NOT NULL,
-                    FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE
-                );
-                "#,
+	                CREATE TABLE savedata (
+	                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+	                    game_id INTEGER NOT NULL,
+	                    file TEXT NOT NULL,
+	                    backup_time INTEGER NOT NULL,
+	                    file_size INTEGER NOT NULL,
+	                    FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE
+	                );
+	                CREATE UNIQUE INDEX idx_games_steam_app_id
+	                    ON games(steam_app_id)
+	                    WHERE steam_app_id IS NOT NULL;
+	                "#,
             )
             .await
             .unwrap();
@@ -1091,6 +1231,9 @@ mod tests {
             date: None,
             localpath: None,
             executable: None,
+            launch_type: "local".to_string(),
+            steam_app_id: None,
+            steam_process_path: None,
             savepath: None,
             autosave: None,
             maxbackups: None,
@@ -1387,6 +1530,113 @@ mod tests {
         .unwrap();
         assert_eq!(local_ids, vec![inserted.id]);
         assert!(online_ids.is_empty());
+    }
+
+    #[tokio::test]
+    async fn inserts_steam_game_with_nested_process_path_and_rejects_duplicate_app_id() {
+        let database = setup_database().await;
+        let mut steam = insert_data("custom", None, Vec::new());
+        steam.launch_type = "steam".to_string();
+        steam.localpath = Some("D:/SteamLibrary/steamapps/common/Game".to_string());
+        steam.executable = Some("ignored.exe".to_string());
+        steam.steam_app_id = Some(123456);
+        steam.steam_process_path = Some("bin/Game.exe".to_string());
+        steam.le_launch = Some(1);
+
+        let inserted = GamesRepository::insert(&database, steam).await.unwrap();
+        assert_eq!(inserted.launch_type, "steam");
+        assert_eq!(inserted.executable, None);
+        assert_eq!(inserted.le_launch, Some(0));
+        assert_eq!(inserted.steam_app_id, Some(123456));
+        assert_eq!(inserted.steam_process_path.as_deref(), Some("bin/Game.exe"));
+
+        let mut duplicate = insert_data("custom", None, Vec::new());
+        duplicate.launch_type = "steam".to_string();
+        duplicate.localpath = Some("D:/SteamLibrary/steamapps/common/Other".to_string());
+        duplicate.steam_app_id = Some(123456);
+        assert!(GamesRepository::insert(&database, duplicate).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn rejects_invalid_steam_field_combinations() {
+        let database = setup_database().await;
+        let mut missing_app_id = insert_data("custom", None, Vec::new());
+        missing_app_id.launch_type = "steam".to_string();
+        missing_app_id.localpath = Some("D:/SteamLibrary/steamapps/common/Game".to_string());
+        assert!(
+            GamesRepository::insert(&database, missing_app_id)
+                .await
+                .unwrap_err()
+                .to_string()
+                .contains("steam_app_id")
+        );
+
+        let mut unsafe_path = insert_data("custom", None, Vec::new());
+        unsafe_path.launch_type = "steam".to_string();
+        unsafe_path.localpath = Some("D:/SteamLibrary/steamapps/common/Game".to_string());
+        unsafe_path.steam_app_id = Some(234567);
+        unsafe_path.steam_process_path = Some("../Game.exe".to_string());
+        assert!(
+            GamesRepository::insert(&database, unsafe_path)
+                .await
+                .is_err()
+        );
+
+        let mut not_exe = insert_data("custom", None, Vec::new());
+        not_exe.launch_type = "steam".to_string();
+        not_exe.localpath = Some("D:/SteamLibrary/steamapps/common/Game".to_string());
+        not_exe.steam_app_id = Some(345678);
+        not_exe.steam_process_path = Some("bin/Game.dll".to_string());
+        assert!(
+            GamesRepository::insert(&database, not_exe)
+                .await
+                .unwrap_err()
+                .to_string()
+                .contains(".exe")
+        );
+    }
+
+    #[tokio::test]
+    async fn normalizes_launch_type_switches() {
+        let database = setup_database().await;
+        let mut local = insert_data("custom", None, Vec::new());
+        local.localpath = Some("games/local".to_string());
+        local.executable = Some("game.exe".to_string());
+        let inserted = GamesRepository::insert(&database, local).await.unwrap();
+
+        let steam = GamesRepository::update(
+            &database,
+            inserted.id,
+            UpdateGameData {
+                launch_type: Some("steam".to_string()),
+                localpath: Some(Some("D:/SteamLibrary/steamapps/common/Game".to_string())),
+                steam_app_id: Some(Some(456789)),
+                steam_process_path: Some(Some("Game.exe".to_string())),
+                le_launch: Some(Some(1)),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(steam.launch_type, "steam");
+        assert_eq!(steam.executable, None);
+        assert_eq!(steam.le_launch, Some(0));
+
+        let back_to_local = GamesRepository::update(
+            &database,
+            inserted.id,
+            UpdateGameData {
+                launch_type: Some("local".to_string()),
+                executable: Some(Some("game.exe".to_string())),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(back_to_local.launch_type, "local");
+        assert_eq!(back_to_local.steam_app_id, None);
+        assert_eq!(back_to_local.steam_process_path, None);
+        assert_eq!(back_to_local.executable.as_deref(), Some("game.exe"));
     }
 
     #[tokio::test]

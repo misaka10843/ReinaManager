@@ -744,7 +744,7 @@ fn is_sub_path_ignore_case(path: &str, base_dir: &str) -> bool {
 ///
 /// # Returns
 /// 返回所有候选 PID 的列表，如果没有找到则返回空列表
-fn get_all_candidate_pids(detection_dir: &str) -> Vec<u32> {
+pub(crate) fn get_all_candidate_pids(detection_dir: &str) -> Vec<u32> {
     let manager_pid = std::process::id();
 
     let candidate_pids: Vec<u32> = get_processes_in_directory(detection_dir)
@@ -905,7 +905,7 @@ pub fn terminate_process(pid: u32) -> Result<(), String> {
 ///
 /// # Returns
 /// 如果成功，返回进程的可执行文件完整路径
-fn get_process_executable_path(pid: u32) -> Option<std::path::PathBuf> {
+pub(crate) fn get_process_executable_path(pid: u32) -> Option<std::path::PathBuf> {
     use windows::core::PWSTR;
 
     unsafe {
@@ -947,6 +947,26 @@ fn get_process_executable_path(pid: u32) -> Option<std::path::PathBuf> {
             None
         }
     }
+}
+
+pub(crate) fn find_game_process(
+    detection_dir: &str,
+    expected_relative_path: Option<&str>,
+) -> Option<(u32, std::path::PathBuf)> {
+    let expected = expected_relative_path.map(|relative| {
+        Path::new(detection_dir)
+            .join(relative.replace('/', "\\"))
+            .to_string_lossy()
+            .to_string()
+    });
+    get_all_candidate_pids(detection_dir)
+        .into_iter()
+        .filter_map(|pid| get_process_executable_path(pid).map(|path| (pid, path)))
+        .find(|(_, path)| {
+            expected
+                .as_ref()
+                .is_none_or(|expected| path.to_string_lossy().eq_ignore_ascii_case(expected))
+        })
 }
 
 // ============================================================================

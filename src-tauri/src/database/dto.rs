@@ -87,6 +87,19 @@ fn clean_double_option_executable(value: Option<Option<String>>) -> Option<Optio
     value.map(|inner| inner.and_then(clean_executable))
 }
 
+fn clean_steam_process_path(value: String) -> Option<String> {
+    let trimmed = value.trim().replace('\\', "/");
+    (!trimmed.is_empty()).then_some(trimmed)
+}
+
+fn clean_option_steam_process_path(value: Option<String>) -> Option<String> {
+    value.and_then(clean_steam_process_path)
+}
+
+fn clean_double_option_steam_process_path(value: Option<Option<String>>) -> Option<Option<String>> {
+    value.map(|inner| inner.and_then(clean_steam_process_path))
+}
+
 fn clean_bgm_auth(mut auth: BgmAuth) -> Option<BgmAuth> {
     auth.access_token = auth.access_token.trim().to_string();
     if auth.access_token.is_empty() {
@@ -103,6 +116,8 @@ impl InsertGameData {
         self.date = clean_option_string(self.date);
         self.localpath = clean_option_local_path(self.localpath);
         self.executable = clean_option_executable(self.executable);
+        self.launch_type = self.launch_type.trim().to_ascii_lowercase();
+        self.steam_process_path = clean_option_steam_process_path(self.steam_process_path);
         self.savepath = clean_option_string(self.savepath);
         self.sources = self
             .sources
@@ -120,6 +135,10 @@ impl UpdateGameData {
         self.date = clean_double_option_string(self.date);
         self.localpath = clean_double_option_local_path(self.localpath);
         self.executable = clean_double_option_executable(self.executable);
+        self.launch_type = self
+            .launch_type
+            .map(|value| value.trim().to_ascii_lowercase());
+        self.steam_process_path = clean_double_option_steam_process_path(self.steam_process_path);
         self.savepath = clean_double_option_string(self.savepath);
         self.upsert_sources = self.upsert_sources.map(|sources| {
             sources
@@ -252,6 +271,9 @@ pub struct FullGameData {
     pub date: Option<String>,
     pub localpath: Option<String>,
     pub executable: Option<String>,
+    pub launch_type: String,
+    pub steam_app_id: Option<i64>,
+    pub steam_process_path: Option<String>,
     pub savepath: Option<String>,
     pub autosave: Option<i32>,
     pub maxbackups: Option<i32>,
@@ -273,6 +295,10 @@ pub struct InsertGameData {
     pub date: Option<String>,
     pub localpath: Option<String>,
     pub executable: Option<String>,
+    #[serde(default = "default_launch_type")]
+    pub launch_type: String,
+    pub steam_app_id: Option<i64>,
+    pub steam_process_path: Option<String>,
     pub savepath: Option<String>,
     pub autosave: Option<i32>,
     pub maxbackups: Option<i32>,
@@ -316,6 +342,11 @@ pub struct UpdateGameData {
     pub localpath: Option<Option<String>>,
     #[serde(default, deserialize_with = "double_option")]
     pub executable: Option<Option<String>>,
+    pub launch_type: Option<String>,
+    #[serde(default, deserialize_with = "double_option")]
+    pub steam_app_id: Option<Option<i64>>,
+    #[serde(default, deserialize_with = "double_option")]
+    pub steam_process_path: Option<Option<String>>,
     #[serde(default, deserialize_with = "double_option")]
     pub savepath: Option<Option<String>>,
     #[serde(default, deserialize_with = "double_option")]
@@ -332,6 +363,10 @@ pub struct UpdateGameData {
     pub custom_data: Option<Option<CustomData>>,
     pub upsert_sources: Option<Vec<UpsertGameSourceData>>,
     pub remove_sources: Option<Vec<String>>,
+}
+
+fn default_launch_type() -> String {
+    "local".to_string()
 }
 
 #[cfg(test)]

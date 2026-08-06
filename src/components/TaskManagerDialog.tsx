@@ -34,6 +34,8 @@ import { snackbar } from "@/providers/snackBar";
 import {
 	fileService,
 	isGameInstallTask,
+	isSteamLaunchTask,
+	statsService,
 	type Task,
 	type TaskStatus,
 } from "@/services/invoke";
@@ -84,6 +86,9 @@ function canResumeTask(task: Task) {
 }
 
 function canCancelTask(task: Task) {
+	if (isSteamLaunchTask(task)) {
+		return task.status === "running" || task.status === "paused";
+	}
 	if (!isGameInstallTask(task)) return false;
 	return (
 		task.status === "pending" ||
@@ -154,6 +159,14 @@ function TaskIconButton({
 }
 
 function TaskProgress({ task }: { task: Task }) {
+	if (isSteamLaunchTask(task) && task.stage === "waiting_for_process") {
+		return (
+			<Typography variant="caption" color="text.secondary">
+				等待真实游戏进程出现，Steam 更新时间不计入游玩时长
+			</Typography>
+		);
+	}
+
 	const total = task.progress_total;
 	const progress = total
 		? Math.min(100, Math.max(0, (task.progress_current / total) * 100))
@@ -208,6 +221,15 @@ export function TaskManagerDialog({ open, onClose }: TaskManagerDialogProps) {
 	};
 
 	const handleTaskAction = (task: Task, action: TaskAction) => {
+		if (action === "cancel" && isSteamLaunchTask(task)) {
+			setPendingTaskId(task.id);
+			void statsService
+				.stopGame(task.payload_json.game_id)
+				.then(() => tasksQuery.refetch())
+				.catch((error) => snackbar.error(getUserErrorMessage(error, t)))
+				.finally(() => setPendingTaskId(null));
+			return;
+		}
 		void runTaskAction(task, action).catch((error) => {
 			snackbar.error(getUserErrorMessage(error, t));
 		});
@@ -238,7 +260,7 @@ export function TaskManagerDialog({ open, onClose }: TaskManagerDialogProps) {
 				sx: { maxHeight: "80vh" },
 			}}
 		>
-			<DialogTitle>{t("components.TaskManager.title", "下载任务")}</DialogTitle>
+			<DialogTitle>{t("components.TaskManager.title", "任务中心")}</DialogTitle>
 			<DialogContent dividers sx={{ bgcolor: "background.default" }}>
 				{tasksQuery.isPending ? (
 					<Box className="flex justify-center py-8">
@@ -250,7 +272,7 @@ export function TaskManagerDialog({ open, onClose }: TaskManagerDialogProps) {
 					</Alert>
 				) : groups.length === 0 ? (
 					<Typography color="text.secondary" className="py-8 text-center">
-						{t("components.TaskManager.empty", "暂无下载任务")}
+						{t("components.TaskManager.empty", "暂无任务")}
 					</Typography>
 				) : (
 					<Stack spacing={2.5}>

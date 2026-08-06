@@ -44,6 +44,7 @@ pub async fn recover_interrupted_tasks(db: &DatabaseConnection) -> Result<Vec<i6
         .col_expr(tasks::Column::UpdatedAt, Expr::value(now))
         .col_expr(tasks::Column::FinishedAt, Expr::value(Some(now)))
         .filter(tasks::Column::Status.eq("running"))
+        .filter(tasks::Column::TaskType.eq(GAME_INSTALL_TASK_TYPE))
         .filter(
             tasks::Column::Stage
                 .is_null()

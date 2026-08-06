@@ -2,15 +2,22 @@ use super::magpie;
 use crate::database::dto::UpdateSettingsData;
 use crate::database::repository::games_repository::GamesRepository;
 use crate::database::repository::settings_repository::{DbSettingsExt, SettingsRepository};
+use crate::entity::tasks;
 use crate::game::monitor::{
-    TimeTrackingMode, is_game_foreground, monitor_game, stop_game_session, wait_for_game_foreground,
+    TimeTrackingMode, find_game_process, is_game_foreground, monitor_game, stop_game_session,
+    wait_for_game_foreground,
+};
+use crate::game::steam::{
+    STEAM_LAUNCH_TASK_TYPE, SteamLaunchTaskPayload, cancel_steam_wait, create_steam_launch_task,
+    emit_steam_launch_status, finish_steam_wait, refresh_steam_app_status, register_steam_wait,
+    resolve_steam_app, update_steam_launch_task,
 };
 use crate::utils::command_ext::CommandGuiExt;
-use sea_orm::DatabaseConnection;
+use sea_orm::{ColumnTrait, DatabaseConnection, EntityTrait, QueryFilter};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use tauri::{AppHandle, Runtime, State, command};
+use tauri::{AppHandle, Emitter, Runtime, State, command};
 use {
     log::{debug, info, warn},
     tokio::time,
@@ -27,6 +34,13 @@ pub struct LaunchResult {
 enum ToolPathKind {
     Le,
     Magpie,
+}
+
+fn is_steam_download_task_stage(stage: &str) -> bool {
+    matches!(
+        stage,
+        "updating" | "validating" | "preallocating" | "staging" | "committing" | "paused"
+    )
 }
 
 impl ToolPathKind {
@@ -199,6 +213,279 @@ pub async fn launch_game<R: Runtime>(
         .await
         .map_err(|e| format!("查询游戏失败: {}", e))?
         .ok_or_else(|| format!("游戏不存在: {}", game_id))?;
+
+    if game.launch_type == "steam" {
+        let steam_app_id = game
+            .steam_app_id
+            .and_then(|value| u32::try_from(value).ok())
+            .ok_or_else(|| "Steam AppID 未设置或无效".to_string())?;
+        let (steam_game, steam_executable) = resolve_steam_app(db.inner(), steam_app_id).await?;
+        let game_dir = steam_game.install_path.clone();
+        if !game_dir.is_dir() {
+            return Err(format!("Steam 游戏安装目录不存在: {}", game_dir.display()));
+        }
+
+        let magpie_path = if game.magpie.unwrap_or(0) == 1 {
+            let settings = db.inner().get_settings().await?;
+            Some(
+                resolve_tool_path(
+                    db.inner(),
+                    settings.magpie_path_value(),
+                    ToolPathKind::Magpie,
+                )
+                .await?,
+            )
+        } else {
+            None
+        };
+        let mode_name = match time_tracking_mode {
+            TimeTrackingMode::Playtime => "playtime",
+            TimeTrackingMode::Elapsed => "elapsed",
+        };
+        let task_title = steam_game.name.clone();
+
+        let mut command = Command::new(&steam_executable);
+        command.arg("-applaunch").arg(steam_app_id.to_string());
+        if let Some(arguments) = &args {
+            command.args(arguments);
+        }
+        if let Err(error) = command.gui_safe().spawn() {
+            let error_message = error.to_string();
+            let _ =
+                emit_steam_launch_status(&app_handle, game_id, "failed", "failed", 0, None, None);
+            return Err(format!("启动 Steam 应用失败: {error_message}"));
+        }
+
+        let signal = register_steam_wait(game_id);
+        let app = app_handle.clone();
+        let connection = db.inner().clone();
+        let process_path = game.steam_process_path.clone();
+        let detection_dir_path = steam_game.install_path.clone();
+        let detection_dir = detection_dir_path.to_string_lossy().to_string();
+        let manifest_path = steam_game.manifest_path.clone();
+        tokio::spawn(async move {
+            let mut last_stage = String::new();
+            let mut task: Option<tasks::Model> = None;
+            loop {
+                if signal.load(std::sync::atomic::Ordering::Acquire) {
+                    if let Some(task) = task.as_ref() {
+                        let _ = update_steam_launch_task(
+                            &app,
+                            &connection,
+                            task.id,
+                            game_id,
+                            "cancelled",
+                            "cancelled",
+                            0,
+                            None,
+                            None,
+                        )
+                        .await;
+                    } else {
+                        let _ = emit_steam_launch_status(
+                            &app,
+                            game_id,
+                            "cancelled",
+                            "cancelled",
+                            0,
+                            None,
+                            None,
+                        );
+                    }
+                    finish_steam_wait(game_id);
+                    return;
+                }
+
+                match refresh_steam_app_status(&manifest_path) {
+                    Ok(current_status) => {
+                        let stage = if current_status.stage == "ready" {
+                            "waiting_for_process"
+                        } else {
+                            current_status.stage.as_str()
+                        };
+                        if last_stage != stage || current_status.progress_total.is_some() {
+                            let task_status = if stage == "paused" {
+                                "paused"
+                            } else {
+                                "running"
+                            };
+                            let (progress_current, progress_total) =
+                                if stage == "waiting_for_process" {
+                                    (0, None)
+                                } else {
+                                    (
+                                        current_status.progress_current,
+                                        current_status.progress_total,
+                                    )
+                                };
+                            if is_steam_download_task_stage(stage) {
+                                if task.is_none() {
+                                    match create_steam_launch_task(
+                                        &connection,
+                                        &task_title,
+                                        game_id,
+                                        steam_app_id,
+                                        mode_name,
+                                    )
+                                    .await
+                                    {
+                                        Ok(created) => task = Some(created),
+                                        Err(error) => {
+                                            warn!(
+                                                "创建 Steam 更新任务失败 game_id={} app_id={}: {}",
+                                                game_id, steam_app_id, error
+                                            );
+                                        }
+                                    }
+                                }
+                                if let Some(task) = task.as_ref() {
+                                    let _ = update_steam_launch_task(
+                                        &app,
+                                        &connection,
+                                        task.id,
+                                        game_id,
+                                        task_status,
+                                        stage,
+                                        progress_current,
+                                        progress_total,
+                                        None,
+                                    )
+                                    .await;
+                                } else {
+                                    let _ = emit_steam_launch_status(
+                                        &app,
+                                        game_id,
+                                        task_status,
+                                        stage,
+                                        progress_current,
+                                        progress_total,
+                                        None,
+                                    );
+                                }
+                            } else {
+                                if let Some(task) = task.take() {
+                                    let _ = update_steam_launch_task(
+                                        &app,
+                                        &connection,
+                                        task.id,
+                                        game_id,
+                                        "completed",
+                                        "completed",
+                                        1,
+                                        Some(1),
+                                        None,
+                                    )
+                                    .await;
+                                }
+                                let _ = emit_steam_launch_status(
+                                    &app,
+                                    game_id,
+                                    task_status,
+                                    stage,
+                                    progress_current,
+                                    progress_total,
+                                    None,
+                                );
+                            }
+                            last_stage = stage.to_string();
+                        }
+
+                        if stage == "waiting_for_process"
+                            && let Some((pid, executable_path)) =
+                                find_game_process(&detection_dir, process_path.as_deref())
+                        {
+                            info!(
+                                "Steam 游戏进程已确认 game_id={} app_id={} pid={} executable={}",
+                                game_id,
+                                steam_app_id,
+                                pid,
+                                executable_path.display()
+                            );
+                            if let Some(task) = task.take() {
+                                let _ = update_steam_launch_task(
+                                    &app,
+                                    &connection,
+                                    task.id,
+                                    game_id,
+                                    "completed",
+                                    "completed",
+                                    1,
+                                    Some(1),
+                                    None,
+                                )
+                                .await;
+                            }
+                            if process_path.is_none()
+                                && let Ok(relative) =
+                                    executable_path.strip_prefix(&detection_dir_path)
+                            {
+                                let relative = relative.to_string_lossy().replace('\\', "/");
+                                let _ = app.emit(
+                                    "steam-process-detected",
+                                    serde_json::json!({
+                                        "gameId": game_id,
+                                        "processPath": relative,
+                                    }),
+                                );
+                            }
+                            finish_steam_wait(game_id);
+                            monitor_game(
+                                app.clone(),
+                                connection.clone(),
+                                time_tracking_mode,
+                                game_id,
+                                pid,
+                                detection_dir.clone(),
+                            )
+                            .await;
+                            if let Some(magpie_path) = magpie_path {
+                                tokio::spawn(async move {
+                                    if let Err(error) =
+                                        start_magpie_for_game(game_id, &magpie_path).await
+                                    {
+                                        warn!(
+                                            "启动 Magpie 全屏缩放失败 game_id={}: {}",
+                                            game_id, error
+                                        );
+                                    }
+                                });
+                            }
+                            return;
+                        }
+                    }
+                    Err(error) => {
+                        if let Some(task) = task.as_ref() {
+                            let _ = update_steam_launch_task(
+                                &app,
+                                &connection,
+                                task.id,
+                                game_id,
+                                "failed",
+                                "failed",
+                                0,
+                                None,
+                                Some(("steam_state_unavailable", &error)),
+                            )
+                            .await;
+                        } else {
+                            let _ = emit_steam_launch_status(
+                                &app, game_id, "failed", "failed", 0, None, None,
+                            );
+                        }
+                        finish_steam_wait(game_id);
+                        return;
+                    }
+                }
+                tokio::time::sleep(time::Duration::from_secs(2)).await;
+            }
+        });
+
+        return Ok(LaunchResult {
+            success: true,
+            message: format!("已交由 Steam 启动: {}", steam_game.name),
+            process_id: None,
+        });
+    }
     let game_dir = PathBuf::from(
         game.localpath
             .as_deref()
@@ -414,6 +701,13 @@ pub async fn launch_game<R: Runtime>(
 /// 停止结果，包含成功标志、消息和终止的进程数量
 #[command]
 pub async fn stop_game(game_id: u32) -> Result<StopResult, String> {
+    if cancel_steam_wait(game_id) {
+        return Ok(StopResult {
+            success: true,
+            message: format!("已停止等待 Steam 游戏 {}，Steam 下载不会被终止", game_id),
+            terminated_count: 0,
+        });
+    }
     match stop_game_session(game_id).await {
         Ok(terminated_count) => Ok(StopResult {
             success: true,
@@ -425,6 +719,215 @@ pub async fn stop_game(game_id: u32) -> Result<StopResult, String> {
         }),
         Err(e) => Err(format!("停止游戏失败: {}", e)),
     }
+}
+
+/// Reconcile Steam launch observers after an application restart. Steam owns the
+/// download and launch operation, so ReinaManager only restores observation.
+pub fn resume_steam_launch_tasks<R: Runtime>(app_handle: &AppHandle<R>, db: &DatabaseConnection) {
+    let app = app_handle.clone();
+    let connection = db.clone();
+    tauri::async_runtime::spawn(async move {
+        let active_tasks = match tasks::Entity::find()
+            .filter(tasks::Column::TaskType.eq(STEAM_LAUNCH_TASK_TYPE))
+            .filter(tasks::Column::Status.is_in(["running", "paused"]))
+            .all(&connection)
+            .await
+        {
+            Ok(tasks) => tasks,
+            Err(error) => {
+                warn!("读取待恢复 Steam 任务失败: {error}");
+                return;
+            }
+        };
+
+        for task in active_tasks {
+            let payload =
+                match serde_json::from_value::<SteamLaunchTaskPayload>(task.payload_json.clone()) {
+                    Ok(payload) if payload.version == 1 => payload,
+                    Ok(_) => {
+                        let _ = update_steam_launch_task(
+                            &app,
+                            &connection,
+                            task.id,
+                            0,
+                            "failed",
+                            "failed",
+                            0,
+                            None,
+                            Some(("unsupported_payload", "Steam 任务版本不受支持")),
+                        )
+                        .await;
+                        continue;
+                    }
+                    Err(error) => {
+                        warn!("解析 Steam 任务 {} 失败: {error}", task.id);
+                        continue;
+                    }
+                };
+            let game = match GamesRepository::find_by_id(&connection, payload.game_id as i32).await
+            {
+                Ok(Some(game)) => game,
+                _ => {
+                    let _ = update_steam_launch_task(
+                        &app,
+                        &connection,
+                        task.id,
+                        payload.game_id,
+                        "failed",
+                        "failed",
+                        0,
+                        None,
+                        Some(("game_missing", "Steam 任务对应的游戏不存在")),
+                    )
+                    .await;
+                    continue;
+                }
+            };
+            let (steam_game, _) = match resolve_steam_app(&connection, payload.steam_app_id).await {
+                Ok(value) => value,
+                Err(error) => {
+                    let _ = update_steam_launch_task(
+                        &app,
+                        &connection,
+                        task.id,
+                        payload.game_id,
+                        "failed",
+                        "failed",
+                        0,
+                        None,
+                        Some(("steam_state_unavailable", &error)),
+                    )
+                    .await;
+                    continue;
+                }
+            };
+            let time_tracking_mode = if payload.time_tracking_mode == "elapsed" {
+                TimeTrackingMode::Elapsed
+            } else {
+                TimeTrackingMode::Playtime
+            };
+            let signal = register_steam_wait(payload.game_id);
+            let app = app.clone();
+            let connection = connection.clone();
+            let detection_dir_path = steam_game.install_path.clone();
+            let detection_dir = detection_dir_path.to_string_lossy().to_string();
+            let manifest_path = steam_game.manifest_path.clone();
+            let process_path = game.steam_process_path;
+            tauri::async_runtime::spawn(async move {
+                loop {
+                    if signal.load(std::sync::atomic::Ordering::Acquire) {
+                        let _ = update_steam_launch_task(
+                            &app,
+                            &connection,
+                            task.id,
+                            payload.game_id,
+                            "cancelled",
+                            "cancelled",
+                            0,
+                            None,
+                            None,
+                        )
+                        .await;
+                        finish_steam_wait(payload.game_id);
+                        return;
+                    }
+                    match refresh_steam_app_status(&manifest_path) {
+                        Ok(current_status) => {
+                            let stage = if current_status.stage == "ready" {
+                                "waiting_for_process"
+                            } else {
+                                current_status.stage.as_str()
+                            };
+                            let status = if stage == "paused" {
+                                "paused"
+                            } else {
+                                "running"
+                            };
+                            let (progress_current, progress_total) =
+                                if stage == "waiting_for_process" {
+                                    (0, None)
+                                } else {
+                                    (
+                                        current_status.progress_current,
+                                        current_status.progress_total,
+                                    )
+                                };
+                            let _ = update_steam_launch_task(
+                                &app,
+                                &connection,
+                                task.id,
+                                payload.game_id,
+                                status,
+                                stage,
+                                progress_current,
+                                progress_total,
+                                None,
+                            )
+                            .await;
+                            if stage == "waiting_for_process"
+                                && let Some((pid, executable_path)) =
+                                    find_game_process(&detection_dir, process_path.as_deref())
+                            {
+                                let _ = update_steam_launch_task(
+                                    &app,
+                                    &connection,
+                                    task.id,
+                                    payload.game_id,
+                                    "completed",
+                                    "running",
+                                    1,
+                                    Some(1),
+                                    None,
+                                )
+                                .await;
+                                if process_path.is_none()
+                                    && let Ok(relative) =
+                                        executable_path.strip_prefix(&detection_dir_path)
+                                {
+                                    let relative = relative.to_string_lossy().replace('\\', "/");
+                                    let _ = app.emit(
+                                        "steam-process-detected",
+                                        serde_json::json!({
+                                            "gameId": payload.game_id,
+                                            "processPath": relative,
+                                        }),
+                                    );
+                                }
+                                finish_steam_wait(payload.game_id);
+                                monitor_game(
+                                    app,
+                                    connection,
+                                    time_tracking_mode,
+                                    payload.game_id,
+                                    pid,
+                                    detection_dir,
+                                )
+                                .await;
+                                return;
+                            }
+                        }
+                        Err(error) => {
+                            let _ = update_steam_launch_task(
+                                &app,
+                                &connection,
+                                task.id,
+                                payload.game_id,
+                                "failed",
+                                "failed",
+                                0,
+                                None,
+                                Some(("steam_state_unavailable", &error)),
+                            )
+                            .await;
+                            finish_steam_wait(payload.game_id);
+                            return;
+                        }
+                    }
+                    tokio::time::sleep(time::Duration::from_secs(2)).await;
+                }
+            });
+        }
+    });
 }
 
 /// 为游戏启动Magpie放大

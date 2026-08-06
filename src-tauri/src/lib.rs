@@ -13,8 +13,11 @@ use backup::savedata::{
 use database::*;
 use game::cover::custom::{delete_game_covers, import_clipboard_image_to_temp};
 use game::cover::{delete_cloud_cache, register_game_cover_protocol};
+#[cfg(target_os = "windows")]
+use game::launch::resume_steam_launch_tasks;
 use game::launch::{launch_game, stop_game};
 use game::scan::scan_directory_for_games;
+use game::steam::{get_steam_app_status, scan_steam_library};
 use install::protocol::{
     InstallProtocolState, setup_install_protocol, take_pending_install_rejections,
     take_pending_install_requests,
@@ -76,6 +79,8 @@ pub fn run() {
             resolve_dropped_local_path,
             is_portable_mode,
             scan_directory_for_games,
+            scan_steam_library,
+            get_steam_app_status,
             take_pending_install_requests,
             take_pending_install_rejections,
             create_game_install_task,
@@ -248,6 +253,8 @@ pub fn run() {
                             Ok(task_ids) => resume_pending_tasks(&app_handle, &conn, task_ids),
                             Err(error) => log::error!("恢复中断任务失败: {error}"),
                         }
+                        #[cfg(target_os = "windows")]
+                        resume_steam_launch_tasks(&app_handle, &conn);
                     }
                     Err(e) => {
                         log::error!("无法建立数据库连接: {}", e);

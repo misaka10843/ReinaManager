@@ -89,20 +89,24 @@ export function useTaskCache() {
 	);
 	const updateTaskProgress = useCallback(
 		(event: TaskProgressEvent) => {
+			let found = false;
 			queryClient.setQueryData<Task[]>(taskKeys.all, (current) =>
-				current?.map((task) =>
-					task.id === event.task_id
-						? {
-								...task,
-								status: event.status,
-								stage: event.stage,
-								progress_current: event.progress_current,
-								progress_total: event.progress_total,
-								progress_unit: event.progress_unit,
-							}
-						: task,
-				),
+				current?.map((task) => {
+					if (task.id !== event.task_id) return task;
+					found = true;
+					return {
+						...task,
+						status: event.status,
+						stage: event.stage,
+						progress_current: event.progress_current,
+						progress_total: event.progress_total,
+						progress_unit: event.progress_unit,
+					};
+				}),
 			);
+			if (!found) {
+				void queryClient.invalidateQueries({ queryKey: taskKeys.all });
+			}
 		},
 		[queryClient],
 	);

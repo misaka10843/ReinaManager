@@ -40,6 +40,7 @@ import type { GameMetadataSession } from "./gameMetadataService";
 export interface GameInfoUpdateDraft {
 	newLocalPath: string;
 	newExecutable?: string;
+	newSteamProcessPath?: string;
 	newName: string;
 	newImageExt?: string | null;
 	newCoverSource?: SourceType | null;
@@ -58,6 +59,9 @@ export interface BatchImportGameCandidate {
 	path: string;
 	selectedExe?: string;
 	matchedData?: GameMetadataDraft;
+	launchType?: "local" | "steam";
+	steamAppId?: number;
+	steamProcessPath?: string;
 }
 
 interface SourceUpdateParams {
@@ -290,6 +294,15 @@ export function buildGameInfoUpdatePayload(
 			payload.executable = executableDiff;
 		}
 	}
+	if (draft.newSteamProcessPath !== undefined) {
+		const steamProcessPathDiff = getDiff(
+			draft.newSteamProcessPath,
+			originalGame.steam_process_path ?? undefined,
+		);
+		if (steamProcessPathDiff !== undefined) {
+			payload.steam_process_path = steamProcessPathDiff;
+		}
+	}
 
 	const currentCustomData = originalGame.custom_data || {};
 	const displayName = getGameDisplayName(originalGame);
@@ -394,11 +407,18 @@ export async function buildBulkImportGameData(
 	cloudStatusContext?: CloudPlayStatusContext,
 ): Promise<InsertGameParams> {
 	if (item.matchedData) {
-		return buildInsertGameData(item.matchedData, {
+		const payload = await buildInsertGameData(item.matchedData, {
 			localpath: item.path,
 			executable: item.selectedExe,
 			cloudStatusContext,
 		});
+		return {
+			...payload,
+			launch_type: item.launchType ?? "local",
+			steam_app_id: item.steamAppId,
+			steam_process_path: item.steamProcessPath,
+			executable: item.launchType === "steam" ? undefined : payload.executable,
+		};
 	}
 
 	return {
@@ -408,7 +428,10 @@ export async function buildBulkImportGameData(
 			name: item.name,
 		},
 		localpath: item.path,
-		executable: item.selectedExe,
+		executable: item.launchType === "steam" ? undefined : item.selectedExe,
+		launch_type: item.launchType ?? "local",
+		steam_app_id: item.steamAppId,
+		steam_process_path: item.steamProcessPath,
 	};
 }
 

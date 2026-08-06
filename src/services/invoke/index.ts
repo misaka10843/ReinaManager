@@ -9,6 +9,9 @@ export type {
 	BackupResult,
 	ImportResult,
 	MoveBackupFolderResult,
+	SteamAppStatus,
+	SteamLibraryGame,
+	SteamLibraryScanResult,
 } from "./fileService";
 export { fileService } from "./fileService";
 // 导出所有服务
@@ -22,6 +25,8 @@ export {
 	type InstallFailedEvent,
 	type InstallRequest,
 	isGameInstallTask,
+	isSteamLaunchTask,
+	type SteamLaunchTask,
 	type Task,
 	type TaskProgressEvent,
 	type TaskStatus,

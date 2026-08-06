@@ -13,12 +13,13 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import StopIcon from "@mui/icons-material/Stop";
 import SyncIcon from "@mui/icons-material/Sync";
 import TimerIcon from "@mui/icons-material/Timer";
-import { Button, Typography } from "@mui/material";
+import { Button, Stack, Typography } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { SelectedGameGuard } from "@/components/SelectedGameGuard";
 import { useGameLaunchFlow } from "@/hooks/features/games/useGameLaunchFlow";
+import { useUpdateGame } from "@/hooks/queries/useGames";
 import { snackbar } from "@/providers/snackBar";
 import { useGamePlayStore } from "@/store/gamePlayStore";
 import type { GameData } from "@/types";
@@ -79,6 +80,7 @@ function LaunchModalContent({ selectedGame }: LaunchModalContentProps) {
 	const { t } = useTranslation();
 	const selectedGameId = selectedGame.id;
 	const { launchGame, syncLocalPath } = useGameLaunchFlow();
+	const { mutateAsync: updateGame } = useUpdateGame();
 	const { stopGame, isThisGameRunning, realTimeState } = useGamePlayStore(
 		useShallow((s) => ({
 			stopGame: s.stopGame,
@@ -88,6 +90,7 @@ function LaunchModalContent({ selectedGame }: LaunchModalContentProps) {
 	);
 	const hasLocalPath = Boolean(selectedGame.localpath);
 	const sessionTimeTrackingMode = realTimeState?.timeTrackingMode;
+	const isLaunching = realTimeState?.lifecycle === "launching";
 
 	// 用于 elapsed 模式下的前端计时器显示
 	const timerRef = useRef<HTMLSpanElement>(null);
@@ -150,6 +153,25 @@ function LaunchModalContent({ selectedGame }: LaunchModalContentProps) {
 		}
 	};
 
+	const handleSaveDetectedProcess = async () => {
+		const processPath = realTimeState?.detectedSteamProcessPath;
+		if (!processPath) return;
+		try {
+			await updateGame({
+				gameId: selectedGameId,
+				updates: { steam_process_path: processPath },
+			});
+			snackbar.success(
+				t(
+					"components.LaunchModal.steamProcessSaved",
+					"已保存检测到的 Steam 游戏进程",
+				),
+			);
+		} catch (error) {
+			snackbar.error(getUserErrorMessage(error, t));
+		}
+	};
+
 	const content = (() => {
 		if (stopping) {
 			return (
@@ -160,12 +182,68 @@ function LaunchModalContent({ selectedGame }: LaunchModalContentProps) {
 		}
 
 		if (isThisGameRunning && realTimeState) {
+			if (isLaunching) {
+				const total = realTimeState.progressTotal;
+				const progressStages = new Set([
+					"updating",
+					"validating",
+					"preallocating",
+					"staging",
+					"committing",
+					"paused",
+				]);
+				const progress =
+					total && progressStages.has(realTimeState.steamStage ?? "")
+						? Math.min(
+								100,
+								(Number(realTimeState.progressCurrent ?? 0) / Number(total)) *
+									100,
+							)
+						: null;
+				const stageLabels: Record<string, string> = {
+					checking: t(
+						"components.LaunchModal.steamChecking",
+						"检查 Steam 状态",
+					),
+					updating: t("components.LaunchModal.steamUpdating", "Steam 更新中"),
+					validating: t(
+						"components.LaunchModal.steamValidating",
+						"Steam 校验中",
+					),
+					preallocating: t(
+						"components.LaunchModal.steamPreallocating",
+						"Steam 预分配中",
+					),
+					staging: t("components.LaunchModal.steamStaging", "Steam 暂存中"),
+					committing: t(
+						"components.LaunchModal.steamCommitting",
+						"Steam 提交更新",
+					),
+					paused: t("components.LaunchModal.steamPaused", "Steam 更新已暂停"),
+					waiting_for_process: t(
+						"components.LaunchModal.steamWaiting",
+						"等待游戏进程",
+					),
+				};
+				return (
+					<Button
+						startIcon={<StopIcon />}
+						onClick={handleStopGame}
+						color="warning"
+						variant="outlined"
+					>
+						{stageLabels[realTimeState.steamStage ?? "checking"] ??
+							realTimeState.steamStage}
+						{progress !== null ? ` ${progress.toFixed(0)}%` : ""}
+					</Button>
+				);
+			}
+
 			const { currentSessionMinutes, currentSessionSeconds } = realTimeState;
 			const initialTimeDisplay = formatPlayTime(
 				currentSessionMinutes,
 				currentSessionSeconds,
 			);
-
 			const elapsedInitial = realTimeState.startTime
 				? Math.floor(Date.now() / 1000) - realTimeState.startTime
 				: 0;
@@ -174,7 +252,7 @@ function LaunchModalContent({ selectedGame }: LaunchModalContentProps) {
 				elapsedInitial % 60,
 			);
 
-			return (
+			const stopButton = (
 				<Button
 					startIcon={<StopIcon />}
 					onClick={handleStopGame}
@@ -197,6 +275,27 @@ function LaunchModalContent({ selectedGame }: LaunchModalContentProps) {
 					</Typography>
 				</Button>
 			);
+
+			if (
+				selectedGame.launch_type === "steam" &&
+				realTimeState.detectedSteamProcessPath &&
+				!selectedGame.steam_process_path
+			) {
+				return (
+					<Stack direction="row" spacing={1}>
+						<Button
+							size="small"
+							variant="outlined"
+							onClick={handleSaveDetectedProcess}
+						>
+							{t("components.LaunchModal.saveSteamProcess", "保存游戏进程")}
+						</Button>
+						{stopButton}
+					</Stack>
+				);
+			}
+
+			return stopButton;
 		}
 
 		if (hasLocalPath) {

@@ -56,6 +56,20 @@ export interface ScanResult {
 }
 
 export type GameScanMode = "executable" | "first_level_directory";
+export type GameLaunchType = "local" | "steam";
+
+export type SteamLaunchStage =
+	| "checking"
+	| "updating"
+	| "validating"
+	| "preallocating"
+	| "staging"
+	| "committing"
+	| "paused"
+	| "waiting_for_process"
+	| "running"
+	| "failed"
+	| "cancelled";
 
 export interface BgmAuth {
 	access_token: string;
@@ -221,6 +235,9 @@ export type IdType = apiSourceType | "custom" | "Whitecloud";
 interface GameRuntimePayload {
 	localpath?: Nullable<string>;
 	executable?: Nullable<string>;
+	launch_type?: GameLaunchType;
+	steam_app_id?: Nullable<number>;
+	steam_process_path?: Nullable<string>;
 	savepath?: Nullable<string>;
 	autosave?: number;
 	maxbackups?: number;
@@ -308,6 +325,9 @@ export interface UpdateGameParams {
 	date?: Nullable<string>;
 	localpath?: Nullable<string>;
 	executable?: Nullable<string>;
+	launch_type?: GameLaunchType;
+	steam_app_id?: Nullable<number>;
+	steam_process_path?: Nullable<string>;
 	savepath?: Nullable<string>;
 	autosave?: Nullable<number>;
 	maxbackups?: Nullable<number>;

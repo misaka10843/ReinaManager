@@ -43,7 +43,39 @@ export interface DroppedLocalPathResult {
 	directory: string | null;
 }
 
+export interface SteamAppStatus {
+	stage: string;
+	state_flags: number;
+	progress_current: number;
+	progress_total: number | null;
+}
+
+export interface SteamLibraryGame {
+	app_id: number;
+	name: string;
+	library_path: string;
+	install_path: string;
+	executables: string[];
+	status: SteamAppStatus;
+	existing_game_id: number | null;
+	warning: string | null;
+}
+
+export interface SteamLibraryScanResult {
+	steam_path: string;
+	steam_executable: string;
+	games: SteamLibraryGame[];
+	warnings: string[];
+}
+
 class FileService extends BaseService {
+	async scanSteamLibrary(): Promise<SteamLibraryScanResult> {
+		return this.invoke<SteamLibraryScanResult>("scan_steam_library");
+	}
+
+	async getSteamAppStatus(appId: number): Promise<SteamAppStatus> {
+		return this.invoke<SteamAppStatus>("get_steam_app_status", { appId });
+	}
 	/**
 	 * 扫描目录下的游戏文件夹
 	 */

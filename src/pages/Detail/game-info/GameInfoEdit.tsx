@@ -95,6 +95,18 @@ const CHIP_INPUT_STYLE = {
 
 const PATH_SEPARATOR = sep();
 
+const isInvalidSteamProcessPath = (value: string) => {
+	const trimmed = value.trim();
+	if (!trimmed) return false;
+	const normalized = trimmed.replace(/\\/g, "/");
+	return (
+		normalized.includes(":") ||
+		normalized.startsWith("/") ||
+		normalized.split("/").some((part) => !part || part === "..") ||
+		!normalized.toLowerCase().endsWith(".exe")
+	);
+};
+
 interface GameInfoEditProps {
 	selectedGame: GameData;
 	rawGame?: FullGameData;
@@ -127,6 +139,7 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 	// 游戏信息编辑相关状态
 	const [localPath, setLocalPath] = useState<string>("");
 	const [executable, setExecutable] = useState<string>("");
+	const [steamProcessPath, setSteamProcessPath] = useState<string>("");
 	const [gameNote, setGameNote] = useState<string>("");
 	const [aliases, setAliases] = useState<string[]>([]);
 	const [summary, setSummary] = useState<string>("");
@@ -191,6 +204,7 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 		(game: GameData) => {
 			setLocalPath(game.localpath ?? "");
 			setExecutable(game.executable ?? "");
+			setSteamProcessPath(game.steam_process_path ?? "");
 			setGameNote(getGameDisplayName(game));
 			setAliases(game.custom_data?.aliases ?? []);
 			setSummary(game.summary ?? "");
@@ -215,8 +229,10 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 		// 2. 只有当这些"静态属性"被保存更新后，才触发重置
 		selectedGameSourceIdSignature,
 		selectedGame.id_type,
+		selectedGame.launch_type,
 		selectedGame.localpath,
 		selectedGame.executable,
+		selectedGame.steam_process_path,
 		// 3. 对于对象类型，使用 JSON 字符串化进行"值比较"
 		//    否则每次父组件刷新，custom_data 对象引用都会变，导致无限重置
 		JSON.stringify(selectedGame.custom_data),
@@ -242,6 +258,7 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 	// 检查是否有任何更改
 	// 重要：比较时必须使用"展平后的原始值"作为基准，与初始化时一致
 	const hasChanges = () => {
+		const isSteamGame = selectedGame.launch_type === "steam";
 		// 获取展平后的原始值（与 useEffect 初始化时一致）
 		const currentDisplayName = getGameDisplayName(selectedGame);
 		const currentCustomName =
@@ -253,7 +270,9 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 
 		return (
 			localPath !== (selectedGame.localpath ?? "") ||
-			executable !== (selectedGame.executable ?? "") ||
+			(!isSteamGame && executable !== (selectedGame.executable ?? "")) ||
+			(isSteamGame &&
+				steamProcessPath !== (selectedGame.steam_process_path ?? "")) ||
 			gameNote !== currentCustomName ||
 			selectedImagePath !== null || // 有选择的图片但未保存
 			shouldDeleteImage ||
@@ -473,6 +492,16 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 	// 统一保存所有更改
 	const handleSaveAll = async () => {
 		if (!hasChanges()) return;
+		const isSteamGame = selectedGame.launch_type === "steam";
+		if (isSteamGame && !localPath.trim()) {
+			snackbar.error(
+				t(
+					"pages.Detail.GameInfoEdit.steamInstallPathRequired",
+					"Steam 启动需要保留安装目录",
+				),
+			);
+			return;
+		}
 		if (!localPath.trim() && executable.trim()) {
 			snackbar.error(
 				t(
@@ -482,11 +511,20 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 			);
 			return;
 		}
-		if (isInvalidExecutableName(executable)) {
+		if (!isSteamGame && isInvalidExecutableName(executable)) {
 			snackbar.error(
 				t(
 					"pages.Detail.GameInfoEdit.invalidExecutable",
 					"可执行文件必须是单个文件名，不能包含路径分隔符",
+				),
+			);
+			return;
+		}
+		if (isSteamGame && isInvalidSteamProcessPath(steamProcessPath)) {
+			snackbar.error(
+				t(
+					"pages.Detail.GameInfoEdit.invalidSteamProcessPath",
+					"Steam 进程路径必须是安装目录内的相对 .exe 路径",
 				),
 			);
 			return;
@@ -521,7 +559,8 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 			// 2. 纯逻辑：使用纯函数构建 Payload
 			const updateData = buildGameInfoUpdatePayload(selectedGame, {
 				newLocalPath: localPath,
-				newExecutable: executable,
+				newExecutable: isSteamGame ? undefined : executable,
+				newSteamProcessPath: isSteamGame ? steamProcessPath : undefined,
 				newName: gameNote,
 				newImageExt: uploadedImageExt,
 				newCoverSource: coverSource,
@@ -548,6 +587,7 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 			const updatedGame = await onSave(updateData);
 			setLocalPath(updatedGame.localpath ?? "");
 			setExecutable(updatedGame.executable ?? "");
+			setSteamProcessPath(updatedGame.steam_process_path ?? "");
 
 			if (clipboardTempImagePath) {
 				await cleanupClipboardTempImage();
@@ -583,6 +623,8 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 			setIsLoading(false);
 		}
 	};
+
+	const isSteamLaunch = selectedGame.launch_type === "steam";
 
 	return (
 		<Box className="flex flex-col gap-3">
@@ -944,27 +986,48 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 					<Typography variant="h6" gutterBottom>
 						{t("pages.Detail.GameInfoEdit.gamePath", "游戏路径")}
 					</Typography>
+					{isSteamLaunch && (
+						<Typography variant="body2" color="text.secondary" className="mb-2">
+							Steam AppID {selectedGame.steam_app_id}
+						</Typography>
+					)}
 					<Box
 						sx={{
 							display: "flex",
 							alignItems: "flex-start",
 							gap: 1,
+							flexWrap: { xs: "wrap", md: "nowrap" },
 						}}
 					>
 						<TextField
-							label={t("pages.Detail.GameInfoEdit.localPath", "游戏目录")}
+							label={
+								isSteamLaunch
+									? t(
+											"pages.Detail.GameInfoEdit.steamInstallPath",
+											"Steam 安装目录",
+										)
+									: t("pages.Detail.GameInfoEdit.localPath", "游戏目录")
+							}
 							variant="outlined"
 							value={localPath}
 							onChange={(e) => setLocalPath(e.target.value)}
 							disabled={isLoading || disabled}
-							error={!localPath.trim() && Boolean(executable.trim())}
+							error={
+								!localPath.trim() &&
+								(isSteamLaunch || Boolean(executable.trim()))
+							}
 							helperText={
-								!localPath.trim() && executable.trim()
+								!localPath.trim() && isSteamLaunch
 									? t(
-											"pages.Detail.GameInfoEdit.localPathRequiredForExecutable",
-											"填写可执行文件时，游戏目录不能为空",
+											"pages.Detail.GameInfoEdit.steamInstallPathRequired",
+											"Steam 启动需要保留安装目录",
 										)
-									: undefined
+									: !localPath.trim() && executable.trim()
+										? t(
+												"pages.Detail.GameInfoEdit.localPathRequiredForExecutable",
+												"填写可执行文件时，游戏目录不能为空",
+											)
+										: undefined
 							}
 							sx={{ flex: 2, minWidth: 0 }}
 							slotProps={{
@@ -979,39 +1042,65 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 								},
 							}}
 						/>
-						<TextField
-							label={t("pages.Detail.GameInfoEdit.executable", "可执行文件")}
-							variant="outlined"
-							value={executable}
-							onChange={(e) => setExecutable(e.target.value)}
-							disabled={isLoading || disabled}
-							error={isInvalidExecutableName(executable)}
-							helperText={
-								isInvalidExecutableName(executable)
-									? t(
-											"pages.Detail.GameInfoEdit.invalidExecutable",
-											"可执行文件必须是单个文件名，不能包含路径分隔符",
-										)
-									: undefined
-							}
-							sx={{ flex: 1, minWidth: "10rem" }}
-							slotProps={{
-								input: {
-									endAdornment: (
-										<InputAdornment position="end">
-											<IconButton
-												onClick={handleSelectExecutable}
-												disabled={isLoading || disabled}
-												edge="end"
-												size="small"
-											>
-												<FileOpenIcon />
-											</IconButton>
-										</InputAdornment>
-									),
-								},
-							}}
-						/>
+						{isSteamLaunch ? (
+							<TextField
+								label={t(
+									"pages.Detail.GameInfoEdit.steamProcessPath",
+									"Steam 游戏进程",
+								)}
+								variant="outlined"
+								value={steamProcessPath}
+								onChange={(e) => setSteamProcessPath(e.target.value)}
+								disabled={isLoading || disabled}
+								error={isInvalidSteamProcessPath(steamProcessPath)}
+								helperText={
+									isInvalidSteamProcessPath(steamProcessPath)
+										? t(
+												"pages.Detail.GameInfoEdit.invalidSteamProcessPath",
+												"Steam 进程路径必须是安装目录内的相对 .exe 路径",
+											)
+										: t(
+												"pages.Detail.GameInfoEdit.steamProcessPathHelper",
+												"可留空，首次启动检测到真实进程后再保存；支持子目录，例如 bin/game.exe",
+											)
+								}
+								sx={{ flex: 1.4, minWidth: "14rem" }}
+							/>
+						) : (
+							<TextField
+								label={t("pages.Detail.GameInfoEdit.executable", "可执行文件")}
+								variant="outlined"
+								value={executable}
+								onChange={(e) => setExecutable(e.target.value)}
+								disabled={isLoading || disabled}
+								error={isInvalidExecutableName(executable)}
+								helperText={
+									isInvalidExecutableName(executable)
+										? t(
+												"pages.Detail.GameInfoEdit.invalidExecutable",
+												"可执行文件必须是单个文件名，不能包含路径分隔符",
+											)
+										: undefined
+								}
+								sx={{ flex: 1, minWidth: "10rem" }}
+								slotProps={{
+									input: {
+										endAdornment: (
+											<InputAdornment position="end">
+												<IconButton
+													onClick={handleSelectExecutable}
+													disabled={isLoading || disabled}
+													edge="end"
+													size="small"
+												>
+													<FileOpenIcon />
+												</IconButton>
+											</InputAdornment>
+										),
+									},
+								}}
+							/>
+						)}
 					</Box>
 				</CardContent>
 			</Card>

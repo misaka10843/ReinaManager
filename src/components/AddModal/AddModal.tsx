@@ -56,6 +56,7 @@ import {
 	AddGameModeToggleGroup,
 	SingleSourceSelect,
 } from "./SourceMatchControls";
+import SteamImportTab from "./SteamImportTab";
 import { useTauriDragDrop } from "./useTauriDragDrop";
 
 /**
@@ -66,7 +67,7 @@ const ERROR_DISPLAY_DURATION_MS = 5000; // 错误提示显示时长
 const DEFAULT_SCAN_DEPTH = 3;
 const DEFAULT_SCAN_MODE: GameScanMode = "executable";
 
-type AddModalTab = "single" | "bulk";
+type AddModalTab = "single" | "bulk" | "steam";
 
 /**
  * 从文件路径中提取文件夹名称并清洗（纯函数，置于组件外以保证稳定引用）
@@ -294,11 +295,11 @@ const AddModal: React.FC = () => {
 				closeAfterTransition={false}
 				aria-labelledby="addgame-dialog-title"
 				fullWidth
-				maxWidth={activeTab === "bulk" ? "lg" : "sm"}
+				maxWidth={activeTab === "single" ? "sm" : "lg"}
 				slotProps={{
 					paper: {
 						sx:
-							activeTab === "bulk"
+							activeTab !== "single"
 								? {
 										height: "min(88vh, 920px)",
 										display: "flex",
@@ -329,6 +330,11 @@ const AddModal: React.FC = () => {
 					<Tab
 						value="bulk"
 						label={t("components.AddModal.bulkTab", "批量导入")}
+						disabled={isBusy}
+					/>
+					<Tab
+						value="steam"
+						label={t("components.AddModal.steamTab", "Steam 导入")}
 						disabled={isBusy}
 					/>
 				</Tabs>
@@ -435,6 +441,10 @@ const AddModal: React.FC = () => {
 					onScanModeChange={setScanMode}
 					scanMaxDepth={scanMaxDepth}
 					onScanMaxDepthChange={setScanMaxDepth}
+				/>
+				<SteamImportTab
+					hidden={activeTab !== "steam"}
+					onClose={handleCloseModal}
 				/>
 				{activeTab === "single" && (
 					<DialogActions>

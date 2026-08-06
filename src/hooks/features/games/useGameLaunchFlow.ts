@@ -59,6 +59,11 @@ export function useGameLaunchFlow() {
 	const runLaunch = useCallback(
 		async (game: GameData) => {
 			try {
+				if (game.launch_type === "steam") {
+					const result = await launchGame(game.id);
+					if (!result.success) snackbar.error(result.message);
+					return;
+				}
 				if (!game.localpath) {
 					await syncLocalPath(game);
 					return;

@@ -23,6 +23,11 @@ pub struct Model {
     pub localpath: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub executable: Option<String>,
+    #[sea_orm(column_type = "Text")]
+    pub launch_type: String,
+    pub steam_app_id: Option<i64>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub steam_process_path: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub savepath: Option<String>,
     pub autosave: Option<i32>,

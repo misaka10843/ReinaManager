@@ -28,7 +28,11 @@ import {
 } from "@/services/game/gameRuntime";
 import { initGameTimeTracking } from "@/services/game/gameStats";
 import { useStore } from "@/store/appStore";
-import type { StopGameResult, TimeTrackingMode } from "@/types";
+import type {
+	SteamLaunchStage,
+	StopGameResult,
+	TimeTrackingMode,
+} from "@/types";
 import { toError } from "@/utils/errors";
 
 /**
@@ -45,6 +49,11 @@ interface LaunchGameResult {
  */
 interface GameRealTimeState {
 	isRunning: boolean;
+	lifecycle: "launching" | "running";
+	steamStage?: SteamLaunchStage;
+	progressCurrent?: number;
+	progressTotal?: number | null;
+	detectedSteamProcessPath?: string;
 	currentSessionMinutes: number;
 	currentSessionSeconds: number;
 	startTime: number;
@@ -134,10 +143,11 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
 				const newRealTimeStates = {
 					...state.gameRealTimeStates,
 					[gameId]: {
-						isRunning: true,
+						isRunning: false,
+						lifecycle: "launching",
 						currentSessionMinutes: 0,
 						currentSessionSeconds: 0,
-						startTime: Math.floor(Date.now() / 1000),
+						startTime: 0,
 						timeTrackingMode,
 					},
 				};
@@ -266,6 +276,82 @@ export const useGamePlayStore = create<GamePlayState>((set, get) => ({
 							queryKey: gameKeys.idLists(),
 						});
 					}
+				},
+				// 真实游戏进程确认后才进入运行态并开始 elapsed 计时
+				({ gameId, processId, startTime }) => {
+					set((state) => {
+						const current = state.gameRealTimeStates[gameId];
+						const runningGameIds = new Set(state.runningGameIds);
+						runningGameIds.add(gameId);
+						const base = current ?? {
+							isRunning: false,
+							lifecycle: "launching" as const,
+							currentSessionMinutes: 0,
+							currentSessionSeconds: 0,
+							startTime: 0,
+							timeTrackingMode: useStore.getState().timeTrackingMode,
+						};
+						return {
+							runningGameIds,
+							gameRealTimeStates: {
+								...state.gameRealTimeStates,
+								[gameId]: {
+									...base,
+									isRunning: true,
+									lifecycle: "running",
+									steamStage: "running",
+									processId,
+									startTime,
+								},
+							},
+						};
+					});
+				},
+				({ gameId, status, stage, progressCurrent, progressTotal }) => {
+					if (status === "failed" || status === "cancelled") {
+						set((state) => removeGameRuntimeState(state, gameId));
+						return;
+					}
+					set((state) => {
+						const current = state.gameRealTimeStates[gameId];
+						const runningGameIds = new Set(state.runningGameIds);
+						runningGameIds.add(gameId);
+						const base = current ?? {
+							isRunning: false,
+							lifecycle: "launching" as const,
+							currentSessionMinutes: 0,
+							currentSessionSeconds: 0,
+							startTime: 0,
+							timeTrackingMode: useStore.getState().timeTrackingMode,
+						};
+						return {
+							runningGameIds,
+							gameRealTimeStates: {
+								...state.gameRealTimeStates,
+								[gameId]: {
+									...base,
+									steamStage: stage as SteamLaunchStage,
+									progressCurrent,
+									progressTotal,
+								},
+							},
+						};
+					});
+				},
+				({ gameId, processPath }) => {
+					set((state) => {
+						const current = state.gameRealTimeStates[gameId];
+						if (!current) return state;
+						return {
+							gameRealTimeStates: {
+								...state.gameRealTimeStates,
+								[gameId]: {
+									...current,
+									detectedSteamProcessPath: processPath,
+								},
+							},
+						};
+					});
 				},
 			);
 
