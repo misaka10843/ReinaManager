@@ -1,0 +1,82 @@
+name: Issue Quality Check
+
+on:
+  issues:
+    types:
+      - opened
+      - edited
+
+permissions:
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Issue Quality
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const body = issue.body || "";
+            const number = issue.number;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const trollWords = ["没有阅读 Issue", "随意点击提交", "无条件关闭", "did not read the issue template", "submitted this randomly"];
+            const trollCount = trollWords.filter(word => body.includes(word)).length;
+            if (trollCount >= 2) {
+            	await github.rest.issues.update({
+            		owner,
+            		repo,
+            		issue_number: number,
+            		state: "closed"
+            	});
+            	await github.rest.issues.createComment({
+            		owner,
+            		repo,
+            		issue_number: number,
+            		body: 
+                        `
+                        🤡Issue closed automatically.
+                        This issue triggered the invalid submission confirmation.
+                        Please read the issue template before submitting again.
+                        `
+            	});
+            	return
+            }
+            const labels = issue.labels.map(label => label.name);
+            const isFeature = labels.includes("enhancement");
+            if (isFeature) {
+            	const aiPatterns = ["提升用户体验", "显著提高", "赋能", "生态", "智能化", "未来发展", "非常重要", "improve user experience", "ecosystem", "significantly improve", "enhance"];
+            	let score = 0;
+            	for (const pattern of aiPatterns) {
+            		if (body.toLowerCase().includes(pattern.toLowerCase())) {
+            			score++
+            		}
+            	}
+            	if (body.length < 200) {
+            		score++
+            	}
+            	if (score >= 3) {
+            		await github.rest.issues.addLabels({
+            			owner,
+            			repo,
+            			issue_number: number,
+            			labels: ["needs-info"]
+            		});
+            		await github.rest.issues.createComment({
+            			owner,
+            			repo,
+            			issue_number: number,
+            			body: 
+                            `
+                            ⚠️More information is required.
+                            This feature request looks too generic.
+                            Please explain:
+                            -What problem are you actually facing?
+                            -What is your real usage scenario?
+                            -Why can the current features not solve this?
+                            Please provide concrete details instead of general descriptions.`
+            		})
+            	}
+            }
