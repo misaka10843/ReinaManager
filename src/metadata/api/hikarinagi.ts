@@ -20,7 +20,6 @@ import http, {
 } from "./http";
 
 const HIKARINAGI_API_BASE_URL = "https://www.hikarinagi.org/api/v3/open";
-const HIKARINAGI_CDN_BASE_URL = "https://images.yurari.moe/";
 
 const HIKARINAGI_JSON_HEADERS = {
 	Accept: "application/json",
@@ -39,10 +38,12 @@ interface HikarinagiGameResponse {
 	aliases?: string[];
 	covers?: HikarinagiCover[];
 	id: number;
-	images?: HikarinagiCover[];
 	nsfw?: boolean;
 	origin_intro?: string | null;
 	origin_title?: string;
+	rating?: {
+		score?: number | null;
+	} | null;
 	release_date?: string | null;
 	tags?: Array<{ name?: string }>;
 	trans_intro?: string | null;
@@ -62,7 +63,15 @@ interface HikarinagiSearchResponse {
 	items?: HikarinagiSearchHit[];
 }
 
+export interface HikarinagiMediaAsset {
+	height: number;
+	id: number;
+	src: string;
+	width: number;
+}
+
 export interface HikarinagiUserProfile {
+	avatar?: HikarinagiMediaAsset | null;
 	id: number;
 	name: string;
 }
@@ -121,12 +130,6 @@ function buildHikarinagiOptions(
 	};
 }
 
-function resolveHikarinagiAssetUrl(url?: string | null) {
-	if (!url) return undefined;
-	if (/^https?:\/\//i.test(url)) return url;
-	return new URL(url, HIKARINAGI_CDN_BASE_URL).toString();
-}
-
 function normalizeText(value?: string | null) {
 	const text = value?.trim();
 	return text || undefined;
@@ -141,45 +144,45 @@ function isChineseLanguage() {
 	return language === "zh" || language.startsWith("zh-");
 }
 
-function toHikarinagiData(
-	game: HikarinagiGameResponse,
-	searchHit?: HikarinagiSearchHit,
-): HikarinagiData {
-	const originTitle =
-		normalizeText(game.origin_title) ?? normalizeText(searchHit?.title);
+function toHikarinagiData(game: HikarinagiGameResponse): HikarinagiData {
 	const translatedTitle = normalizeText(game.trans_title);
 	const originIntro = normalizeText(game.origin_intro);
 	const translatedIntro = normalizeText(game.trans_intro);
 	const summary = isChineseLanguage()
 		? (translatedIntro ?? originIntro)
 		: (originIntro ?? translatedIntro);
-	const cover =
-		game.covers?.[0]?.url ?? game.images?.[0]?.url ?? searchHit?.cover?.url;
 
 	return {
-		image: resolveHikarinagiAssetUrl(cover),
-		name: originTitle,
+		image: game.covers?.[0]?.url,
+		name: normalizeText(game.origin_title),
 		name_cn: translatedTitle,
 		aliases: game.aliases,
 		summary,
 		tags: game.tags?.flatMap((tag) => (tag.name ? [tag.name] : [])),
-		developer: normalizeText(searchHit?.developer),
+		score: game.rating?.score,
 		nsfw: game.nsfw,
-		date:
-			normalizeDate(game.release_date) ?? normalizeDate(searchHit?.subtitle),
+		date: normalizeDate(game.release_date),
 	};
 }
 
-function toHikarinagiDraft(
-	game: HikarinagiGameResponse,
-	searchHit?: HikarinagiSearchHit,
-): GameMetadataDraft {
+function toHikarinagiSearchData(
+	searchHit: HikarinagiSearchHit,
+): HikarinagiData {
+	return {
+		image: searchHit.cover?.url,
+		name: normalizeText(searchHit.title),
+		developer: normalizeText(searchHit.developer),
+		date: normalizeDate(searchHit.subtitle),
+	};
+}
+
+function toHikarinagiDraft(game: HikarinagiGameResponse): GameMetadataDraft {
 	return createGameCandidate({
 		idType: "hikarinagi",
 		source: createSourceCandidateRecord(
 			"hikarinagi",
 			String(game.id),
-			toHikarinagiData(game, searchHit),
+			toHikarinagiData(game),
 		),
 	});
 }
@@ -229,12 +232,7 @@ export async function fetchHikarinagiByName(
 	return (search?.items ?? [])
 		.filter((item) => item.type === "galgame" && item.id)
 		.map((item) => {
-			const data = toHikarinagiData(
-				{
-					id: item.id,
-				},
-				item,
-			);
+			const data = toHikarinagiSearchData(item);
 			return createSourceCandidate({
 				source: "hikarinagi",
 				externalId: String(item.id),
@@ -345,6 +343,7 @@ export function getHikarinagiDataDisplayFields(
 		name_cn: data.name_cn,
 		summary: data.summary,
 		tags: data.tags ?? [],
+		score: data.score ?? undefined,
 		developer: data.developer,
 		aliases: data.aliases ?? [],
 		nsfw: data.nsfw,

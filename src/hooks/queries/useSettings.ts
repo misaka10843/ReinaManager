@@ -13,6 +13,7 @@ import {
 } from "@tanstack/react-query";
 import { useCallback } from "react";
 import { fetchCurrentUserProfile } from "@/metadata/api/bgm";
+import { fetchHikarinagiCurrentUserProfile } from "@/metadata/api/hikarinagi";
 import { fetchVndbCurrentUserProfile } from "@/metadata/api/vndb";
 import { remoteQueryOptions } from "@/providers/queryClient";
 import { settingsService } from "@/services/invoke";
@@ -30,6 +31,10 @@ export const settingsKeys = {
 		[...settingsKeys.all, "bgmCurrentUserProfile"] as const,
 	bgmCurrentUserProfileByToken: (token: string) =>
 		[...settingsKeys.bgmCurrentUserProfile(), token] as const,
+	hikarinagiCurrentUserProfile: () =>
+		[...settingsKeys.all, "hikarinagiCurrentUserProfile"] as const,
+	hikarinagiCurrentUserProfileByToken: (token: string) =>
+		[...settingsKeys.hikarinagiCurrentUserProfile(), token] as const,
 	vndbCurrentUserProfile: () =>
 		[...settingsKeys.all, "vndbCurrentUserProfile"] as const,
 	vndbCurrentUserProfileByToken: (token: string) =>
@@ -95,6 +100,27 @@ export function useVndbCurrentUserProfile(options?: SettingsQueryOptions) {
 		queryFn: () =>
 			fetchVndbCurrentUserProfile(vndbToken, getNetworkRequestContext()),
 		enabled: (options?.enabled ?? true) && Boolean(vndbToken),
+		...remoteQueryOptions,
+	});
+}
+
+/**
+ * 获取当前 Hikarinagi Token 对应的用户资料
+ */
+export function useHikarinagiCurrentUserProfile(
+	options?: SettingsQueryOptions,
+) {
+	const { data: settings } = useAllSettings(options);
+	const hikarinagiToken = settings?.hikarinagi_auth?.access_token ?? "";
+
+	return useQuery({
+		queryKey: settingsKeys.hikarinagiCurrentUserProfileByToken(hikarinagiToken),
+		queryFn: () =>
+			fetchHikarinagiCurrentUserProfile(
+				hikarinagiToken,
+				getNetworkRequestContext(),
+			),
+		enabled: (options?.enabled ?? true) && Boolean(hikarinagiToken),
 		...remoteQueryOptions,
 	});
 }

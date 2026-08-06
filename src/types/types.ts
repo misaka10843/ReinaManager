@@ -186,6 +186,7 @@ export interface HikarinagiData {
 	aliases?: string[];
 	summary?: string;
 	tags?: string[];
+	score?: number | null;
 	developer?: string;
 	nsfw?: boolean;
 	date?: string;
@@ -216,6 +217,7 @@ export interface SourceScores {
 	bgm?: number;
 	vndb?: number;
 	erogamescape?: number;
+	hikarinagi?: number;
 }
 
 // ==================== 游戏数据类型（DTO 三位一体） ====================

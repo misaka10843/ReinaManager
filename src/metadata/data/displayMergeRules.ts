@@ -175,7 +175,10 @@ export function applyMixedSourceDisplay(
 	target.tags = mergeArrays(displays, MIXED_TAG_SOURCES, "tags");
 	target.aliases = mergeArrays(displays, MIXED_ALIAS_SOURCES, "aliases");
 	target.score =
-		displays.bgm?.score ?? displays.erogamescape?.score ?? displays.vndb?.score;
+		displays.bgm?.score ??
+		displays.erogamescape?.score ??
+		displays.vndb?.score ??
+		displays.hikarinagi?.score;
 	target.rank = displays.bgm?.rank;
 	target.all_titles = mergeArrays(displays, MIXED_TITLE_SOURCES, "all_titles");
 	target.average_hours = displays.vndb?.average_hours;

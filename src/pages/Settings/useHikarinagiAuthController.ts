@@ -2,7 +2,11 @@ import { listen } from "@tauri-apps/api/event";
 import { open as openurl } from "@tauri-apps/plugin-shell";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useAllSettings, useUpdateSettings } from "@/hooks/queries/useSettings";
+import {
+	useAllSettings,
+	useHikarinagiCurrentUserProfile,
+	useUpdateSettings,
+} from "@/hooks/queries/useSettings";
 import { completeHikarinagiAuth } from "@/metadata/api/hikarinagi";
 import { snackbar } from "@/providers/snackBar";
 import { settingsService } from "@/services/invoke";
@@ -37,6 +41,7 @@ export function useHikarinagiAuthController() {
 	const { t } = useTranslation();
 	const { data: settings } = useAllSettings();
 	const hikarinagiAuth = settings?.hikarinagi_auth;
+	const { data: hikarinagiProfile } = useHikarinagiCurrentUserProfile();
 	const updateSettingsMutation = useUpdateSettings();
 	const [isOAuthLoading, setIsOAuthLoading] = useState(
 		isHikarinagiOAuthRunning,
@@ -259,6 +264,7 @@ export function useHikarinagiAuthController() {
 
 	return {
 		hikarinagiAuth,
+		hikarinagiProfile,
 		isOAuthLoading,
 		isSaving: updateSettingsMutation.isPending,
 		handleOAuthLogin,
