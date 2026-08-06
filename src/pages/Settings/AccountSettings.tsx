@@ -1,4 +1,5 @@
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import CancelIcon from "@mui/icons-material/Cancel";
 import ClearIcon from "@mui/icons-material/Clear";
 import LoginIcon from "@mui/icons-material/Login";
 import {
@@ -30,9 +31,10 @@ import {
 import { getBgmAvatarUrl } from "@/metadata/api/bgm";
 import { snackbar } from "@/providers/snackBar";
 import { useStore } from "@/store/appStore";
-import type { BgmAuth } from "@/types";
+import type { BgmAuth, HikarinagiAuth } from "@/types";
 import { SettingsGroup, SettingsItem } from "./SettingsLayout";
 import { useBgmAuthController } from "./useBgmAuthController";
+import { useHikarinagiAuthController } from "./useHikarinagiAuthController";
 
 // ==================== BGM Token 设置 ====================
 
@@ -180,11 +182,13 @@ const BgmAccountSummary = ({
 type BgmOAuthLoginButtonProps = {
 	isLoading: boolean;
 	onLogin: () => void;
+	onCancel: () => void;
 };
 
 const BgmOAuthLoginButton = ({
 	isLoading,
 	onLogin,
+	onCancel,
 }: BgmOAuthLoginButtonProps) => {
 	const { t } = useTranslation();
 
@@ -192,15 +196,14 @@ const BgmOAuthLoginButton = ({
 		<Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
 			<Button
 				variant="contained"
-				color="primary"
-				startIcon={<LoginIcon />}
-				onClick={onLogin}
-				disabled={isLoading}
+				color={isLoading ? "warning" : "primary"}
+				startIcon={isLoading ? <CancelIcon /> : <LoginIcon />}
+				onClick={isLoading ? onCancel : onLogin}
 			>
 				{isLoading
 					? t(
-							"pages.Settings.bgmTokenSettings.oauthWaiting",
-							"请在浏览器中完成授权...",
+							"pages.Settings.bgmTokenSettings.oauthCancel",
+							"取消 BGM OAuth 登录",
 						)
 					: t("pages.Settings.bgmTokenSettings.oauthLogin", "OAuth 快捷登录")}
 			</Button>
@@ -321,6 +324,7 @@ export const BgmTokenSettings = () => {
 		handleSaveToken,
 		handleClearToken,
 		handleOAuthLogin,
+		handleCancelOAuth,
 		handleCompleteAuth,
 		handleLogout,
 	} = useBgmAuthController();
@@ -360,6 +364,7 @@ export const BgmTokenSettings = () => {
 						<BgmOAuthLoginButton
 							isLoading={isOAuthLoading}
 							onLogin={handleOAuthLogin}
+							onCancel={handleCancelOAuth}
 						/>
 						<BgmTokenLoginPanel
 							inputToken={inputToken}
@@ -370,6 +375,144 @@ export const BgmTokenSettings = () => {
 							onOpenTokenPage={handleOpenTokenPage}
 						/>
 					</Stack>
+				</SettingsItem>
+			</Box>
+		</SettingsGroup>
+	);
+};
+
+// ==================== Hikarinagi OAuth 设置 ====================
+
+type HikarinagiAccountSummaryProps = {
+	auth?: HikarinagiAuth | null;
+	onLogout: () => void;
+};
+
+const HikarinagiAccountSummary = ({
+	auth,
+	onLogout,
+}: HikarinagiAccountSummaryProps) => {
+	const { t } = useTranslation();
+	if (!auth?.access_token) return null;
+
+	const expiresAt = auth.expires_at ?? null;
+	const expiresDate = expiresAt
+		? new Date(expiresAt * 1000).toLocaleString()
+		: null;
+	const isExpired = expiresAt ? Date.now() / 1000 >= expiresAt : false;
+	const displayName = auth.name || `#${auth.user_id ?? "?"}`;
+
+	return (
+		<Stack direction="row" spacing={2} alignItems="flex-start">
+			<Avatar alt={displayName}>{displayName.slice(0, 1).toUpperCase()}</Avatar>
+			<Box className="min-w-0 flex-1">
+				<Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+					<Typography variant="body1" className="font-semibold">
+						{displayName}
+					</Typography>
+					<Chip label="OAuth" size="small" color="success" variant="outlined" />
+				</Stack>
+				{auth.user_id != null && (
+					<Typography
+						variant="caption"
+						color="text.secondary"
+						className="block"
+					>
+						{t("pages.Settings.hikarinagiAuth.userId", "用户 ID: {{id}}", {
+							id: auth.user_id,
+						})}
+					</Typography>
+				)}
+				<Typography
+					variant="caption"
+					color={isExpired ? "error.main" : "text.secondary"}
+					className="block mt-1"
+				>
+					{expiresDate
+						? t(
+								"pages.Settings.hikarinagiAuth.tokenExpiresAt",
+								"Token 有效期至: {{date}}",
+								{
+									date: expiresDate,
+								},
+							)
+						: t(
+								"pages.Settings.hikarinagiAuth.tokenExpiryUnknown",
+								"Token 有效期未知",
+							)}
+				</Typography>
+			</Box>
+			<Button variant="outlined" color="error" size="small" onClick={onLogout}>
+				{t("pages.Settings.hikarinagiAuth.logout", "退出登录")}
+			</Button>
+		</Stack>
+	);
+};
+
+export const HikarinagiAuthSettings = () => {
+	const { t } = useTranslation();
+	const {
+		hikarinagiAuth,
+		isOAuthLoading,
+		isSaving,
+		handleOAuthLogin,
+		handleCancelOAuth,
+		handleLogout,
+	} = useHikarinagiAuthController();
+
+	return (
+		<SettingsGroup
+			title={t("pages.Settings.hikarinagiAuth.title", "Hikarinagi 登录")}
+		>
+			<Box className="space-y-5">
+				<SettingsItem
+					stacked
+					title={t("pages.Settings.hikarinagiAuth.userInfo", "用户信息")}
+				>
+					{hikarinagiAuth?.access_token ? (
+						<HikarinagiAccountSummary
+							auth={hikarinagiAuth}
+							onLogout={handleLogout}
+						/>
+					) : (
+						<Typography variant="caption" color="text.secondary">
+							{t(
+								"pages.Settings.hikarinagiAuth.notLoggedIn",
+								"尚未登录 Hikarinagi。",
+							)}
+						</Typography>
+					)}
+				</SettingsItem>
+				<SettingsItem
+					stacked
+					title={t("pages.Settings.hikarinagiAuth.loginMethods", "登录方式")}
+					description={t(
+						"pages.Settings.hikarinagiAuth.loginMethodsHint",
+						"使用 Hikarinagi OAuth 登录以读取元数据、游玩状态和推送评价。",
+					)}
+				>
+					<Button
+						variant="contained"
+						color={isOAuthLoading ? "warning" : "primary"}
+						startIcon={
+							isSaving ? (
+								<CircularProgress size={18} />
+							) : isOAuthLoading ? (
+								<CancelIcon />
+							) : (
+								<LoginIcon />
+							)
+						}
+						onClick={isOAuthLoading ? handleCancelOAuth : handleOAuthLogin}
+						disabled={isSaving}
+					>
+						{isOAuthLoading
+							? t(
+									"pages.Settings.hikarinagiAuth.oauthCancel",
+									"取消 Hikarinagi OAuth 登录",
+								)
+							: t("pages.Settings.hikarinagiAuth.oauthLogin", "OAuth 快捷登录")}
+					</Button>
 				</SettingsItem>
 			</Box>
 		</SettingsGroup>
@@ -561,12 +704,16 @@ export const CollectionSyncSettings = () => {
 		setSyncBgmCollection,
 		syncVndbCollection,
 		setSyncVndbCollection,
+		syncHikarinagiCollection,
+		setSyncHikarinagiCollection,
 	} = useStore(
 		useShallow((s) => ({
 			syncBgmCollection: s.syncBgmCollection,
 			setSyncBgmCollection: s.setSyncBgmCollection,
 			syncVndbCollection: s.syncVndbCollection,
 			setSyncVndbCollection: s.setSyncVndbCollection,
+			syncHikarinagiCollection: s.syncHikarinagiCollection,
+			setSyncHikarinagiCollection: s.setSyncHikarinagiCollection,
 		})),
 	);
 
@@ -603,6 +750,22 @@ export const CollectionSyncSettings = () => {
 				<Switch
 					checked={syncVndbCollection}
 					onChange={(e) => setSyncVndbCollection(e.target.checked)}
+					color="primary"
+				/>
+			</SettingsItem>
+			<SettingsItem
+				title={t(
+					"pages.Settings.collectionSync.hikarinagiTitle",
+					"启用 Hikarinagi 游玩状态同步",
+				)}
+				description={t(
+					"pages.Settings.collectionSync.hikarinagiDescription",
+					"添加游戏时尝试读取 Hikarinagi 游玩状态，本地修改状态时同步回 Hikarinagi。",
+				)}
+			>
+				<Switch
+					checked={syncHikarinagiCollection}
+					onChange={(e) => setSyncHikarinagiCollection(e.target.checked)}
 					color="primary"
 				/>
 			</SettingsItem>

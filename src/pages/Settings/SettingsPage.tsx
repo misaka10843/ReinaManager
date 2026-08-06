@@ -12,6 +12,7 @@ import { AboutSection } from "./AboutSettings";
 import {
 	BgmTokenSettings,
 	CollectionSyncSettings,
+	HikarinagiAuthSettings,
 	VndbTokenSettings,
 } from "./AccountSettings";
 import {
@@ -102,6 +103,8 @@ export const Settings: React.FC = () => {
 				content: (
 					<>
 						<BgmTokenSettings />
+						<SettingsDivider />
+						<HikarinagiAuthSettings />
 						<SettingsDivider />
 						<VndbTokenSettings />
 						<SettingsDivider />

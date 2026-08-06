@@ -5,12 +5,14 @@ import { useTranslation } from "react-i18next";
 import { useAllSettings, useUpdateSettings } from "@/hooks/queries/useSettings";
 import { buildManualBgmAuth, completeBgmAuth } from "@/metadata/api/bgm";
 import { snackbar } from "@/providers/snackBar";
-import { logoutBgmAuth } from "@/services/bgmAuthSession";
 import { settingsService } from "@/services/invoke";
+import { logoutBgmAuth } from "@/services/oauth/bgmAuthSession";
+import type { OAuthCallbackPayload } from "@/services/oauth/oauthAuthSession";
 import { getNetworkRequestContext } from "@/services/requestContext";
 import { toError } from "@/utils/errors";
 
 let isBgmOAuthRunning = false;
+let bgmOAuthAttemptId = 0;
 let bgmOAuthUnlisteners: Array<() => void> = [];
 const bgmOAuthStatusListeners = new Set<(isLoading: boolean) => void>();
 
@@ -25,6 +27,10 @@ function notifyBgmOAuthStatus() {
 	for (const listener of bgmOAuthStatusListeners) {
 		listener(isBgmOAuthRunning);
 	}
+}
+
+function isCurrentBgmOAuthAttempt(attemptId: number) {
+	return isBgmOAuthRunning && attemptId === bgmOAuthAttemptId;
 }
 
 export function useBgmAuthController() {
@@ -127,22 +133,30 @@ export function useBgmAuthController() {
 			return;
 		}
 
+		const attemptId = ++bgmOAuthAttemptId;
 		try {
 			isBgmOAuthRunning = true;
 			notifyBgmOAuthStatus();
 			const authorizeUrl = await settingsService.bgmOAuthStartLogin();
+			if (!isCurrentBgmOAuthAttempt(attemptId)) {
+				await settingsService.bgmOAuthCancelLogin();
+				return;
+			}
 			clearBgmOAuthListeners();
-			const codeUnlisten = await listen<string>(
+			const codeUnlisten = await listen<OAuthCallbackPayload>(
 				"bgm-oauth-code",
 				async (event) => {
+					if (!isCurrentBgmOAuthAttempt(attemptId)) return;
 					clearBgmOAuthListeners();
 					try {
 						const auth = await settingsService.bgmOAuthExchangeCode(
-							event.payload,
+							event.payload.code,
 						);
+						if (!isCurrentBgmOAuthAttempt(attemptId)) return;
 						await updateSettingsMutation.mutateAsync({
 							bgmAuth: await completeBgmAuth(auth, getNetworkRequestContext()),
 						});
+						if (!isCurrentBgmOAuthAttempt(attemptId)) return;
 						snackbar.success(
 							t(
 								"pages.Settings.bgmTokenSettings.oauthSuccess",
@@ -150,6 +164,7 @@ export function useBgmAuthController() {
 							),
 						);
 					} catch (error) {
+						if (!isCurrentBgmOAuthAttempt(attemptId)) return;
 						console.error(error);
 						snackbar.error(
 							t(
@@ -159,14 +174,24 @@ export function useBgmAuthController() {
 							),
 						);
 					} finally {
-						isBgmOAuthRunning = false;
-						notifyBgmOAuthStatus();
+						if (isCurrentBgmOAuthAttempt(attemptId)) {
+							isBgmOAuthRunning = false;
+							++bgmOAuthAttemptId;
+							notifyBgmOAuthStatus();
+						}
 					}
 				},
 			);
+			if (!isCurrentBgmOAuthAttempt(attemptId)) {
+				codeUnlisten();
+				await settingsService.bgmOAuthCancelLogin();
+				return;
+			}
 			const errorUnlisten = await listen<string>("bgm-oauth-error", (event) => {
+				if (!isCurrentBgmOAuthAttempt(attemptId)) return;
 				clearBgmOAuthListeners();
 				isBgmOAuthRunning = false;
+				++bgmOAuthAttemptId;
 				notifyBgmOAuthStatus();
 				snackbar.error(
 					t(
@@ -176,10 +201,22 @@ export function useBgmAuthController() {
 					),
 				);
 			});
+			if (!isCurrentBgmOAuthAttempt(attemptId)) {
+				codeUnlisten();
+				errorUnlisten();
+				await settingsService.bgmOAuthCancelLogin();
+				return;
+			}
 			bgmOAuthUnlisteners = [codeUnlisten, errorUnlisten];
-			void openurl(authorizeUrl).catch((error) => {
+			void openurl(authorizeUrl).catch(async (error) => {
+				if (!isCurrentBgmOAuthAttempt(attemptId)) return;
 				console.error(error);
 				clearBgmOAuthListeners();
+				const failedAttemptId = ++bgmOAuthAttemptId;
+				await settingsService.bgmOAuthCancelLogin().catch((cancelError) => {
+					console.error(cancelError);
+				});
+				if (failedAttemptId !== bgmOAuthAttemptId) return;
 				isBgmOAuthRunning = false;
 				notifyBgmOAuthStatus();
 				snackbar.error(
@@ -197,8 +234,19 @@ export function useBgmAuthController() {
 				),
 			);
 		} catch (error) {
+			if (!isCurrentBgmOAuthAttempt(attemptId)) {
+				await settingsService.bgmOAuthCancelLogin().catch((cancelError) => {
+					console.error(cancelError);
+				});
+				return;
+			}
 			console.error(error);
 			clearBgmOAuthListeners();
+			const failedAttemptId = ++bgmOAuthAttemptId;
+			await settingsService.bgmOAuthCancelLogin().catch((cancelError) => {
+				console.error(cancelError);
+			});
+			if (failedAttemptId !== bgmOAuthAttemptId) return;
 			isBgmOAuthRunning = false;
 			notifyBgmOAuthStatus();
 			snackbar.error(
@@ -210,6 +258,39 @@ export function useBgmAuthController() {
 			);
 		}
 	}, [t, updateSettingsMutation]);
+
+	const handleCancelOAuth = useCallback(async () => {
+		if (!isBgmOAuthRunning) return;
+
+		const cancelAttemptId = ++bgmOAuthAttemptId;
+		clearBgmOAuthListeners();
+		try {
+			await settingsService.bgmOAuthCancelLogin();
+			if (cancelAttemptId !== bgmOAuthAttemptId) return;
+			snackbar.info(
+				t(
+					"pages.Settings.bgmTokenSettings.oauthCancelled",
+					"BGM OAuth 登录已取消",
+				),
+			);
+		} catch (error) {
+			if (cancelAttemptId !== bgmOAuthAttemptId) return;
+			console.error(error);
+			snackbar.error(
+				t(
+					"pages.Settings.bgmTokenSettings.oauthCancelError",
+					"取消 BGM OAuth 登录失败: {{error}}",
+					{ error: toError(error).message },
+				),
+			);
+		} finally {
+			if (cancelAttemptId === bgmOAuthAttemptId) {
+				isBgmOAuthRunning = false;
+				++bgmOAuthAttemptId;
+				notifyBgmOAuthStatus();
+			}
+		}
+	}, [t]);
 
 	const handleCompleteAuth = useCallback(async () => {
 		if (!bgmAuth?.access_token) return;
@@ -265,6 +346,7 @@ export function useBgmAuthController() {
 		handleSaveToken,
 		handleClearToken,
 		handleOAuthLogin,
+		handleCancelOAuth,
 		handleCompleteAuth,
 		handleLogout,
 	};
