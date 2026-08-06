@@ -39,7 +39,7 @@ function isCurrentHikarinagiOAuthAttempt(attemptId: number) {
 
 export function useHikarinagiAuthController() {
 	const { t } = useTranslation();
-	const { data: settings } = useAllSettings();
+	const { data: settings, isLoading: isSettingsLoading } = useAllSettings();
 	const hikarinagiAuth = settings?.hikarinagi_auth;
 	const { data: hikarinagiProfile } = useHikarinagiCurrentUserProfile();
 	const updateSettingsMutation = useUpdateSettings();
@@ -265,6 +265,7 @@ export function useHikarinagiAuthController() {
 	return {
 		hikarinagiAuth,
 		hikarinagiProfile,
+		isSettingsLoading,
 		isOAuthLoading,
 		isSaving: updateSettingsMutation.isPending,
 		handleOAuthLogin,

@@ -35,7 +35,7 @@ function isCurrentBgmOAuthAttempt(attemptId: number) {
 
 export function useBgmAuthController() {
 	const { t } = useTranslation();
-	const { data: settings } = useAllSettings();
+	const { data: settings, isLoading: isSettingsLoading } = useAllSettings();
 	const bgmAuth = settings?.bgm_auth;
 	const bgmToken = bgmAuth?.access_token ?? "";
 	const updateSettingsMutation = useUpdateSettings();
@@ -337,6 +337,7 @@ export function useBgmAuthController() {
 
 	return {
 		bgmAuth,
+		isSettingsLoading,
 		inputToken,
 		isOAuthLoading,
 		isCompletingAuth,
