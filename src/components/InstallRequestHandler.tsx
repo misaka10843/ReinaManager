@@ -27,7 +27,6 @@ import { useTaskCache } from "@/hooks/queries/useTasks";
 import { buildInsertGameData } from "@/metadata/data/metadata";
 import { queryClient } from "@/providers/queryClient";
 import { snackbar } from "@/providers/snackBar";
-import { withBgmAuth } from "@/services/bgmAuthSession";
 import { handleFolder } from "@/services/fs/fileDialog";
 import {
 	type GameInstallMetadataRequestedEvent,
@@ -38,6 +37,7 @@ import {
 	type TaskProgressEvent,
 	taskService,
 } from "@/services/invoke";
+import { withBgmAuth } from "@/services/oauth/bgmAuthSession";
 import { createMetadataSession } from "@/services/requestContext";
 import { getUserErrorMessage } from "@/utils/errors";
 import { formatFileSize } from "@/utils/fileSize";

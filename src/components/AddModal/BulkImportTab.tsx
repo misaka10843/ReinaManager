@@ -29,9 +29,12 @@ import { useMetadataSearchFlow } from "@/hooks/features/games/useMetadataSearchF
 import { useAllSettings } from "@/hooks/queries/useSettings";
 import { getRuntimeSourceAdapter, SEARCHABLE_SOURCE_KEYS } from "@/metadata";
 import { snackbar } from "@/providers/snackBar";
-import { isBgmAuthExpiredError, withBgmAuth } from "@/services/bgmAuthSession";
 import { handleFolder } from "@/services/fs/fileDialog";
 import { fileService } from "@/services/invoke";
+import {
+	isBgmAuthExpiredError,
+	withBgmAuth,
+} from "@/services/oauth/bgmAuthSession";
 import { createMetadataSession } from "@/services/requestContext";
 import { useStore } from "@/store/appStore";
 import type { GameMetadataDraft, GameScanMode, SourceType } from "@/types";

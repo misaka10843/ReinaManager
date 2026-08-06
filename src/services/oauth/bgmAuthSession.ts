@@ -3,26 +3,21 @@ import { settingsKeys } from "@/hooks/queries/useSettings";
 import { queryClient } from "@/providers/queryClient";
 import { snackbar } from "@/providers/snackBar";
 import { settingsService, type UserSettings } from "@/services/invoke";
+import {
+	isOAuthAuthRefreshDue,
+	isRefreshCredentialError,
+	nowUnixSeconds,
+} from "@/services/oauth/oauthAuthSession";
 import type { BgmAuth } from "@/types";
-import { AppError, isHttpStatus, toError } from "@/utils/errors";
-
-const BGM_REFRESH_THRESHOLD_SECONDS = 2 * 24 * 60 * 60;
+import { AppError, isHttpStatus } from "@/utils/errors";
 
 let bgmRefreshPromise: Promise<BgmAuth | null> | null = null;
-
-export function nowUnixSeconds() {
-	return Math.floor(Date.now() / 1000);
-}
 
 export function isBgmAuthRefreshDue(
 	auth: BgmAuth | null | undefined,
 	now = nowUnixSeconds(),
 ) {
-	return Boolean(
-		auth?.refresh_token &&
-			auth.expires_at != null &&
-			auth.expires_at <= now + BGM_REFRESH_THRESHOLD_SECONDS,
-	);
+	return isOAuthAuthRefreshDue(auth, now);
 }
 
 function getCachedSettings() {
@@ -50,16 +45,6 @@ function getReloginMessage() {
 	return i18next.t(
 		"pages.Settings.bgmTokenSettings.reloginRequired",
 		"Bangumi 登录已失效，请重新登录。",
-	);
-}
-
-function isRefreshCredentialError(error: unknown) {
-	const message = toError(error).message.toLowerCase();
-	return (
-		isHttpStatus(error, 400) ||
-		isHttpStatus(error, 401) ||
-		message.includes("invalid_grant") ||
-		message.includes("unauthorized")
 	);
 }
 
