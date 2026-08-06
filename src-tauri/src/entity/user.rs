@@ -17,6 +17,17 @@ pub struct BgmAuth {
     pub nickname: Option<String>,
 }
 
+/// Hikarinagi OIDC/PKCE 授权信息。
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, FromJsonQueryResult)]
+#[serde(default)]
+pub struct HikarinagiAuth {
+    pub access_token: String,
+    pub refresh_token: Option<String>,
+    pub expires_at: Option<i64>,
+    pub user_id: Option<i64>,
+    pub name: Option<String>,
+}
+
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "user")]
 pub struct Model {
@@ -24,6 +35,8 @@ pub struct Model {
     pub id: i32,
     #[sea_orm(column_type = "Text", nullable)]
     pub bgm_auth: Option<BgmAuth>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub hikarinagi_auth: Option<HikarinagiAuth>,
     #[sea_orm(column_type = "Text", nullable)]
     pub vndb_token: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
