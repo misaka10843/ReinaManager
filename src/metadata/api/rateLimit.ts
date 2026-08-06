@@ -4,7 +4,8 @@ export type ApiRateLimitSource =
 	| "ymgal"
 	| "kun"
 	| "dlsite"
-	| "erogamescape";
+	| "erogamescape"
+	| "hikarinagi";
 
 interface ApiRateLimitPolicy {
 	source: ApiRateLimitSource;
@@ -98,6 +99,14 @@ const API_RATE_LIMIT_POLICIES: Record<ApiRateLimitSource, ApiRateLimitPolicy> =
 			max429Retries: 0,
 			stopOn429: true,
 		},
+		hikarinagi: {
+			source: "hikarinagi",
+			minIntervalMs: 500,
+			defaultBackoffMs: 0,
+			maxBackoffMs: 0,
+			max429Retries: 0,
+			stopOn429: true,
+		},
 	};
 
 const rateLimitStates: Record<ApiRateLimitSource, ApiRateLimitState> = {
@@ -107,6 +116,7 @@ const rateLimitStates: Record<ApiRateLimitSource, ApiRateLimitState> = {
 	kun: createInitialState(),
 	dlsite: createInitialState(),
 	erogamescape: createInitialState(),
+	hikarinagi: createInitialState(),
 };
 
 const listeners = new Set<ApiRateLimitListener>();

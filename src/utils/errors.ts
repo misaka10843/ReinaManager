@@ -22,7 +22,8 @@ type ApiRateLimitSource =
 	| "ymgal"
 	| "kun"
 	| "dlsite"
-	| "erogamescape";
+	| "erogamescape"
+	| "hikarinagi";
 
 interface AppErrorOptions {
 	code: AppErrorCode | string;

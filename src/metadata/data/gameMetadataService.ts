@@ -43,6 +43,7 @@ import {
 } from "./metadata";
 
 const mixedIdTypePriority: readonly SourceType[] = [
+	"hikarinagi",
 	"kun",
 	"ymgal",
 	"vndb",

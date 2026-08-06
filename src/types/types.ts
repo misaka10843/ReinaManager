@@ -57,12 +57,20 @@ export interface ScanResult {
 
 export type GameScanMode = "executable" | "first_level_directory";
 
-export interface BgmAuth {
+export interface OAuthAuth {
 	access_token: string;
 	refresh_token?: Nullable<string>;
 	expires_at?: Nullable<number>;
+}
+
+export interface BgmAuth extends OAuthAuth {
 	username?: Nullable<string>;
 	nickname?: Nullable<string>;
+}
+
+export interface HikarinagiAuth extends OAuthAuth {
+	user_id?: Nullable<number>;
+	name?: Nullable<string>;
 }
 
 // ==================== 元数据结构 ====================
@@ -169,6 +177,21 @@ export interface ErogameScapeData {
 }
 
 /**
+ * Hikarinagi 数据结构（JSON 列嵌入 games 表）
+ */
+export interface HikarinagiData {
+	image?: string;
+	name?: string;
+	name_cn?: string;
+	aliases?: string[];
+	summary?: string;
+	tags?: string[];
+	developer?: string;
+	nsfw?: boolean;
+	date?: string;
+}
+
+/**
  * 自定义数据结构（JSON 列嵌入 games 表）
  *
  * 用于用户手动添加的游戏或自定义元数据
@@ -204,6 +227,7 @@ export const SOURCE_TYPES = [
 	"kun",
 	"dlsite",
 	"erogamescape",
+	"hikarinagi",
 ] as const;
 export type SourceType = (typeof SOURCE_TYPES)[number];
 
@@ -333,6 +357,7 @@ export interface UpdateGameParams {
  */
 export interface UpdateSettingsParams {
 	bgmAuth?: Nullable<BgmAuth>;
+	hikarinagiAuth?: Nullable<HikarinagiAuth>;
 	vndbToken?: Nullable<string>;
 	saveRootPath?: Nullable<string>;
 	dbBackupPath?: Nullable<string>;

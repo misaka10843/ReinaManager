@@ -100,7 +100,7 @@ async function parseTauriResponse<T>(
 }
 
 async function requestTauriHttp<T>(
-	method: "GET" | "POST" | "PATCH",
+	method: "GET" | "POST" | "PATCH" | "PUT",
 	url: string,
 	options?: TauriHttpOptions,
 	data?: unknown,
@@ -226,6 +226,7 @@ function inferRateLimitSource(url: string): ApiRateLimitSource | undefined {
 		if (host === "www.kungal.com") return "kun";
 		if (host === "www.dlsite.com") return "dlsite";
 		if (host === "erogamescape.org") return "erogamescape";
+		if (host === "www.hikarinagi.org") return "hikarinagi";
 	} catch {
 		return undefined;
 	}
@@ -245,6 +246,8 @@ function getApiRateLimitErrorMessage(source: ApiRateLimitSource): string {
 			return "DLsite 请求被限速，请稍后重试";
 		case "erogamescape":
 			return "ErogameScape 请求被限速，请稍后重试";
+		case "hikarinagi":
+			return "Hikarinagi 请求被限速，请稍后重试";
 	}
 }
 
@@ -298,6 +301,14 @@ export const tauriHttp = {
 		options?: TauriHttpOptions,
 	) {
 		return requestTauriHttp<T>("PATCH", url, options, data);
+	},
+
+	async put<T = unknown>(
+		url: string,
+		data?: unknown,
+		options?: TauriHttpOptions,
+	) {
+		return requestTauriHttp<T>("PUT", url, options, data);
 	},
 };
 

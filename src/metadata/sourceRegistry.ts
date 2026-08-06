@@ -2,6 +2,7 @@ import type {
 	BgmData,
 	DlsiteData,
 	ErogameScapeData,
+	HikarinagiData,
 	KunData,
 	SourceType,
 	VndbData,
@@ -10,6 +11,7 @@ import type {
 import { bgmAdapter } from "./adapters/bgmAdapter";
 import { dlsiteAdapter } from "./adapters/dlsiteAdapter";
 import { erogamescapeAdapter } from "./adapters/erogamescapeAdapter";
+import { hikarinagiAdapter } from "./adapters/hikarinagiAdapter";
 import { kunAdapter } from "./adapters/kunAdapter";
 import { vndbAdapter } from "./adapters/vndbAdapter";
 import { ymgalAdapter } from "./adapters/ymgalAdapter";
@@ -36,6 +38,7 @@ export type SourceAdapterMap = {
 	kun: MetadataSourceAdapter<KunData>;
 	dlsite: MetadataSourceAdapter<DlsiteData>;
 	erogamescape: MetadataSourceAdapter<ErogameScapeData>;
+	hikarinagi: MetadataSourceAdapter<HikarinagiData>;
 };
 
 export const SOURCE_ADAPTERS = {
@@ -45,6 +48,7 @@ export const SOURCE_ADAPTERS = {
 	kun: kunAdapter,
 	dlsite: dlsiteAdapter,
 	erogamescape: erogamescapeAdapter,
+	hikarinagi: hikarinagiAdapter,
 } as const satisfies SourceAdapterMap;
 
 export type RegisteredSourceAdapter = SourceAdapterMap[SourceType];

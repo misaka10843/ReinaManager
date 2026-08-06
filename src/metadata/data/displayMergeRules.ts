@@ -7,6 +7,7 @@ import {
 } from "../sourceRegistry";
 
 export const SOURCE_COVER_PRIORITY: readonly SourceType[] = [
+	"hikarinagi",
 	"bgm",
 	"vndb",
 	"erogamescape",
@@ -18,12 +19,14 @@ export const SOURCE_COVER_PRIORITY: readonly SourceType[] = [
 const BASIC_FIELD_PRIORITY: readonly SourceType[] = [
 	"bgm",
 	"vndb",
+	"hikarinagi",
 	"dlsite",
 	"erogamescape",
 	"ymgal",
 	"kun",
 ];
 const SUMMARY_PRIORITY: readonly SourceType[] = [
+	"hikarinagi",
 	"ymgal",
 	"bgm",
 	"kun",
@@ -36,10 +39,12 @@ const DEVELOPER_PRIORITY: readonly SourceType[] = [
 	"kun",
 	"dlsite",
 	"ymgal",
+	"hikarinagi",
 	"bgm",
 ];
 const MIXED_TAG_SOURCES: readonly SourceType[] = [
 	"bgm",
+	"hikarinagi",
 	"dlsite",
 	"erogamescape",
 	"vndb",
@@ -48,6 +53,7 @@ const MIXED_TAG_SOURCES: readonly SourceType[] = [
 const MIXED_ALIAS_SOURCES: readonly SourceType[] = [
 	"bgm",
 	"vndb",
+	"hikarinagi",
 	"kun",
 	"ymgal",
 ];

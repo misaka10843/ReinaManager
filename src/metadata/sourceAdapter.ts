@@ -9,6 +9,7 @@ export const DEFAULT_METADATA_SEARCH_LIMIT = 8;
 export interface MetadataRequestContext extends NetworkRequestContext {
 	spoilerLevel: number;
 	bgmToken?: string;
+	hikarinagiToken?: string;
 }
 
 export interface MetadataSourceContext extends MetadataRequestContext {
