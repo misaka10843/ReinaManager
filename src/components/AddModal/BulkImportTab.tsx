@@ -35,6 +35,10 @@ import {
 	isBgmAuthExpiredError,
 	withBgmAuth,
 } from "@/services/oauth/bgmAuthSession";
+import {
+	isHikarinagiAuthExpiredError,
+	withHikarinagiAuth,
+} from "@/services/oauth/hikarinagiAuthSession";
 import { createMetadataSession } from "@/services/requestContext";
 import { useStore } from "@/store/appStore";
 import type { GameMetadataDraft, GameScanMode, SourceType } from "@/types";
@@ -94,6 +98,7 @@ const BulkImportTab = ({
 	const { t } = useTranslation();
 	const { data: settings } = useAllSettings();
 	const hasBgmAuth = Boolean(settings?.bgm_auth);
+	const hasHikarinagiAuth = Boolean(settings?.hikarinagi_auth?.access_token);
 	const { mixedEnabledSources } = useStore(
 		useShallow((s) => ({
 			mixedEnabledSources: s.mixedEnabledSources,
@@ -274,27 +279,28 @@ const BulkImportTab = ({
 				}
 
 				try {
+					const runSearch = (tokens: {
+						bgmToken?: string;
+						hikarinagiToken?: string;
+					}) =>
+						withAbort(
+							createMetadataSession({
+								...tokens,
+								signal: controller.signal,
+							}).searchBestMatch({
+								query: nextItems[index].name,
+								source: bulkApiSource,
+							}),
+						);
+
 					const matchedData =
 						bulkApiSource === "bgm"
-							? await withBgmAuth((token) =>
-									withAbort(
-										createMetadataSession({
-											bgmToken: token,
-											signal: controller.signal,
-										}).searchBestMatch({
-											query: nextItems[index].name,
-											source: bulkApiSource,
-										}),
-									),
-								)
-							: await withAbort(
-									createMetadataSession({
-										signal: controller.signal,
-									}).searchBestMatch({
-										query: nextItems[index].name,
-										source: bulkApiSource,
-									}),
-								);
+							? await withBgmAuth((token) => runSearch({ bgmToken: token }))
+							: bulkApiSource === "hikarinagi"
+								? await withHikarinagiAuth((token) =>
+										runSearch({ hikarinagiToken: token }),
+									)
+								: await runSearch({});
 
 					if (matchedData) {
 						nextItems[index].matchedData = matchedData;
@@ -307,6 +313,9 @@ const BulkImportTab = ({
 						break;
 					}
 					if (isBgmAuthExpiredError(error)) {
+						break;
+					}
+					if (isHikarinagiAuthExpiredError(error)) {
 						break;
 					}
 					if (isApiRateLimitError(error)) {
@@ -563,7 +572,10 @@ const BulkImportTab = ({
 									<MenuItem
 										key={option.value}
 										value={option.value}
-										disabled={option.value === "bgm" && !hasBgmAuth}
+										disabled={
+											(option.value === "bgm" && !hasBgmAuth) ||
+											(option.value === "hikarinagi" && !hasHikarinagiAuth)
+										}
 									>
 										{option.label}
 									</MenuItem>
@@ -707,7 +719,8 @@ const BulkImportTab = ({
 						disabled={
 							items.length === 0 ||
 							loading ||
-							(bulkApiSource === "bgm" && !hasBgmAuth)
+							(bulkApiSource === "bgm" && !hasBgmAuth) ||
+							(bulkApiSource === "hikarinagi" && !hasHikarinagiAuth)
 						}
 					>
 						{t("components.BulkImportModal.matchMetadata", "匹配元数据")}

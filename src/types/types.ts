@@ -225,11 +225,11 @@ export interface SourceScores {
 export const SOURCE_TYPES = [
 	"bgm",
 	"vndb",
+	"hikarinagi",
 	"ymgal",
 	"kun",
 	"dlsite",
 	"erogamescape",
-	"hikarinagi",
 ] as const;
 export type SourceType = (typeof SOURCE_TYPES)[number];
 
