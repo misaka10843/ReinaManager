@@ -1,4 +1,5 @@
 import { updateUserCollection } from "@/metadata/api/bgm";
+import { updateHikarinagiGameRate } from "@/metadata/api/hikarinagi";
 import {
 	fetchVndbCurrentUserProfile,
 	updateVndbUserCollection,
@@ -7,19 +8,22 @@ import {
 	getAnySourceId,
 	type SourceIdentityPayload,
 } from "@/metadata/sourceRecord";
-import { withBgmAuth } from "@/services/bgmAuthSession";
 import { getVndbToken } from "@/services/cloudPlayStatus/shared";
+import { withBgmAuth } from "@/services/oauth/bgmAuthSession";
+import { withHikarinagiAuth } from "@/services/oauth/hikarinagiAuthSession";
 import { getNetworkRequestContext } from "@/services/requestContext";
 import { AppError } from "@/utils/errors";
 
-export type UserReviewPushSource = "bgm" | "vndb";
+export type UserReviewPushSource = "bgm" | "vndb" | "hikarinagi";
 
 export interface UserReviewPushPayload {
 	rating: number;
 	review: string;
 	pushBgm: boolean;
 	pushVndb: boolean;
+	pushHikarinagi: boolean;
 	bgmPrivate: boolean;
+	hikarinagiSpoiler: boolean;
 }
 
 export interface UserReviewPushResult {
@@ -128,6 +132,39 @@ export async function pushGameUserReviewToVndb(
 	);
 }
 
+export async function pushGameUserReviewToHikarinagi(
+	game: SourceIdentityPayload,
+	payload: UserReviewPushPayload,
+) {
+	const hikarinagiId = getAnySourceId(game, "hikarinagi");
+	if (!hikarinagiId) {
+		throw new AppError({
+			code: "hikarinagi_id_missing",
+			message: "当前游戏没有 Hikarinagi ID",
+		});
+	}
+
+	return withHikarinagiAuth(async (token) => {
+		if (!token) {
+			throw new AppError({
+				code: "hikarinagi_auth_missing",
+				message: "未配置 Hikarinagi 登录",
+			});
+		}
+
+		return updateHikarinagiGameRate(
+			hikarinagiId,
+			{
+				rate: payload.rating <= 0 ? null : normalizeUserRating(payload.rating),
+				rate_content: getReviewText(payload.review),
+				is_spoiler: payload.hikarinagiSpoiler,
+			},
+			token,
+			getNetworkRequestContext(),
+		);
+	});
+}
+
 async function runPushTarget(
 	source: UserReviewPushSource,
 	push: () => Promise<boolean>,
@@ -154,6 +191,13 @@ export async function pushGameUserReviewToCloud(
 	if (payload.pushVndb) {
 		tasks.push(
 			runPushTarget("vndb", () => pushGameUserReviewToVndb(game, payload)),
+		);
+	}
+	if (payload.pushHikarinagi) {
+		tasks.push(
+			runPushTarget("hikarinagi", () =>
+				pushGameUserReviewToHikarinagi(game, payload),
+			),
 		);
 	}
 

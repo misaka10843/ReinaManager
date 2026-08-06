@@ -3,11 +3,17 @@
  * @description 封装所有用户设置相关的后端调用
  */
 
-import type { BgmAuth, LogLevel, UpdateSettingsParams } from "@/types";
+import type {
+	BgmAuth,
+	HikarinagiAuth,
+	LogLevel,
+	UpdateSettingsParams,
+} from "@/types";
 import { BaseService } from "./base";
 
 export interface UserSettings {
 	bgm_auth?: BgmAuth | null;
+	hikarinagi_auth?: HikarinagiAuth | null;
 	vndb_token?: string | null;
 	save_root_path?: string | null;
 	db_backup_path?: string | null;
@@ -59,12 +65,42 @@ class SettingsService extends BaseService {
 		return this.invoke<string>("bgm_oauth_start_login");
 	}
 
+	async bgmOAuthCancelLogin(): Promise<void> {
+		return this.invoke<void>("bgm_oauth_cancel_login");
+	}
+
 	async bgmOAuthExchangeCode(code: string): Promise<BgmAuth> {
 		return this.invoke<BgmAuth>("bgm_oauth_exchange_code", { code });
 	}
 
 	async bgmOAuthRefreshToken(refreshToken: string): Promise<BgmAuth> {
 		return this.invoke<BgmAuth>("bgm_oauth_refresh_token", { refreshToken });
+	}
+
+	async hikarinagiOAuthStartLogin(): Promise<string> {
+		return this.invoke<string>("hikarinagi_oauth_start_login");
+	}
+
+	async hikarinagiOAuthCancelLogin(): Promise<void> {
+		return this.invoke<void>("hikarinagi_oauth_cancel_login");
+	}
+
+	async hikarinagiOAuthExchangeCode(
+		code: string,
+		codeVerifier: string,
+	): Promise<HikarinagiAuth> {
+		return this.invoke<HikarinagiAuth>("hikarinagi_oauth_exchange_code", {
+			code,
+			codeVerifier,
+		});
+	}
+
+	async hikarinagiOAuthRefreshToken(
+		refreshToken: string,
+	): Promise<HikarinagiAuth> {
+		return this.invoke<HikarinagiAuth>("hikarinagi_oauth_refresh_token", {
+			refreshToken,
+		});
 	}
 }
 

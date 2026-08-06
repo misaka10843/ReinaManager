@@ -2,6 +2,7 @@ import {
 	fetchAllSettings,
 	fetchBgmCurrentUserProfile,
 } from "@/hooks/queries/useSettings";
+import type { HikarinagiStatus } from "@/metadata/api/hikarinagi";
 import type { fetchVndbUserCollection } from "@/metadata/api/vndb";
 import {
 	getAnySourceId,
@@ -13,6 +14,7 @@ import { PlayStatus } from "@/types/collection";
 export interface CloudPlayStatusContext {
 	bgm?: Map<string, PlayStatus>;
 	vndb?: Map<string, PlayStatus>;
+	hikarinagi?: Map<string, PlayStatus>;
 }
 
 const VNDB_STATUS_LABEL_IDS = {
@@ -119,18 +121,58 @@ export function mapPlayStatusToVndbLabelId(status: PlayStatus) {
 	}
 }
 
+export function mapHikarinagiStatusToPlayStatus(
+	status?: HikarinagiStatus | null,
+) {
+	switch (status) {
+		case "GOING":
+			return PlayStatus.PLAYING;
+		case "COMPLETED":
+			return PlayStatus.PLAYED;
+		case "ON_HOLD":
+			return PlayStatus.ON_HOLD;
+		case "DROPPED":
+			return PlayStatus.DROPPED;
+		case "PLAN":
+			return PlayStatus.WISH;
+		default:
+			return undefined;
+	}
+}
+
+export function mapPlayStatusToHikarinagiStatus(
+	status: PlayStatus,
+): HikarinagiStatus {
+	switch (status) {
+		case PlayStatus.PLAYING:
+			return "GOING";
+		case PlayStatus.PLAYED:
+			return "COMPLETED";
+		case PlayStatus.ON_HOLD:
+			return "ON_HOLD";
+		case PlayStatus.DROPPED:
+			return "DROPPED";
+		case PlayStatus.WISH:
+			return "PLAN";
+	}
+}
+
 export function resolveCloudPlayStatusFromContext(
 	game: SourceIdentityPayload,
 	context: CloudPlayStatusContext,
 ) {
 	const bgmId = getAnySourceId(game, "bgm");
 	const vndbId = getAnySourceId(game, "vndb");
+	const hikarinagiId = getAnySourceId(game, "hikarinagi");
 
 	if (bgmId && context.bgm?.has(bgmId)) {
 		return context.bgm.get(bgmId);
 	}
 	if (vndbId && context.vndb?.has(vndbId)) {
 		return context.vndb.get(vndbId);
+	}
+	if (hikarinagiId && context.hikarinagi?.has(hikarinagiId)) {
+		return context.hikarinagi.get(hikarinagiId);
 	}
 	return undefined;
 }

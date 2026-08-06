@@ -4,12 +4,17 @@ import {
 	fetchUserGameCollectionsPage,
 } from "@/metadata/api/bgm";
 import {
+	fetchHikarinagiGameRate,
+	fetchHikarinagiRatesPage,
+} from "@/metadata/api/hikarinagi";
+import {
 	fetchVndbCurrentUserProfile,
 	fetchVndbUserCollection,
 	fetchVndbUserCollectionsPage,
 	type VndbUserCollectionItem,
 } from "@/metadata/api/vndb";
-import { withBgmAuth } from "@/services/bgmAuthSession";
+import { withBgmAuth } from "@/services/oauth/bgmAuthSession";
+import { withHikarinagiAuth } from "@/services/oauth/hikarinagiAuthSession";
 import { getNetworkRequestContext } from "@/services/requestContext";
 import { useStore } from "@/store/appStore";
 import type { PlayStatus } from "@/types/collection";
@@ -18,17 +23,20 @@ import {
 	getBgmUsername,
 	getVndbToken,
 	mapBgmTypeToPlayStatus,
+	mapHikarinagiStatusToPlayStatus,
 	mapVndbCollectionToPlayStatus,
 } from "./shared";
 
 export interface CloudPlayStatusContextInput {
 	bgmIds?: Iterable<string>;
 	vndbIds?: Iterable<string>;
+	hikarinagiIds?: Iterable<string>;
 }
 
-const DIRECT_COLLECTION_LOOKUP_THRESHOLD = 10;
+const DIRECT_COLLECTION_LOOKUP_THRESHOLD = 1;
 const BGM_COLLECTION_PAGE_SIZE = 50;
 const VNDB_COLLECTION_PAGE_SIZE = 100;
+const HIKARINAGI_COLLECTION_PAGE_SIZE = 100;
 
 interface BgmCollectionPage {
 	offset: number;
@@ -277,21 +285,116 @@ async function createVndbPlayStatusMap(ids: Iterable<string>) {
 	}
 }
 
+function appendHikarinagiRatesToStatusMap(
+	statusMap: Map<string, PlayStatus>,
+	rates: Awaited<ReturnType<typeof fetchHikarinagiRatesPage>>["items"],
+) {
+	for (const rate of rates) {
+		const status = mapHikarinagiStatusToPlayStatus(rate.status);
+		if (status !== undefined) {
+			statusMap.set(String(rate.id), status);
+		}
+	}
+}
+
+async function createHikarinagiDirectPlayStatusMap(
+	token: string,
+	ids: string[],
+) {
+	const statusMap = new Map<string, PlayStatus>();
+	for (const id of ids) {
+		const rate = await fetchHikarinagiGameRate(
+			id,
+			token,
+			getNetworkRequestContext(),
+		);
+		const status = mapHikarinagiStatusToPlayStatus(rate?.status);
+		if (status !== undefined) {
+			statusMap.set(id, status);
+		}
+	}
+	return statusMap;
+}
+
+async function createHikarinagiFullPlayStatusMap(
+	token: string,
+	firstPage?: Awaited<ReturnType<typeof fetchHikarinagiRatesPage>>,
+) {
+	const statusMap = new Map<string, PlayStatus>();
+	let page =
+		firstPage ??
+		(await fetchHikarinagiRatesPage(
+			token,
+			{ page: 1, pageSize: HIKARINAGI_COLLECTION_PAGE_SIZE },
+			getNetworkRequestContext(),
+		));
+	appendHikarinagiRatesToStatusMap(statusMap, page.items);
+
+	while (page.meta.page < page.meta.total_pages && page.items.length > 0) {
+		page = await fetchHikarinagiRatesPage(
+			token,
+			{ page: page.meta.page + 1, pageSize: HIKARINAGI_COLLECTION_PAGE_SIZE },
+			getNetworkRequestContext(),
+		);
+		appendHikarinagiRatesToStatusMap(statusMap, page.items);
+	}
+
+	return statusMap;
+}
+
+async function createHikarinagiPlayStatusMap(ids: Iterable<string>) {
+	try {
+		const uniqueIds = [...new Set(ids)].filter(Boolean);
+		if (uniqueIds.length === 0) {
+			return new Map<string, PlayStatus>();
+		}
+
+		return await withHikarinagiAuth(async (token) => {
+			if (!token) return undefined;
+			if (uniqueIds.length <= DIRECT_COLLECTION_LOOKUP_THRESHOLD) {
+				return createHikarinagiDirectPlayStatusMap(token, uniqueIds);
+			}
+
+			const firstPage = await fetchHikarinagiRatesPage(
+				token,
+				{ page: 1, pageSize: HIKARINAGI_COLLECTION_PAGE_SIZE },
+				getNetworkRequestContext(),
+			);
+			const fullFetchRequests = Math.ceil(
+				firstPage.meta.total_items / HIKARINAGI_COLLECTION_PAGE_SIZE,
+			);
+			if (uniqueIds.length < fullFetchRequests) {
+				return createHikarinagiDirectPlayStatusMap(token, uniqueIds);
+			}
+
+			return createHikarinagiFullPlayStatusMap(token, firstPage);
+		});
+	} catch (error) {
+		console.error("获取 Hikarinagi 游玩状态失败:", error);
+		return undefined;
+	}
+}
+
 export async function createCloudPlayStatusContext(
 	input: CloudPlayStatusContextInput = {},
 ): Promise<CloudPlayStatusContext> {
-	const { syncBgmCollection, syncVndbCollection } = useStore.getState();
-	const [bgm, vndb] = await Promise.all([
+	const { syncBgmCollection, syncVndbCollection, syncHikarinagiCollection } =
+		useStore.getState();
+	const [bgm, vndb, hikarinagi] = await Promise.all([
 		syncBgmCollection
 			? createBgmPlayStatusMap(input.bgmIds ?? [])
 			: Promise.resolve(undefined),
 		syncVndbCollection
 			? createVndbPlayStatusMap(input.vndbIds ?? [])
 			: Promise.resolve(undefined),
+		syncHikarinagiCollection
+			? createHikarinagiPlayStatusMap(input.hikarinagiIds ?? [])
+			: Promise.resolve(undefined),
 	]);
 
 	return {
 		...(bgm ? { bgm } : {}),
 		...(vndb ? { vndb } : {}),
+		...(hikarinagi ? { hikarinagi } : {}),
 	};
 }

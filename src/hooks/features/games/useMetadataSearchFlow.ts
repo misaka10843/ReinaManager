@@ -11,7 +11,9 @@ import type {
 	MixedSourceEnabled,
 	MixedSourceSelection,
 } from "@/metadata/data/metadata";
-import { isBgmAuthExpiredError, withBgmAuth } from "@/services/bgmAuthSession";
+import { withMetadataAuth } from "@/services/metadataAuth";
+import { isBgmAuthExpiredError } from "@/services/oauth/bgmAuthSession";
+import { isHikarinagiAuthExpiredError } from "@/services/oauth/hikarinagiAuthSession";
 import { createMetadataSession } from "@/services/requestContext";
 import type { apiSourceType, GameMetadataDraft, SourceType } from "@/types";
 import { isAbortError } from "@/utils/async";
@@ -127,18 +129,21 @@ export function useMetadataSearchFlow({
 
 			try {
 				if (source === "mixed") {
-					const searchMixedCandidates = (bgmToken?: string) => {
-						const session = createMetadataSession({ bgmToken, signal });
+					const searchMixedCandidates = (tokens: {
+						bgmToken?: string;
+						hikarinagiToken?: string;
+					}) => {
+						const session = createMetadataSession({ ...tokens, signal });
 						const candidatesPromise = session.searchMixedSourceCandidates({
 							query,
 							mixedEnabledSources,
 						});
 						return withAbort ? withAbort(candidatesPromise) : candidatesPromise;
 					};
-					const result =
-						mixedEnabledSources?.includes("bgm") === false
-							? await searchMixedCandidates()
-							: await withBgmAuth(searchMixedCandidates);
+					const result = await withMetadataAuth(
+						mixedEnabledSources ?? REGISTERED_SOURCE_KEYS,
+						searchMixedCandidates,
+					);
 
 					if (!hasAnyMixedCandidate(result.candidates)) {
 						throw new Error(getNoResultsText(source));
@@ -153,9 +158,12 @@ export function useMetadataSearchFlow({
 				}
 
 				if (getRuntimeSourceAdapter(source).validateId(query.trim())) {
-					const searchById = (bgmToken?: string) => {
+					const searchById = (tokens: {
+						bgmToken?: string;
+						hikarinagiToken?: string;
+					}) => {
 						const searchPromise = createMetadataSession({
-							bgmToken,
+							...tokens,
 							signal,
 						}).searchGames({
 							query,
@@ -163,10 +171,9 @@ export function useMetadataSearchFlow({
 						});
 						return withAbort ? withAbort(searchPromise) : searchPromise;
 					};
-					const results =
-						source === "bgm"
-							? await withBgmAuth(searchById)
-							: await searchById();
+					const results = await withMetadataAuth([source], searchById, {
+						requireHikarinagi: source === "hikarinagi",
+					});
 
 					if (results.length === 0) {
 						throw new Error(getNoResultsText(source));
@@ -176,9 +183,12 @@ export function useMetadataSearchFlow({
 					return;
 				}
 
-				const searchCandidates = (bgmToken?: string) => {
+				const searchCandidates = (tokens: {
+					bgmToken?: string;
+					hikarinagiToken?: string;
+				}) => {
 					const searchPromise = createMetadataSession({
-						bgmToken,
+						...tokens,
 						signal,
 					}).searchByName({
 						query,
@@ -186,10 +196,9 @@ export function useMetadataSearchFlow({
 					});
 					return withAbort ? withAbort(searchPromise) : searchPromise;
 				};
-				const results =
-					source === "bgm"
-						? await withBgmAuth(searchCandidates)
-						: await searchCandidates();
+				const results = await withMetadataAuth([source], searchCandidates, {
+					requireHikarinagi: source === "hikarinagi",
+				});
 
 				if (results.length === 0) {
 					throw new Error(getNoResultsText(source));
@@ -204,7 +213,10 @@ export function useMetadataSearchFlow({
 				if (isAbortError(error)) {
 					return;
 				}
-				if (isBgmAuthExpiredError(error)) {
+				if (
+					isBgmAuthExpiredError(error) ||
+					isHikarinagiAuthExpiredError(error)
+				) {
 					return;
 				}
 				onError(getUserErrorMessage(error, t));
@@ -223,10 +235,16 @@ export function useMetadataSearchFlow({
 
 			setIsSearching(true);
 			try {
-				const resolvedGame =
-					await createMetadataSession().resolveSourceCandidateSelection({
-						candidate: selectedCandidate,
-					});
+				const resolvedGame = await withMetadataAuth(
+					[selectedCandidate.source],
+					(tokens) =>
+						createMetadataSession(tokens).resolveSourceCandidateSelection({
+							candidate: selectedCandidate,
+						}),
+					{
+						requireHikarinagi: selectedCandidate.source === "hikarinagi",
+					},
+				);
 				await onResolved(resolvedGame);
 				closeSearchResult();
 			} catch (error) {
@@ -242,11 +260,20 @@ export function useMetadataSearchFlow({
 		async (selection: MixedSourceSelection, enabled: MixedSourceEnabled) => {
 			setIsSearching(true);
 			try {
-				const gameData =
-					await createMetadataSession().resolveMixedSourceSelection({
-						selection,
-						enabled,
-					});
+				const selectedSources = REGISTERED_SOURCE_KEYS.filter(
+					(source) => enabled[source] && Boolean(selection[source]),
+				);
+				const gameData = await withMetadataAuth(
+					selectedSources,
+					(tokens) =>
+						createMetadataSession(tokens).resolveMixedSourceSelection({
+							selection,
+							enabled,
+						}),
+					{
+						requireHikarinagi: selectedSources.includes("hikarinagi"),
+					},
+				);
 				await onResolved(gameData, mixedCandidateState.failedSources);
 				closeMixedCandidates();
 			} catch (error) {

@@ -27,7 +27,9 @@ import {
 } from "@/metadata/data/metadata";
 import { getSourceIdFromDisplay } from "@/metadata/sourceRecord";
 import { snackbar } from "@/providers/snackBar";
-import { isBgmAuthExpiredError, withBgmAuth } from "@/services/bgmAuthSession";
+import { withMetadataAuth } from "@/services/metadataAuth";
+import { isBgmAuthExpiredError } from "@/services/oauth/bgmAuthSession";
+import { isHikarinagiAuthExpiredError } from "@/services/oauth/hikarinagiAuthSession";
 import { createMetadataSession } from "@/services/requestContext";
 import { useStore } from "@/store/appStore";
 import type {
@@ -177,22 +179,28 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 
 		try {
 			setIsLoading(true);
-			const fetchMetadata = (bgmToken?: string) =>
-				fetchMetadataForUpdate({
-					selectedGame,
-					idType,
-					sourceIds,
-					enabledSources: idType === "mixed" ? mixedEnabledSources : undefined,
-					session: createMetadataSession({ bgmToken }),
-				});
-			const usesBgmSource =
-				idType === "bgm" || (idType === "mixed" && isMixedSourceEnabled("bgm"));
-			const result = usesBgmSource
-				? await withBgmAuth(fetchMetadata)
-				: await fetchMetadata();
+			const enabledSources =
+				idType === "mixed"
+					? mixedEnabledSources
+					: isSourceType(idType)
+						? [idType]
+						: [];
+			const result = await withMetadataAuth(
+				enabledSources,
+				(tokens) =>
+					fetchMetadataForUpdate({
+						selectedGame,
+						idType,
+						sourceIds,
+						enabledSources:
+							idType === "mixed" ? mixedEnabledSources : undefined,
+						session: createMetadataSession(tokens),
+					}),
+				{ requireHikarinagi: idType === "hikarinagi" },
+			);
 			onDataFetched(result);
 		} catch (error) {
-			if (isBgmAuthExpiredError(error)) {
+			if (isBgmAuthExpiredError(error) || isHikarinagiAuthExpiredError(error)) {
 				return;
 			}
 			snackbar.error(getUserErrorMessage(error, t));
