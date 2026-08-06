@@ -43,11 +43,11 @@ import {
 } from "./metadata";
 
 const mixedIdTypePriority: readonly SourceType[] = [
+	"bgm",
 	"hikarinagi",
+	"vndb",
 	"kun",
 	"ymgal",
-	"vndb",
-	"bgm",
 	"dlsite",
 	"erogamescape",
 ];

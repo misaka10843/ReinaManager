@@ -14,7 +14,7 @@ use tokio::sync::watch;
 pub async fn recover_interrupted_tasks(db: &DatabaseConnection) -> Result<Vec<i64>, DbErr> {
     let now = chrono::Utc::now().timestamp();
 
-    // matching_metadata/importing_game 需要前端完成 BGM 鉴权和元数据导入，后端保留为 running，
+    // matching_metadata/importing_game 需要前端完成元数据鉴权和导入，后端保留为 running，
     // 由 InstallRequestHandler 启动时扫描恢复；pending 任务则交给后端 runner 自动续跑。
     // 文件已经移动到正式目录的任务只需重新执行元数据匹配与入库。
     tasks::Entity::update_many()

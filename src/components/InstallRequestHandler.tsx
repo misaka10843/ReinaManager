@@ -37,8 +37,9 @@ import {
 	type TaskProgressEvent,
 	taskService,
 } from "@/services/invoke";
-import { withBgmAuth } from "@/services/oauth/bgmAuthSession";
+import { withMetadataAuth } from "@/services/metadataAuth";
 import { createMetadataSession } from "@/services/requestContext";
+import type { SourceType } from "@/types";
 import { getUserErrorMessage } from "@/utils/errors";
 import { formatFileSize } from "@/utils/fileSize";
 
@@ -47,6 +48,7 @@ type DialogStage = "confirm" | "preparing" | "error";
 export function InstallRequestHandler() {
 	const { t } = useTranslation();
 	const { data: settings } = useAllSettings();
+	const hasHikarinagiToken = Boolean(settings?.hikarinagi_auth?.access_token);
 	const updateSettingsMutation = useUpdateSettings();
 	const [queue, setQueue] = useState<InstallRequest[]>([]);
 	const [request, setRequest] = useState<InstallRequest | null>(null);
@@ -144,14 +146,40 @@ export function InstallRequestHandler() {
 					return;
 				}
 
-				const metadataResult = await withBgmAuth((bgmToken) =>
-					createMetadataSession({ bgmToken }).getGameByIds({
-						sourceIds: {
-							bgm: task.payload_json.bgm_id,
-							vndb: task.payload_json.vndb_id ?? undefined,
-						},
-						enabledSources: ["bgm", "vndb"],
-					}),
+				const hikarinagiId = task.payload_json.hikarinagi_id ?? undefined;
+				const vndbId = task.payload_json.vndb_id ?? undefined;
+				const shouldFetchHikarinagi =
+					Boolean(hikarinagiId) && hasHikarinagiToken;
+				const enabledSources: SourceType[] = ["bgm"];
+				if (vndbId) enabledSources.push("vndb");
+				if (shouldFetchHikarinagi) enabledSources.push("hikarinagi");
+				const metadataResult = await withMetadataAuth(
+					enabledSources,
+					async ({ bgmToken, hikarinagiToken }) => {
+						const session = createMetadataSession({
+							bgmToken,
+							hikarinagiToken,
+						});
+						if (enabledSources.length === 1) {
+							return {
+								data: await session.getGameById(
+									task.payload_json.bgm_id,
+									"bgm",
+								),
+								failedSources: [],
+							};
+						}
+
+						return session.getGameByIds({
+							sourceIds: {
+								bgm: task.payload_json.bgm_id,
+								vndb: vndbId,
+								...(shouldFetchHikarinagi ? { hikarinagi: hikarinagiId } : {}),
+							},
+							enabledSources,
+						});
+					},
+					{ requireHikarinagi: shouldFetchHikarinagi },
 				);
 				const insertData = await buildInsertGameData(metadataResult.data);
 				await taskService.completeGameInstall(taskId, insertData);
@@ -168,7 +196,7 @@ export function InstallRequestHandler() {
 				void invalidateTasks();
 			}
 		},
-		[fetchTasks, invalidateTasks],
+		[fetchTasks, hasHikarinagiToken, invalidateTasks],
 	);
 
 	useEffect(() => {
@@ -301,6 +329,7 @@ export function InstallRequestHandler() {
 
 	const bgmId = request?.bgm_id;
 	const vndbId = request?.vndb_id;
+	const hikarinagiId = request?.hikarinagi_id;
 	const formattedVndbId = vndbId
 		? vndbId.startsWith("v")
 			? vndbId
@@ -362,7 +391,7 @@ export function InstallRequestHandler() {
 									<span>{request.provider}</span>
 								)}
 							</Typography>
-							{(bgmId || vndbId) && (
+							{(bgmId || vndbId || hikarinagiId) && (
 								<Stack
 									direction="row"
 									spacing={1}
@@ -392,6 +421,20 @@ export function InstallRequestHandler() {
 											clickable
 											onClick={() =>
 												void openUrl(`https://vndb.org/${formattedVndbId}`)
+											}
+											sx={{ borderRadius: 1 }}
+										/>
+									)}
+									{hikarinagiId && (
+										<Chip
+											label={`Hikarinagi ${hikarinagiId}`}
+											size="small"
+											variant="outlined"
+											clickable
+											onClick={() =>
+												void openUrl(
+													`https://www.hikarinagi.org/galgames/${hikarinagiId}`,
+												)
 											}
 											sx={{ borderRadius: 1 }}
 										/>
