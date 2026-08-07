@@ -76,7 +76,20 @@ function isSameReviewState(
 }
 
 function getSourceLabel(source: UserReviewPushResult["source"]) {
-	return source === "bgm" ? "BGM" : "VNDB";
+	switch (source) {
+		case "bgm":
+			return "BGM";
+		case "vndb":
+			return "VNDB";
+		case "hikarinagi":
+			return "Hikarinagi";
+		default:
+			return assertNever(source);
+	}
+}
+
+function assertNever(value: never): never {
+	throw new Error(`不支持的评价推送来源: ${String(value)}`);
 }
 
 export const Review: React.FC<ReviewProps> = ({ selectedGame }) => {
@@ -85,6 +98,7 @@ export const Review: React.FC<ReviewProps> = ({ selectedGame }) => {
 	const { data: settings, isLoading: isSettingsLoading } = useAllSettings();
 	const bgmId = getSourceIdFromDisplay(selectedGame, "bgm");
 	const vndbId = getSourceIdFromDisplay(selectedGame, "vndb");
+	const hikarinagiId = getSourceIdFromDisplay(selectedGame, "hikarinagi");
 	const hasVndbId = Boolean(vndbId);
 	const { data: vndbProfile, isLoading: isVndbProfileLoading } =
 		useVndbCurrentUserProfile({ enabled: hasVndbId });
@@ -96,30 +110,42 @@ export const Review: React.FC<ReviewProps> = ({ selectedGame }) => {
 	);
 	const [pushBgm, setPushBgm] = useState(Boolean(bgmId));
 	const [pushVndb, setPushVndb] = useState(Boolean(vndbId));
+	const [pushHikarinagi, setPushHikarinagi] = useState(Boolean(hikarinagiId));
 	const [bgmPrivate, setBgmPrivate] = useState(false);
+	const [hikarinagiSpoiler, setHikarinagiSpoiler] = useState(false);
 	const [pushResults, setPushResults] = useState<UserReviewPushResult[]>([]);
 	const [isPushing, setIsPushing] = useState(false);
 	const [pushDefaultsApplied, setPushDefaultsApplied] = useState(false);
 
 	const hasBgmToken = Boolean(settings?.bgm_auth?.access_token);
 	const hasVndbToken = Boolean(settings?.vndb_token);
+	const hasHikarinagiToken = Boolean(settings?.hikarinagi_auth?.access_token);
 	const canPushBgm = Boolean(bgmId && hasBgmToken);
 	const canPushVndb = Boolean(
 		vndbId && hasVndbToken && vndbProfile?.permissions.includes("listwrite"),
 	);
+	const canPushHikarinagi = Boolean(hikarinagiId && hasHikarinagiToken);
 	const isPushCapabilityLoading =
 		isSettingsLoading ||
 		Boolean(hasVndbId && hasVndbToken && isVndbProfileLoading);
 	const effectivePushBgm = pushBgm && canPushBgm;
 	const effectivePushVndb = pushVndb && canPushVndb;
+	const effectivePushHikarinagi = pushHikarinagi && canPushHikarinagi;
 
 	useEffect(() => {
 		if (pushDefaultsApplied || isPushCapabilityLoading) return;
 
 		setPushBgm(canPushBgm);
 		setPushVndb(canPushVndb);
+		setPushHikarinagi(canPushHikarinagi);
 		setPushDefaultsApplied(true);
-	}, [canPushBgm, canPushVndb, isPushCapabilityLoading, pushDefaultsApplied]);
+	}, [
+		canPushBgm,
+		canPushHikarinagi,
+		canPushVndb,
+		isPushCapabilityLoading,
+		pushDefaultsApplied,
+	]);
 
 	const parsedRating = useMemo(
 		() => parseRatingInput(ratingInput),
@@ -184,7 +210,9 @@ export const Review: React.FC<ReviewProps> = ({ selectedGame }) => {
 	}, [ratingInput, reviewInput, selectedGame, t, updateGameMutation]);
 
 	const handlePush = async () => {
-		if (!effectivePushBgm && !effectivePushVndb) return;
+		if (!effectivePushBgm && !effectivePushVndb && !effectivePushHikarinagi) {
+			return;
+		}
 
 		const nextRating = parseRatingInput(ratingInput);
 		if (nextRating.error) {
@@ -204,7 +232,9 @@ export const Review: React.FC<ReviewProps> = ({ selectedGame }) => {
 				review: reviewInput,
 				pushBgm: effectivePushBgm,
 				pushVndb: effectivePushVndb,
+				pushHikarinagi: effectivePushHikarinagi,
 				bgmPrivate,
+				hikarinagiSpoiler,
 			});
 			setPushResults(results);
 
@@ -330,6 +360,18 @@ export const Review: React.FC<ReviewProps> = ({ selectedGame }) => {
 							/>
 							<FormControlLabel
 								control={
+									<Checkbox
+										checked={effectivePushHikarinagi}
+										disabled={!canPushHikarinagi}
+										onChange={(event) =>
+											setPushHikarinagi(event.target.checked)
+										}
+									/>
+								}
+								label="Hikarinagi"
+							/>
+							<FormControlLabel
+								control={
 									<Switch
 										checked={bgmPrivate}
 										disabled={!effectivePushBgm}
@@ -338,6 +380,19 @@ export const Review: React.FC<ReviewProps> = ({ selectedGame }) => {
 								}
 								label={t("pages.Detail.Review.bgmPrivate", "BGM 私密")}
 							/>
+							{effectivePushHikarinagi && (
+								<FormControlLabel
+									control={
+										<Switch
+											checked={hikarinagiSpoiler}
+											onChange={(event) =>
+												setHikarinagiSpoiler(event.target.checked)
+											}
+										/>
+									}
+									label={t("pages.Detail.Review.hikarinagiSpoiler", "包含剧透")}
+								/>
+							)}
 							<Button
 								variant="contained"
 								startIcon={
@@ -350,7 +405,9 @@ export const Review: React.FC<ReviewProps> = ({ selectedGame }) => {
 								disabled={
 									isPushing ||
 									updateGameMutation.isPending ||
-									(!effectivePushBgm && !effectivePushVndb)
+									(!effectivePushBgm &&
+										!effectivePushVndb &&
+										!effectivePushHikarinagi)
 								}
 								onClick={handlePush}
 							>

@@ -38,7 +38,7 @@
 					"url": "https://api.bgm.tv"
 				},
 				{
-		      "url": "https://bgm.tv"
+					"url": "https://bgm.tv"
 				},
 				{
 					"url": "https://www.ymgal.games"
@@ -57,6 +57,9 @@
 				},
 				{
 					"url": "https://store.steampowered.com"
+				},
+				{
+					"url": "https://www.hikarinagi.org"
 				}
 			]
 		}

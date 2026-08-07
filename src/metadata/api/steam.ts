@@ -125,7 +125,6 @@ function createSteamDraft(appid: number, data: SteamData): GameMetadataDraft {
 	);
 }
 
-
 export function steamCoverUrl(appid: number): string {
 	return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/library_600x900.jpg`;
 }

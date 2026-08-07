@@ -130,9 +130,10 @@ export function useBulkGameAddActions() {
 				const duplicateItemIndices: number[] = [];
 				const preparationErrors: BulkImportPreparationError[] = [];
 				const pendingPayloads: BulkImportPendingPayload[] = [];
-				// 云端游玩状态同步目前只支持 BGM/VNDB；YMGal/KUN 不参与预取。
+				// 云端游玩状态同步只预取已接入账号的数据源。
 				const cloudBgmIds = new Set<string>();
 				const cloudVndbIds = new Set<string>();
+				const cloudHikarinagiIds = new Set<string>();
 				for (const item of items) {
 					if (item.status === "imported") {
 						continue;
@@ -143,16 +144,23 @@ export function useBulkGameAddActions() {
 					const vndbId = item.matchedData
 						? getSourceIdFromRecords(item.matchedData, "vndb")
 						: undefined;
+					const hikarinagiId = item.matchedData
+						? getSourceIdFromRecords(item.matchedData, "hikarinagi")
+						: undefined;
 					if (bgmId) {
 						cloudBgmIds.add(bgmId);
 					}
 					if (vndbId) {
 						cloudVndbIds.add(vndbId);
 					}
+					if (hikarinagiId) {
+						cloudHikarinagiIds.add(hikarinagiId);
+					}
 				}
 				const cloudStatusContext = await createCloudPlayStatusContext({
 					bgmIds: cloudBgmIds,
 					vndbIds: cloudVndbIds,
+					hikarinagiIds: cloudHikarinagiIds,
 				});
 
 				for (let index = 0; index < items.length; index++) {

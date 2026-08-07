@@ -9,12 +9,7 @@ import { Link as RouterLink } from "react-router-dom";
 import { PathSettingsModal } from "@/components/PathSettingsModal";
 import { useScrollRestore } from "@/hooks/common/useScrollRestore";
 import { AboutSection } from "./AboutSettings";
-import {
-	BgmTokenSettings,
-	CollectionSyncSettings,
-	SteamApiKeySettings,
-	VndbTokenSettings,
-} from "./AccountSettings";
+import { AccountSettings } from "./AccountSettings";
 import {
 	DevSettings,
 	MixedSearchSourceSettings,
@@ -42,6 +37,7 @@ type SettingsSection = {
 	label: string;
 	description: string;
 	content: React.ReactNode;
+	frame?: "card" | "plain";
 };
 
 type SettingsPageHeaderProps = {
@@ -100,17 +96,8 @@ export const Settings: React.FC = () => {
 					"pages.Settings.sections.accountDescription",
 					"管理数据源账号令牌和收藏同步行为。",
 				),
-				content: (
-					<>
-						<BgmTokenSettings />
-						<SettingsDivider />
-						<VndbTokenSettings />
-						<SettingsDivider />
-						<SteamApiKeySettings />
-						<SettingsDivider />
-						<CollectionSyncSettings />
-					</>
-				),
+				frame: "plain",
+				content: <AccountSettings />,
 			},
 			{
 				id: "data-source",
@@ -320,9 +307,13 @@ export const Settings: React.FC = () => {
 										{section.description}
 									</Typography>
 								</Box>
-								<Box className="w-full rounded-xl border border-solid border-[var(--mui-palette-divider)] bg-[var(--mui-palette-background-paper)] px-5 py-5">
-									{section.content}
-								</Box>
+								{section.frame === "plain" ? (
+									section.content
+								) : (
+									<Box className="w-full rounded-xl border border-solid border-[var(--mui-palette-divider)] bg-[var(--mui-palette-background-paper)] px-5 py-5">
+										{section.content}
+									</Box>
+								)}
 							</section>
 						))}
 					</Box>

@@ -17,6 +17,7 @@ export function getMetadataRequestContext(
 	options: {
 		bgmToken?: string;
 		steamApiKey?: string;
+		hikarinagiToken?: string;
 		signal?: AbortSignal;
 	} = {},
 ): MetadataRequestContext {
@@ -28,6 +29,7 @@ export function getMetadataRequestContext(
 		spoilerLevel: state.spoilerLevel,
 		bgmToken: options.bgmToken,
 		steamApiKey: options.steamApiKey?.trim() || undefined,
+		hikarinagiToken: options.hikarinagiToken,
 	};
 }
 
@@ -35,6 +37,7 @@ export function createMetadataSession(
 	options: {
 		bgmToken?: string;
 		steamApiKey?: string;
+		hikarinagiToken?: string;
 		signal?: AbortSignal;
 	} = {},
 ): GameMetadataSession {

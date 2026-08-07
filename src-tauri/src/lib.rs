@@ -3,6 +3,7 @@ mod database;
 mod entity;
 mod game;
 mod install;
+mod oauth;
 mod utils;
 
 use backup::covers::backup_custom_covers;
@@ -31,10 +32,19 @@ use install::{
     resume_pending_tasks, resume_task, retry_task,
 };
 use migration::MigratorTrait;
+use oauth::{
+    bgm_auth::{
+        bgm_oauth_cancel_login, bgm_oauth_exchange_code, bgm_oauth_refresh_token,
+        bgm_oauth_start_login,
+    },
+    hikarinagi_auth::{
+        hikarinagi_oauth_cancel_login, hikarinagi_oauth_exchange_code,
+        hikarinagi_oauth_refresh_token, hikarinagi_oauth_start_login,
+    },
+};
 use tauri::Manager;
 use tauri_plugin_log::{RotationStrategy, Target, TargetKind, TimezoneStrategy};
 use utils::{
-    bgm_auth::{bgm_oauth_exchange_code, bgm_oauth_refresh_token, bgm_oauth_start_login},
     fs::{copy_file, delete_file, is_portable_mode, open_directory, resolve_dropped_local_path},
     http::update_proxy_config,
     image::register_image_proxy_protocol,
@@ -142,8 +152,14 @@ pub fn run() {
             update_proxy_config,
             // BGM OAuth 相关 commands
             bgm_oauth_start_login,
+            bgm_oauth_cancel_login,
             bgm_oauth_exchange_code,
             bgm_oauth_refresh_token,
+            // Hikarinagi OAuth 相关 commands
+            hikarinagi_oauth_start_login,
+            hikarinagi_oauth_cancel_login,
+            hikarinagi_oauth_exchange_code,
+            hikarinagi_oauth_refresh_token,
             // 日志相关 commands（运行时动态调整）
             set_reina_log_level,
             get_reina_log_level,

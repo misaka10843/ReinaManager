@@ -7,6 +7,7 @@ import {
 } from "../sourceRegistry";
 
 export const SOURCE_COVER_PRIORITY: readonly SourceType[] = [
+	"hikarinagi",
 	"bgm",
 	"vndb",
 	"erogamescape",
@@ -19,6 +20,7 @@ export const SOURCE_COVER_PRIORITY: readonly SourceType[] = [
 const BASIC_FIELD_PRIORITY: readonly SourceType[] = [
 	"bgm",
 	"vndb",
+	"hikarinagi",
 	"dlsite",
 	"erogamescape",
 	"ymgal",
@@ -26,6 +28,7 @@ const BASIC_FIELD_PRIORITY: readonly SourceType[] = [
 	"steam",
 ];
 const SUMMARY_PRIORITY: readonly SourceType[] = [
+	"hikarinagi",
 	"ymgal",
 	"bgm",
 	"kun",
@@ -39,11 +42,13 @@ const DEVELOPER_PRIORITY: readonly SourceType[] = [
 	"kun",
 	"dlsite",
 	"ymgal",
+	"hikarinagi",
 	"bgm",
 	"steam",
 ];
 const MIXED_TAG_SOURCES: readonly SourceType[] = [
 	"bgm",
+	"hikarinagi",
 	"dlsite",
 	"erogamescape",
 	"vndb",
@@ -52,6 +57,7 @@ const MIXED_TAG_SOURCES: readonly SourceType[] = [
 const MIXED_ALIAS_SOURCES: readonly SourceType[] = [
 	"bgm",
 	"vndb",
+	"hikarinagi",
 	"kun",
 	"ymgal",
 ];
@@ -173,7 +179,10 @@ export function applyMixedSourceDisplay(
 	target.tags = mergeArrays(displays, MIXED_TAG_SOURCES, "tags");
 	target.aliases = mergeArrays(displays, MIXED_ALIAS_SOURCES, "aliases");
 	target.score =
-		displays.bgm?.score ?? displays.erogamescape?.score ?? displays.vndb?.score;
+		displays.bgm?.score ??
+		displays.erogamescape?.score ??
+		displays.vndb?.score ??
+		displays.hikarinagi?.score;
 	target.rank = displays.bgm?.rank;
 	target.all_titles = mergeArrays(displays, MIXED_TITLE_SOURCES, "all_titles");
 	target.average_hours = displays.vndb?.average_hours;

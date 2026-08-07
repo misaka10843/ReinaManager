@@ -11,7 +11,7 @@ use super::{
 };
 use crate::database::dto::{InsertGameData, UpdateGameData};
 use crate::database::repository::games_repository::GamesRepository;
-use crate::entity::{game_sources, tasks};
+use crate::entity::{game_sources, games, tasks};
 use crate::game::scan::scan_executable_candidates;
 use crate::install::protocol::InstallRequest;
 use crate::utils::fs::validate_executable_name;
@@ -130,33 +130,73 @@ pub(crate) async fn import_installed_game(
         .begin()
         .await
         .map_err(|error| TaskFailure::new("game_import_failed", error.to_string()))?;
-    let matches = game_sources::Entity::find()
-        .filter(game_sources::Column::Source.eq("bgm"))
-        .filter(game_sources::Column::ExternalId.eq(&request.bgm_id))
-        .all(&transaction)
-        .await
-        .map_err(|error| TaskFailure::new("game_import_failed", error.to_string()))?;
-    if matches.len() > 1 {
-        return Err(TaskFailure::new(
-            "duplicate_bgm_match",
-            "同一 BGM ID 命中了多个游戏，数据异常，已停止自动导入",
-        ));
+    let source_ids = [
+        ("bgm", Some(request.bgm_id.as_str())),
+        ("hikarinagi", request.hikarinagi_id.as_deref()),
+    ];
+    let mut matched_game = None;
+    let mut matched_by = None;
+    for (source, external_id) in source_ids {
+        let Some(external_id) = external_id else {
+            continue;
+        };
+        let source_matches = game_sources::Entity::find()
+            .join(JoinType::InnerJoin, game_sources::Relation::Games.def())
+            .filter(game_sources::Column::Source.eq(source))
+            .filter(game_sources::Column::ExternalId.eq(external_id))
+            .filter(games::Column::Localpath.is_null())
+            .all(&transaction)
+            .await
+            .map_err(|error| TaskFailure::new("game_import_failed", error.to_string()))?;
+        if source_matches.len() > 1 {
+            return Err(TaskFailure::new(
+                format!("duplicate_{source}_match"),
+                format!("同一 {source} ID 命中了多个游戏，数据异常，已停止自动导入"),
+            ));
+        }
+        if let Some(game) = source_matches.into_iter().next() {
+            matched_by = Some(source.to_string());
+            matched_game = Some(game);
+            break;
+        }
     }
 
     // games 表的时间字段目前是 i32 Unix 秒；迁移 schema 前保持与现有仓储接口一致。
     // TODO: 在 2038 年前将 games 时间字段及相关接口迁移为 i64。
     let now = chrono::Utc::now().timestamp() as i32;
-    let (game_id, created_new_game, matched_by) = if let Some(source) = matches.first() {
+    let (game_id, created_new_game, matched_by) = if let Some(source) = matched_game {
+        let existing_sources = game_sources::Entity::find()
+            .filter(game_sources::Column::GameId.eq(source.game_id))
+            .all(&transaction)
+            .await
+            .map_err(|error| TaskFailure::new("game_import_failed", error.to_string()))?;
+        let mut source_names = existing_sources
+            .iter()
+            .map(|existing| existing.source.as_str())
+            .collect::<Vec<_>>();
+        for incoming in &metadata.sources {
+            if !source_names.contains(&incoming.source.as_str()) {
+                source_names.push(incoming.source.as_str());
+            }
+        }
+        // 只覆盖本次推送携带的来源，保留已有的其他来源；用户自定义覆盖也不清理。
         let updates = UpdateGameData {
+            id_type: Some(if source_names.len() >= 2 {
+                "mixed".to_string()
+            } else {
+                metadata.id_type.clone()
+            }),
+            date: Some(metadata.date.clone()),
             localpath: Some(Some(partial.install_path.clone())),
             executable: Some(executable_name.clone()),
+            upsert_sources: Some(metadata.sources.clone()),
             ..Default::default()
         }
         .cleaned();
         let game = GamesRepository::update_aggregate(&transaction, source.game_id, updates, now)
             .await
             .map_err(|error| TaskFailure::new("game_import_failed", error.to_string()))?;
-        (game.id, false, Some("bgm".to_string()))
+        (game.id, false, matched_by)
     } else {
         metadata.localpath = Some(partial.install_path.clone());
         metadata.executable = executable_name.clone();

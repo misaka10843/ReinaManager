@@ -657,6 +657,7 @@
 				"bgmRoundNotice": "BGM will be pushed as {{rating}} points",
 				"cloudPush": "Cloud Push",
 				"cloudPushHelperText": "Push uses the current form values and overwrites the selected sites' rating and review",
+				"hikarinagiSpoiler": "Contains Spoilers",
 				"localReview": "Local Review",
 				"myRating": "My Rating",
 				"myReview": "My Review",
@@ -724,20 +725,20 @@
 				"updatingBgm": "Batch updating BGM data...",
 				"updatingVndb": "Batch updating VNDB data..."
 			},
-			"bgmToken": "BGM Token",
 			"bgmTokenSettings": {
-				"clearToken": "Clear token",
-				"loginMethods": "Login methods",
+				"description": "Log in with your Bangumi account to read metadata, play status, and push reviews.",
 				"loginMethodsHint": "Choose either login method. OAuth quick login is recommended.",
 				"logout": "Log out",
 				"logoutError": "Failed to log out",
 				"logoutSuccess": "Logged out of BGM",
+				"oauthCancel": "Cancel BGM OAuth login",
+				"oauthCancelError": "Failed to cancel BGM OAuth login: {{error}}",
+				"oauthCancelled": "BGM OAuth login cancelled",
 				"oauthError": "OAuth login failed: {{error}}",
 				"oauthLogin": "OAuth quick login",
 				"oauthStartError": "Failed to start OAuth login: {{error}}",
 				"oauthSuccess": "Bangumi OAuth login succeeded",
 				"oauthWaiting": "Complete authorization in your browser...",
-				"profileUnavailable": "No user info yet. Try the button below to fetch user info.",
 				"queryingTokenStatus": "Querying token status...",
 				"queryTokenStatus": "Query token status",
 				"reloginRequired": "Bangumi login has expired. Please log in again.",
@@ -747,8 +748,7 @@
 				"tokenExpiryUnknown": "Token expiry unknown",
 				"tokenLogin": "Access Token login",
 				"tokenStatusError": "Unable to query token status: {{error}}",
-				"tokenStatusSuccess": "Authorization info updated",
-				"userInfo": "User info"
+				"tokenStatusSuccess": "Authorization info updated"
 			},
 			"cardClickMode": {
 				"description": "Controls single-click behavior for game cards in the library and collections. Double-click always launches the game.",
@@ -765,8 +765,9 @@
 			"collectionSync": {
 				"bgmDescription": "Try to read the BGM collection status when adding a game, and sync local status changes back to BGM.",
 				"bgmTitle": "Enable Bangumi collection sync",
+				"hikarinagiDescription": "Try to read Hikarinagi play status when adding a game, and sync local status changes back to Hikarinagi.",
+				"hikarinagiTitle": "Enable Hikarinagi play status sync",
 				"syncFailed": "Local status was updated, but failed to sync to {{source}}",
-				"title": "Collection Sync",
 				"vndbDescription": "Try to read the VNDB collection status when adding a game, and sync local status changes back to VNDB.",
 				"vndbTitle": "Enable VNDB collection sync"
 			},
@@ -807,6 +808,24 @@
 				"tooltip": "The following features are experimental, please use with caution"
 			},
 			"getToken": "Get Token",
+			"hikarinagiAuth": {
+				"description": "Log in with Hikarinagi OAuth to read metadata, play status, and push reviews.",
+				"logout": "Log out",
+				"logoutError": "Failed to log out of Hikarinagi",
+				"logoutSuccess": "Logged out of Hikarinagi",
+				"oauthCancel": "Cancel Hikarinagi OAuth login",
+				"oauthCancelError": "Failed to cancel Hikarinagi OAuth login: {{error}}",
+				"oauthCancelled": "Hikarinagi OAuth login cancelled",
+				"oauthError": "Hikarinagi OAuth login failed: {{error}}",
+				"oauthLogin": "OAuth quick login",
+				"oauthStartError": "Failed to start Hikarinagi OAuth login: {{error}}",
+				"oauthSuccess": "Hikarinagi OAuth login succeeded",
+				"oauthWaiting": "Complete Hikarinagi authorization in your browser...",
+				"reloginRequired": "Hikarinagi login has expired. Please log in again.",
+				"tokenExpiresAt": "Token expires at: {{date}}",
+				"tokenExpiryUnknown": "Token expiry unknown",
+				"userId": "User ID: {{id}}"
+			},
 			"language": "Language",
 			"linuxLaunchCommand": {
 				"commandLabel": "Launch Command",
@@ -892,10 +911,9 @@
 			"vndbData": {
 				"title": "VNDB Data Settings"
 			},
-			"vndbToken": "VNDB Token",
 			"vndbTokenPlaceholder": "Please enter your VNDB Token",
 			"vndbTokenSettings": {
-				"clearToken": "Clear token",
+				"description": "Log in with your VNDB token to read play status and push reviews.",
 				"loadingProfile": "Loading current VNDB account info...",
 				"permissions": "Permissions: {{permissions}}",
 				"profileUnavailable": "Unable to fetch user info with the current VNDB Token. Please check whether the token and permissions are valid.",

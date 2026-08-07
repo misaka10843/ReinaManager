@@ -642,6 +642,7 @@
 				"bgmRoundNotice": "BGM 将按 {{rating}} 分推送",
 				"cloudPush": "云端推送",
 				"cloudPushHelperText": "推送会使用当前表单内容覆盖所选站点的评分和评价",
+				"hikarinagiSpoiler": "包含剧透",
 				"localReview": "本地评价",
 				"myRating": "我的评分",
 				"myReview": "我的评价",
@@ -708,20 +709,20 @@
 				"updatingBgm": "正在批量更新 BGM 数据...",
 				"updatingVndb": "正在批量更新 VNDB 数据..."
 			},
-			"bgmToken": "BGM 令牌",
 			"bgmTokenSettings": {
-				"clearToken": "清除令牌",
-				"loginMethods": "登录方式",
+				"description": "使用 Bangumi 账号登录以读取元数据、游玩状态和推送评价。",
 				"loginMethodsHint": "请任选一种登录方式，推荐 OAuth 快捷登录。",
 				"logout": "退出登录",
 				"logoutError": "退出登录失败",
 				"logoutSuccess": "已退出 BGM 登录",
+				"oauthCancel": "取消 BGM OAuth 登录",
+				"oauthCancelError": "取消 BGM OAuth 登录失败: {{error}}",
+				"oauthCancelled": "BGM OAuth 登录已取消",
 				"oauthError": "OAuth 登录失败: {{error}}",
 				"oauthLogin": "OAuth 快捷登录",
 				"oauthStartError": "启动 OAuth 登录失败: {{error}}",
 				"oauthSuccess": "Bangumi OAuth 登录成功",
 				"oauthWaiting": "请在浏览器中完成授权...",
-				"profileUnavailable": "暂无用户信息，请尝试下方按钮以获取用户信息。",
 				"queryingTokenStatus": "正在查询 Token 状态...",
 				"queryTokenStatus": "查询 Token 状态",
 				"reloginRequired": "Bangumi 登录已失效，请重新登录。",
@@ -731,8 +732,7 @@
 				"tokenExpiryUnknown": "Token 有效期未知",
 				"tokenLogin": "Access Token 登录",
 				"tokenStatusError": "无法查询 Token 状态: {{error}}",
-				"tokenStatusSuccess": "授权信息已更新",
-				"userInfo": "用户信息"
+				"tokenStatusSuccess": "授权信息已更新"
 			},
 			"cardClickMode": {
 				"description": "仓库与收藏夹游戏卡片单击的行为（两种模式下均可双击游戏卡片启动游戏）。",
@@ -749,8 +749,9 @@
 			"collectionSync": {
 				"bgmDescription": "添加游戏时尝试读取 BGM 收藏状态，本地修改状态时同步回 BGM。",
 				"bgmTitle": "启用 Bangumi 收藏同步",
+				"hikarinagiDescription": "添加游戏时尝试读取 Hikarinagi 游玩状态，本地修改状态时同步回 Hikarinagi。",
+				"hikarinagiTitle": "启用 Hikarinagi 游玩状态同步",
 				"syncFailed": "本地状态已更新，但 {{source}} 云端同步失败",
-				"title": "收藏状态同步",
 				"vndbDescription": "添加游戏时尝试读取 VNDB 收藏状态，本地修改状态时同步回 VNDB。",
 				"vndbTitle": "启用 VNDB 收藏同步"
 			},
@@ -791,6 +792,24 @@
 				"tooltip": "以下功能为实验性功能，请谨慎使用"
 			},
 			"getToken": "获取令牌",
+			"hikarinagiAuth": {
+				"description": "使用 Hikarinagi OAuth 登录以读取元数据、游玩状态和推送评价。",
+				"logout": "退出登录",
+				"logoutError": "退出 Hikarinagi 登录失败",
+				"logoutSuccess": "已退出 Hikarinagi 登录",
+				"oauthCancel": "取消 Hikarinagi OAuth 登录",
+				"oauthCancelError": "取消 Hikarinagi OAuth 登录失败: {{error}}",
+				"oauthCancelled": "Hikarinagi OAuth 登录已取消",
+				"oauthError": "Hikarinagi OAuth 登录失败: {{error}}",
+				"oauthLogin": "OAuth 快捷登录",
+				"oauthStartError": "启动 Hikarinagi OAuth 登录失败: {{error}}",
+				"oauthSuccess": "Hikarinagi OAuth 登录成功",
+				"oauthWaiting": "请在浏览器中完成 Hikarinagi 授权...",
+				"reloginRequired": "Hikarinagi 登录已失效，请重新登录。",
+				"tokenExpiresAt": "Token 有效期至: {{date}}",
+				"tokenExpiryUnknown": "Token 有效期未知",
+				"userId": "用户 ID: {{id}}"
+			},
 			"language": "语言",
 			"linuxLaunchCommand": {
 				"commandLabel": "启动命令",
@@ -876,10 +895,9 @@
 			"vndbData": {
 				"title": "VNDB 数据设置"
 			},
-			"vndbToken": "VNDB 令牌",
 			"vndbTokenPlaceholder": "请填写你的 VNDB Token",
 			"vndbTokenSettings": {
-				"clearToken": "清除令牌",
+				"description": "使用 VNDB Token 登录以读取游玩状态和推送评价。",
 				"loadingProfile": "正在获取当前 VNDB 账号信息...",
 				"permissions": "权限: {{permissions}}",
 				"profileUnavailable": "当前 VNDB Token 无法获取用户信息，请检查令牌或权限是否有效。",

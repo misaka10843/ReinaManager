@@ -1,6 +1,9 @@
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import CancelIcon from "@mui/icons-material/Cancel";
 import ClearIcon from "@mui/icons-material/Clear";
 import LoginIcon from "@mui/icons-material/Login";
+import SyncIcon from "@mui/icons-material/Sync";
+import VpnKeyIcon from "@mui/icons-material/VpnKey";
 import {
 	Accordion,
 	AccordionDetails,
@@ -8,8 +11,10 @@ import {
 	Avatar,
 	Chip,
 	CircularProgress,
+	Divider,
 	IconButton,
 	InputAdornment,
+	Paper,
 	Switch,
 	Typography,
 } from "@mui/material";
@@ -28,13 +33,59 @@ import {
 	useVndbCurrentUserProfile,
 } from "@/hooks/queries/useSettings";
 import { getBgmAvatarUrl } from "@/metadata/api/bgm";
+import type { HikarinagiUserProfile } from "@/metadata/api/hikarinagi";
 import { snackbar } from "@/providers/snackBar";
 import { useStore } from "@/store/appStore";
-import type { BgmAuth } from "@/types";
-import { SettingsGroup, SettingsItem } from "./SettingsLayout";
+import type { BgmAuth, HikarinagiAuth } from "@/types";
+import { SettingsGroup } from "./SettingsLayout";
 import { useBgmAuthController } from "./useBgmAuthController";
+import { useHikarinagiAuthController } from "./useHikarinagiAuthController";
 
-// ==================== BGM Token 设置 ====================
+// ==================== 品牌字标 组件 ====================
+
+/** Bangumi 官方字标 */
+const BgmWordmarkSVG = () => (
+	<Box
+		component="img"
+		src="/images/bangumi-wordmark.png"
+		alt="Bangumi"
+		sx={{ height: 24, width: "auto", objectFit: "contain" }}
+	/>
+);
+
+/** Hikarinagi 官方字标 */
+const HikarinagiWordmarkSVG = () => (
+	<Box
+		component="img"
+		src="/images/hikarinagi-wordmark.svg"
+		alt="Hikarinagi"
+		sx={{
+			height: 22,
+			width: "auto",
+			objectFit: "contain",
+			filter: (theme) =>
+				theme.palette.mode === "dark" ? "brightness(0) invert(1)" : "none",
+		}}
+	/>
+);
+
+/** VNDB 官方字标 */
+const VndbWordmarkSVG = () => (
+	<Box
+		component="img"
+		src="/images/vndb-wordmark.svg"
+		alt="VNDB"
+		sx={{
+			height: 18,
+			width: "auto",
+			objectFit: "contain",
+			filter: (theme) =>
+				theme.palette.mode === "dark" ? "brightness(0) invert(1)" : "none",
+		}}
+	/>
+);
+
+// ==================== BGM 账号与同步板块 ====================
 
 type BgmAccountActionsProps = {
 	showCompleteButton: boolean;
@@ -105,6 +156,7 @@ const BgmAccountSummary = ({
 	const displayName = bgmAuth.nickname || username;
 	const shouldShowCompleteButton =
 		!isOAuth && (bgmAuth.expires_at == null || !bgmAuth.username);
+
 	const actions = (
 		<BgmAccountActions
 			showCompleteButton={shouldShowCompleteButton}
@@ -115,13 +167,13 @@ const BgmAccountSummary = ({
 	);
 
 	return (
-		<Box className="mb-4">
+		<Box className="mb-2">
 			{username ? (
 				<Stack direction="row" spacing={2} alignItems="flex-start">
 					<Avatar
 						src={resolveImageUrl(getBgmAvatarUrl(username))}
 						alt={displayName}
-						sx={{ width: 48, height: 48 }}
+						sx={{ width: 44, height: 44 }}
 					/>
 					<Box className="min-w-0 flex-1">
 						<Stack
@@ -163,155 +215,17 @@ const BgmAccountSummary = ({
 					{actions}
 				</Stack>
 			) : (
-				<Stack spacing={1} alignItems="flex-start">
-					<Typography variant="caption" color="text.secondary">
-						{t(
-							"pages.Settings.bgmTokenSettings.profileUnavailable",
-							"暂无用户信息，请尝试下方按钮以获取用户信息。",
-						)}
-					</Typography>
-					{actions}
-				</Stack>
+				actions
 			)}
 		</Box>
 	);
 };
 
-type BgmOAuthLoginButtonProps = {
-	isLoading: boolean;
-	onLogin: () => void;
-};
-
-const BgmOAuthLoginButton = ({
-	isLoading,
-	onLogin,
-}: BgmOAuthLoginButtonProps) => {
-	const { t } = useTranslation();
-
-	return (
-		<Stack direction="row" spacing={2} alignItems="center" flexWrap="wrap">
-			<Button
-				variant="contained"
-				color="primary"
-				startIcon={<LoginIcon />}
-				onClick={onLogin}
-				disabled={isLoading}
-			>
-				{isLoading
-					? t(
-							"pages.Settings.bgmTokenSettings.oauthWaiting",
-							"请在浏览器中完成授权...",
-						)
-					: t("pages.Settings.bgmTokenSettings.oauthLogin", "OAuth 快捷登录")}
-			</Button>
-		</Stack>
-	);
-};
-
-type BgmTokenLoginPanelProps = {
-	inputToken: string;
-	isSavingToken: boolean;
-	onInputTokenChange: (value: string) => void;
-	onCommitToken: () => void;
-	onClearToken: () => void;
-	onOpenTokenPage: () => void;
-};
-
-const BgmTokenLoginPanel = ({
-	inputToken,
-	isSavingToken,
-	onInputTokenChange,
-	onCommitToken,
-	onClearToken,
-	onOpenTokenPage,
-}: BgmTokenLoginPanelProps) => {
-	const { t } = useTranslation();
-
-	return (
-		<Box>
-			<Accordion>
-				<AccordionSummary expandIcon={<ArrowDropDownIcon />}>
-					<Typography variant="body2">
-						{t(
-							"pages.Settings.bgmTokenSettings.tokenLogin",
-							"Access Token 登录",
-						)}
-					</Typography>
-				</AccordionSummary>
-				<AccordionDetails>
-					<Stack spacing={1.5}>
-						<TextField
-							autoComplete="off"
-							placeholder={t(
-								"pages.Settings.tokenPlaceholder",
-								"请填写你的BGM TOKEN",
-							)}
-							value={inputToken}
-							onChange={(e) => onInputTokenChange(e.target.value)}
-							onBlur={onCommitToken}
-							onKeyDown={(event) => {
-								if (event.key === "Enter" && !event.nativeEvent.isComposing) {
-									event.preventDefault();
-									(event.target as HTMLInputElement).blur();
-								}
-							}}
-							variant="outlined"
-							size="small"
-							fullWidth
-							disabled={isSavingToken}
-							slotProps={{
-								htmlInput: {
-									style: {
-										WebkitTextSecurity: "disc",
-										textSecurity: "disc",
-									},
-								},
-								input: {
-									endAdornment: isSavingToken ? (
-										<InputAdornment position="end">
-											<CircularProgress size={18} />
-										</InputAdornment>
-									) : inputToken ? (
-										<InputAdornment position="end">
-											<IconButton
-												onClick={onClearToken}
-												onMouseDown={(event) => event.preventDefault()}
-												edge="end"
-												size="small"
-												aria-label={t(
-													"pages.Settings.bgmTokenSettings.clearToken",
-													"清除令牌",
-												)}
-											>
-												<ClearIcon />
-											</IconButton>
-										</InputAdornment>
-									) : null,
-								},
-							}}
-						/>
-						<Box>
-							<Button
-								variant="outlined"
-								color="primary"
-								onMouseDown={(event) => event.preventDefault()}
-								onClick={onOpenTokenPage}
-								size="small"
-							>
-								{t("pages.Settings.getToken", "获取令牌")}
-							</Button>
-						</Box>
-					</Stack>
-				</AccordionDetails>
-			</Accordion>
-		</Box>
-	);
-};
-
-export const BgmTokenSettings = () => {
+export const BgmProviderSection = () => {
 	const { t } = useTranslation();
 	const {
 		bgmAuth,
+		isSettingsLoading,
 		inputToken,
 		isOAuthLoading,
 		isCompletingAuth,
@@ -321,71 +235,441 @@ export const BgmTokenSettings = () => {
 		handleSaveToken,
 		handleClearToken,
 		handleOAuthLogin,
+		handleCancelOAuth,
 		handleCompleteAuth,
 		handleLogout,
 	} = useBgmAuthController();
 
+	const { syncBgmCollection, setSyncBgmCollection } = useStore(
+		useShallow((s) => ({
+			syncBgmCollection: s.syncBgmCollection,
+			setSyncBgmCollection: s.setSyncBgmCollection,
+		})),
+	);
+
+	const isConnected = Boolean(bgmAuth?.access_token);
+
+	useEffect(() => {
+		if (!isSettingsLoading && !isConnected && syncBgmCollection) {
+			setSyncBgmCollection(false);
+		}
+	}, [isConnected, isSettingsLoading, setSyncBgmCollection, syncBgmCollection]);
+
 	return (
-		<SettingsGroup title={t("pages.Settings.bgmToken", "BGM 令牌")}>
-			<Box className="space-y-5">
-				<SettingsItem
-					stacked
-					title={t("pages.Settings.bgmTokenSettings.userInfo", "用户信息")}
-				>
+		<Paper
+			variant="outlined"
+			sx={{
+				p: 2.5,
+				borderRadius: 1,
+				borderColor: "divider",
+			}}
+		>
+			{/* 头部字标 */}
+			<Stack
+				direction="row"
+				justifyContent="space-between"
+				alignItems="center"
+				className="mb-2"
+			>
+				<BgmWordmarkSVG />
+				{!isConnected && (
+					<Chip label="未登录" size="small" variant="outlined" />
+				)}
+			</Stack>
+
+			{/* 平台功能描述 */}
+			<Typography variant="body2" color="text.secondary" className="mb-4">
+				{t(
+					"pages.Settings.bgmTokenSettings.description",
+					"使用 Bangumi 账号登录以读取元数据、游玩状态和推送评价。",
+				)}
+			</Typography>
+
+			{/* 登录与账号状态 */}
+			<Box className="space-y-4">
+				{isConnected ? (
 					<BgmAccountSummary
 						bgmAuth={bgmAuth}
 						isCompletingAuth={isCompletingAuth}
 						onCompleteAuth={handleCompleteAuth}
 						onLogout={handleLogout}
 					/>
-					{!bgmAuth?.access_token && (
+				) : (
+					<Stack spacing={2} alignItems="flex-start">
+						{/* 登录方式提示 */}
 						<Typography variant="caption" color="text.secondary">
 							{t(
-								"pages.Settings.bgmTokenSettings.profileUnavailable",
-								"暂无用户信息，请尝试下方按钮以获取用户信息。",
+								"pages.Settings.bgmTokenSettings.loginMethodsHint",
+								"请任选一种登录方式，推荐 OAuth 快捷登录。",
 							)}
 						</Typography>
-					)}
-				</SettingsItem>
 
-				<SettingsItem
-					stacked
-					title={t("pages.Settings.bgmTokenSettings.loginMethods", "登录方式")}
-					description={t(
-						"pages.Settings.bgmTokenSettings.loginMethodsHint",
-						"请任选一种登录方式，推荐 OAuth 快捷登录。",
-					)}
-				>
-					<Stack spacing={2}>
-						<BgmOAuthLoginButton
-							isLoading={isOAuthLoading}
-							onLogin={handleOAuthLogin}
-						/>
-						<BgmTokenLoginPanel
-							inputToken={inputToken}
-							isSavingToken={isSavingToken}
-							onInputTokenChange={setInputToken}
-							onCommitToken={handleSaveToken}
-							onClearToken={handleClearToken}
-							onOpenTokenPage={handleOpenTokenPage}
-						/>
+						<Stack direction="row" spacing={2} alignItems="center">
+							<Button
+								variant="contained"
+								color={isOAuthLoading ? "warning" : "primary"}
+								startIcon={isOAuthLoading ? <CancelIcon /> : <LoginIcon />}
+								onClick={isOAuthLoading ? handleCancelOAuth : handleOAuthLogin}
+							>
+								{isOAuthLoading
+									? t(
+											"pages.Settings.bgmTokenSettings.oauthCancel",
+											"取消 BGM OAuth 登录",
+										)
+									: t(
+											"pages.Settings.bgmTokenSettings.oauthLogin",
+											"OAuth 快捷登录",
+										)}
+							</Button>
+						</Stack>
+
+						<Accordion
+							elevation={0}
+							sx={{
+								width: "100%",
+								border: "1px solid",
+								borderColor: "divider",
+								"&:before": { display: "none" },
+								borderRadius: 1,
+							}}
+						>
+							<AccordionSummary expandIcon={<ArrowDropDownIcon />}>
+								<Stack direction="row" spacing={1} alignItems="center">
+									<VpnKeyIcon fontSize="small" color="action" />
+									<Typography variant="body2">
+										{t(
+											"pages.Settings.bgmTokenSettings.tokenLogin",
+											"使用 Access Token 登录",
+										)}
+									</Typography>
+								</Stack>
+							</AccordionSummary>
+							<AccordionDetails>
+								<Stack spacing={1.5}>
+									<TextField
+										autoComplete="off"
+										placeholder={t(
+											"pages.Settings.tokenPlaceholder",
+											"请填写你的BGM TOKEN",
+										)}
+										value={inputToken}
+										onChange={(e) => setInputToken(e.target.value)}
+										onBlur={handleSaveToken}
+										onKeyDown={(event) => {
+											if (
+												event.key === "Enter" &&
+												!event.nativeEvent.isComposing
+											) {
+												event.preventDefault();
+												(event.target as HTMLInputElement).blur();
+											}
+										}}
+										variant="outlined"
+										size="small"
+										fullWidth
+										disabled={isSavingToken}
+										slotProps={{
+											htmlInput: {
+												style: {
+													WebkitTextSecurity: "disc",
+													textSecurity: "disc",
+												},
+											},
+											input: {
+												endAdornment: isSavingToken ? (
+													<InputAdornment position="end">
+														<CircularProgress size={18} />
+													</InputAdornment>
+												) : inputToken ? (
+													<InputAdornment position="end">
+														<IconButton
+															onClick={handleClearToken}
+															edge="end"
+															size="small"
+														>
+															<ClearIcon />
+														</IconButton>
+													</InputAdornment>
+												) : null,
+											},
+										}}
+									/>
+									<Box>
+										<Button
+											variant="outlined"
+											color="primary"
+											onClick={handleOpenTokenPage}
+											size="small"
+										>
+											{t("pages.Settings.getToken", "获取令牌")}
+										</Button>
+									</Box>
+								</Stack>
+							</AccordionDetails>
+						</Accordion>
 					</Stack>
-				</SettingsItem>
+				)}
 			</Box>
-		</SettingsGroup>
+
+			<Divider className="my-4" />
+
+			{/* 同步设置控制 */}
+			<Stack direction="row" justifyContent="space-between" alignItems="center">
+				<Box>
+					<Stack direction="row" spacing={1} alignItems="center">
+						<SyncIcon fontSize="small" color="action" />
+						<Typography variant="subtitle2" className="font-semibold">
+							{t("pages.Settings.collectionSync.bgmTitle", "Bangumi 收藏同步")}
+						</Typography>
+					</Stack>
+					<Typography variant="caption" color="text.secondary">
+						{t(
+							"pages.Settings.collectionSync.bgmDescription",
+							"添加游戏时自动读取 BGM 状态，修改时实时同步回 BGM。",
+						)}
+					</Typography>
+				</Box>
+				<Switch
+					checked={isConnected && syncBgmCollection}
+					onChange={(e) => setSyncBgmCollection(e.target.checked)}
+					disabled={isSettingsLoading || !isConnected}
+					color="primary"
+				/>
+			</Stack>
+		</Paper>
 	);
 };
 
-// ==================== VNDB Token 设置 ====================
+export const BgmTokenSettings = BgmProviderSection;
 
-export const VndbTokenSettings = () => {
+// ==================== Hikarinagi 账号与同步板块 ====================
+
+type HikarinagiAccountSummaryProps = {
+	auth?: HikarinagiAuth | null;
+	profile?: HikarinagiUserProfile | null;
+	onLogout: () => void;
+};
+
+const HikarinagiAccountSummary = ({
+	auth,
+	profile,
+	onLogout,
+}: HikarinagiAccountSummaryProps) => {
 	const { t } = useTranslation();
-	const { data: settings } = useAllSettings();
+	const resolveImageUrl = useProxyImageUrlResolver();
+	if (!auth?.access_token) return null;
+
+	const expiresAt = auth.expires_at ?? null;
+	const expiresDate = expiresAt
+		? new Date(expiresAt * 1000).toLocaleString()
+		: null;
+	const isExpired = expiresAt ? Date.now() / 1000 >= expiresAt : false;
+	const displayName = auth.name || `#${auth.user_id ?? "?"}`;
+
+	return (
+		<Stack direction="row" spacing={2} alignItems="flex-start" className="mb-2">
+			<Avatar
+				src={resolveImageUrl(profile?.avatar?.src)}
+				alt={displayName}
+				sx={{ width: 44, height: 44 }}
+			>
+				{displayName.slice(0, 1).toUpperCase()}
+			</Avatar>
+			<Box className="min-w-0 flex-1">
+				<Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+					<Typography variant="body1" className="font-semibold">
+						{displayName}
+					</Typography>
+					<Chip label="OAuth" size="small" color="primary" variant="outlined" />
+				</Stack>
+				{auth.user_id != null && (
+					<Typography
+						variant="caption"
+						color="text.secondary"
+						className="block"
+					>
+						{t("pages.Settings.hikarinagiAuth.userId", "用户 ID: {{id}}", {
+							id: auth.user_id,
+						})}
+					</Typography>
+				)}
+				<Typography
+					variant="caption"
+					color={isExpired ? "error.main" : "text.secondary"}
+					className="block mt-1"
+				>
+					{expiresDate
+						? t(
+								"pages.Settings.hikarinagiAuth.tokenExpiresAt",
+								"Token 有效期至: {{date}}",
+								{ date: expiresDate },
+							)
+						: t(
+								"pages.Settings.hikarinagiAuth.tokenExpiryUnknown",
+								"Token 有效期未知",
+							)}
+				</Typography>
+			</Box>
+			<Button variant="outlined" color="error" size="small" onClick={onLogout}>
+				{t("pages.Settings.hikarinagiAuth.logout", "退出登录")}
+			</Button>
+		</Stack>
+	);
+};
+
+export const HikarinagiProviderSection = () => {
+	const { t } = useTranslation();
+	const {
+		hikarinagiAuth,
+		hikarinagiProfile,
+		isSettingsLoading,
+		isOAuthLoading,
+		isSaving,
+		handleOAuthLogin,
+		handleCancelOAuth,
+		handleLogout,
+	} = useHikarinagiAuthController();
+
+	const { syncHikarinagiCollection, setSyncHikarinagiCollection } = useStore(
+		useShallow((s) => ({
+			syncHikarinagiCollection: s.syncHikarinagiCollection,
+			setSyncHikarinagiCollection: s.setSyncHikarinagiCollection,
+		})),
+	);
+
+	const isConnected = Boolean(hikarinagiAuth?.access_token);
+
+	useEffect(() => {
+		if (!isSettingsLoading && !isConnected && syncHikarinagiCollection) {
+			setSyncHikarinagiCollection(false);
+		}
+	}, [
+		isConnected,
+		isSettingsLoading,
+		setSyncHikarinagiCollection,
+		syncHikarinagiCollection,
+	]);
+
+	return (
+		<Paper
+			variant="outlined"
+			sx={{
+				p: 2.5,
+				borderRadius: 1,
+				borderColor: "divider",
+			}}
+		>
+			{/* 头部字标 */}
+			<Stack
+				direction="row"
+				justifyContent="space-between"
+				alignItems="center"
+				className="mb-2"
+			>
+				<HikarinagiWordmarkSVG />
+				{!isConnected && (
+					<Chip label="未登录" size="small" variant="outlined" />
+				)}
+			</Stack>
+
+			{/* 平台功能描述 */}
+			<Typography variant="body2" color="text.secondary" className="mb-4">
+				{t(
+					"pages.Settings.hikarinagiAuth.description",
+					"使用 Hikarinagi OAuth 登录以读取元数据、游玩状态和推送评价。",
+				)}
+			</Typography>
+
+			{/* 账号及授权操作 */}
+			<Box className="space-y-4">
+				{isConnected ? (
+					<HikarinagiAccountSummary
+						auth={hikarinagiAuth}
+						profile={hikarinagiProfile}
+						onLogout={handleLogout}
+					/>
+				) : (
+					<Stack spacing={2} alignItems="flex-start">
+						<Button
+							variant="contained"
+							color={isOAuthLoading ? "warning" : "primary"}
+							startIcon={
+								isSaving ? (
+									<CircularProgress size={18} />
+								) : isOAuthLoading ? (
+									<CancelIcon />
+								) : (
+									<LoginIcon />
+								)
+							}
+							onClick={isOAuthLoading ? handleCancelOAuth : handleOAuthLogin}
+							disabled={isSaving}
+						>
+							{isOAuthLoading
+								? t(
+										"pages.Settings.hikarinagiAuth.oauthCancel",
+										"取消 Hikarinagi OAuth 登录",
+									)
+								: t(
+										"pages.Settings.hikarinagiAuth.oauthLogin",
+										"OAuth 快捷登录",
+									)}
+						</Button>
+					</Stack>
+				)}
+			</Box>
+
+			<Divider className="my-4" />
+
+			{/* 同步设置控制 */}
+			<Stack direction="row" justifyContent="space-between" alignItems="center">
+				<Box>
+					<Stack direction="row" spacing={1} alignItems="center">
+						<SyncIcon fontSize="small" color="action" />
+						<Typography variant="subtitle2" className="font-semibold">
+							{t(
+								"pages.Settings.collectionSync.hikarinagiTitle",
+								"Hikarinagi 游玩状态同步",
+							)}
+						</Typography>
+					</Stack>
+					<Typography variant="caption" color="text.secondary">
+						{t(
+							"pages.Settings.collectionSync.hikarinagiDescription",
+							"添加游戏时自动读取 Hikarinagi 游玩状态，本地修改状态实时同步。",
+						)}
+					</Typography>
+				</Box>
+				<Switch
+					checked={isConnected && syncHikarinagiCollection}
+					onChange={(e) => setSyncHikarinagiCollection(e.target.checked)}
+					disabled={isSettingsLoading || !isConnected}
+					color="primary"
+				/>
+			</Stack>
+		</Paper>
+	);
+};
+
+export const HikarinagiAuthSettings = HikarinagiProviderSection;
+
+// ==================== VNDB 账号与同步板块 ====================
+
+export const VndbProviderSection = () => {
+	const { t } = useTranslation();
+	const { data: settings, isLoading: isSettingsLoading } = useAllSettings();
 	const vndbToken = settings?.vndb_token ?? "";
 	const { data: vndbProfile, isLoading: isVndbProfileLoading } =
 		useVndbCurrentUserProfile();
 	const updateSettingsMutation = useUpdateSettings();
 	const [inputToken, setInputToken] = useState("");
+
+	const { syncVndbCollection, setSyncVndbCollection } = useStore(
+		useShallow((s) => ({
+			syncVndbCollection: s.syncVndbCollection,
+			setSyncVndbCollection: s.setSyncVndbCollection,
+		})),
+	);
 
 	useEffect(() => {
 		setInputToken(vndbToken);
@@ -433,126 +717,189 @@ export const VndbTokenSettings = () => {
 		}
 	};
 
+	const hasVndbToken = Boolean(vndbToken);
+	const isConnected = Boolean(hasVndbToken && vndbProfile);
+
+	useEffect(() => {
+		if (!isSettingsLoading && !hasVndbToken && syncVndbCollection) {
+			setSyncVndbCollection(false);
+		}
+	}, [
+		hasVndbToken,
+		isSettingsLoading,
+		setSyncVndbCollection,
+		syncVndbCollection,
+	]);
+
 	return (
-		<SettingsGroup title={t("pages.Settings.vndbToken", "VNDB 令牌")}>
-			{vndbToken && (
-				<Box>
-					{isVndbProfileLoading ? (
-						<Typography variant="caption" color="text.secondary">
-							{t(
-								"pages.Settings.vndbTokenSettings.loadingProfile",
-								"正在获取当前 VNDB 账号信息...",
-							)}
-						</Typography>
-					) : vndbProfile ? (
-						<Box>
-							<Typography variant="body2" className="font-semibold">
-								{vndbProfile.username}
-							</Typography>
+		<Paper
+			variant="outlined"
+			sx={{
+				p: 2.5,
+				borderRadius: 1,
+				borderColor: "divider",
+			}}
+		>
+			{/* 头部字标 */}
+			<Stack
+				direction="row"
+				justifyContent="space-between"
+				alignItems="center"
+				className="mb-2"
+			>
+				<VndbWordmarkSVG />
+				{!isConnected && (
+					<Chip label="未登录" size="small" variant="outlined" />
+				)}
+			</Stack>
+
+			{/* 平台功能描述 */}
+			<Typography variant="body2" color="text.secondary" className="mb-4">
+				{t(
+					"pages.Settings.vndbTokenSettings.description",
+					"使用 VNDB Token 登录以读取游玩状态和推送评价。",
+				)}
+			</Typography>
+
+			{/* 账号 Profile 及 Token 设置 */}
+			<Box className="space-y-4">
+				{vndbToken && (
+					<Box>
+						{isVndbProfileLoading ? (
 							<Typography variant="caption" color="text.secondary">
 								{t(
-									"pages.Settings.vndbTokenSettings.userId",
-									"用户 ID: {{id}}",
-									{ id: vndbProfile.id },
+									"pages.Settings.vndbTokenSettings.loadingProfile",
+									"正在获取当前 VNDB 账号信息...",
 								)}
 							</Typography>
-							<Typography
-								variant="caption"
-								color="text.secondary"
-								className="block"
-							>
+						) : vndbProfile ? (
+							<Box>
+								<Typography variant="body2" className="font-semibold">
+									{vndbProfile.username}
+								</Typography>
+								<Typography variant="caption" color="text.secondary">
+									{t(
+										"pages.Settings.vndbTokenSettings.userId",
+										"用户 ID: {{id}}",
+										{ id: vndbProfile.id },
+									)}
+								</Typography>
+								<Typography
+									variant="caption"
+									color="text.secondary"
+									className="block"
+								>
+									{t(
+										"pages.Settings.vndbTokenSettings.permissions",
+										"权限: {{permissions}}",
+										{
+											permissions: vndbProfile.permissions.join(", ") || "none",
+										},
+									)}
+								</Typography>
+							</Box>
+						) : (
+							<Typography variant="caption" color="error">
 								{t(
-									"pages.Settings.vndbTokenSettings.permissions",
-									"权限: {{permissions}}",
-									{
-										permissions: vndbProfile.permissions.join(", ") || "none",
-									},
+									"pages.Settings.vndbTokenSettings.profileUnavailable",
+									"当前 VNDB Token 无法获取用户信息，请检查令牌或权限是否有效。",
 								)}
 							</Typography>
-						</Box>
-					) : (
-						<Typography variant="caption" color="text.secondary">
-							{t(
-								"pages.Settings.vndbTokenSettings.profileUnavailable",
-								"当前 VNDB Token 无法获取用户信息，请检查令牌或权限是否有效。",
-							)}
-						</Typography>
-					)}
-				</Box>
-			)}
+						)}
+					</Box>
+				)}
 
-			<Stack spacing={1.5}>
-				<TextField
-					autoComplete="off"
-					placeholder={t(
-						"pages.Settings.vndbTokenPlaceholder",
-						"请填写你的 VNDB Token",
-					)}
-					value={inputToken}
-					onChange={(e) => setInputToken(e.target.value)}
-					onBlur={handleSaveToken}
-					onKeyDown={(event) => {
-						if (event.key === "Enter" && !event.nativeEvent.isComposing) {
-							event.preventDefault();
-							(event.target as HTMLInputElement).blur();
-						}
-						if (event.key === "Escape") {
-							event.preventDefault();
-							setInputToken(vndbToken);
-						}
-					}}
-					variant="outlined"
-					size="small"
-					fullWidth
-					disabled={updateSettingsMutation.isPending}
-					slotProps={{
-						htmlInput: {
-							style: {
-								WebkitTextSecurity: "disc",
-								textSecurity: "disc",
-							},
-						},
-						input: {
-							endAdornment: updateSettingsMutation.isPending ? (
-								<InputAdornment position="end">
-									<CircularProgress size={18} />
-								</InputAdornment>
-							) : inputToken ? (
-								<InputAdornment position="end">
-									<IconButton
-										onClick={handleClearToken}
-										onMouseDown={(event) => event.preventDefault()}
-										edge="end"
-										size="small"
-										aria-label={t(
-											"pages.Settings.vndbTokenSettings.clearToken",
-											"清除令牌",
-										)}
-									>
-										<ClearIcon />
-									</IconButton>
-								</InputAdornment>
-							) : null,
-						},
-					}}
-				/>
-				<Box>
-					<Button
+				<Stack spacing={1.5}>
+					<TextField
+						autoComplete="off"
+						placeholder={t(
+							"pages.Settings.vndbTokenPlaceholder",
+							"请填写你的 VNDB Token",
+						)}
+						value={inputToken}
+						onChange={(e) => setInputToken(e.target.value)}
+						onBlur={handleSaveToken}
+						onKeyDown={(event) => {
+							if (event.key === "Enter" && !event.nativeEvent.isComposing) {
+								event.preventDefault();
+								(event.target as HTMLInputElement).blur();
+							}
+							if (event.key === "Escape") {
+								event.preventDefault();
+								setInputToken(vndbToken);
+							}
+						}}
 						variant="outlined"
-						color="primary"
-						onMouseDown={(event) => event.preventDefault()}
-						onClick={handleOpen}
 						size="small"
-					>
-						{t("pages.Settings.getToken", "获取令牌")}
-					</Button>
+						fullWidth
+						disabled={updateSettingsMutation.isPending}
+						slotProps={{
+							htmlInput: {
+								style: {
+									WebkitTextSecurity: "disc",
+									textSecurity: "disc",
+								},
+							},
+							input: {
+								endAdornment: updateSettingsMutation.isPending ? (
+									<InputAdornment position="end">
+										<CircularProgress size={18} />
+									</InputAdornment>
+								) : inputToken ? (
+									<InputAdornment position="end">
+										<IconButton
+											onClick={handleClearToken}
+											edge="end"
+											size="small"
+										>
+											<ClearIcon />
+										</IconButton>
+									</InputAdornment>
+								) : null,
+							},
+						}}
+					/>
+					<Box>
+						<Button
+							variant="outlined"
+							color="primary"
+							onClick={handleOpen}
+							size="small"
+						>
+							{t("pages.Settings.getToken", "获取令牌")}
+						</Button>
+					</Box>
+				</Stack>
+			</Box>
+
+			<Divider className="my-4" />
+
+			{/* 同步设置控制 */}
+			<Stack direction="row" justifyContent="space-between" alignItems="center">
+				<Box>
+					<Stack direction="row" spacing={1} alignItems="center">
+						<SyncIcon fontSize="small" color="action" />
+						<Typography variant="subtitle2" className="font-semibold">
+							{t("pages.Settings.collectionSync.vndbTitle", "VNDB 收藏同步")}
+						</Typography>
+					</Stack>
+					<Typography variant="caption" color="text.secondary">
+						{t(
+							"pages.Settings.collectionSync.vndbDescription",
+							"添加游戏时自动读取 VNDB 收藏状态，修改时实时同步回 BGM。",
+						)}
+					</Typography>
 				</Box>
+				<Switch
+					checked={hasVndbToken && syncVndbCollection}
+					onChange={(e) => setSyncVndbCollection(e.target.checked)}
+					disabled={isSettingsLoading || !hasVndbToken}
+					color="primary"
+				/>
 			</Stack>
-		</SettingsGroup>
+		</Paper>
 	);
 };
-
-// ==================== Steam Web API Key 设置 ====================
 
 export const SteamApiKeySettings = () => {
 	const { t } = useTranslation();
@@ -687,60 +1034,24 @@ export const SteamApiKeySettings = () => {
 	);
 };
 
-// ==================== 收藏同步设置 ====================
+export const VndbTokenSettings = VndbProviderSection;
 
-export const CollectionSyncSettings = () => {
-	const { t } = useTranslation();
-	const {
-		syncBgmCollection,
-		setSyncBgmCollection,
-		syncVndbCollection,
-		setSyncVndbCollection,
-	} = useStore(
-		useShallow((s) => ({
-			syncBgmCollection: s.syncBgmCollection,
-			setSyncBgmCollection: s.setSyncBgmCollection,
-			syncVndbCollection: s.syncVndbCollection,
-			setSyncVndbCollection: s.setSyncVndbCollection,
-		})),
-	);
+// 保留 CollectionSyncSettings 供旧界面防报错导出
+export const CollectionSyncSettings = () => null;
 
+// ==================== 对外主封装组件：AccountSettings (每个板块独立 Paper 卡片) ====================
+
+export const AccountSettings = () => {
 	return (
-		<SettingsGroup
-			title={t("pages.Settings.collectionSync.title", "收藏状态同步")}
-		>
-			<SettingsItem
-				title={t(
-					"pages.Settings.collectionSync.bgmTitle",
-					"启用 Bangumi 收藏同步",
-				)}
-				description={t(
-					"pages.Settings.collectionSync.bgmDescription",
-					"添加游戏时尝试读取 BGM 收藏状态，本地修改状态时同步回 BGM。",
-				)}
-			>
-				<Switch
-					checked={syncBgmCollection}
-					onChange={(e) => setSyncBgmCollection(e.target.checked)}
-					color="primary"
-				/>
-			</SettingsItem>
-			<SettingsItem
-				title={t(
-					"pages.Settings.collectionSync.vndbTitle",
-					"启用 VNDB 收藏同步",
-				)}
-				description={t(
-					"pages.Settings.collectionSync.vndbDescription",
-					"添加游戏时尝试读取 VNDB 收藏状态，本地修改状态时同步回 VNDB。",
-				)}
-			>
-				<Switch
-					checked={syncVndbCollection}
-					onChange={(e) => setSyncVndbCollection(e.target.checked)}
-					color="primary"
-				/>
-			</SettingsItem>
-		</SettingsGroup>
+		<Stack spacing={2.5}>
+			<BgmProviderSection />
+			<HikarinagiProviderSection />
+			<VndbProviderSection />
+			<SteamApiKeySettings />
+		</Stack>
 	);
 };
+
+export const AccountAndSyncSettings = AccountSettings;
+
+export default AccountSettings;

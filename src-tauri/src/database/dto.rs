@@ -4,7 +4,7 @@
 //! 重构后采用单表架构，元数据以 JSON 列形式嵌入 games 表。
 
 use crate::entity::custom_data::CustomData;
-use crate::entity::user::BgmAuth;
+use crate::entity::user::{BgmAuth, HikarinagiAuth};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 use std::path::PathBuf;
@@ -101,6 +101,15 @@ fn clean_double_option_steam_process_path(value: Option<Option<String>>) -> Opti
 }
 
 fn clean_bgm_auth(mut auth: BgmAuth) -> Option<BgmAuth> {
+    auth.access_token = auth.access_token.trim().to_string();
+    if auth.access_token.is_empty() {
+        None
+    } else {
+        Some(auth)
+    }
+}
+
+fn clean_hikarinagi_auth(mut auth: HikarinagiAuth) -> Option<HikarinagiAuth> {
     auth.access_token = auth.access_token.trim().to_string();
     if auth.access_token.is_empty() {
         None
@@ -219,6 +228,8 @@ pub struct UpdateSettingsData {
     #[serde(default, deserialize_with = "double_option")]
     pub bgm_auth: Option<Option<BgmAuth>>,
     #[serde(default, deserialize_with = "double_option")]
+    pub hikarinagi_auth: Option<Option<HikarinagiAuth>>,
+    #[serde(default, deserialize_with = "double_option")]
     pub vndb_token: Option<Option<String>>,
     #[serde(default, deserialize_with = "double_option")]
     pub steam_api_key: Option<Option<String>>,
@@ -239,6 +250,9 @@ impl UpdateSettingsData {
     /// 返回清洗后的数据，将空字符串转换为 None
     pub fn cleaned(mut self) -> Self {
         self.bgm_auth = self.bgm_auth.map(|inner| inner.and_then(clean_bgm_auth));
+        self.hikarinagi_auth = self
+            .hikarinagi_auth
+            .map(|inner| inner.and_then(clean_hikarinagi_auth));
         self.vndb_token = clean_double_option_string(self.vndb_token);
         self.steam_api_key = clean_double_option_string(self.steam_api_key);
         self.save_root_path = clean_double_option_string(self.save_root_path);

@@ -642,6 +642,7 @@
 				"bgmRoundNotice": "BGM には {{rating}} 点として送信されます",
 				"cloudPush": "クラウド送信",
 				"cloudPushHelperText": "送信には現在のフォーム内容を使用し、選択したサイトの評価とレビューを上書きします",
+				"hikarinagiSpoiler": "ネタバレを含む",
 				"localReview": "ローカル評価",
 				"myRating": "自分の評価",
 				"myReview": "自分のレビュー",
@@ -708,20 +709,20 @@
 				"updatingBgm": "BGMデータを一括更新中...",
 				"updatingVndb": "VNDBデータを一括更新中..."
 			},
-			"bgmToken": "BGM トークン",
 			"bgmTokenSettings": {
-				"clearToken": "トークンをクリア",
-				"loginMethods": "ログイン方法",
+				"description": "Bangumi アカウントでログインしてメタデータとプレイ状況を読み取り、レビューを投稿します。",
 				"loginMethodsHint": "いずれかのログイン方法を選択してください。OAuth クイックログインを推奨します。",
 				"logout": "ログアウト",
 				"logoutError": "ログアウトに失敗しました",
 				"logoutSuccess": "BGM からログアウトしました",
+				"oauthCancel": "BGM OAuth ログインをキャンセル",
+				"oauthCancelError": "BGM OAuth ログインのキャンセルに失敗しました: {{error}}",
+				"oauthCancelled": "BGM OAuth ログインをキャンセルしました",
 				"oauthError": "OAuth ログインに失敗しました: {{error}}",
 				"oauthLogin": "OAuth クイックログイン",
 				"oauthStartError": "OAuth ログインの開始に失敗しました: {{error}}",
 				"oauthSuccess": "Bangumi OAuth ログインに成功しました",
 				"oauthWaiting": "ブラウザで認可を完了してください...",
-				"profileUnavailable": "ユーザー情報はまだありません。下のボタンでユーザー情報を取得してください。",
 				"queryingTokenStatus": "Token 状態を照会中...",
 				"queryTokenStatus": "Token 状態を照会",
 				"reloginRequired": "Bangumi のログインが無効になりました。再度ログインしてください。",
@@ -731,8 +732,7 @@
 				"tokenExpiryUnknown": "Token 有効期限不明",
 				"tokenLogin": "Access Token ログイン",
 				"tokenStatusError": "Token 状態を照会できません: {{error}}",
-				"tokenStatusSuccess": "認可情報を更新しました",
-				"userInfo": "ユーザー情報"
+				"tokenStatusSuccess": "認可情報を更新しました"
 			},
 			"cardClickMode": {
 				"description": "ライブラリとコレクションのゲームカードをシングルクリックしたときの動作です。どちらのモードでもダブルクリックでゲームを起動できます。",
@@ -749,8 +749,9 @@
 			"collectionSync": {
 				"bgmDescription": "ゲーム追加時に BGM のコレクション状態を読み取り、ローカルで状態を変更したときに BGM に同期します。",
 				"bgmTitle": "Bangumi コレクション同期を有効化",
+				"hikarinagiDescription": "ゲーム追加時に Hikarinagi のプレイ状況を読み取り、ローカルの変更を Hikarinagi に同期します。",
+				"hikarinagiTitle": "Hikarinagi プレイ状況同期を有効化",
 				"syncFailed": "ローカル状態は更新されましたが、{{source}} へのクラウド同期に失敗しました",
-				"title": "コレクション同期",
 				"vndbDescription": "ゲーム追加時に VNDB のコレクション状態を読み取り、ローカルで状態を変更したときに VNDB に同期します。",
 				"vndbTitle": "VNDB コレクション同期を有効化"
 			},
@@ -791,6 +792,24 @@
 				"tooltip": "以下の機能は実験的な機能です。慎重にお使いください"
 			},
 			"getToken": "トークンを取得",
+			"hikarinagiAuth": {
+				"description": "Hikarinagi OAuth でログインしてメタデータとプレイ状況を読み取り、レビューを投稿します。",
+				"logout": "ログアウト",
+				"logoutError": "Hikarinagi からのログアウトに失敗しました",
+				"logoutSuccess": "Hikarinagi からログアウトしました",
+				"oauthCancel": "Hikarinagi OAuth ログインをキャンセル",
+				"oauthCancelError": "Hikarinagi OAuth ログインのキャンセルに失敗しました: {{error}}",
+				"oauthCancelled": "Hikarinagi OAuth ログインをキャンセルしました",
+				"oauthError": "Hikarinagi OAuth ログインに失敗しました: {{error}}",
+				"oauthLogin": "OAuth クイックログイン",
+				"oauthStartError": "Hikarinagi OAuth ログインを開始できませんでした: {{error}}",
+				"oauthSuccess": "Hikarinagi OAuth ログインに成功しました",
+				"oauthWaiting": "ブラウザで Hikarinagi の認証を完了してください...",
+				"reloginRequired": "Hikarinagi のログインが無効になりました。再度ログインしてください。",
+				"tokenExpiresAt": "Token の有効期限: {{date}}",
+				"tokenExpiryUnknown": "Token の有効期限は不明です",
+				"userId": "ユーザー ID: {{id}}"
+			},
 			"language": "言語",
 			"linuxLaunchCommand": {
 				"commandLabel": "起動コマンド",
@@ -876,10 +895,9 @@
 			"vndbData": {
 				"title": "VNDBデータ設定"
 			},
-			"vndbToken": "VNDB トークン",
 			"vndbTokenPlaceholder": "VNDB Token を入力してください",
 			"vndbTokenSettings": {
-				"clearToken": "トークンをクリア",
+				"description": "VNDB トークンでログインしてプレイ状況を読み取り、レビューを投稿します。",
 				"loadingProfile": "現在の VNDB アカウント情報を取得中...",
 				"permissions": "権限: {{permissions}}",
 				"profileUnavailable": "現在の VNDB Token ではユーザー情報を取得できません。トークンまたは権限が有効か確認してください。",

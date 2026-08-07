@@ -24,6 +24,7 @@ const SUPPORTED_REQUEST_PARAMS: &[&str] = &[
     "expires_at",
     "bgm_id",
     "vndb_id",
+    "hikarinagi_id",
     "title",
 ];
 const SUPPORTED_ARCHIVE_FORMATS: &[&str] = &[
@@ -44,6 +45,7 @@ pub struct InstallRequest {
     pub expires_at: i64,
     pub bgm_id: String,
     pub vndb_id: Option<String>,
+    pub hikarinagi_id: Option<String>,
     pub title: String,
 }
 
@@ -91,6 +93,13 @@ impl InstallRequest {
             .is_some_and(|value| value.trim().is_empty())
         {
             return Err("vndb_id 不能为空".to_string());
+        }
+        if self
+            .hikarinagi_id
+            .as_deref()
+            .is_some_and(|value| value.trim().is_empty())
+        {
+            return Err("hikarinagi_id 不能为空".to_string());
         }
         if self.title.trim().is_empty() {
             return Err("title 不能为空".to_string());
@@ -263,6 +272,12 @@ pub fn parse_install_url(url: Url) -> Result<InstallRequest, String> {
         Some(value) => Some(non_empty_owned(value).ok_or_else(|| "vndb_id 不能为空".to_string())?),
         None => None,
     };
+    let hikarinagi_id = match optional_param(&params, "hikarinagi_id") {
+        Some(value) => {
+            Some(non_empty_owned(value).ok_or_else(|| "hikarinagi_id 不能为空".to_string())?)
+        }
+        None => None,
+    };
     let title = required_param(&params, "title")?.trim().to_string();
 
     InstallRequest {
@@ -284,6 +299,7 @@ pub fn parse_install_url(url: Url) -> Result<InstallRequest, String> {
             .map_err(|_| "expires_at 无效".to_string())?,
         bgm_id,
         vndb_id,
+        hikarinagi_id,
         title,
     }
     .validate()
@@ -390,5 +406,17 @@ mod tests {
                 .unwrap_err()
                 .contains("缺少参数: bgm_id")
         );
+    }
+
+    #[test]
+    fn parses_optional_hikarinagi_id() {
+        let url = Url::parse(&format!(
+            "reinamanager://install?{}&url=https%3A%2F%2Fexample.com%2Fgame.zip&hikarinagi_id=789",
+            base_query()
+        ))
+        .unwrap();
+
+        let request = parse_install_url(url).unwrap();
+        assert_eq!(request.hikarinagi_id.as_deref(), Some("789"));
     }
 }

@@ -79,6 +79,9 @@ export function getDisplayGameData(fullData: FullGameData): GameData {
 			vndb: sourceDataMap.vndb
 				? getSourceDisplayFields("vndb", sourceDataMap.vndb).score
 				: undefined,
+			hikarinagi: sourceDataMap.hikarinagi
+				? getSourceDisplayFields("hikarinagi", sourceDataMap.hikarinagi).score
+				: undefined,
 		},
 		developer: undefined,
 		all_titles: undefined,

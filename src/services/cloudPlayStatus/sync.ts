@@ -1,5 +1,9 @@
 import { fetchUserCollection, updateUserCollection } from "@/metadata/api/bgm";
 import {
+	fetchHikarinagiGameRate,
+	updateHikarinagiGameRate,
+} from "@/metadata/api/hikarinagi";
+import {
 	fetchVndbUserCollection,
 	updateVndbUserCollection,
 } from "@/metadata/api/vndb";
@@ -7,7 +11,8 @@ import {
 	getAnySourceId,
 	type SourceIdentityPayload,
 } from "@/metadata/sourceRecord";
-import { withBgmAuth } from "@/services/bgmAuthSession";
+import { withBgmAuth } from "@/services/oauth/bgmAuthSession";
+import { withHikarinagiAuth } from "@/services/oauth/hikarinagiAuthSession";
 import { getNetworkRequestContext } from "@/services/requestContext";
 import { useStore } from "@/store/appStore";
 import type { PlayStatus } from "@/types/collection";
@@ -16,13 +21,15 @@ import {
 	getBgmUsername,
 	getVndbToken,
 	mapBgmTypeToPlayStatus,
+	mapHikarinagiStatusToPlayStatus,
+	mapPlayStatusToHikarinagiStatus,
 	mapPlayStatusToVndbLabelId,
 	mapVndbCollectionToPlayStatus,
 	resolveCloudPlayStatusFromContext,
 	VNDB_NORMAL_STATUS_LABEL_IDS,
 } from "./shared";
 
-type CollectionSyncSource = "bgm" | "vndb";
+type CollectionSyncSource = "bgm" | "vndb" | "hikarinagi";
 
 async function resolveBgmPlayStatus(game: SourceIdentityPayload) {
 	const bgmId = getAnySourceId(game, "bgm");
@@ -68,11 +75,32 @@ async function resolveVndbPlayStatus(game: SourceIdentityPayload) {
 	}
 }
 
+async function resolveHikarinagiPlayStatus(game: SourceIdentityPayload) {
+	const hikarinagiId = getAnySourceId(game, "hikarinagi");
+	if (!hikarinagiId) return undefined;
+
+	try {
+		const rate = await withHikarinagiAuth(async (token) => {
+			if (!token) return undefined;
+			return fetchHikarinagiGameRate(
+				hikarinagiId,
+				token,
+				getNetworkRequestContext(),
+			);
+		});
+		return mapHikarinagiStatusToPlayStatus(rate?.status);
+	} catch (error) {
+		console.error("获取 Hikarinagi 游玩状态失败:", error);
+		return undefined;
+	}
+}
+
 export async function resolveCloudPlayStatus(
 	game: SourceIdentityPayload,
 	context?: CloudPlayStatusContext,
 ) {
-	const { syncBgmCollection, syncVndbCollection } = useStore.getState();
+	const { syncBgmCollection, syncVndbCollection, syncHikarinagiCollection } =
+		useStore.getState();
 
 	if (context) {
 		const status = resolveCloudPlayStatusFromContext(game, context);
@@ -88,6 +116,11 @@ export async function resolveCloudPlayStatus(
 	if (syncVndbCollection) {
 		const vndbStatus = await resolveVndbPlayStatus(game);
 		if (vndbStatus !== undefined) return vndbStatus;
+	}
+
+	if (syncHikarinagiCollection) {
+		const hikarinagiStatus = await resolveHikarinagiPlayStatus(game);
+		if (hikarinagiStatus !== undefined) return hikarinagiStatus;
 	}
 
 	return undefined;
@@ -148,11 +181,35 @@ async function syncPlayStatusToVndb(
 	}
 }
 
+async function syncPlayStatusToHikarinagi(
+	game: SourceIdentityPayload,
+	newStatus: PlayStatus,
+) {
+	const hikarinagiId = getAnySourceId(game, "hikarinagi");
+	if (!hikarinagiId) return true;
+
+	try {
+		return await withHikarinagiAuth(async (token) => {
+			if (!token) return false;
+			return updateHikarinagiGameRate(
+				hikarinagiId,
+				{ status: mapPlayStatusToHikarinagiStatus(newStatus) },
+				token,
+				getNetworkRequestContext(),
+			);
+		});
+	} catch (error) {
+		console.error("同步 Hikarinagi 游玩状态失败:", error);
+		return false;
+	}
+}
+
 export async function syncPlayStatusToCloud(
 	game: SourceIdentityPayload,
 	newStatus: PlayStatus,
 ): Promise<CollectionSyncSource[]> {
-	const { syncBgmCollection, syncVndbCollection } = useStore.getState();
+	const { syncBgmCollection, syncVndbCollection, syncHikarinagiCollection } =
+		useStore.getState();
 	const failedSources: CollectionSyncSource[] = [];
 
 	if (syncBgmCollection) {
@@ -163,6 +220,11 @@ export async function syncPlayStatusToCloud(
 	if (syncVndbCollection) {
 		const success = await syncPlayStatusToVndb(game, newStatus);
 		if (!success) failedSources.push("vndb");
+	}
+
+	if (syncHikarinagiCollection) {
+		const success = await syncPlayStatusToHikarinagi(game, newStatus);
+		if (!success) failedSources.push("hikarinagi");
 	}
 
 	return failedSources;

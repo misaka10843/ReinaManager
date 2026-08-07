@@ -31,6 +31,7 @@ export interface InstallRequest {
 	expires_at: number;
 	bgm_id: string;
 	vndb_id?: string | null;
+	hikarinagi_id?: string | null;
 	title: string;
 }
 
@@ -40,7 +41,7 @@ export interface GameInstallResultV1 {
 	install_path: string;
 	executable?: string | null;
 	created_new_game?: boolean | null;
-	matched_by?: "bgm" | null;
+	matched_by?: "bgm" | "vndb" | "hikarinagi" | null;
 }
 
 export interface GameInstallPayloadV1 extends InstallRequest {

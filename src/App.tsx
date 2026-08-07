@@ -10,13 +10,15 @@ import WindowsHandler from "@/components/Windows";
 import { appRoutes } from "@/providers/router"; // 引入新的统一配置
 import { SnackbarUtilsConfigurator } from "@/providers/snackBar";
 import { ToolpadReactRouterAppProvider } from "@/providers/ToolpadReactRouterAppProvider";
-import { initBgmAuthRefresh } from "@/services/bgmAuthSession";
+import { initBgmAuthRefresh } from "@/services/oauth/bgmAuthSession";
+import { initHikarinagiAuthRefresh } from "@/services/oauth/hikarinagiAuthSession";
 
 const App: React.FC = () => {
 	const { t } = useTranslation();
 
 	useEffect(() => {
 		void initBgmAuthRefresh();
+		void initHikarinagiAuthRefresh();
 	}, []);
 
 	// 从路由配置动态生成导航菜单

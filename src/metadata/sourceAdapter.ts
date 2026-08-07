@@ -11,6 +11,7 @@ export interface MetadataRequestContext extends NetworkRequestContext {
 	bgmToken?: string;
 	/** Steam Web API Key：存在时允许在线 appdetails 补全元数据 */
 	steamApiKey?: string;
+	hikarinagiToken?: string;
 }
 
 export interface MetadataSourceContext extends MetadataRequestContext {

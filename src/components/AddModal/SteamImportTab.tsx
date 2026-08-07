@@ -22,8 +22,11 @@ import { useAllSettings } from "@/hooks/queries/useSettings";
 import { getRuntimeSourceAdapter, SEARCHABLE_SOURCE_KEYS } from "@/metadata";
 import { getGameIdentityKeys } from "@/metadata/data/metadata";
 import { snackbar } from "@/providers/snackBar";
-import { isBgmAuthExpiredError, withBgmAuth } from "@/services/bgmAuthSession";
 import { fileService, type SteamLibraryGame } from "@/services/invoke";
+import {
+	isBgmAuthExpiredError,
+	withBgmAuth,
+} from "@/services/oauth/bgmAuthSession";
 import { createMetadataSession } from "@/services/requestContext";
 import { withSteamApiKey } from "@/services/steamApiKey";
 import type { GameMetadataDraft } from "@/types";

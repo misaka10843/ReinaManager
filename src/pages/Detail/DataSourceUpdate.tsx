@@ -27,7 +27,9 @@ import {
 } from "@/metadata/data/metadata";
 import { getSourceIdFromDisplay } from "@/metadata/sourceRecord";
 import { snackbar } from "@/providers/snackBar";
-import { isBgmAuthExpiredError, withBgmAuth } from "@/services/bgmAuthSession";
+import { withMetadataAuth } from "@/services/metadataAuth";
+import { isBgmAuthExpiredError } from "@/services/oauth/bgmAuthSession";
+import { isHikarinagiAuthExpiredError } from "@/services/oauth/hikarinagiAuthSession";
 import { createMetadataSession } from "@/services/requestContext";
 import { withSteamApiKey } from "@/services/steamApiKey";
 import { useStore } from "@/store/appStore";
@@ -178,28 +180,33 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 
 		try {
 			setIsLoading(true);
-			const fetchMetadata = (bgmToken?: string, steamApiKey?: string) =>
-				fetchMetadataForUpdate({
-					selectedGame,
-					idType,
-					sourceIds,
-					enabledSources: idType === "mixed" ? mixedEnabledSources : undefined,
-					session: createMetadataSession({ bgmToken, steamApiKey }),
-				});
-			const usesBgmSource =
-				idType === "bgm" || (idType === "mixed" && isMixedSourceEnabled("bgm"));
-			const result = usesBgmSource
-				? await withBgmAuth((bgmToken) =>
-						withSteamApiKey((steamApiKey) =>
-							fetchMetadata(bgmToken, steamApiKey),
-						),
-					)
-				: await withSteamApiKey((steamApiKey) =>
-						fetchMetadata(undefined, steamApiKey),
-					);
+			const enabledSources =
+				idType === "mixed"
+					? mixedEnabledSources
+					: isSourceType(idType)
+						? [idType]
+						: [];
+			const result = await withSteamApiKey((steamApiKey) =>
+				withMetadataAuth(
+					enabledSources,
+					(tokens) =>
+						fetchMetadataForUpdate({
+							selectedGame,
+							idType,
+							sourceIds,
+							enabledSources:
+								idType === "mixed" ? mixedEnabledSources : undefined,
+							session: createMetadataSession({
+								...tokens,
+								steamApiKey,
+							}),
+						}),
+					{ requireHikarinagi: idType === "hikarinagi" },
+				),
+			);
 			onDataFetched(result);
 		} catch (error) {
-			if (isBgmAuthExpiredError(error)) {
+			if (isBgmAuthExpiredError(error) || isHikarinagiAuthExpiredError(error)) {
 				return;
 			}
 			snackbar.error(getUserErrorMessage(error, t));

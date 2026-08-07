@@ -27,7 +27,7 @@ import {
 	MIXED_SOURCE_MIN_COUNT,
 } from "@/metadata";
 import { snackbar } from "@/providers/snackBar";
-import { isBgmAuthExpiredError } from "@/services/bgmAuthSession";
+import { isBgmAuthExpiredError } from "@/services/oauth/bgmAuthSession";
 import { useStore } from "@/store/appStore";
 import { getUserErrorMessage } from "@/utils/errors";
 import { SettingsGroup, SettingsItem } from "./SettingsLayout";
