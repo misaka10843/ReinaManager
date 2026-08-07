@@ -12,6 +12,7 @@ import { AboutSection } from "./AboutSettings";
 import {
 	BgmTokenSettings,
 	CollectionSyncSettings,
+	SteamApiKeySettings,
 	VndbTokenSettings,
 } from "./AccountSettings";
 import {
@@ -104,6 +105,8 @@ export const Settings: React.FC = () => {
 						<BgmTokenSettings />
 						<SettingsDivider />
 						<VndbTokenSettings />
+						<SettingsDivider />
+						<SteamApiKeySettings />
 						<SettingsDivider />
 						<CollectionSyncSettings />
 					</>

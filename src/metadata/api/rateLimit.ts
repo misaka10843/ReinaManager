@@ -4,7 +4,8 @@ export type ApiRateLimitSource =
 	| "ymgal"
 	| "kun"
 	| "dlsite"
-	| "erogamescape";
+	| "erogamescape"
+	| "steam";
 
 interface ApiRateLimitPolicy {
 	source: ApiRateLimitSource;
@@ -98,6 +99,14 @@ const API_RATE_LIMIT_POLICIES: Record<ApiRateLimitSource, ApiRateLimitPolicy> =
 			max429Retries: 0,
 			stopOn429: true,
 		},
+		steam: {
+			source: "steam",
+			minIntervalMs: 1000,
+			defaultBackoffMs: 30 * 1000,
+			maxBackoffMs: 5 * 60 * 1000,
+			max429Retries: 2,
+			stopOn429: false,
+		},
 	};
 
 const rateLimitStates: Record<ApiRateLimitSource, ApiRateLimitState> = {
@@ -107,6 +116,7 @@ const rateLimitStates: Record<ApiRateLimitSource, ApiRateLimitState> = {
 	kun: createInitialState(),
 	dlsite: createInitialState(),
 	erogamescape: createInitialState(),
+	steam: createInitialState(),
 };
 
 const listeners = new Set<ApiRateLimitListener>();

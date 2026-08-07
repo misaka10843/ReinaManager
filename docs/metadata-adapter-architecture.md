@@ -15,13 +15,19 @@ src/metadata/
 │   ├── bgmAdapter.ts
 │   ├── vndbAdapter.ts
 │   ├── ymgalAdapter.ts
-│   └── kunAdapter.ts
+│   ├── kunAdapter.ts
+│   ├── dlsiteAdapter.ts
+│   ├── erogamescapeAdapter.ts
+│   └── steamAdapter.ts
 ├── api/                    # API 客户端
 │   ├── bgm.ts
+│   ├── dlsite.ts
+│   ├── erogamescape.ts
 │   ├── http.ts
 │   ├── kun.ts
 │   ├── mixed.ts
 │   ├── rateLimit.ts
+│   ├── steam.ts
 │   ├── vndb.ts
 │   └── ymgal.ts
 └── data/                   # 数据处理
@@ -38,6 +44,7 @@ src/metadata/
 ```typescript
 interface MetadataSourceContext {
   bgmToken?: string;
+  steamApiKey?: string;     // Steam Web API Key：保留供未来 Steam Web API 使用（appdetails 公开，无需 Key）
   enrichCrossSource?: boolean;  // kun 用于控制是否自动补 VNDB
   limit?: number;
   signal?: AbortSignal;
@@ -332,3 +339,27 @@ MixedSourceConfirmDialog → 用户确认选择
 - 展示数据合并（displayMergeRules 自动遍历 REGISTERED_SOURCE_KEYS）
 - 数据更新 / 数据源可用性检查
 - 设置页 UI / 混合确认弹窗
+
+---
+
+## 6. Steam 数据源说明
+
+Steam 作为一等元数据源（`key: "steam"`），与其它源不同点：
+
+### 6.1 本地优先（acf → appinfo）+ 在线补全（公开接口，无需 Key）
+
+- **本地①游戏侧 acf**：`search_steam_acf` 命令扫描所有 Steam 库的 `appmanifest_*.acf`（已安装游戏权威清单），按名称模糊搜索返回 `{app_id, name, install_dir}`；acf 名称优先于 appinfo 名称（游戏侧更可靠）。
+- **本地②整体索引**：解析 `steam_root/appcache/appinfo.vdf`（二进制 VDF），建立 appid→名称索引，支持按名称搜索。解析在 Rust 侧（`src-tauri/src/game/appinfo.rs`），索引按 文件路径+mtime+size 缓存于 `OnceLock<RwLock<AppInfoIndex>>`，避免重复解析 100-200MB 文件。每条记录提取 `common`（name/type/oslist/steam_release_date）与 `extended`（developer/publisher/**aliases**，逗号分隔）字段。
+- **在线**：`store.steampowered.com/api/appdetails` 为**公开接口，无需 Web API Key**，经 `src/metadata/api/steam.ts` 的 `fetchSteamAppDetails` 按 appid 逐个请求（实测批量参数会丢 appid，故逐条串行、受限速队列保护），`l=schinese&cc=cn` 获取中文名/中文简介/本地化封面/类型标签。在线失败时优雅降级为本地数据，不回抛错误。
+- **触发时机**：搜索列表仅走本地（acf + appinfo，即时返回）；选中候选（`enrichOnSelect`）或按 ID 直取（`fetchSteamById`）时在线补全单条。
+- **取数流程**：给 steam id → 先查 acf（已安装）→ 再 appinfo → 最后 web；只给游戏名 → 先 appinfo 搜索 → 用 acf 名称/已安装状态提升 → appinfo 无结果时回退 acf 名称搜索。
+- **Web API Key**：`MetadataRequestContext.steamApiKey` 保留在请求上下文中，但不再作为 appdetails 的门槛；供未来其它 Steam Web API（如 ISteamApps）使用。
+- **权限**：`store.steampowered.com` 已加入 `src-tauri/capabilities/default.json` 的 `http:default` 允许列表（缺失会导致在线请求被 Tauri 拦截、静默降级）。
+
+### 6.2 不参与混合搜索
+
+`src/metadata/constants.ts` 中 `MIXED_SOURCE_KEYS` 为显式列表（bgm/vndb/ymgal/kun/dlsite/erogamescape），**不含 steam**；`REGISTERED_SOURCE_KEYS` / `SEARCHABLE_SOURCE_KEYS` 由 `SOURCE_TYPES` 派生（自动含 steam）。Steam 仅作为单源搜索/导入/更新来源，避免 PC 游戏结果混入 galgame 混合搜索。
+
+### 6.3 导入路径
+
+`SteamImportTab.tsx` 的导入项已含 `app_id`，匹配时优先 `steamAdapter.fetchById(app_id)`（本地 appinfo 即时命中基础字段，随后在线补全完整元数据），写入 matchedData 并携带 steam source 记录（保存时经 `candidateSourcesToGameSources` 写入 game_sources）；appinfo 缺失或取不到时回退现有按名称匹配其他源流程。

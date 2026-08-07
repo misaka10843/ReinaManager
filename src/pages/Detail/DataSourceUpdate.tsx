@@ -29,6 +29,7 @@ import { getSourceIdFromDisplay } from "@/metadata/sourceRecord";
 import { snackbar } from "@/providers/snackBar";
 import { isBgmAuthExpiredError, withBgmAuth } from "@/services/bgmAuthSession";
 import { createMetadataSession } from "@/services/requestContext";
+import { withSteamApiKey } from "@/services/steamApiKey";
 import { useStore } from "@/store/appStore";
 import type {
 	apiSourceType,
@@ -177,19 +178,25 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 
 		try {
 			setIsLoading(true);
-			const fetchMetadata = (bgmToken?: string) =>
+			const fetchMetadata = (bgmToken?: string, steamApiKey?: string) =>
 				fetchMetadataForUpdate({
 					selectedGame,
 					idType,
 					sourceIds,
 					enabledSources: idType === "mixed" ? mixedEnabledSources : undefined,
-					session: createMetadataSession({ bgmToken }),
+					session: createMetadataSession({ bgmToken, steamApiKey }),
 				});
 			const usesBgmSource =
 				idType === "bgm" || (idType === "mixed" && isMixedSourceEnabled("bgm"));
 			const result = usesBgmSource
-				? await withBgmAuth(fetchMetadata)
-				: await fetchMetadata();
+				? await withBgmAuth((bgmToken) =>
+						withSteamApiKey((steamApiKey) =>
+							fetchMetadata(bgmToken, steamApiKey),
+						),
+					)
+				: await withSteamApiKey((steamApiKey) =>
+						fetchMetadata(undefined, steamApiKey),
+					);
 			onDataFetched(result);
 		} catch (error) {
 			if (isBgmAuthExpiredError(error)) {

@@ -68,6 +68,32 @@ export interface SteamLibraryScanResult {
 	warnings: string[];
 }
 
+export interface SteamAcfEntry {
+	app_id: number;
+	name: string;
+	install_dir: string;
+}
+
+export interface SteamAppInfoEntry {
+	appid: number;
+	name: string | null;
+	app_type: string | null;
+	oslist: string | null;
+	developer: string | null;
+	publisher: string | null;
+	release_date: string | null;
+	aliases: string | null;
+}
+
+export interface SteamAppInfoStatus {
+	steam_path: string | null;
+	appinfo_path: string | null;
+	exists: boolean;
+	size: number | null;
+	modified_at: number | null;
+	version: number | null;
+}
+
 class FileService extends BaseService {
 	async scanSteamLibrary(): Promise<SteamLibraryScanResult> {
 		return this.invoke<SteamLibraryScanResult>("scan_steam_library");
@@ -75,6 +101,48 @@ class FileService extends BaseService {
 
 	async getSteamAppStatus(appId: number): Promise<SteamAppStatus> {
 		return this.invoke<SteamAppStatus>("get_steam_app_status", { appId });
+	}
+
+	/**
+	 * 按名称搜索已安装游戏的 acf 清单（local）
+	 */
+	async searchSteamAcf(
+		query: string,
+		limit?: number,
+	): Promise<SteamAcfEntry[]> {
+		return this.invoke<SteamAcfEntry[]>("search_steam_acf", {
+			query,
+			limit,
+		});
+	}
+
+	/**
+	 * 按名称搜索本地 appinfo.vdf 索引（loacl）
+	 */
+	async searchSteamAppInfo(
+		query: string,
+		limit?: number,
+	): Promise<SteamAppInfoEntry[]> {
+		return this.invoke<SteamAppInfoEntry[]>("search_steam_appinfo", {
+			query,
+			limit,
+		});
+	}
+
+	/**
+	 * 按 appid 从本地 appinfo.vdf 索引获取单条
+	 */
+	async getSteamAppInfo(appid: number): Promise<SteamAppInfoEntry | null> {
+		return this.invoke<SteamAppInfoEntry | null>("get_steam_appinfo", {
+			appid,
+		});
+	}
+
+	/**
+	 * 获取 appinfo.vdf 定位与元信息
+	 */
+	async getSteamAppInfoStatus(): Promise<SteamAppInfoStatus> {
+		return this.invoke<SteamAppInfoStatus>("get_steam_appinfo_status");
 	}
 	/**
 	 * 扫描目录下的游戏文件夹

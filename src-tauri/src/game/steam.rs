@@ -754,13 +754,102 @@ pub async fn get_steam_app_status(
         .map(|(game, _)| game.status)
 }
 
+/// 按名称搜索已安装游戏的 acf 清单 (local)
+#[command]
+pub fn search_steam_acf(query: String, limit: Option<usize>) -> Result<Vec<SteamAcfEntry>, String> {
+    search_steam_acf_impl(&query, limit.unwrap_or(50))
+}
+
+/// 已安装游戏的 acf 清单摘要
+#[derive(Clone, Debug, Serialize)]
+pub struct SteamAcfEntry {
+    pub app_id: u32,
+    pub name: String,
+    /// 安装目录名（installdir），如 "Counter-Strike Global Offensive"
+    pub install_dir: String,
+}
+
+/// 扫描所有 Steam 库的 appmanifest_*.acf，按游戏名称模糊搜索已安装游戏。
+fn acf_query_matches(query: &str, app_id: u32, name: &str) -> bool {
+    let query = query.trim();
+    match query.parse::<u32>() {
+        Ok(expected) => app_id == expected,
+        Err(_) => query.is_empty() || name.to_lowercase().contains(&query.to_lowercase()),
+    }
+}
+
+pub fn search_steam_acf_impl(query: &str, limit: usize) -> Result<Vec<SteamAcfEntry>, String> {
+    let steam_root = find_steam_root()?;
+    let mut matches = Vec::new();
+    for library in library_paths(&steam_root)? {
+        let steamapps = library.join("steamapps");
+        let Ok(entries) = fs::read_dir(&steamapps) else {
+            continue;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let file_name = entry.file_name().to_string_lossy().to_string();
+            if !file_name.starts_with("appmanifest_") || !file_name.ends_with(".acf") {
+                continue;
+            }
+            let Ok(root) = read_vdf(&path) else {
+                continue;
+            };
+            let Some(root) = root.object() else {
+                continue;
+            };
+            let app = value_at(root, "AppState")
+                .and_then(VdfValue::object)
+                .unwrap_or(root);
+            let Some(name) = text_at(app, "name") else {
+                continue;
+            };
+            let Some(install_dir) = text_at(app, "installdir") else {
+                continue;
+            };
+            let Some(app_id) = app_id_from_manifest_name(&path) else {
+                continue;
+            };
+            let matched = acf_query_matches(query, app_id, name);
+            if matched {
+                matches.push(SteamAcfEntry {
+                    app_id,
+                    name: name.to_string(),
+                    install_dir: install_dir.to_string(),
+                });
+            }
+        }
+    }
+    matches.sort_by(|left, right| left.name.to_lowercase().cmp(&right.name.to_lowercase()));
+    matches.truncate(limit);
+    Ok(matches)
+}
+
 #[cfg(test)]
 mod tests {
     use super::{
-        app_status, parse_manifest_base, parse_vdf, value_at, warning_game_from_manifest_error,
+        acf_query_matches, app_status, parse_manifest_base, parse_vdf, value_at,
+        warning_game_from_manifest_error,
     };
     use std::collections::HashMap;
     use std::path::Path;
+
+    #[test]
+    fn acf_query_matches_appid_exactly_for_numeric_query() {
+        assert!(acf_query_matches("730", 730, "Counter-Strike 2"));
+        assert!(!acf_query_matches("730", 570, "Dota 2"));
+        assert!(!acf_query_matches("730", 5730, "Some Game 730 Edition"));
+        assert!(acf_query_matches(" 730 ", 730, "Whatever"));
+    }
+
+    #[test]
+    fn acf_query_matches_name_fuzzy_for_text_query() {
+        assert!(acf_query_matches("dota", 570, "Dota 2"));
+        assert!(acf_query_matches("DOTA", 570, "Dota 2"));
+        assert!(acf_query_matches("counter", 730, "Counter-Strike 2"));
+        assert!(!acf_query_matches("cs2", 730, "Counter-Strike 2"));
+        assert!(acf_query_matches("", 730, "Anything"));
+    }
 
     #[test]
     fn parses_comments_escapes_and_nested_objects() {

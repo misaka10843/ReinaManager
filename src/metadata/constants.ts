@@ -5,6 +5,7 @@ export const USER_AGENT = `huoshen80/ReinaManager/${version} (https://github.com
 
 export const REGISTERED_SOURCE_KEYS = SOURCE_TYPES;
 export const SEARCHABLE_SOURCE_KEYS = SOURCE_TYPES;
+
 export const MIXED_SOURCE_KEYS = SOURCE_TYPES;
 export const DEFAULT_MIXED_SOURCE_KEYS = [
 	"bgm",

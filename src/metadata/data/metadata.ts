@@ -119,8 +119,12 @@ export function buildGameFromMixedSelection(params: {
 		source,
 		candidate: enabled[source] ? selection[source] : null,
 	})).filter(
-		(entry): entry is { source: SourceType; candidate: SourceCandidate } =>
-			Boolean(entry.candidate),
+		(
+			entry,
+		): entry is {
+			source: (typeof MIXED_SOURCE_KEYS)[number];
+			candidate: SourceCandidate;
+		} => Boolean(entry.candidate),
 	);
 
 	if (selectedEntries.length === 0) {

@@ -552,6 +552,141 @@ export const VndbTokenSettings = () => {
 	);
 };
 
+// ==================== Steam Web API Key 设置 ====================
+
+export const SteamApiKeySettings = () => {
+	const { t } = useTranslation();
+	const { data: settings } = useAllSettings();
+	const steamApiKey = settings?.steam_api_key?.trim() ?? "";
+	const updateSettingsMutation = useUpdateSettings();
+	const [inputKey, setInputKey] = useState("");
+
+	useEffect(() => {
+		setInputKey(steamApiKey);
+	}, [steamApiKey]);
+
+	const handleOpen = () => {
+		openurl("https://steamcommunity.com/dev/apikey");
+	};
+
+	const handleSaveKey = async () => {
+		const nextKey = inputKey.trim();
+		if (nextKey === steamApiKey || updateSettingsMutation.isPending) return;
+
+		try {
+			await updateSettingsMutation.mutateAsync({
+				steamApiKey: nextKey || null,
+			});
+			setInputKey(nextKey);
+			snackbar.success(
+				t(
+					"pages.Settings.steamApiKeySettings.saveSuccess",
+					"Steam Web API Key 保存成功",
+				),
+			);
+		} catch (error) {
+			console.error(error);
+			snackbar.error(
+				t(
+					"pages.Settings.steamApiKeySettings.saveError",
+					"Steam Web API Key 保存失败",
+				),
+			);
+		}
+	};
+
+	const handleClearKey = async () => {
+		setInputKey("");
+		if (!steamApiKey || updateSettingsMutation.isPending) return;
+
+		try {
+			await updateSettingsMutation.mutateAsync({ steamApiKey: null });
+		} catch (error) {
+			console.error(error);
+			setInputKey(steamApiKey);
+			snackbar.error(
+				t(
+					"pages.Settings.steamApiKeySettings.saveError",
+					"Steam Web API Key 保存失败",
+				),
+			);
+		}
+	};
+
+	return (
+		<SettingsGroup title={t("pages.Settings.steamApiKey", "Steam Web API Key")}>
+			<Stack spacing={1.5}>
+				<TextField
+					autoComplete="off"
+					placeholder={t(
+						"pages.Settings.steamApiKeyPlaceholder",
+						"请填写你的 Steam Web API Key",
+					)}
+					value={inputKey}
+					onChange={(e) => setInputKey(e.target.value)}
+					onBlur={handleSaveKey}
+					onKeyDown={(event) => {
+						if (event.key === "Enter" && !event.nativeEvent.isComposing) {
+							event.preventDefault();
+							(event.target as HTMLInputElement).blur();
+						}
+						if (event.key === "Escape") {
+							event.preventDefault();
+							setInputKey(steamApiKey);
+						}
+					}}
+					variant="outlined"
+					size="small"
+					fullWidth
+					disabled={updateSettingsMutation.isPending}
+					slotProps={{
+						htmlInput: {
+							style: {
+								WebkitTextSecurity: "disc",
+								textSecurity: "disc",
+							},
+						},
+						input: {
+							endAdornment: inputKey ? (
+								<InputAdornment position="end">
+									<IconButton
+										aria-label={t(
+											"pages.Settings.steamApiKeySettings.clearKey",
+											"清除密钥",
+										)}
+										onClick={handleClearKey}
+										disabled={updateSettingsMutation.isPending}
+										edge="end"
+									>
+										<ClearIcon />
+									</IconButton>
+								</InputAdornment>
+							) : null,
+						},
+					}}
+				/>
+				<Box>
+					<Button
+						variant="outlined"
+						color="primary"
+						onMouseDown={(event) => event.preventDefault()}
+						onClick={handleOpen}
+						size="small"
+					>
+						{t("pages.Settings.getSteamApiKey", "获取 API Key")}
+					</Button>
+				</Box>
+				<Typography variant="body2" color="text.secondary">
+					{t(
+						"pages.Settings.steamApiKeyDescription",
+						"填写后启用 Steam 在线元数据获取（简介/开发商/类型/发售日/封面）；未填写时仅使用本地 appinfo.vdf 的名称与类型信息。",
+					)}
+				</Typography>
+			</Stack>
+		</SettingsGroup>
+	);
+};
+
 // ==================== 收藏同步设置 ====================
 
 export const CollectionSyncSettings = () => {

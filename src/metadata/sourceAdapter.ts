@@ -9,6 +9,8 @@ export const DEFAULT_METADATA_SEARCH_LIMIT = 8;
 export interface MetadataRequestContext extends NetworkRequestContext {
 	spoilerLevel: number;
 	bgmToken?: string;
+	/** Steam Web API Key：存在时允许在线 appdetails 补全元数据 */
+	steamApiKey?: string;
 }
 
 export interface MetadataSourceContext extends MetadataRequestContext {

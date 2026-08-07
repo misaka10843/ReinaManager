@@ -886,6 +886,15 @@
 				"saveError": "VNDB Token 儲存失敗",
 				"saveSuccess": "VNDB Token 儲存成功",
 				"userId": "使用者 ID: {{id}}"
+			},
+			"steamApiKey": "Steam Web API Key",
+			"steamApiKeyPlaceholder": "請填寫你的 Steam Web API Key",
+			"getSteamApiKey": "取得 API Key",
+			"steamApiKeyDescription": "填寫後啟用 Steam 線上中繼資料取得（簡介/開發商/類型/發售日/封面）；未填寫時僅使用本機 appinfo.vdf 的名稱與類型資訊。",
+			"steamApiKeySettings": {
+				"clearKey": "清除金鑰",
+				"saveError": "Steam Web API Key 儲存失敗",
+				"saveSuccess": "Steam Web API Key 儲存成功"
 			}
 		}
 	},

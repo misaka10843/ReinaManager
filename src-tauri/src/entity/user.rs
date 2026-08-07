@@ -27,6 +27,8 @@ pub struct Model {
     #[sea_orm(column_type = "Text", nullable)]
     pub vndb_token: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
+    pub steam_api_key: Option<String>,
+    #[sea_orm(column_type = "Text", nullable)]
     pub save_root_path: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]
     pub db_backup_path: Option<String>,

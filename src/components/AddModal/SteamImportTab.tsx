@@ -25,6 +25,7 @@ import { snackbar } from "@/providers/snackBar";
 import { isBgmAuthExpiredError, withBgmAuth } from "@/services/bgmAuthSession";
 import { fileService, type SteamLibraryGame } from "@/services/invoke";
 import { createMetadataSession } from "@/services/requestContext";
+import { withSteamApiKey } from "@/services/steamApiKey";
 import type { GameMetadataDraft } from "@/types";
 import { createAbortableRunner, isAbortError } from "@/utils/async";
 import { getUserErrorMessage, isApiRateLimitError } from "@/utils/errors";
@@ -94,24 +95,68 @@ export default function SteamImportTab({
 				if (controller.signal.aborted) break;
 				if (next[index].existing_game_id !== null) continue;
 				try {
-					const matched =
-						source === "bgm"
-							? await withBgmAuth((token) =>
+					let matched: GameMetadataDraft | null = null;
+					if (source === "steam") {
+						// Steam 源：优先按 app_id 直取（本地 appinfo 即时命中，
+						// 有 Key 时在线补全完整元数据）；失败回退按名称匹配。
+						const appId = next[index].app_id;
+						if (appId != null && appId > 0) {
+							try {
+								const direct = await withSteamApiKey((steamApiKey) =>
 									withAbort(
 										createMetadataSession({
-											bgmToken: token,
+											steamApiKey,
 											signal: controller.signal,
-										}).searchBestMatch({ query: next[index].name, source }),
+										}).searchGames({
+											query: String(appId),
+											source: "steam",
+										}),
 									),
-								)
-							: await withAbort(
+								);
+								matched = direct[0] ?? null;
+							} catch {
+								matched = null;
+							}
+						}
+						if (!matched) {
+							matched = await withSteamApiKey((steamApiKey) =>
+								withAbort(
 									createMetadataSession({
+										steamApiKey,
 										signal: controller.signal,
 									}).searchBestMatch({
 										query: next[index].name,
-										source,
+										source: "steam",
 									}),
-								);
+								),
+							);
+						}
+					} else {
+						matched =
+							source === "bgm"
+								? await withBgmAuth((token) =>
+										withSteamApiKey((steamApiKey) =>
+											withAbort(
+												createMetadataSession({
+													bgmToken: token,
+													steamApiKey,
+													signal: controller.signal,
+												}).searchBestMatch({ query: next[index].name, source }),
+											),
+										),
+									)
+								: await withSteamApiKey((steamApiKey) =>
+										withAbort(
+											createMetadataSession({
+												steamApiKey,
+												signal: controller.signal,
+											}).searchBestMatch({
+												query: next[index].name,
+												source,
+											}),
+										),
+									);
+					}
 					next[index] = {
 						...next[index],
 						matchedData: matched ?? undefined,

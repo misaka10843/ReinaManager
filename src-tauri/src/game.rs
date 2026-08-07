@@ -1,3 +1,4 @@
+pub mod appinfo;
 pub mod cover;
 pub mod launch;
 pub mod monitor;

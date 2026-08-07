@@ -226,6 +226,7 @@ function inferRateLimitSource(url: string): ApiRateLimitSource | undefined {
 		if (host === "www.kungal.com") return "kun";
 		if (host === "www.dlsite.com") return "dlsite";
 		if (host === "erogamescape.org") return "erogamescape";
+		if (host === "store.steampowered.com") return "steam";
 	} catch {
 		return undefined;
 	}
@@ -245,6 +246,8 @@ function getApiRateLimitErrorMessage(source: ApiRateLimitSource): string {
 			return "DLsite 请求被限速，请稍后重试";
 		case "erogamescape":
 			return "ErogameScape 请求被限速，请稍后重试";
+		case "steam":
+			return "Steam 请求被限速，请稍后重试";
 	}
 }
 

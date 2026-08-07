@@ -14,7 +14,11 @@ export function getNetworkRequestContext(
 }
 
 export function getMetadataRequestContext(
-	options: { bgmToken?: string; signal?: AbortSignal } = {},
+	options: {
+		bgmToken?: string;
+		steamApiKey?: string;
+		signal?: AbortSignal;
+	} = {},
 ): MetadataRequestContext {
 	const state = useStore.getState();
 	const proxyUrl = state.proxyConfig.url.trim();
@@ -23,11 +27,16 @@ export function getMetadataRequestContext(
 		signal: options.signal,
 		spoilerLevel: state.spoilerLevel,
 		bgmToken: options.bgmToken,
+		steamApiKey: options.steamApiKey?.trim() || undefined,
 	};
 }
 
 export function createMetadataSession(
-	options: { bgmToken?: string; signal?: AbortSignal } = {},
+	options: {
+		bgmToken?: string;
+		steamApiKey?: string;
+		signal?: AbortSignal;
+	} = {},
 ): GameMetadataSession {
 	return new GameMetadataSession(getMetadataRequestContext(options));
 }

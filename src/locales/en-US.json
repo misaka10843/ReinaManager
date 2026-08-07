@@ -902,6 +902,15 @@
 				"saveError": "Failed to save VNDB Token",
 				"saveSuccess": "VNDB Token saved successfully",
 				"userId": "User ID: {{id}}"
+			},
+			"steamApiKey": "Steam Web API Key",
+			"steamApiKeyPlaceholder": "Please enter your Steam Web API Key",
+			"getSteamApiKey": "Get API Key",
+			"steamApiKeyDescription": "Enables online Steam metadata fetching (summary/developer/genres/release date/cover) once set. Without a key, only local appinfo.vdf name and type info is used.",
+			"steamApiKeySettings": {
+				"clearKey": "Clear key",
+				"saveError": "Failed to save Steam Web API Key",
+				"saveSuccess": "Steam Web API Key saved successfully"
 			}
 		}
 	},

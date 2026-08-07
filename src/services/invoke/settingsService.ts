@@ -9,6 +9,7 @@ import { BaseService } from "./base";
 export interface UserSettings {
 	bgm_auth?: BgmAuth | null;
 	vndb_token?: string | null;
+	steam_api_key?: string | null;
 	save_root_path?: string | null;
 	db_backup_path?: string | null;
 	install_root_path?: string | null;

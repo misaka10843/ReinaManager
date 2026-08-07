@@ -378,3 +378,12 @@ gameKeys.vndbIds();
 2. 是否 invalidate/refetch 了 `gameKeys.all`。
 3. `gameKeys.index()` 的 `rawList` 是否与 `useAllGames().data` 对应。
 4. 是否绕过 `gameCachePatch.ts` 修改了游戏缓存。
+
+## Steam 元数据源说明
+
+Steam（`source: "steam"`）作为一等元数据源，与上述游戏库缓存链路的关系：
+
+- **本地索引不在本链路内**：`appinfo.vdf` 解析索引（`src-tauri/src/game/appinfo.rs`）缓存在后端 `OnceLock<RwLock<AppInfoIndex>>`，按 文件路径+mtime+size 失效重建，不经过 `gameKeys.all` / `GameIndex`。搜索/获取通过 Tauri 命令 `search_steam_appinfo` / `get_steam_appinfo` 直接返回，前端不缓存大体积索引。
+- **导入写入走统一链路**：Steam 导入匹配产生的元数据经 `candidateSourcesToGameSources` 生成 `GameMetadataDraft`（含 `sources: [{ source: "steam", externalId: appid, data: SteamData }]`），经 `insert_games_batch` 写入 `games` / `game_sources` 表，随后由 `appendGamesToCaches` 进入 `gameKeys.all` 与 `GameIndex` —— 与其它源新增游戏完全一致。
+- **源 ID 去重**：`game_sources` 以 (game_id, source, external_id) 唯一约束 steam appid，`insert_games_batch` 的重复检测同样适用；steam 源未引入独立的 `gameKeys.steamIds()` 缓存，去重由后端在写入时处理。
+- **在线补全不落库**：`store.steampowered.com/api/appdetails`（公开接口，无需 Key）数据仅用于补全候选/草稿（`steamAdapter.fetchById` 在线合并），保存后才成为 game_sources 中的 `data` 列；在线失败时降级为本地 appinfo 数据。

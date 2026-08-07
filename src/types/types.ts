@@ -183,6 +183,31 @@ export interface ErogameScapeData {
 }
 
 /**
+ * Steam 数据结构（JSON 列嵌入 games 表）
+ *
+ * 本地 appinfo.vdf 提供基础信息（name/app_type/oslist），
+ * 在线 appdetails（store.steampowered.com/api/appdetails）提供完整元数据
+ * （简介/开发商/类型/发售日/封面等）。无 Web API Key 时仅含本地字段。
+ */
+export interface SteamData {
+	image?: string;
+	name?: string;
+	summary?: string;
+	tags?: string[];
+	developer?: string;
+	date?: string;
+	/** 本地 appinfo common.type：game / dlc / tool 等 */
+	app_type?: string;
+	/** 本地 appinfo common.oslist：windows,macos,linux */
+	oslist?: string;
+	publishers?: string[];
+	is_free?: boolean;
+	website?: string;
+	/** 本地 appinfo extended.aliases（拆分为数组）或在线补全的别名 */
+	aliases?: string[];
+}
+
+/**
  * 自定义数据结构（JSON 列嵌入 games 表）
  *
  * 用于用户手动添加的游戏或自定义元数据
@@ -218,6 +243,7 @@ export const SOURCE_TYPES = [
 	"kun",
 	"dlsite",
 	"erogamescape",
+	"steam",
 ] as const;
 export type SourceType = (typeof SOURCE_TYPES)[number];
 
@@ -354,6 +380,7 @@ export interface UpdateGameParams {
 export interface UpdateSettingsParams {
 	bgmAuth?: Nullable<BgmAuth>;
 	vndbToken?: Nullable<string>;
+	steamApiKey?: Nullable<string>;
 	saveRootPath?: Nullable<string>;
 	dbBackupPath?: Nullable<string>;
 	installRootPath?: Nullable<string>;

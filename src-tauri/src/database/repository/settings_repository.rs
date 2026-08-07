@@ -30,6 +30,7 @@ impl SettingsRepository {
                 id: Set(1),
                 bgm_auth: Set(None),
                 vndb_token: Set(None),
+                steam_api_key: Set(None),
                 save_root_path: Set(None),
                 db_backup_path: Set(None),
                 install_root_path: Set(None),
@@ -75,6 +76,10 @@ impl SettingsRepository {
 
         if let Some(token) = data.vndb_token {
             active.vndb_token = Set(token);
+        }
+
+        if let Some(key) = data.steam_api_key {
+            active.steam_api_key = Set(key);
         }
 
         if let Some(path) = data.save_root_path {

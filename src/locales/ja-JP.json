@@ -886,6 +886,15 @@
 				"saveError": "VNDB Token の保存に失敗しました",
 				"saveSuccess": "VNDB Token を保存しました",
 				"userId": "ユーザー ID: {{id}}"
+			},
+			"steamApiKey": "Steam Web API Key",
+			"steamApiKeyPlaceholder": "Steam Web API Key を入力してください",
+			"getSteamApiKey": "API Key を取得",
+			"steamApiKeyDescription": "入力すると Steam のオンラインメタデータ取得（概要/開発元/ジャンル/発売日/カバー）が有効になります。未入力の場合はローカルの appinfo.vdf の名前とタイプ情報のみを使用します。",
+			"steamApiKeySettings": {
+				"clearKey": "キーをクリア",
+				"saveError": "Steam Web API Key の保存に失敗しました",
+				"saveSuccess": "Steam Web API Key を保存しました"
 			}
 		}
 	},

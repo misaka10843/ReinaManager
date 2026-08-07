@@ -16,8 +16,11 @@ use game::cover::{delete_cloud_cache, register_game_cover_protocol};
 #[cfg(target_os = "windows")]
 use game::launch::resume_steam_launch_tasks;
 use game::launch::{launch_game, stop_game};
+use game::appinfo::{
+    get_steam_appinfo, get_steam_appinfo_status, search_steam_appinfo,
+};
 use game::scan::scan_directory_for_games;
-use game::steam::{get_steam_app_status, scan_steam_library};
+use game::steam::{get_steam_app_status, scan_steam_library, search_steam_acf};
 use install::protocol::{
     InstallProtocolState, setup_install_protocol, take_pending_install_rejections,
     take_pending_install_requests,
@@ -81,6 +84,10 @@ pub fn run() {
             scan_directory_for_games,
             scan_steam_library,
             get_steam_app_status,
+            search_steam_acf,
+            search_steam_appinfo,
+            get_steam_appinfo,
+            get_steam_appinfo_status,
             take_pending_install_requests,
             take_pending_install_rejections,
             create_game_install_task,

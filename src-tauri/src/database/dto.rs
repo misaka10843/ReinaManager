@@ -221,6 +221,8 @@ pub struct UpdateSettingsData {
     #[serde(default, deserialize_with = "double_option")]
     pub vndb_token: Option<Option<String>>,
     #[serde(default, deserialize_with = "double_option")]
+    pub steam_api_key: Option<Option<String>>,
+    #[serde(default, deserialize_with = "double_option")]
     pub save_root_path: Option<Option<String>>,
     #[serde(default, deserialize_with = "double_option")]
     pub db_backup_path: Option<Option<String>>,
@@ -238,6 +240,7 @@ impl UpdateSettingsData {
     pub fn cleaned(mut self) -> Self {
         self.bgm_auth = self.bgm_auth.map(|inner| inner.and_then(clean_bgm_auth));
         self.vndb_token = clean_double_option_string(self.vndb_token);
+        self.steam_api_key = clean_double_option_string(self.steam_api_key);
         self.save_root_path = clean_double_option_string(self.save_root_path);
         self.db_backup_path = clean_double_option_string(self.db_backup_path);
         self.install_root_path = clean_double_option_local_path(self.install_root_path);

@@ -30,7 +30,9 @@ function normalizeMixedEnabledSources(
 	if (!sources) return [...DEFAULT_MIXED_SOURCE_KEYS];
 
 	const enabled = new Set(
-		sources.filter((source) => MIXED_SOURCE_KEYS.includes(source)),
+		sources.filter((source) =>
+			(MIXED_SOURCE_KEYS as readonly string[]).includes(source),
+		),
 	);
 	const filtered = MIXED_SOURCE_KEYS.filter((source) => enabled.has(source));
 	return filtered.length >= DEFAULT_MIXED_SOURCE_KEYS.length

@@ -13,6 +13,7 @@ import type {
 } from "@/metadata/data/metadata";
 import { isBgmAuthExpiredError, withBgmAuth } from "@/services/bgmAuthSession";
 import { createMetadataSession } from "@/services/requestContext";
+import { withSteamApiKey } from "@/services/steamApiKey";
 import type { apiSourceType, GameMetadataDraft, SourceType } from "@/types";
 import { isAbortError } from "@/utils/async";
 import { getUserErrorMessage } from "@/utils/errors";
@@ -126,38 +127,70 @@ export function useMetadataSearchFlow({
 			setIsSearching(true);
 
 			try {
-				if (source === "mixed") {
-					const searchMixedCandidates = (bgmToken?: string) => {
-						const session = createMetadataSession({ bgmToken, signal });
-						const candidatesPromise = session.searchMixedSourceCandidates({
-							query,
-							mixedEnabledSources,
-						});
-						return withAbort ? withAbort(candidatesPromise) : candidatesPromise;
-					};
-					const result =
-						mixedEnabledSources?.includes("bgm") === false
-							? await searchMixedCandidates()
-							: await withBgmAuth(searchMixedCandidates);
+				await withSteamApiKey(async (steamApiKey) => {
+					if (source === "mixed") {
+						const searchMixedCandidates = (bgmToken?: string) => {
+							const session = createMetadataSession({
+								bgmToken,
+								steamApiKey,
+								signal,
+							});
+							const candidatesPromise = session.searchMixedSourceCandidates({
+								query,
+								mixedEnabledSources,
+							});
+							return withAbort
+								? withAbort(candidatesPromise)
+								: candidatesPromise;
+						};
+						const result =
+							mixedEnabledSources?.includes("bgm") === false
+								? await searchMixedCandidates()
+								: await withBgmAuth(searchMixedCandidates);
 
-					if (!hasAnyMixedCandidate(result.candidates)) {
-						throw new Error(getNoResultsText(source));
+						if (!hasAnyMixedCandidate(result.candidates)) {
+							throw new Error(getNoResultsText(source));
+						}
+
+						setMixedCandidateState({
+							open: true,
+							candidates: result.candidates,
+							failedSources: result.failedSources,
+						});
+						return;
 					}
 
-					setMixedCandidateState({
-						open: true,
-						candidates: result.candidates,
-						failedSources: result.failedSources,
-					});
-					return;
-				}
+					if (getRuntimeSourceAdapter(source).validateId(query.trim())) {
+						const searchById = (bgmToken?: string) => {
+							const searchPromise = createMetadataSession({
+								bgmToken,
+								steamApiKey,
+								signal,
+							}).searchGames({
+								query,
+								source,
+							});
+							return withAbort ? withAbort(searchPromise) : searchPromise;
+						};
+						const results =
+							source === "bgm"
+								? await withBgmAuth(searchById)
+								: await searchById();
 
-				if (getRuntimeSourceAdapter(source).validateId(query.trim())) {
-					const searchById = (bgmToken?: string) => {
+						if (results.length === 0) {
+							throw new Error(getNoResultsText(source));
+						}
+
+						await onResolved(results[0]);
+						return;
+					}
+
+					const searchCandidates = (bgmToken?: string) => {
 						const searchPromise = createMetadataSession({
 							bgmToken,
+							steamApiKey,
 							signal,
-						}).searchGames({
+						}).searchByName({
 							query,
 							source,
 						});
@@ -165,40 +198,18 @@ export function useMetadataSearchFlow({
 					};
 					const results =
 						source === "bgm"
-							? await withBgmAuth(searchById)
-							: await searchById();
+							? await withBgmAuth(searchCandidates)
+							: await searchCandidates();
 
 					if (results.length === 0) {
 						throw new Error(getNoResultsText(source));
 					}
 
-					await onResolved(results[0]);
-					return;
-				}
-
-				const searchCandidates = (bgmToken?: string) => {
-					const searchPromise = createMetadataSession({
-						bgmToken,
-						signal,
-					}).searchByName({
-						query,
-						source,
+					setSearchResultState({
+						open: true,
+						results,
+						apiSource: source,
 					});
-					return withAbort ? withAbort(searchPromise) : searchPromise;
-				};
-				const results =
-					source === "bgm"
-						? await withBgmAuth(searchCandidates)
-						: await searchCandidates();
-
-				if (results.length === 0) {
-					throw new Error(getNoResultsText(source));
-				}
-
-				setSearchResultState({
-					open: true,
-					results,
-					apiSource: source,
 				});
 			} catch (error) {
 				if (isAbortError(error)) {
@@ -223,11 +234,14 @@ export function useMetadataSearchFlow({
 
 			setIsSearching(true);
 			try {
-				const resolvedGame =
-					await createMetadataSession().resolveSourceCandidateSelection({
+				await withSteamApiKey(async (steamApiKey) => {
+					const resolvedGame = await createMetadataSession({
+						steamApiKey,
+					}).resolveSourceCandidateSelection({
 						candidate: selectedCandidate,
 					});
-				await onResolved(resolvedGame);
+					await onResolved(resolvedGame);
+				});
 				closeSearchResult();
 			} catch (error) {
 				onError(getUserErrorMessage(error, t));
@@ -242,12 +256,15 @@ export function useMetadataSearchFlow({
 		async (selection: MixedSourceSelection, enabled: MixedSourceEnabled) => {
 			setIsSearching(true);
 			try {
-				const gameData =
-					await createMetadataSession().resolveMixedSourceSelection({
+				await withSteamApiKey(async (steamApiKey) => {
+					const gameData = await createMetadataSession({
+						steamApiKey,
+					}).resolveMixedSourceSelection({
 						selection,
 						enabled,
 					});
-				await onResolved(gameData, mixedCandidateState.failedSources);
+					await onResolved(gameData, mixedCandidateState.failedSources);
+				});
 				closeMixedCandidates();
 			} catch (error) {
 				closeMixedCandidates();
