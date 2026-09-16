@@ -1,9 +1,5 @@
 import { join } from "pathe";
-import {
-	getAppDataDirPath,
-	getDbBackupPath,
-	getSavedataBackupPath,
-} from "@/services/fs/pathCache";
+import { getAppDataDirPath } from "@/services/fs/pathCache";
 import { fileService, savedataService } from "@/services/invoke";
 import { toError } from "@/utils/errors";
 
@@ -20,8 +16,7 @@ export async function createGameSavedataBackup(
 }
 
 export async function openGameBackupFolder(gameId: number): Promise<void> {
-	const backupPath = await getSavedataBackupPath(gameId);
-	await fileService.openDirectory(backupPath);
+	await savedataService.openBackupFolder(gameId);
 }
 
 export async function openGameSaveDataFolder(
@@ -34,8 +29,7 @@ export async function openGameSaveDataFolder(
 }
 
 export async function openDatabaseBackupFolder(): Promise<void> {
-	const backupPath = await getDbBackupPath();
-	await fileService.openDirectory(backupPath);
+	await fileService.openDatabaseBackupFolder();
 }
 
 export async function moveBackupFolder(

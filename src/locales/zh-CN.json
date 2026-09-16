@@ -122,7 +122,7 @@
 			"searchName": "搜索名称",
 			"selectExe": "请选择启动程序",
 			"selectFolderHint": "选择根文件夹后开始扫描",
-			"selectRootFolder": "选择根文件夹",
+			"startScan": "开始扫描",
 			"status": "状态",
 			"statusError": "错误",
 			"statusMatched": "已匹配",
@@ -260,6 +260,14 @@
 			"stopGame": "停止游戏",
 			"stoppingGame": "停止游戏中...",
 			"syncLocalPath": "同步本地"
+		},
+		"PathInput": {
+			"available": "路径可用",
+			"linuxHint": "支持路径开头的 $VAR、${VAR} 和 ~/...",
+			"missing": "当前路径不存在",
+			"resolvedPath": "实际位置：{{path}}",
+			"windowsHint": "支持路径开头的 %VAR%\\...",
+			"wrongType": "路径类型不符合当前字段要求"
 		},
 		"PathSettingsModal": {
 			"close": "关闭",
@@ -446,6 +454,14 @@
 		"metadataRequestFailed": "获取元数据失败，请稍后重试",
 		"mixedSourcesFailed": "所有数据源请求均失败",
 		"notFound": "未找到相关内容",
+		"pathEmpty": "路径不能为空",
+		"pathInspectionFailed": "无法读取路径状态",
+		"pathNotAbsolute": "路径解析结果必须是绝对路径",
+		"pathVariableCycle": "环境变量存在循环引用",
+		"pathVariableDepth": "环境变量递归展开层数过多",
+		"pathVariableNonUnicode": "环境变量不是有效文本",
+		"pathVariableSyntax": "路径变量语法无效",
+		"pathVariableUndefined": "路径使用了未定义的环境变量",
 		"requestFailed": "请求失败，请稍后重试",
 		"requestRateLimited": "请求过于频繁，请稍后重试",
 		"responseParseFailed": "响应解析失败，请稍后重试",

@@ -5,7 +5,7 @@ use chrono::Utc;
 use sea_orm::DatabaseConnection;
 use serde::Serialize;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use tauri::{State, command};
 
 #[derive(Debug, Serialize)]
@@ -23,7 +23,8 @@ pub async fn create_savedata_backup(
     game_id: i64,
     source_path: String,
 ) -> Result<BackupInfo, String> {
-    let source_path = PathBuf::from(source_path);
+    let source_path = reina_path::resolve_user_path(&source_path)
+        .map_err(|error| format!("存档路径解析失败: {error}"))?;
     if !source_path.exists() {
         return Err("源存档文件或文件夹不存在".to_string());
     }

@@ -32,6 +32,13 @@ export interface PortableModeResult {
 	is_portable: boolean;
 }
 
+export type UserPathKind = "file" | "directory" | "missing" | "other";
+
+export interface UserPathInspection {
+	resolved_path: string;
+	kind: UserPathKind;
+}
+
 export interface DroppedLocalPathResult {
 	kind:
 		| "executable"
@@ -88,6 +95,10 @@ export interface BulkImportPathResult {
 }
 
 class FileService extends BaseService {
+	/** 解析用户配置路径并读取当前文件系统状态。 */
+	async inspectUserPath(path: string): Promise<UserPathInspection> {
+		return this.invoke<UserPathInspection>("inspect_user_path", { path });
+	}
 	/** 扫描本机可用的 Steam 启动目标。 */
 	async scanSteamLaunchTargets(
 		options: SteamLaunchTargetScanOptions = {},
@@ -197,6 +208,10 @@ class FileService extends BaseService {
 		options: BackupOptions | null = null,
 	): Promise<BackupResult> {
 		return this.invoke<BackupResult>("backup_database", { options });
+	}
+
+	async openDatabaseBackupFolder(): Promise<void> {
+		return this.invoke<void>("open_database_backup_folder");
 	}
 
 	/**

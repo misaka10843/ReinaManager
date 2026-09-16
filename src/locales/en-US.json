@@ -126,7 +126,7 @@
 			"searchName": "Search Name",
 			"selectExe": "Select Executable",
 			"selectFolderHint": "Select a root folder to start scanning",
-			"selectRootFolder": "Select Root Folder",
+			"startScan": "Start Scan",
 			"status": "Status",
 			"statusError": "Error",
 			"statusMatched": "Matched",
@@ -270,6 +270,14 @@
 			"stopGame": "Stop Game",
 			"stoppingGame": "Stopping game...",
 			"syncLocalPath": "Sync Local"
+		},
+		"PathInput": {
+			"available": "Path is available",
+			"linuxHint": "Supports $VAR, ${VAR}, and ~/... at the start of a path",
+			"missing": "The path does not currently exist",
+			"resolvedPath": "Resolved location: {{path}}",
+			"windowsHint": "Supports %VAR%\\... at the start of a path",
+			"wrongType": "The path type does not match this field"
 		},
 		"PathSettingsModal": {
 			"close": "Close",
@@ -462,6 +470,14 @@
 		"metadataRequestFailed": "Failed to fetch metadata. Please try again later",
 		"mixedSourcesFailed": "All data sources failed to respond",
 		"notFound": "The requested content was not found",
+		"pathEmpty": "Path cannot be empty",
+		"pathInspectionFailed": "Failed to inspect the path",
+		"pathNotAbsolute": "The resolved path must be absolute",
+		"pathVariableCycle": "Environment variables contain a reference cycle",
+		"pathVariableDepth": "Environment variable expansion is too deeply nested",
+		"pathVariableNonUnicode": "The environment variable is not valid text",
+		"pathVariableSyntax": "Invalid path variable syntax",
+		"pathVariableUndefined": "The path uses an undefined environment variable",
 		"requestFailed": "The request failed. Please try again later",
 		"requestRateLimited": "Too many requests. Please try again later",
 		"responseParseFailed": "Failed to parse the response. Please try again later",

@@ -7,9 +7,10 @@ mod oauth;
 mod utils;
 
 use backup::covers::backup_custom_covers;
-use backup::database::{backup_database, import_database};
+use backup::database::{backup_database, import_database, open_database_backup_folder};
 use backup::savedata::{
-    create_savedata_backup, delete_savedata_backup, move_backup_folder, restore_savedata_backup,
+    create_savedata_backup, delete_savedata_backup, move_backup_folder,
+    open_savedata_backup_folder, restore_savedata_backup,
 };
 use database::*;
 use game::cover::custom::{delete_game_covers, import_clipboard_image_to_temp};
@@ -43,8 +44,8 @@ use tauri_plugin_log::{RotationStrategy, Target, TargetKind, TimezoneStrategy};
 use tauri_plugin_store::StoreExt;
 use utils::{
     fs::{
-        copy_file, delete_file, is_portable_mode, open_directory, open_savedata_location,
-        resolve_dropped_local_path,
+        copy_file, delete_file, inspect_user_path, is_portable_mode, open_directory,
+        open_savedata_location, resolve_dropped_local_path,
     },
     http::{get_system_proxy_status, update_proxy_config},
     image::register_image_proxy_protocol,
@@ -103,6 +104,7 @@ pub fn run() {
             stop_game,
             open_directory,
             open_savedata_location,
+            inspect_user_path,
             resolve_dropped_local_path,
             resolve_bulk_import_paths,
             is_portable_mode,
@@ -124,12 +126,14 @@ pub fn run() {
             copy_file,
             create_savedata_backup,
             delete_savedata_backup,
+            open_savedata_backup_folder,
             restore_savedata_backup,
             delete_file,
             import_clipboard_image_to_temp,
             delete_game_covers,
             delete_cloud_cache,
             backup_database,
+            open_database_backup_folder,
             backup_custom_covers,
             import_database,
             // 游戏数据相关 commands

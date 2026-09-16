@@ -122,7 +122,7 @@
 			"searchName": "検索名",
 			"selectExe": "起動ファイルを選択",
 			"selectFolderHint": "ルートフォルダーを選択してスキャンを開始",
-			"selectRootFolder": "ルートフォルダを選択",
+			"startScan": "スキャン開始",
 			"status": "状態",
 			"statusError": "エラー",
 			"statusMatched": "一致済み",
@@ -260,6 +260,14 @@
 			"stopGame": "ゲームを停止",
 			"stoppingGame": "ゲームを停止中...",
 			"syncLocalPath": "ローカル同期"
+		},
+		"PathInput": {
+			"available": "パスは使用可能です",
+			"linuxHint": "パス先頭の $VAR、${VAR}、~/... に対応しています",
+			"missing": "現在このパスは存在しません",
+			"resolvedPath": "実際の場所：{{path}}",
+			"windowsHint": "パス先頭の %VAR%\\... に対応しています",
+			"wrongType": "パスの種類がこの項目と一致しません"
 		},
 		"PathSettingsModal": {
 			"close": "閉じる",
@@ -446,6 +454,14 @@
 		"metadataRequestFailed": "メタデータの取得に失敗しました。後でもう一度お試しください",
 		"mixedSourcesFailed": "すべてのデータソースへのリクエストに失敗しました",
 		"notFound": "対象の内容が見つかりませんでした",
+		"pathEmpty": "パスを空にすることはできません",
+		"pathInspectionFailed": "パスの状態を確認できませんでした",
+		"pathNotAbsolute": "解決後のパスは絶対パスである必要があります",
+		"pathVariableCycle": "環境変数が循環参照しています",
+		"pathVariableDepth": "環境変数の再帰展開が深すぎます",
+		"pathVariableNonUnicode": "環境変数が有効なテキストではありません",
+		"pathVariableSyntax": "パス変数の構文が無効です",
+		"pathVariableUndefined": "未定義の環境変数がパスに含まれています",
 		"requestFailed": "リクエストに失敗しました。後でもう一度お試しください",
 		"requestRateLimited": "リクエストが多すぎます。後でもう一度お試しください",
 		"responseParseFailed": "レスポンスの解析に失敗しました。後でもう一度お試しください",

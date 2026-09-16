@@ -139,6 +139,8 @@ pub(crate) struct GameInstallResultV1 {
     pub(crate) version: u32,
     pub(crate) game_id: Option<i32>,
     pub(crate) install_path: String,
+    #[serde(default)]
+    pub(crate) configured_install_path: Option<String>,
     /// 安装目录直属的可执行文件名，不保存绝对路径。
     pub(crate) executable: Option<String>,
     pub(crate) created_new_game: Option<bool>,
@@ -146,11 +148,16 @@ pub(crate) struct GameInstallResultV1 {
 }
 
 impl GameInstallResultV1 {
-    pub(crate) fn partial(install_path: &Path, executable: Option<&str>) -> Self {
+    pub(crate) fn partial(
+        install_path: &Path,
+        configured_install_path: Option<String>,
+        executable: Option<&str>,
+    ) -> Self {
         Self {
             version: 1,
             game_id: None,
             install_path: install_path.to_string_lossy().into_owned(),
+            configured_install_path,
             executable: executable.map(str::to_owned),
             created_new_game: None,
             matched_by: None,
@@ -163,13 +170,20 @@ pub(crate) struct GameInstallTaskPayloadV1 {
     #[serde(flatten)]
     pub(crate) request: InstallRequest,
     pub(crate) install_root: String,
+    #[serde(default)]
+    pub(crate) configured_install_root: Option<String>,
 }
 
 impl GameInstallTaskPayloadV1 {
-    pub(crate) fn new(request: InstallRequest, install_root: &Path) -> Self {
+    pub(crate) fn new(
+        request: InstallRequest,
+        configured_install_root: String,
+        install_root: &Path,
+    ) -> Self {
         Self {
             request,
             install_root: install_root.to_string_lossy().into_owned(),
+            configured_install_root: Some(configured_install_root),
         }
     }
 
@@ -195,5 +209,21 @@ impl GameInstallTaskPayloadV1 {
         Ok(self
             .install_root()?
             .join(format!("reina-{task_id}.extracting")))
+    }
+
+    pub(crate) fn configured_path_for(&self, path: &Path) -> Result<Option<String>, TaskFailure> {
+        let Some(configured_root) = self.configured_install_root.as_deref() else {
+            return Ok(None);
+        };
+        let install_root = self.install_root()?;
+        let relative = path.strip_prefix(&install_root).map_err(|_| {
+            TaskFailure::new("invalid_payload", "安装结果不在任务配置的安装根目录内")
+        })?;
+        Ok(Some(
+            PathBuf::from(configured_root)
+                .join(relative)
+                .to_string_lossy()
+                .into_owned(),
+        ))
     }
 }

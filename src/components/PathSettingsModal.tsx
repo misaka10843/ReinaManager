@@ -30,12 +30,12 @@ import DialogTitle from "@mui/material/DialogTitle";
 import IconButton from "@mui/material/IconButton";
 import InputAdornment from "@mui/material/InputAdornment";
 import InputLabel from "@mui/material/InputLabel";
-import TextField from "@mui/material/TextField";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import { dirname } from "pathe";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { PathInput } from "@/components/PathInput";
 import { useAllSettings, useUpdateSettings } from "@/hooks/queries/useSettings";
 import { snackbar } from "@/providers/snackBar";
 import { handleExeFile, handleFolder } from "@/services/fs/fileDialog";
@@ -300,12 +300,11 @@ export const PathSettingsModal: React.FC<PathSettingsModalProps> = ({
 										"书音等来源的一键安装会把游戏解压到此目录",
 									)}
 								</Typography>
-								<TextField
+								<PathInput
+									pathType="directory"
 									variant="outlined"
 									value={draft.installRootPath}
-									onChange={(event) =>
-										updateDraft("installRootPath", event.target.value)
-									}
+									onChange={(value) => updateDraft("installRootPath", value)}
 									onBlur={() => void saveDraft(draft)}
 									onKeyDown={(event) =>
 										handlePathKeyDown(event, "installRootPath")
@@ -318,30 +317,26 @@ export const PathSettingsModal: React.FC<PathSettingsModalProps> = ({
 									)}
 									disabled={isLoading}
 									size="small"
-									InputProps={{
-										endAdornment: (
-											<InputAdornment position="end">
-												<Tooltip
-													title={t(
-														"components.PathSettingsModal.installRootPath.selectBtn",
-														"选择目录",
-													)}
+									endAdornment={
+										<InputAdornment position="end">
+											<Tooltip
+												title={t(
+													"components.PathSettingsModal.installRootPath.selectBtn",
+													"选择目录",
+												)}
+											>
+												<IconButton
+													onMouseDown={(event) => event.preventDefault()}
+													onClick={() => handleSelectFolder("installRootPath")}
+													disabled={isLoading}
+													edge="end"
+													size="small"
 												>
-													<IconButton
-														onMouseDown={(event) => event.preventDefault()}
-														onClick={() =>
-															handleSelectFolder("installRootPath")
-														}
-														disabled={isLoading}
-														edge="end"
-														size="small"
-													>
-														<FolderOpenIcon fontSize="small" />
-													</IconButton>
-												</Tooltip>
-											</InputAdornment>
-										),
-									}}
+													<FolderOpenIcon fontSize="small" />
+												</IconButton>
+											</Tooltip>
+										</InputAdornment>
+									}
 								/>
 							</Box>
 
@@ -363,10 +358,11 @@ export const PathSettingsModal: React.FC<PathSettingsModalProps> = ({
 										"设置游戏存档的备份根目录，留空将使用默认路径",
 									)}
 								</Typography>
-								<TextField
+								<PathInput
+									pathType="directory"
 									variant="outlined"
 									value={draft.savePath}
-									onChange={(e) => updateDraft("savePath", e.target.value)}
+									onChange={(value) => updateDraft("savePath", value)}
 									onBlur={() => void saveDraft(draft)}
 									onKeyDown={(event) => handlePathKeyDown(event, "savePath")}
 									fullWidth
@@ -377,28 +373,26 @@ export const PathSettingsModal: React.FC<PathSettingsModalProps> = ({
 									)}
 									disabled={isLoading}
 									size="small"
-									InputProps={{
-										endAdornment: (
-											<InputAdornment position="end">
-												<Tooltip
-													title={t(
-														"components.PathSettingsModal.savePath.selectBtn",
-														"选择目录",
-													)}
+									endAdornment={
+										<InputAdornment position="end">
+											<Tooltip
+												title={t(
+													"components.PathSettingsModal.savePath.selectBtn",
+													"选择目录",
+												)}
+											>
+												<IconButton
+													onMouseDown={(event) => event.preventDefault()}
+													onClick={() => handleSelectFolder("savePath")}
+													disabled={isLoading}
+													edge="end"
+													size="small"
 												>
-													<IconButton
-														onMouseDown={(event) => event.preventDefault()}
-														onClick={() => handleSelectFolder("savePath")}
-														disabled={isLoading}
-														edge="end"
-														size="small"
-													>
-														<FolderOpenIcon fontSize="small" />
-													</IconButton>
-												</Tooltip>
-											</InputAdornment>
-										),
-									}}
+													<FolderOpenIcon fontSize="small" />
+												</IconButton>
+											</Tooltip>
+										</InputAdornment>
+									}
 								/>
 							</Box>
 
@@ -420,10 +414,11 @@ export const PathSettingsModal: React.FC<PathSettingsModalProps> = ({
 										"设置数据库的备份根目录，留空将使用默认路径",
 									)}
 								</Typography>
-								<TextField
+								<PathInput
+									pathType="directory"
 									variant="outlined"
 									value={draft.dbBackupPath}
-									onChange={(e) => updateDraft("dbBackupPath", e.target.value)}
+									onChange={(value) => updateDraft("dbBackupPath", value)}
 									onBlur={() => void saveDraft(draft)}
 									onKeyDown={(event) =>
 										handlePathKeyDown(event, "dbBackupPath")
@@ -436,28 +431,26 @@ export const PathSettingsModal: React.FC<PathSettingsModalProps> = ({
 									)}
 									disabled={isLoading}
 									size="small"
-									InputProps={{
-										endAdornment: (
-											<InputAdornment position="end">
-												<Tooltip
-													title={t(
-														"components.PathSettingsModal.dbBackupPath.selectBtn",
-														"选择目录",
-													)}
+									endAdornment={
+										<InputAdornment position="end">
+											<Tooltip
+												title={t(
+													"components.PathSettingsModal.dbBackupPath.selectBtn",
+													"选择目录",
+												)}
+											>
+												<IconButton
+													onMouseDown={(event) => event.preventDefault()}
+													onClick={() => handleSelectFolder("dbBackupPath")}
+													disabled={isLoading}
+													edge="end"
+													size="small"
 												>
-													<IconButton
-														onMouseDown={(event) => event.preventDefault()}
-														onClick={() => handleSelectFolder("dbBackupPath")}
-														disabled={isLoading}
-														edge="end"
-														size="small"
-													>
-														<FolderOpenIcon fontSize="small" />
-													</IconButton>
-												</Tooltip>
-											</InputAdornment>
-										),
-									}}
+													<FolderOpenIcon fontSize="small" />
+												</IconButton>
+											</Tooltip>
+										</InputAdornment>
+									}
 								/>
 							</Box>
 						</>
@@ -478,10 +471,11 @@ export const PathSettingsModal: React.FC<PathSettingsModalProps> = ({
 								"设置LE转区软件的可执行文件路径，用于游戏启动时的转区功能",
 							)}
 						</Typography>
-						<TextField
+						<PathInput
+							pathType="file"
 							variant="outlined"
 							value={draft.lePath}
-							onChange={(e) => updateDraft("lePath", e.target.value)}
+							onChange={(value) => updateDraft("lePath", value)}
 							onBlur={() => void saveDraft(draft)}
 							onKeyDown={(event) => handlePathKeyDown(event, "lePath")}
 							fullWidth
@@ -492,28 +486,26 @@ export const PathSettingsModal: React.FC<PathSettingsModalProps> = ({
 							)}
 							disabled={isLoading}
 							size="small"
-							InputProps={{
-								endAdornment: (
-									<InputAdornment position="end">
-										<Tooltip
-											title={t(
-												"components.PathSettingsModal.lePath.selectBtn",
-												"选择文件",
-											)}
+							endAdornment={
+								<InputAdornment position="end">
+									<Tooltip
+										title={t(
+											"components.PathSettingsModal.lePath.selectBtn",
+											"选择文件",
+										)}
+									>
+										<IconButton
+											onMouseDown={(event) => event.preventDefault()}
+											onClick={() => handleSelectExeFile("lePath")}
+											disabled={isLoading}
+											edge="end"
+											size="small"
 										>
-											<IconButton
-												onMouseDown={(event) => event.preventDefault()}
-												onClick={() => handleSelectExeFile("lePath")}
-												disabled={isLoading}
-												edge="end"
-												size="small"
-											>
-												<FileOpenIcon fontSize="small" />
-											</IconButton>
-										</Tooltip>
-									</InputAdornment>
-								),
-							}}
+											<FileOpenIcon fontSize="small" />
+										</IconButton>
+									</Tooltip>
+								</InputAdornment>
+							}
 						/>
 					</Box>
 
@@ -535,10 +527,11 @@ export const PathSettingsModal: React.FC<PathSettingsModalProps> = ({
 								"设置Magpie软件的可执行文件路径，用于游戏画面的放大功能",
 							)}
 						</Typography>
-						<TextField
+						<PathInput
+							pathType="file"
 							variant="outlined"
 							value={draft.magpiePath}
-							onChange={(e) => updateDraft("magpiePath", e.target.value)}
+							onChange={(value) => updateDraft("magpiePath", value)}
 							onBlur={() => void saveDraft(draft)}
 							onKeyDown={(event) => handlePathKeyDown(event, "magpiePath")}
 							fullWidth
@@ -549,28 +542,26 @@ export const PathSettingsModal: React.FC<PathSettingsModalProps> = ({
 							)}
 							disabled={isLoading}
 							size="small"
-							InputProps={{
-								endAdornment: (
-									<InputAdornment position="end">
-										<Tooltip
-											title={t(
-												"components.PathSettingsModal.magpiePath.selectBtn",
-												"选择文件",
-											)}
+							endAdornment={
+								<InputAdornment position="end">
+									<Tooltip
+										title={t(
+											"components.PathSettingsModal.magpiePath.selectBtn",
+											"选择文件",
+										)}
+									>
+										<IconButton
+											onMouseDown={(event) => event.preventDefault()}
+											onClick={() => handleSelectExeFile("magpiePath")}
+											disabled={isLoading}
+											edge="end"
+											size="small"
 										>
-											<IconButton
-												onMouseDown={(event) => event.preventDefault()}
-												onClick={() => handleSelectExeFile("magpiePath")}
-												disabled={isLoading}
-												edge="end"
-												size="small"
-											>
-												<FileOpenIcon fontSize="small" />
-											</IconButton>
-										</Tooltip>
-									</InputAdornment>
-								),
-							}}
+											<FileOpenIcon fontSize="small" />
+										</IconButton>
+									</Tooltip>
+								</InputAdornment>
+							}
 						/>
 					</Box>
 				</Box>

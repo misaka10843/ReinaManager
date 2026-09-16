@@ -63,7 +63,8 @@ pub(crate) async fn prepare_game_import(
     .map_err(|error| TaskFailure::new("scan_task_failed", error.to_string()))?
     .map_err(|message| TaskFailure::new("scan_failed", message))?;
     let executable = (candidates.len() == 1).then(|| candidates[0].as_str());
-    result = GameInstallResultV1::partial(&install_path, executable);
+    result =
+        GameInstallResultV1::partial(&install_path, result.configured_install_path, executable);
     save_game_install_result(db, task.id, &result).await?;
 
     check_task_control(control)?;
@@ -114,6 +115,10 @@ pub(crate) async fn import_installed_game(
         ));
     }
     let executable_name = resolve_installed_executable_name(&install_path, &partial)?;
+    let configured_install_path = partial
+        .configured_install_path
+        .clone()
+        .unwrap_or_else(|| partial.install_path.clone());
     let task = claim_game_import(db, task_id).await?;
     emit_progress(
         app,
@@ -185,7 +190,7 @@ pub(crate) async fn import_installed_game(
                 &metadata.id_type,
             )),
             date: Some(metadata.date.clone()),
-            localpath: Some(Some(partial.install_path.clone())),
+            localpath: Some(Some(configured_install_path.clone())),
             executable: Some(executable_name.clone()),
             upsert_sources: Some(metadata.sources.clone()),
             ..Default::default()
@@ -196,7 +201,7 @@ pub(crate) async fn import_installed_game(
             .map_err(|error| TaskFailure::new("game_import_failed", error.to_string()))?;
         (game.id, false, matched_by)
     } else {
-        metadata.localpath = Some(partial.install_path.clone());
+        metadata.localpath = Some(configured_install_path.clone());
         metadata.executable = executable_name.clone();
         let game = GamesRepository::insert_aggregate(&transaction, metadata.cleaned(), now)
             .await
@@ -208,6 +213,7 @@ pub(crate) async fn import_installed_game(
         version: 1,
         game_id: Some(game_id),
         install_path: partial.install_path.clone(),
+        configured_install_path: partial.configured_install_path.clone(),
         executable: executable_name.clone(),
         created_new_game: Some(created_new_game),
         matched_by,
@@ -247,6 +253,7 @@ pub(crate) fn parse_game_install_payload(
                     .validate()
                     .map_err(|message| TaskFailure::new("invalid_payload", message))?,
                 install_root: payload.install_root,
+                configured_install_root: payload.configured_install_root,
             })
         }
         version => Err(TaskFailure::new(
@@ -353,6 +360,7 @@ mod tests {
             version: 1,
             game_id: None,
             install_path: "C:\\Games\\Reina".to_string(),
+            configured_install_path: None,
             executable: Some("bin/game.exe".to_string()),
             created_new_game: None,
             matched_by: None,

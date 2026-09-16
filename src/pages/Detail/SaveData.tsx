@@ -27,6 +27,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertConfirmBox } from "@/components/AlertBox";
+import { PathInput } from "@/components/PathInput";
 import { SelectedGameGuard } from "@/components/SelectedGameGuard";
 import { useUpdateGame } from "@/hooks/queries/useGames";
 import { useSaveDataResources } from "@/hooks/queries/useSavedata";
@@ -266,7 +267,6 @@ function SaveDataContent({ selectedGame, gameId }: SaveDataContentProps) {
 		if (!backupToRestore || !hasSavedGameSavePath) return;
 		try {
 			const restoreResult = await restoreBackupMutation.mutateAsync({
-				gameId,
 				backup: backupToRestore,
 				savePath: originalSaveDataPath,
 			});
@@ -347,82 +347,79 @@ function SaveDataContent({ selectedGame, gameId }: SaveDataContentProps) {
 								{t("pages.Detail.Backup.savePathSettings", "存档路径")}
 							</Typography>
 
-							<TextField
+							<PathInput
+								pathType="file-or-directory"
 								fullWidth
 								value={saveDataPath}
+								onChange={setSaveDataPath}
 								disabled={isSaving}
 								placeholder={t(
 									"pages.Detail.Backup.selectSaveDataPath",
 									"请选择存档文件或文件夹",
 								)}
-								slotProps={{
-									input: {
-										readOnly: true,
-										endAdornment: (
-											<InputAdornment position="end">
-												<Stack direction="row" spacing={0.25}>
-													<Tooltip
-														title={t(
-															"pages.Detail.Backup.selectSaveDataDirectory",
-															"选择存档文件夹",
-														)}
-													>
-														<IconButton
-															onClick={handleSelectSaveDataPath}
-															disabled={isSaving}
-															aria-label={t(
-																"pages.Detail.Backup.selectSaveDataDirectory",
-																"选择存档文件夹",
-															)}
-															edge="end"
-															size="small"
-														>
-															<FolderOpenIcon />
-														</IconButton>
-													</Tooltip>
-													<Tooltip
-														title={t(
-															"pages.Detail.Backup.selectSaveDataFile",
-															"选择存档文件",
-														)}
-													>
-														<IconButton
-															onClick={handleSelectSaveDataFilePath}
-															disabled={isSaving}
-															aria-label={t(
-																"pages.Detail.Backup.selectSaveDataFile",
-																"选择存档文件",
-															)}
-															edge="end"
-															size="small"
-														>
-															<InsertDriveFileOutlinedIcon />
-														</IconButton>
-													</Tooltip>
-													<Tooltip
-														title={t(
-															"pages.Detail.Backup.clearSaveDataPath",
-															"清除存档路径",
-														)}
-													>
-														<IconButton
-															onClick={() => setSaveDataPath("")}
-															disabled={isSaving || !saveDataPath}
-															aria-label={t(
-																"pages.Detail.Backup.clearSaveDataPath",
-																"清除存档路径",
-															)}
-															edge="end"
-															size="small"
-														>
-															<ClearIcon />
-														</IconButton>
-													</Tooltip>
-												</Stack>
-											</InputAdornment>
-										),
-									},
-								}}
+								endAdornment={
+									<InputAdornment position="end">
+										<Stack direction="row" spacing={0.25}>
+											<Tooltip
+												title={t(
+													"pages.Detail.Backup.selectSaveDataDirectory",
+													"选择存档文件夹",
+												)}
+											>
+												<IconButton
+													onClick={handleSelectSaveDataPath}
+													disabled={isSaving}
+													aria-label={t(
+														"pages.Detail.Backup.selectSaveDataDirectory",
+														"选择存档文件夹",
+													)}
+													edge="end"
+													size="small"
+												>
+													<FolderOpenIcon />
+												</IconButton>
+											</Tooltip>
+											<Tooltip
+												title={t(
+													"pages.Detail.Backup.selectSaveDataFile",
+													"选择存档文件",
+												)}
+											>
+												<IconButton
+													onClick={handleSelectSaveDataFilePath}
+													disabled={isSaving}
+													aria-label={t(
+														"pages.Detail.Backup.selectSaveDataFile",
+														"选择存档文件",
+													)}
+													edge="end"
+													size="small"
+												>
+													<InsertDriveFileOutlinedIcon />
+												</IconButton>
+											</Tooltip>
+											<Tooltip
+												title={t(
+													"pages.Detail.Backup.clearSaveDataPath",
+													"清除存档路径",
+												)}
+											>
+												<IconButton
+													onClick={() => setSaveDataPath("")}
+													disabled={isSaving || !saveDataPath}
+													aria-label={t(
+														"pages.Detail.Backup.clearSaveDataPath",
+														"清除存档路径",
+													)}
+													edge="end"
+													size="small"
+												>
+													<ClearIcon />
+												</IconButton>
+											</Tooltip>
+										</Stack>
+									</InputAdornment>
+								}
 							/>
 
 							<Divider />

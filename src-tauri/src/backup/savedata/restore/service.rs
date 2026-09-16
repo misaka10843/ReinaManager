@@ -1,10 +1,13 @@
 use super::common::RestoreSavedataResult;
 use super::{legacy, rooted};
+use crate::backup::savedata::maintenance::resolve_savedata_backup_root;
+use crate::database::repository::games_repository::GamesRepository;
+use sea_orm::DatabaseConnection;
 use sevenz_rust2::{ArchiveReader, Password};
 use std::fs;
 use std::path::Path;
 use std::sync::{Mutex, OnceLock};
-use tauri::command;
+use tauri::{State, command};
 
 static RESTORE_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
 
@@ -16,23 +19,33 @@ enum SaveBackupFormat {
 
 #[command]
 pub async fn restore_savedata_backup(
-    backup_file_path: String,
+    db: State<'_, DatabaseConnection>,
+    backup_id: i32,
     target_path: String,
 ) -> Result<RestoreSavedataResult, String> {
-    if !Path::new(&backup_file_path).is_file() {
+    let record = GamesRepository::get_savedata_record_by_id(&db, backup_id)
+        .await
+        .map_err(|error| format!("获取备份记录失败: {error}"))?
+        .ok_or_else(|| "备份记录不存在".to_string())?;
+    let backup_file_path = resolve_savedata_backup_root(&db)
+        .await?
+        .join(format!("game_{}", record.game_id))
+        .join(record.file);
+    if !backup_file_path.is_file() {
         return Err("备份文件不存在".to_string());
     }
+    let target_path = reina_path::resolve_user_path(&target_path)
+        .map_err(|error| format!("恢复目标路径解析失败: {error}"))?;
     tokio::task::spawn_blocking(move || restore_sync(&backup_file_path, &target_path))
         .await
         .map_err(|error| format!("恢复任务异常退出: {error}"))?
 }
 
 fn restore_sync(
-    backup_file_path: &str,
-    target_path: &str,
+    backup_file_path: &Path,
+    target_path: &Path,
 ) -> Result<RestoreSavedataResult, String> {
-    let backup_path = Path::new(backup_file_path);
-    let target_path = Path::new(target_path);
+    let backup_path = backup_file_path;
     if !target_path.is_absolute()
         || target_path
             .components()
@@ -77,8 +90,5 @@ pub(super) fn restore_for_test(
     backup_path: &Path,
     target_path: &Path,
 ) -> Result<RestoreSavedataResult, String> {
-    restore_sync(
-        &backup_path.to_string_lossy(),
-        &target_path.to_string_lossy(),
-    )
+    restore_sync(backup_path, target_path)
 }

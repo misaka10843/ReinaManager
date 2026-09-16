@@ -29,8 +29,10 @@ pub async fn create_game_install_task(
     install_root: String,
 ) -> Result<tasks::Model, String> {
     let request = request.validate()?;
-    let install_root = normalize_install_root_path(&install_root)?;
-    let payload = GameInstallTaskPayloadV1::new(request.clone(), &install_root);
+    let configured_install_root = install_root.trim().to_string();
+    let install_root = normalize_install_root_path(&configured_install_root)?;
+    let payload =
+        GameInstallTaskPayloadV1::new(request.clone(), configured_install_root, &install_root);
 
     let dedupe_key = game_install_dedupe_key(&request);
     if find_active_task_by_dedupe(db.inner(), &dedupe_key)
@@ -145,6 +147,7 @@ pub async fn retry_task(
     let updated_payload = GameInstallTaskPayloadV1 {
         request: request.clone(),
         install_root: stored_payload.install_root.clone(),
+        configured_install_root: stored_payload.configured_install_root.clone(),
     };
     let previous_download_path = stored_payload
         .download_path(task_id)

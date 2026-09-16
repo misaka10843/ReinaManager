@@ -1,14 +1,12 @@
 use super::{
     LaunchResult, StopResult, load_game, magpie, validate_and_open_steam, validate_local_launch,
 };
-use crate::database::dto::UpdateSettingsData;
-use crate::database::repository::settings_repository::{DbSettingsExt, SettingsRepository};
+use crate::database::repository::settings_repository::DbSettingsExt;
 use crate::game::monitor::{
     TimeTrackingMode, is_game_foreground, monitor_game, stop_game_session, wait_for_game_foreground,
 };
 use crate::utils::command_ext::CommandGuiExt;
 use sea_orm::DatabaseConnection;
-use std::path::Path;
 use std::process::Command;
 use tauri::{AppHandle, Runtime, State, command};
 use {
@@ -27,19 +25,6 @@ impl ToolPathKind {
         match self {
             Self::Le => "LE转区软件",
             Self::Magpie => "Magpie软件",
-        }
-    }
-
-    fn clear_update(self) -> UpdateSettingsData {
-        match self {
-            Self::Le => UpdateSettingsData {
-                le_path: Some(None),
-                ..Default::default()
-            },
-            Self::Magpie => UpdateSettingsData {
-                magpie_path: Some(None),
-                ..Default::default()
-            },
         }
     }
 }
@@ -121,17 +106,8 @@ mod win_elevated_launch {
     }
 }
 
-async fn clear_tool_path_setting(
-    db: &DatabaseConnection,
-    tool_kind: ToolPathKind,
-) -> Result<(), String> {
-    SettingsRepository::update_settings(db, tool_kind.clear_update())
-        .await
-        .map_err(|e| format!("清空{}路径失败: {}", tool_kind.label(), e))
-}
-
 async fn resolve_tool_path(
-    db: &DatabaseConnection,
+    _db: &DatabaseConnection,
     path: Option<&str>,
     tool_kind: ToolPathKind,
 ) -> Result<String, String> {
@@ -139,7 +115,8 @@ async fn resolve_tool_path(
         return Err(format!("{}路径未设置，请先配置路径", tool_kind.label()));
     };
 
-    let tool_path = Path::new(path);
+    let tool_path = reina_path::resolve_user_path(path)
+        .map_err(|error| format!("{}路径解析失败: {error}", tool_kind.label()))?;
     let invalid_reason = if !tool_path.exists() {
         Some("不存在")
     } else if !tool_path.is_file() {
@@ -149,16 +126,15 @@ async fn resolve_tool_path(
     };
 
     if let Some(reason) = invalid_reason {
-        clear_tool_path_setting(db, tool_kind).await?;
         return Err(format!(
-            "{}路径{}，已清空配置，请重新设置: {}",
+            "{}路径{}，请重新设置: {}",
             tool_kind.label(),
             reason,
-            path
+            tool_path.display()
         ));
     }
 
-    Ok(path.to_string())
+    Ok(tool_path.to_string_lossy().into_owned())
 }
 
 /// 启动游戏

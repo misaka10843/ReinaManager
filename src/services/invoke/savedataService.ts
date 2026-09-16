@@ -45,17 +45,21 @@ class SavedataService extends BaseService {
 
 	/**
 	 * 恢复存档备份
-	 * @param backupFilePath 备份文件完整路径
+	 * @param backupId 备份记录 ID
 	 * @param targetPath 目标恢复路径
 	 */
 	async restoreBackup(
-		backupFilePath: string,
+		backupId: number,
 		targetPath: string,
 	): Promise<RestoreBackupResult> {
 		return this.invoke<RestoreBackupResult>("restore_savedata_backup", {
-			backupFilePath,
+			backupId,
 			targetPath,
 		});
+	}
+
+	async openBackupFolder(gameId: number): Promise<void> {
+		return this.invoke<void>("open_savedata_backup_folder", { gameId });
 	}
 
 	/** 打开存档位置；文件打开其父目录，目录打开自身。 */

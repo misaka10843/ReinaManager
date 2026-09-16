@@ -19,6 +19,8 @@ import {
 import { sep } from "@tauri-apps/api/path";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { PathInput } from "@/components/PathInput";
+import { useUserPathInspection } from "@/hooks/common/useUserPathInspection";
 import { buildGameLaunchUpdatePayload } from "@/metadata/data/metadata";
 import { snackbar } from "@/providers/snackBar";
 import {
@@ -50,10 +52,14 @@ export const GameLaunchSettings: React.FC<GameLaunchSettingsProps> = ({
 	const [localPath, setLocalPath] = useState(selectedGame.localpath ?? "");
 	const [executable, setExecutable] = useState(selectedGame.executable ?? "");
 	const [isLoading, setIsLoading] = useState(false);
+	const localPathInspection = useUserPathInspection(localPath);
+	const comparisonLocalPath =
+		localPathInspection.inspection?.resolved_path ?? localPath;
 	const steam = useSteamAssociation({
 		selectedGame,
 		gameName: getGameDisplayName(selectedGame),
 		localPath,
+		comparisonLocalPath,
 		executable,
 		onLocalPathChange: setLocalPath,
 		onExecutableChange: setExecutable,
@@ -240,14 +246,15 @@ export const GameLaunchSettings: React.FC<GameLaunchSettingsProps> = ({
 						) : null}
 
 						<Box className="flex flex-col items-start gap-2 sm:flex-row">
-							<TextField
+							<PathInput
+								pathType="directory"
+								inspectionState={localPathInspection}
 								label={t("pages.Detail.GameInfoEdit.localPath", "游戏目录")}
 								variant="outlined"
 								value={localPath}
-								onChange={(event) => setLocalPath(event.target.value)}
+								onChange={setLocalPath}
 								disabled={isLoading || disabled}
-								error={!localPath.trim() && Boolean(executable.trim())}
-								helperText={
+								validationError={
 									!localPath.trim() && executable.trim()
 										? t(
 												"pages.Detail.GameInfoEdit.localPathRequiredForExecutable",
@@ -256,17 +263,13 @@ export const GameLaunchSettings: React.FC<GameLaunchSettingsProps> = ({
 										: undefined
 								}
 								className="min-w-0 flex-[2]"
-								slotProps={{
-									input: {
-										endAdornment: (
-											<InputAdornment position="end">
-												<Typography aria-hidden color="text.secondary">
-													{PATH_SEPARATOR}
-												</Typography>
-											</InputAdornment>
-										),
-									},
-								}}
+								endAdornment={
+									<InputAdornment position="end">
+										<Typography aria-hidden color="text.secondary">
+											{PATH_SEPARATOR}
+										</Typography>
+									</InputAdornment>
+								}
 							/>
 							<TextField
 								label={t("pages.Detail.GameInfoEdit.executable", "可执行文件")}
@@ -332,7 +335,7 @@ export const GameLaunchSettings: React.FC<GameLaunchSettingsProps> = ({
 			{steam.dialog.open ? (
 				<SteamLaunchAssociationDialog
 					open
-					currentLocalPath={localPath}
+					currentLocalPath={comparisonLocalPath}
 					initialTarget={steam.dialog.initialTarget}
 					initialScanResult={steam.dialog.scanResult}
 					onScanResult={steam.dialog.setScanResult}

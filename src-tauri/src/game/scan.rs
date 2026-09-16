@@ -83,6 +83,26 @@ impl ImportPathIndex {
     }
 }
 
+pub(crate) fn resolve_configured_path_set(
+    paths: impl IntoIterator<Item = String>,
+) -> HashSet<String> {
+    paths
+        .into_iter()
+        .filter_map(
+            |configured| match reina_path::resolve_user_path(&configured) {
+                Ok(path) => Some(path.to_string_lossy().into_owned()),
+                Err(error) => {
+                    log::warn!(
+                        "跳过无法解析的已有游戏目录 configured={}, error={error}",
+                        configured
+                    );
+                    None
+                }
+            },
+        )
+        .collect()
+}
+
 fn normalize_import_path(path: &Path) -> Option<Vec<ImportPathComponent>> {
     let mut normalized = Vec::new();
 
@@ -322,9 +342,14 @@ pub async fn scan_directory_for_games(
     scan_mode: ScanMode,
     scan_executables: bool,
 ) -> Result<Vec<ScanResult>, String> {
-    // 先做路径预检查（一次 syscall，可在 async 上下文进行）
-    if !Path::new(&path).is_dir() {
-        return Err(format!("目录不存在或不是文件夹: {}", path));
+    let configured_root = path.trim().to_string();
+    let resolved_root = reina_path::resolve_user_path(&configured_root)
+        .map_err(|error| format!("扫描根目录解析失败: {error}"))?;
+    if !resolved_root.is_dir() {
+        return Err(format!(
+            "目录不存在或不是文件夹: {}",
+            resolved_root.display()
+        ));
     }
 
     // 异步查询 DB；去重索引只做路径组件运算，不访问文件系统。
@@ -334,20 +359,29 @@ pub async fn scan_directory_for_games(
 
     let max_depth = max_depth.clamp(MIN_SCAN_MAX_DEPTH, MAX_SCAN_MAX_DEPTH);
     let started_at = Instant::now();
-    let path_for_log = path.clone();
+    let path_for_log = resolved_root.to_string_lossy().into_owned();
+    let resolved_root_for_task = resolved_root.clone();
 
     // WalkDir 大量文件系统 I/O 属于阻塞操作，
     // 放入 Tokio 革层阻塞线程池，避免占用异步运行时线程。
     let results = tokio::task::spawn_blocking(move || {
-        let existing_paths = ImportPathIndex::from_paths(existing_game_directories);
+        let existing_paths =
+            ImportPathIndex::from_paths(resolve_configured_path_set(existing_game_directories));
+        let resolved_path = resolved_root_for_task.to_string_lossy().into_owned();
         log::debug!(
             "开始扫描游戏目录 path={} mode={:?} max_depth={} existing_paths={}",
-            path,
+            resolved_path,
             scan_mode,
             max_depth,
             existing_paths.len()
         );
-        scan_games_blocking(path, existing_paths, max_depth, scan_mode, scan_executables)
+        scan_games_blocking(
+            resolved_path,
+            existing_paths,
+            max_depth,
+            scan_mode,
+            scan_executables,
+        )
     })
     .await
     .map_err(|e| {
@@ -360,6 +394,18 @@ pub async fn scan_directory_for_games(
         );
         format!("扫描任务异常: {}", e)
     })??;
+    let results = results
+        .into_iter()
+        .map(|mut result| {
+            if let Ok(relative) = Path::new(&result.path).strip_prefix(&resolved_root) {
+                result.path = PathBuf::from(&configured_root)
+                    .join(relative)
+                    .to_string_lossy()
+                    .into_owned();
+            }
+            result
+        })
+        .collect::<Vec<_>>();
 
     log::info!(
         "游戏目录扫描完成 mode={:?} max_depth={} result_count={} elapsed_ms={}",

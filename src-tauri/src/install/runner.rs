@@ -263,7 +263,8 @@ async fn run_game_install_task(
     .await
     .map_err(|error| TaskFailure::new("organize_task_failed", error.to_string()))?
     .map_err(|message| TaskFailure::new("organize_failed", message))?;
-    let result = GameInstallResultV1::partial(&final_root, None);
+    let configured_install_path = payload.configured_path_for(&final_root)?;
+    let result = GameInstallResultV1::partial(&final_root, configured_install_path, None);
     // 先保存正式目录 checkpoint；应用崩溃后可跳过下载和解压，从扫描阶段恢复。
     save_game_install_result(db, task.id, &result).await?;
     prepare_game_import(app, db, &task, request, result, control).await?;

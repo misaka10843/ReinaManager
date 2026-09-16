@@ -13,8 +13,16 @@ pub struct MoveResult {
 
 #[command]
 pub async fn move_backup_folder(old_path: String, new_path: String) -> Result<MoveResult, String> {
-    let old_backup_path = Path::new(&old_path);
-    let new_backup_path = Path::new(&new_path);
+    let old_backup_path = reina_path::resolve_user_path(&old_path)
+        .map_err(|error| format!("旧备份路径解析失败: {error}"))?;
+    let new_backup_path = reina_path::resolve_user_path(&new_path)
+        .map_err(|error| format!("新备份路径解析失败: {error}"))?;
+    if old_backup_path == new_backup_path {
+        return Ok(MoveResult {
+            success: true,
+            message: "新旧备份路径相同，无需移动".to_string(),
+        });
+    }
     if !old_backup_path.exists() {
         return Ok(MoveResult {
             success: true,
@@ -36,12 +44,12 @@ pub async fn move_backup_folder(old_path: String, new_path: String) -> Result<Mo
             message: "目标位置已存在备份文件夹，请手动处理".to_string(),
         });
     }
-    match fs::rename(old_backup_path, new_backup_path) {
+    match fs::rename(&old_backup_path, &new_backup_path) {
         Ok(()) => Ok(MoveResult {
             success: true,
             message: "备份文件夹移动成功".to_string(),
         }),
-        Err(_) => move_backup_folder_by_copy(old_backup_path, new_backup_path),
+        Err(_) => move_backup_folder_by_copy(&old_backup_path, &new_backup_path),
     }
 }
 
@@ -131,10 +139,24 @@ pub(super) async fn resolve_savedata_backup_root(
     use crate::database::repository::settings_repository::DbSettingsExt;
     let settings = db.get_settings().await?;
     Ok(if let Some(custom) = settings.save_root_path_value() {
-        PathBuf::from(custom).join("backups")
+        reina_path::resolve_user_path(custom)
+            .map_err(|error| format!("游戏存档备份根目录解析失败: {error}"))?
+            .join("backups")
     } else {
         reina_path::get_base_data_dir()?.join("backups")
     })
+}
+
+#[command]
+pub async fn open_savedata_backup_folder(
+    db: State<'_, DatabaseConnection>,
+    game_id: i32,
+) -> Result<(), String> {
+    let path = resolve_savedata_backup_root(&db)
+        .await?
+        .join(format!("game_{game_id}"));
+    fs::create_dir_all(&path).map_err(|error| format!("创建存档备份目录失败: {error}"))?;
+    crate::utils::fs::open_directory(path.to_string_lossy().into_owned()).await
 }
 
 pub(super) async fn cleanup_old_backups(

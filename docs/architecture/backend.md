@@ -52,6 +52,12 @@ Tauri command
 - 标准模式：数据根目录为系统 data 目录下的 `com.reinamanager.dev`。
 - 数据库统一为 `<base>/data/reina_manager.db`。
 
+`reina-path::resolve_user_path` 统一解析用户配置路径。数据库始终保存原始配置；Windows
+只展开路径开头的 `%VAR%`，Linux 展开开头的 `$VAR`、`${VAR}`、`~` 和 `~/`。
+解析结果必须是绝对路径，但解析器不访问文件系统。command 或 workflow 在实际 I/O 前
+解析，再根据字段语义校验文件、目录或二者皆可。缓存、临时文件和数据库位置等程序内部
+生成的 `PathBuf` 不经过用户路径解析器。
+
 少量启动设置使用 `tauri-plugin-store` 的 `settings.json`。封面、存档备份、数据库备份和安装中间文件存于文件系统。
 
 ## 特性模块
@@ -98,3 +104,4 @@ Windows 会监听当前用户的 Internet Settings。固定系统代理变化后
 3. 聚合写入、多表不变量和任务状态转换由单个 repository/workflow 事务覆盖。
 4. Command 是信任边界；进入文件系统或系统 API 前完成参数、路径和可执行文件校验。
 5. 修改 schema 时追加 migration，并同步 entity、DTO、repository 和前端类型。
+6. 用户配置路径保留变量表达式；不得在保存时展开，也不得因运行时解析失败自动清空配置。
