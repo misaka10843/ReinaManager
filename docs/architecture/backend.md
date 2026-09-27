@@ -79,6 +79,12 @@ LE 与 Magpie 的工具路径及新游戏默认开关保存在 SQLite 用户设�
 | `oauth` | Bangumi/Hikarinagi OAuth、localhost 回调、token 交换与刷新 |
 | `utils` | 文件、HTTP、图片协议、日志和历史文件迁移 |
 
+## 安装归档解压
+
+第三方下载包由 `install/archive.rs` 调用随应用打包的 7-Zip 命令行工具；内部存档备份使用 Rust 归档库，二者不共用解压引擎。`build.rs` 将目标架构的工具准备到 `target/7zip`，Tauri 再打包到 `tools/7zip`。
+
+Windows x86、x64、arm64 使用官方 7-Zip 26.02 的 `7z.exe` 和 `7z.dll`，并从同架构的 7-Zip-zstd 26.02 插件包中只提取 `Codecs/zstd.dll`。Linux x64、arm64 继续使用 7-Zip-zstd 的 `7zz`；Linux x86 保留官方 `7zz`，目前不在发布矩阵中。macOS 配置暂为官方 `7zz`，项目尚无完整的 macOS 支持计划。构建脚本固定下载来源和 SHA-256，缓存命中时检查可执行文件、所需库、插件及许可证；Windows 便携包复制整个 `tools/7zip` 目录。
+
 ## 游戏存档备份
 
 存档路径可以指向一个普通文件或目录。存档专用 7z 归档保留该对象的原始名称：文件直接位于归档顶层，目录连同根目录一起写入。归档必须且只能包含一个逻辑顶层对象，类型和名称从条目结构读取；不增加 manifest 或数据库类型字段。封面归档继续使用原有目录内容格式。
