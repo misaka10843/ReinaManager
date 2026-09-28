@@ -1,6 +1,7 @@
 import { Breadcrumbs, Link, Typography } from "@mui/material";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import { isTauri } from "@tauri-apps/api/core";
 import { PageContainer } from "@toolpad/core/PageContainer";
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
@@ -19,6 +20,7 @@ import {
 } from "./DataSourceSettings";
 import {
 	CardClickModeSettings,
+	InterfaceZoomSettings,
 	LanguageSelect,
 	NsfwSettings,
 	StartupPageSettings,
@@ -130,6 +132,12 @@ export const Settings: React.FC = () => {
 				content: (
 					<Box className="space-y-5">
 						<LanguageSelect />
+						{isTauri() && isWindowsPlatform && (
+							<>
+								<SettingsDivider />
+								<InterfaceZoomSettings />
+							</>
+						)}
 						<SettingsDivider />
 						<StartupPageSettings />
 						<SettingsDivider />

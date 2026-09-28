@@ -153,6 +153,8 @@ export interface AppState {
 	// 启动默认页面
 	startupPage: StartupPage;
 	setStartupPage: (page: StartupPage) => void;
+	zoomPercent: number;
+	setZoomPercent: (percent: number) => void;
 
 	// TAG翻译功能
 	tagTranslation: boolean;
@@ -371,6 +373,8 @@ export const useStore = create<AppState>()(
 			// 启动默认页面
 			startupPage: "home",
 			setStartupPage: (page: StartupPage) => set({ startupPage: page }),
+			zoomPercent: 100,
+			setZoomPercent: (percent: number) => set({ zoomPercent: percent }),
 
 			// TAG翻译功能（默认关闭）
 			tagTranslation: false,
@@ -609,6 +613,7 @@ export const useStore = create<AppState>()(
 				cardClickMode: state.cardClickMode,
 				// 启动默认页面
 				startupPage: state.startupPage,
+				zoomPercent: state.zoomPercent,
 				// VNDB标签翻译
 				tagTranslation: state.tagTranslation,
 				// 收藏同步开关

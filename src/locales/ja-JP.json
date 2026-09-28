@@ -949,6 +949,9 @@
 				"userId": "ユーザー ID: {{id}}"
 			},
 			"importCloudCollection": "クラウドコレクションをインポート",
+			"interfaceZoom": "画面の拡大率",
+			"interfaceZoomDescription": "Ctrl + プラス/マイナス、または Ctrl + マウスホイールでも調整できます。",
+			"interfaceZoomError": "画面の拡大率を変更できませんでした",
 			"language": "言語",
 			"linuxLaunchCommand": {
 				"commandLabel": "起動コマンド",

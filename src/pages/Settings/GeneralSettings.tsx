@@ -4,6 +4,8 @@ import MenuItem from "@mui/material/MenuItem";
 import Select, { type SelectChangeEvent } from "@mui/material/Select";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
+import { snackbar } from "@/providers/snackBar";
+import { applyUiZoom, UI_ZOOM_PRESETS } from "@/services/uiZoom";
 import { type StartupPage, useStore } from "@/store/appStore";
 import { SettingsGroup, SettingsItem } from "./SettingsLayout";
 
@@ -83,6 +85,45 @@ export const StartupPageSettings = () => {
 				<MenuItem value="collection">
 					{t("app.NAVIGATION.collection", "收藏夹")}
 				</MenuItem>
+			</Select>
+		</SettingsItem>
+	);
+};
+
+export const InterfaceZoomSettings = () => {
+	const { t } = useTranslation();
+	const zoomPercent = useStore((state) => state.zoomPercent);
+	const options = UI_ZOOM_PRESETS.includes(zoomPercent)
+		? UI_ZOOM_PRESETS
+		: [...UI_ZOOM_PRESETS, zoomPercent].sort((a, b) => a - b);
+
+	const handleChange = (event: SelectChangeEvent<string>) => {
+		void applyUiZoom(Number(event.target.value)).catch((error) => {
+			console.error("设置界面缩放失败:", error);
+			snackbar.error(t("pages.Settings.interfaceZoomError", "界面缩放失败"));
+		});
+	};
+
+	return (
+		<SettingsItem
+			title={t("pages.Settings.interfaceZoom", "界面缩放")}
+			description={t(
+				"pages.Settings.interfaceZoomDescription",
+				"也可使用 Ctrl + 加号/减号或 Ctrl + 滚轮调整。",
+			)}
+		>
+			<Select
+				id="interface-zoom-select"
+				value={String(zoomPercent)}
+				onChange={handleChange}
+				className="w-40 max-w-full"
+				size="small"
+			>
+				{options.map((percent) => (
+					<MenuItem key={percent} value={String(percent)}>
+						{percent}%
+					</MenuItem>
+				))}
 			</Select>
 		</SettingsItem>
 	);

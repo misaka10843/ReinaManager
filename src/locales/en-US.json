@@ -971,6 +971,9 @@
 				"userId": "User ID: {{id}}"
 			},
 			"importCloudCollection": "Import Cloud Collection",
+			"interfaceZoom": "Interface zoom",
+			"interfaceZoomDescription": "You can also use Ctrl + Plus/Minus or Ctrl + the mouse wheel.",
+			"interfaceZoomError": "Failed to change interface zoom",
 			"language": "Language",
 			"linuxLaunchCommand": {
 				"commandLabel": "Launch Command",

@@ -949,6 +949,9 @@
 				"userId": "用户 ID: {{id}}"
 			},
 			"importCloudCollection": "导入云端收藏",
+			"interfaceZoom": "界面缩放",
+			"interfaceZoomDescription": "也可使用 Ctrl + 加号/减号或 Ctrl + 滚轮调整。",
+			"interfaceZoomError": "界面缩放失败",
 			"language": "语言",
 			"linuxLaunchCommand": {
 				"commandLabel": "启动命令",

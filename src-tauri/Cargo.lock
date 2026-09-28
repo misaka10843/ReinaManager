@@ -44,6 +44,7 @@ dependencies = [
  "ureq",
  "url",
  "walkdir",
+ "webview2-com",
  "windows 0.62.2",
  "xcb",
  "xz2",
