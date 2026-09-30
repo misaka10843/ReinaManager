@@ -197,6 +197,7 @@ pub fn run() {
             add_games_to_collections,
             set_game_collections,
             update_category_games,
+            reorder_category_games,
             count_games_in_group,
             get_categories_with_count,
         ])

@@ -509,6 +509,18 @@ pub async fn update_category_games(
         .map_err(|e| format!("批量更新分类游戏失败: {}", e))
 }
 
+/// 仅调整分类内的游戏顺序，不增删成员。
+#[tauri::command]
+pub async fn reorder_category_games(
+    db: State<'_, DatabaseConnection>,
+    ordered_game_ids: Vec<i32>,
+    collection_id: i32,
+) -> Result<(), String> {
+    CollectionsRepository::reorder_category_games(&db, ordered_game_ids, collection_id)
+        .await
+        .map_err(|e| format!("调整分类游戏顺序失败: {}", e))
+}
+
 /// 获取分组中的游戏总数
 #[tauri::command]
 pub async fn count_games_in_group(
