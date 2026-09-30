@@ -14,7 +14,7 @@ import { getSafeLocale } from "@/utils/locale";
 import { CardsBatchBar } from "./CardsBatchBar";
 import { getCardSortFieldOverlay } from "./cardSortFieldOverlay";
 import { RightMenuHost } from "./RightMenuHost";
-import type { RightMenuHostHandle, SortableCardItemProps } from "./types";
+import type { CardItemProps, RightMenuHostHandle } from "./types";
 
 interface UseCardsControllerOptions {
 	gameIds: number[];
@@ -73,7 +73,7 @@ export function useCardsController({
 		[selectedBatchGameIds],
 	);
 	const showBatchControls = canUseBatchMode && batchMode;
-	const removeGamesFromCategoryMutation = useRemoveGamesFromCategory();
+	const { mutateAsync: removeGamesFromCategory } = useRemoveGamesFromCategory();
 
 	const toggleBatchGame = useCallback((gameId: number) => {
 		setSelectedBatchGameIds((prev) =>
@@ -135,7 +135,7 @@ export function useCardsController({
 			if (!isCollectionCategory || !categoryId) return;
 
 			const targetGameIdSet = new Set(targetGameIds);
-			await removeGamesFromCategoryMutation.mutateAsync({
+			await removeGamesFromCategory({
 				categoryId,
 				gameIds: targetGameIds,
 			});
@@ -144,7 +144,7 @@ export function useCardsController({
 				prev.filter((selectedId) => !targetGameIdSet.has(selectedId)),
 			);
 		},
-		[categoryId, isCollectionCategory, removeGamesFromCategoryMutation],
+		[categoryId, isCollectionCategory, removeGamesFromCategory],
 	);
 
 	const handleRemoveSingleFromCategory = useCallback(
@@ -169,7 +169,7 @@ export function useCardsController({
 	);
 
 	const getCardProps = useCallback(
-		(game: GameData): SortableCardItemProps => {
+		(game: GameData): CardItemProps => {
 			const gameId = game.id;
 			return {
 				game,

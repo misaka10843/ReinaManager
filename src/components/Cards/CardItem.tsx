@@ -9,7 +9,7 @@ import Typography from "@mui/material/Typography";
 import { forwardRef, memo } from "react";
 import { useStore } from "@/store/appStore";
 import { getVisibleGameCover, getVisibleGameCoverKey } from "@/utils/game";
-import type { CardItemProps } from "./types";
+import type { CardItemProps, GameCardItemProps } from "./types";
 import { useCardInteraction } from "./useCardInteraction";
 
 const noop = () => {};
@@ -37,6 +37,73 @@ const CardCoverImage = memo(
 );
 
 CardCoverImage.displayName = "CardCoverImage";
+
+interface CardContentProps {
+	coverImage: string;
+	coverKey: string;
+	displayName: string;
+	sortFieldValue?: string;
+	isActive: boolean;
+}
+
+// 交互、批量选择与拖拽更新不进入展示层，只有实际显示值改变时才渲染内容。
+const CardContent = memo(
+	({
+		coverImage,
+		coverKey,
+		displayName,
+		sortFieldValue,
+		isActive,
+	}: CardContentProps) => (
+		<>
+			<Box className="relative aspect-[3/4] overflow-hidden">
+				<CardCoverImage
+					src={coverImage}
+					coverKey={coverKey}
+					alt={displayName}
+				/>
+				{sortFieldValue && (
+					<Box className="pointer-events-none absolute inset-x-0 bottom-0 px-2.5 pt-6 pb-1.5 text-white [background:linear-gradient(to_bottom,transparent_0%,rgba(15,23,32,0.3)_50%,rgba(15,23,32,0.85)_100%)]">
+						<Typography
+							variant="caption"
+							className="block truncate text-left text-13px font-600 drop-shadow"
+						>
+							{sortFieldValue}
+						</Typography>
+					</Box>
+				)}
+			</Box>
+			<Box className="px-3 py-2.5 text-center">
+				<Tooltip title={displayName} placement="top" arrow>
+					<Typography
+						variant="subtitle2"
+						sx={{ color: isActive ? "primary.main" : "text.primary" }}
+						className="text-base truncate"
+					>
+						{displayName}
+					</Typography>
+				</Tooltip>
+			</Box>
+		</>
+	),
+	(previous, next) =>
+		// 封面 URL 含 updated_at；沿用封面语义键，避免其他字段保存时重新加载图片。
+		previous.coverKey === next.coverKey &&
+		previous.displayName === next.displayName &&
+		previous.sortFieldValue === next.sortFieldValue &&
+		previous.isActive === next.isActive,
+);
+
+CardContent.displayName = "CardContent";
+
+/** 列表顺序变化时，保持单张卡片的属性与交互边界稳定。 */
+export const GameCardItem = memo(
+	({ game, getCardProps, isOverlay }: GameCardItemProps) => (
+		<CardItem {...getCardProps(game)} isOverlay={isOverlay} />
+	),
+);
+
+GameCardItem.displayName = "GameCardItem";
 
 /**
  * CardItem - 游戏卡片组件
@@ -118,36 +185,13 @@ export const CardItem = memo(
 							${isOverlay ? "shadow-lg scale-105" : ""}
 						`}
 					>
-						<Box className="relative aspect-[3/4] overflow-hidden">
-							<CardCoverImage
-								src={coverImage}
-								coverKey={coverKey}
-								alt={displayName}
-							/>
-							{sortFieldOverlay && (
-								<Box className="pointer-events-none absolute inset-x-0 bottom-0 px-2.5 pt-6 pb-1.5 text-white [background:linear-gradient(to_bottom,transparent_0%,rgba(15,23,32,0.3)_50%,rgba(15,23,32,0.85)_100%)]">
-									<Typography
-										variant="caption"
-										className="block truncate text-left text-13px font-600 drop-shadow"
-									>
-										{sortFieldOverlay.value}
-									</Typography>
-								</Box>
-							)}
-						</Box>
-						<Box className="px-3 py-2.5 text-center">
-							<Tooltip title={displayName} placement="top" arrow>
-								<Typography
-									variant="subtitle2"
-									sx={{
-										color: isActive ? "primary.main" : "text.primary",
-									}}
-									className="text-base truncate"
-								>
-									{displayName}
-								</Typography>
-							</Tooltip>
-						</Box>
+						<CardContent
+							coverImage={coverImage}
+							coverKey={coverKey}
+							displayName={displayName}
+							sortFieldValue={sortFieldOverlay?.value}
+							isActive={isActive}
+						/>
 					</CardActionArea>
 				</Card>
 			);

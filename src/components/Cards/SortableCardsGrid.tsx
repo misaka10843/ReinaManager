@@ -7,7 +7,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { memo, useMemo } from "react";
 import type { GameData } from "@/types";
-import { CardItem } from "./CardItem";
+import { GameCardItem } from "./CardItem";
 import type { SortableCardItemProps } from "./types";
 import { useCardsController } from "./useCardsController";
 import { useDragSort } from "./useDragSort";
@@ -20,7 +20,7 @@ interface SortableCardsGridProps {
 }
 
 const SortableCardItem = memo((props: SortableCardItemProps) => {
-	const { game, disabledSortable, ...restProps } = props;
+	const { game, getCardProps, disabledSortable } = props;
 
 	const {
 		attributes,
@@ -35,21 +35,22 @@ const SortableCardItem = memo((props: SortableCardItemProps) => {
 		() => ({
 			transform: CSS.Transform.toString(transform),
 			transition,
-			opacity: isDragging ? 0 : 1,
 			zIndex: isDragging ? 1000 : ("auto" as const),
 		}),
 		[transform, transition, isDragging],
 	);
 
 	return (
-		<CardItem
+		<div
 			ref={setNodeRef}
 			style={style}
-			game={game}
-			{...restProps}
+			// 落下动画会恢复内联 opacity；用类隐藏源卡片，避免覆盖下一次拖拽的状态。
+			className={`relative min-w-0 ${isDragging ? "opacity-0" : ""}`}
 			{...(!disabledSortable ? attributes : {})}
 			{...(!disabledSortable ? listeners : {})}
-		/>
+		>
+			<GameCardItem game={game} getCardProps={getCardProps} />
+		</div>
 	);
 });
 
@@ -85,12 +86,13 @@ export const SortableCardsGrid = memo(
 			categoryId,
 			enabled: dragSortEnabled && !showBatchControls,
 		});
-		const isDragSortEnabled =
-			dragSortEnabled && !showBatchControls && !isSaving;
+		const canDragSort = dragSortEnabled && !showBatchControls;
+		const isDragSortEnabled = canDragSort && !isSaving;
 
 		return (
 			<DndContext
-				key={isDragSortEnabled ? "sortable" : "readonly"}
+				// 搜索、筛选或批量模式切换时取消拖拽；保存状态变化保留卡片节点。
+				key={canDragSort ? "sortable" : "readonly"}
 				sensors={sensors}
 				collisionDetection={closestCenter}
 				onDragStart={isDragSortEnabled ? handleDragStart : undefined}
@@ -108,11 +110,11 @@ export const SortableCardsGrid = memo(
 							{ids.map((gameId) => {
 								const game = displayById.get(gameId);
 								if (!game) return null;
-								const props = getCardProps(game);
 								return (
 									<SortableCardItem
 										key={gameId}
-										{...props}
+										game={game}
+										getCardProps={getCardProps}
 										disabledSortable={!isDragSortEnabled}
 									/>
 								);
@@ -125,7 +127,13 @@ export const SortableCardsGrid = memo(
 						(() => {
 							const activeGame = displayById.get(activeId);
 							if (!activeGame) return null;
-							return <CardItem {...getCardProps(activeGame)} isOverlay />;
+							return (
+								<GameCardItem
+									game={activeGame}
+									getCardProps={getCardProps}
+									isOverlay
+								/>
+							);
 						})()}
 				</DragOverlay>
 			</DndContext>

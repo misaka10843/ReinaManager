@@ -2,7 +2,7 @@ import { memo, useEffect, useState } from "react";
 import { VirtuosoGrid } from "react-virtuoso";
 import { useVirtuosoGridRestore } from "@/hooks/common/useScrollRestore";
 import type { GameData } from "@/types";
-import { CardItem } from "./CardItem";
+import { GameCardItem } from "./CardItem";
 import { useCardsController } from "./useCardsController";
 
 const BREAKPOINTS = [
@@ -102,8 +102,7 @@ export const VirtualCardsGrid = memo(
 								if (gameId === undefined) return null;
 								const game = displayById.get(gameId);
 								if (!game) return null;
-								const props = getCardProps(game);
-								return <CardItem {...props} />;
+								return <GameCardItem game={game} getCardProps={getCardProps} />;
 							}}
 						/>
 					)}

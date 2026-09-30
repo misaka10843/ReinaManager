@@ -1,6 +1,6 @@
 import { memo } from "react";
 import type { GameData } from "@/types";
-import { CardItem } from "./CardItem";
+import { GameCardItem } from "./CardItem";
 import { useCardsController } from "./useCardsController";
 
 interface CardsGridProps {
@@ -33,8 +33,13 @@ export const CardsGrid = memo(
 						{gameIds.map((gameId) => {
 							const game = displayById.get(gameId);
 							if (!game) return null;
-							const props = getCardProps(game);
-							return <CardItem key={gameId} {...props} />;
+							return (
+								<GameCardItem
+									key={gameId}
+									game={game}
+									getCardProps={getCardProps}
+								/>
+							);
 						})}
 					</div>
 				</div>
