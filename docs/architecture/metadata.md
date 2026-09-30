@@ -88,6 +88,13 @@ UI → GameMetadataSession
 
 单个源失败不应立即使混合搜索失败；只有所有已尝试源都失败时才向上抛出整体错误。
 
+### 下载安装元数据
+
+安装任务进入 `matching_metadata` 后，由 `InstallRequestHandler` 获取元数据并交回后端导入。
+请求来源取安装协议携带的 BGM、VNDB、Hikarinagi ID 与匹配开始时 `mixedEnabledSources` 的交集；
+不会按名称补查未携带 ID 的来源。Hikarinagi 还要求已配置 access token，必要时先刷新再请求；
+BGM、VNDB 不以登录状态作为请求开关。没有可请求来源时，使用安装标题创建自定义条目。
+
 ### 展示合并
 
 ```text
