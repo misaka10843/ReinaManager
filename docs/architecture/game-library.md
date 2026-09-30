@@ -39,6 +39,12 @@ useGameIdList → find_game_ids → number[] → displayById 组装
 
 列表标准入口是 `useGameListFacade`。详情页默认读 `displayById`；只有编辑外部源或底层字段时才读 `rawById`。
 
+自定义收藏分类通过 `preferencesScope: "collection"` 复用列表门面，使用独立的搜索与筛选排序偏好，且保持收藏夹不过滤 NSFW 的现有规则。手动排序保留分类成员 ID 的原始顺序，其他排序使用后端排序 ID 与分类成员的交集。搜索和筛选只派生显示列表，不修改分类成员或已保存的手动顺序。
+
+自定义分类继续使用全量卡片网格；只有手动排序、无搜索和筛选、搜索派生已完成且未进入批量模式时才能拖拽，保存期间暂停下一次拖拽。虚拟网格拖拽尚未接入。
+
+拖拽通过 `useReorderCategoryGames` 调用专用 `reorder_category_games`，后端在同一事务内检查分类存在、成员集合一致且 ID 不重复，只更新关联的 `sort_order`，不增删成员。前端不重复校验完整成员列表，也不保存独立顺序副本；Query 乐观更新当前分类的 ID 缓存，成功后无需失效查询，失败时回滚尚未被其他操作更新的缓存并仅刷新当前分类。管理游戏继续使用 `update_category_games` 替换成员，成功后失效收藏相关查询。
+
 ## 写入路径
 
 ```text

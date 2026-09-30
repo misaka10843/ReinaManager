@@ -599,6 +599,12 @@
 				"renameFailed": "Failed to rename: {{error}}"
 			},
 			"gamesCount": "games",
+			"gameSort": {
+				"manual": "Manual order",
+				"manualHint": "Uses your saved manual order. Clear search and filters to reorder by dragging.",
+				"saveFailed": "Could not save the order. Please try again.",
+				"search": "Search games in this category"
+			},
 			"noCategoriesHint": "No categories in current group",
 			"noGamesInCategory": "No games in current category",
 			"noMatchingGames": "No matching games found",

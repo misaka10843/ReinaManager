@@ -48,8 +48,12 @@ export function useCardsController({
 		useShallow((s) => ({
 			setSelectedGameId: s.setSelectedGameId,
 			cardClickMode: s.cardClickMode,
-			sortOption: s.sortOption,
-			showCardSortFieldOverlay: s.showCardSortFieldOverlay,
+			sortOption: isCollectionCategory
+				? s.collectionGameFilterSort.sortOption
+				: s.sortOption,
+			showCardSortFieldOverlay: isCollectionCategory
+				? s.collectionGameFilterSort.showCardSortFieldOverlay
+				: s.showCardSortFieldOverlay,
 		})),
 	);
 	const { launchGame } = useGameLaunchFlow();
@@ -170,15 +174,16 @@ export function useCardsController({
 			return {
 				game,
 				displayName: getGameDisplayName(game),
-				sortFieldOverlay: shouldShowCardSortFieldOverlay
-					? getCardSortFieldOverlay({
-							game,
-							sortOption,
-							lastPlayed: lastPlayedQuery.data?.get(gameId),
-							language: locale,
-							t,
-						})
-					: undefined,
+				sortFieldOverlay:
+					shouldShowCardSortFieldOverlay && sortOption !== "manual"
+						? getCardSortFieldOverlay({
+								game,
+								sortOption,
+								lastPlayed: lastPlayedQuery.data?.get(gameId),
+								language: locale,
+								t,
+							})
+						: undefined,
 				batch: showBatchControls
 					? { selected: selectedBatchGameIdSet.has(gameId) }
 					: undefined,

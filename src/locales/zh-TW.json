@@ -578,6 +578,12 @@
 				"renameFailed": "重新命名失敗：{{error}}"
 			},
 			"gamesCount": "個遊戲",
+			"gameSort": {
+				"manual": "手動排序",
+				"manualHint": "依已儲存的手動順序顯示；清除搜尋和篩選後可拖曳調整。",
+				"saveFailed": "排序儲存失敗，請重試",
+				"search": "搜尋目前分類的遊戲"
+			},
 			"noCategoriesHint": "當前分組下沒有分類",
 			"noGamesInCategory": "當前分類下暫無遊戲",
 			"noMatchingGames": "沒有找到符合條件的遊戲",

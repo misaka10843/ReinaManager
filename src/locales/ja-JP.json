@@ -578,6 +578,12 @@
 				"renameFailed": "名前の変更に失敗しました：{{error}}"
 			},
 			"gamesCount": "ゲーム",
+			"gameSort": {
+				"manual": "手動順",
+				"manualHint": "保存した手動順で表示します。検索と絞り込みを解除すると、ドラッグで並べ替えられます。",
+				"saveFailed": "並び順を保存できませんでした。もう一度お試しください。",
+				"search": "このカテゴリのゲームを検索"
+			},
 			"noCategoriesHint": "現在のグループにカテゴリがありません",
 			"noGamesInCategory": "現在のカテゴリにゲームがありません",
 			"noMatchingGames": "条件に一致するゲームが見つかりません",

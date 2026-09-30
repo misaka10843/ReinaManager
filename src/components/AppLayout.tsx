@@ -82,6 +82,20 @@ function DeveloperGameSearchBox({ categoryKey }: { categoryKey: string }) {
 	return <SearchBox scopeGameIds={developerGameIds} applyNsfwFilter={false} />;
 }
 
+function CollectionGameSearchBox() {
+	const value = useStore((s) => s.collectionGameSearch);
+	const setValue = useStore((s) => s.setCollectionGameSearch);
+	const { t } = useTranslation();
+	return (
+		<SearchBox
+			mode="controlled"
+			value={value}
+			onValueChange={setValue}
+			ariaLabel={t("pages.Collection.gameSort.search", "搜索当前分类的游戏")}
+		/>
+	);
+}
+
 type CollectionEntitySearchKind = "groups" | "categories" | "developers";
 
 type CollectionTitleMode =
@@ -91,6 +105,7 @@ type CollectionTitleMode =
 			scrollKey: string;
 	  }
 	| { type: "developer-game-search"; categoryKey: string }
+	| { type: "collection-game-search" }
 	| { type: "none" };
 
 function getCollectionTitleMode(
@@ -112,8 +127,8 @@ function getCollectionTitleMode(
 		};
 	}
 
-	if (selectedCategory !== null) {
-		return { type: "none" };
+	if (selectedCategory?.type === "real") {
+		return { type: "collection-game-search" };
 	}
 
 	switch (currentGroupId) {
@@ -249,6 +264,8 @@ const CustomAppTitle = () => {
 				/>
 			) : collectionTitleMode.type === "developer-game-search" ? (
 				<DeveloperGameSearchBox categoryKey={collectionTitleMode.categoryKey} />
+			) : collectionTitleMode.type === "collection-game-search" ? (
+				<CollectionGameSearchBox />
 			) : null}
 		</Stack>
 	);

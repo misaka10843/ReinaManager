@@ -58,6 +58,11 @@ export interface GameFilterSortConfig {
 	showCardSortFieldOverlay: boolean;
 }
 
+export interface CollectionGameFilterSortConfig
+	extends Omit<GameFilterSortConfig, "sortOption"> {
+	sortOption: SortOption | "manual";
+}
+
 const DEFAULT_API_SOURCE: SourceType = "hikarinagi";
 
 /**
@@ -186,6 +191,12 @@ export interface AppState {
 	triggerUpdateModal: (update: Update) => void;
 
 	// 分组分类选择状态
+	collectionGameFilterSort: CollectionGameFilterSortConfig;
+	applyCollectionGameFilterSort: (
+		config: CollectionGameFilterSortConfig,
+	) => void;
+	collectionGameSearch: string;
+	setCollectionGameSearch: (value: string) => void;
 	currentGroupId: string | null; // 当前选中的分组ID
 	selectedCategory: SelectedCategory; // 当前选中的分类
 	setCurrentGroup: (groupId: string | null) => void; // 设置当前分组
@@ -480,6 +491,24 @@ export const useStore = create<AppState>()(
 			},
 
 			// 分组分类选择状态初始值
+			collectionGameFilterSort: {
+				gameFilterType: "all",
+				playStatusFilter: "all",
+				tagFilters: [],
+				sortOption: "manual",
+				sortOrder: "asc",
+				showCardSortFieldOverlay: false,
+			},
+			applyCollectionGameFilterSort: (config) => {
+				set({
+					collectionGameFilterSort: {
+						...config,
+						tagFilters: normalizeTagFilters(config.tagFilters),
+					},
+				});
+			},
+			collectionGameSearch: "",
+			setCollectionGameSearch: (value) => set({ collectionGameSearch: value }),
 			currentGroupId: null,
 			selectedCategory: null,
 			collectionEntitySortField: "created_at",
@@ -583,6 +612,7 @@ export const useStore = create<AppState>()(
 			// 可选：定义哪些字段需要持久化存储
 			partialize: (state) => ({
 				// 排序偏好
+				collectionGameFilterSort: state.collectionGameFilterSort,
 				sortOption: state.sortOption,
 				sortOrder: state.sortOrder,
 				showCardSortFieldOverlay: state.showCardSortFieldOverlay,

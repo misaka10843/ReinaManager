@@ -14,6 +14,7 @@ import { useDragSort } from "./useDragSort";
 
 interface SortableCardsGridProps {
 	gameIds: number[];
+	dragSortEnabled: boolean;
 	displayById: Map<number, GameData>;
 	categoryId: number;
 }
@@ -60,7 +61,17 @@ SortableCardItem.displayName = "SortableCardItem";
  * 接收 ID 数组和展示索引，渲染时按 ID 取 GameData。
  */
 export const SortableCardsGrid = memo(
-	({ gameIds, displayById, categoryId }: SortableCardsGridProps) => {
+	({
+		gameIds,
+		displayById,
+		categoryId,
+		dragSortEnabled,
+	}: SortableCardsGridProps) => {
+		const { controls, getCardProps, showBatchControls } = useCardsController({
+			gameIds,
+			categoryId,
+			enableSortFieldOverlay: true,
+		});
 		const {
 			ids,
 			activeId,
@@ -68,19 +79,18 @@ export const SortableCardsGrid = memo(
 			handleDragStart,
 			handleDragCancel,
 			handleDragEnd,
+			isSaving,
 		} = useDragSort({
 			gameIds,
 			categoryId,
-			enabled: true,
+			enabled: dragSortEnabled && !showBatchControls,
 		});
-		const { controls, getCardProps, showBatchControls } = useCardsController({
-			gameIds: ids,
-			categoryId,
-		});
-		const isDragSortEnabled = !showBatchControls;
+		const isDragSortEnabled =
+			dragSortEnabled && !showBatchControls && !isSaving;
 
 		return (
 			<DndContext
+				key={isDragSortEnabled ? "sortable" : "readonly"}
 				sensors={sensors}
 				collisionDetection={closestCenter}
 				onDragStart={isDragSortEnabled ? handleDragStart : undefined}

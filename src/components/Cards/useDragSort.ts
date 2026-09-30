@@ -8,7 +8,9 @@ import {
 } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useUpdateCategoryGames } from "@/hooks/queries/useCollections";
+import { useTranslation } from "react-i18next";
+import { useReorderCategoryGames } from "@/hooks/queries/useCollections";
+import { snackbar } from "@/providers/snackBar";
 
 /**
  * 拖拽排序 Hook - 管理拖拽相关状态和逻辑
@@ -21,20 +23,14 @@ export function useDragSort(options: {
 	enabled: boolean;
 }) {
 	const { gameIds, categoryId, enabled } = options;
-	const updateCategoryGamesMutation = useUpdateCategoryGames();
+	const { t } = useTranslation();
+	const reorderCategoryGamesMutation = useReorderCategoryGames();
 
-	const [sortableIds, setSortableIds] = useState(gameIds);
 	const [activeId, setActiveId] = useState<number | null>(null);
-	const isDraggingRef = useRef(false);
-
-	const ids = enabled ? sortableIds : gameIds;
-
-	// 排序模式保留本地顺序，非排序模式直接使用外部数据，避免删除后慢一帧
+	const savingRef = useRef(false);
 	useEffect(() => {
-		if (enabled && !isDraggingRef.current) {
-			setSortableIds(gameIds);
-		}
-	}, [enabled, gameIds]);
+		if (!enabled) setActiveId(null);
+	}, [enabled]);
 
 	// 传感器配置
 	const sensors = useSensors(
@@ -48,15 +44,13 @@ export function useDragSort(options: {
 
 	const handleDragStart = useCallback(
 		(event: DragStartEvent) => {
-			if (!enabled) return;
-			isDraggingRef.current = true;
+			if (!enabled || savingRef.current) return;
 			setActiveId(event.active.id as number);
 		},
 		[enabled],
 	);
 
 	const handleDragCancel = useCallback(() => {
-		isDraggingRef.current = false;
 		setActiveId(null);
 	}, []);
 
@@ -64,37 +58,44 @@ export function useDragSort(options: {
 		async (event: DragEndEvent) => {
 			const { active, over } = event;
 			setActiveId(null);
-
-			if (!over || active.id === over.id || !categoryId) {
-				isDraggingRef.current = false;
+			if (
+				!enabled ||
+				savingRef.current ||
+				!over ||
+				active.id === over.id ||
+				!categoryId
+			) {
 				return;
 			}
 
-			const oldIndex = ids.indexOf(active.id as number);
-			const newIndex = ids.indexOf(over.id as number);
+			const oldIndex = gameIds.indexOf(active.id as number);
+			const newIndex = gameIds.indexOf(over.id as number);
 
 			if (oldIndex !== -1 && newIndex !== -1) {
-				const newIds = arrayMove(ids, oldIndex, newIndex);
-				setSortableIds(newIds);
+				const newIds = arrayMove(gameIds, oldIndex, newIndex);
 
 				try {
-					await updateCategoryGamesMutation.mutateAsync({
+					savingRef.current = true;
+					await reorderCategoryGamesMutation.mutateAsync({
 						categoryId,
 						gameIds: newIds,
 					});
 				} catch (error) {
 					console.error("排序更新失败:", error);
-					setSortableIds(ids); // 回滚
+					snackbar.error(
+						t("pages.Collection.gameSort.saveFailed", "排序保存失败，请重试"),
+					);
+				} finally {
+					savingRef.current = false;
 				}
 			}
-
-			isDraggingRef.current = false;
 		},
-		[ids, categoryId, updateCategoryGamesMutation],
+		[gameIds, enabled, categoryId, reorderCategoryGamesMutation, t],
 	);
 
 	return {
-		ids,
+		isSaving: reorderCategoryGamesMutation.isPending,
+		ids: gameIds,
 		activeId,
 		sensors,
 		handleDragStart,
