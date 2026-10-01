@@ -14,6 +14,7 @@ export const UiZoom = () => {
 		let disposed = false;
 		let restoring = true;
 		let unlisten: (() => void) | undefined;
+		let unlistenReset: (() => void) | undefined;
 		let feedbackTimeout: number | undefined;
 		const savedPercent = useStore.getState().zoomPercent;
 		const unsubscribeStore = useStore.subscribe((state, previousState) => {
@@ -39,6 +40,21 @@ export const UiZoom = () => {
 				console.error("监听界面缩放失败:", error);
 			}
 			try {
+				if (disposed) return;
+				unlistenReset = await listen("webview-zoom-reset-requested", () => {
+					if (disposed || restoring) return;
+					void applyUiZoom(100).catch((error) => {
+						console.error("重置界面缩放失败:", error);
+					});
+				});
+				if (disposed) {
+					unlistenReset();
+					return;
+				}
+			} catch (error) {
+				console.error("监听界面缩放重置失败:", error);
+			}
+			try {
 				if (!disposed) await applyUiZoom(savedPercent);
 			} catch (error) {
 				console.error("恢复界面缩放失败:", error);
@@ -51,6 +67,7 @@ export const UiZoom = () => {
 			disposed = true;
 			unsubscribeStore();
 			unlisten?.();
+			unlistenReset?.();
 			window.clearTimeout(feedbackTimeout);
 		};
 	}, []);
