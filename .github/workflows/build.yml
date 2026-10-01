@@ -134,6 +134,7 @@ jobs:
           # 不在这里创建 GitHub release，仅构建
           args: >-
             --target ${{ matrix.rust_target }}
+            --features tauri/devtools
             ${{
               (github.event.pull_request.head.repo.full_name == github.repository || github.event_name != 'pull_request')
               && ''

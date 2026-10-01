@@ -9,6 +9,8 @@
 - 初始化日志、旧文件迁移、SQLite 和 schema migration。
 - 恢复中断的安装任务，退出时关闭数据库。
 
+调试构建保留启动时自动打开开发者工具的行为。`build` 工作流通过 `--features tauri/devtools` 让 release 产物支持开发者工具，启动时不自动打开，使用 WebView 原生快捷键打开（Windows 为 F12 或 Ctrl+Shift+I，Linux 为 Ctrl+Shift+I）。`release` 工作流不启用该 feature。
+
 根模块为 `backup`、`database`、`entity`、`game`、`install`、`oauth` 和 `utils`。
 
 ## 模块组织
