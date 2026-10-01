@@ -7,7 +7,11 @@ import { useShallow } from "zustand/react/shallow";
 import { snackbar } from "@/providers/snackBar";
 import { applyUiZoom, UI_ZOOM_PRESETS } from "@/services/uiZoom";
 import { type StartupPage, useStore } from "@/store/appStore";
-import { SettingsGroup, SettingsItem } from "./SettingsLayout";
+import {
+	SETTINGS_SELECT_CLASS_NAME,
+	SettingsGroup,
+	SettingsItem,
+} from "./SettingsLayout";
 
 export const LanguageSelect = () => {
 	const { t, i18n } = useTranslation(); // 使用i18n实例和翻译函数
@@ -35,7 +39,7 @@ export const LanguageSelect = () => {
 				id="language-select"
 				value={i18n.language}
 				onChange={handleChange}
-				className="w-60 max-w-full"
+				className={SETTINGS_SELECT_CLASS_NAME}
 				size="small"
 				renderValue={(value) =>
 					languageNames[value as keyof typeof languageNames]
@@ -75,7 +79,7 @@ export const StartupPageSettings = () => {
 				id="startup-page-select"
 				value={startupPage}
 				onChange={handleChange}
-				className="w-60 max-w-full"
+				className={SETTINGS_SELECT_CLASS_NAME}
 				size="small"
 			>
 				<MenuItem value="home">{t("app.NAVIGATION.home", "主页")}</MenuItem>
@@ -116,7 +120,7 @@ export const InterfaceZoomSettings = () => {
 				id="interface-zoom-select"
 				value={String(zoomPercent)}
 				onChange={handleChange}
-				className="w-40 max-w-full"
+				className={SETTINGS_SELECT_CLASS_NAME}
 				size="small"
 			>
 				{options.map((percent) => (
