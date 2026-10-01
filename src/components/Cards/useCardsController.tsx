@@ -130,6 +130,10 @@ export function useCardsController({
 		[setSelectedGameId, showBatchControls],
 	);
 
+	const closeContextMenu = useCallback(() => {
+		rightMenuRef.current?.close();
+	}, []);
+
 	const handleRemoveFromCategory = useCallback(
 		async (targetGameIds: number[]) => {
 			if (!isCollectionCategory || !categoryId) return;
@@ -241,6 +245,7 @@ export function useCardsController({
 	return {
 		controls,
 		getCardProps,
+		closeContextMenu,
 		showBatchControls,
 	};
 }

@@ -1,11 +1,16 @@
-import { closestCenter, DndContext, DragOverlay } from "@dnd-kit/core";
+import {
+	closestCenter,
+	DndContext,
+	DragOverlay,
+	type DragStartEvent,
+} from "@dnd-kit/core";
 import {
 	rectSortingStrategy,
 	SortableContext,
 	useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { memo, useMemo } from "react";
+import { memo, useCallback, useMemo } from "react";
 import type { GameData } from "@/types";
 import { GameCardItem } from "./CardItem";
 import type { SortableCardItemProps } from "./types";
@@ -49,7 +54,11 @@ const SortableCardItem = memo((props: SortableCardItemProps) => {
 			{...(!disabledSortable ? attributes : {})}
 			{...(!disabledSortable ? listeners : {})}
 		>
-			<GameCardItem game={game} getCardProps={getCardProps} />
+			<GameCardItem
+				game={game}
+				getCardProps={getCardProps}
+				isDragging={isDragging}
+			/>
 		</div>
 	);
 });
@@ -68,11 +77,12 @@ export const SortableCardsGrid = memo(
 		categoryId,
 		dragSortEnabled,
 	}: SortableCardsGridProps) => {
-		const { controls, getCardProps, showBatchControls } = useCardsController({
-			gameIds,
-			categoryId,
-			enableSortFieldOverlay: true,
-		});
+		const { controls, getCardProps, closeContextMenu, showBatchControls } =
+			useCardsController({
+				gameIds,
+				categoryId,
+				enableSortFieldOverlay: true,
+			});
 		const {
 			ids,
 			activeId,
@@ -88,6 +98,13 @@ export const SortableCardsGrid = memo(
 		});
 		const canDragSort = dragSortEnabled && !showBatchControls;
 		const isDragSortEnabled = canDragSort && !isSaving;
+		const handleGridDragStart = useCallback(
+			(event: DragStartEvent) => {
+				closeContextMenu();
+				handleDragStart(event);
+			},
+			[closeContextMenu, handleDragStart],
+		);
 
 		return (
 			<DndContext
@@ -95,7 +112,7 @@ export const SortableCardsGrid = memo(
 				key={canDragSort ? "sortable" : "readonly"}
 				sensors={sensors}
 				collisionDetection={closestCenter}
-				onDragStart={isDragSortEnabled ? handleDragStart : undefined}
+				onDragStart={isDragSortEnabled ? handleGridDragStart : undefined}
 				onDragCancel={handleDragCancel}
 				onDragEnd={isDragSortEnabled ? handleDragEnd : undefined}
 			>
@@ -122,7 +139,8 @@ export const SortableCardsGrid = memo(
 						</div>
 					</div>
 				</SortableContext>
-				<DragOverlay>
+				{/* 预览只负责显示，不抢占落点卡片的悬停状态。 */}
+				<DragOverlay className="pointer-events-none">
 					{activeId &&
 						(() => {
 							const activeGame = displayById.get(activeId);

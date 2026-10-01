@@ -98,8 +98,12 @@ CardContent.displayName = "CardContent";
 
 /** 列表顺序变化时，保持单张卡片的属性与交互边界稳定。 */
 export const GameCardItem = memo(
-	({ game, getCardProps, isOverlay }: GameCardItemProps) => (
-		<CardItem {...getCardProps(game)} isOverlay={isOverlay} />
+	({ game, getCardProps, isOverlay, isDragging }: GameCardItemProps) => (
+		<CardItem
+			{...getCardProps(game)}
+			isOverlay={isOverlay}
+			isDragging={isDragging}
+		/>
 	),
 );
 
@@ -121,6 +125,7 @@ export const CardItem = memo(
 				batch,
 				removeAction,
 				isOverlay,
+				isDragging,
 				...props
 			},
 			ref,
@@ -178,11 +183,13 @@ export const CardItem = memo(
 					)}
 					<CardActionArea
 						{...handlers}
+						// 已识别为拖拽后卸载按下时的涟漪，防止松手后继续播放点击反馈。
+						disableRipple={isDragging || isOverlay}
 						className={`
-							duration-100
-							hover:shadow-lg hover:scale-105
-							active:shadow-sm active:scale-95
-							${isOverlay ? "shadow-lg scale-105" : ""}
+							transition-[transform,box-shadow] duration-100
+							${!isOverlay ? "hover:shadow-lg hover:scale-105" : ""}
+							${!isDragging && !isOverlay ? "active:shadow-sm active:scale-95" : ""}
+							${isOverlay ? "shadow-lg scale-105 [&_.MuiCardActionArea-focusHighlight]:opacity-[var(--mui-palette-action-hoverOpacity,0.04)]" : ""}
 						`}
 					>
 						<CardContent
