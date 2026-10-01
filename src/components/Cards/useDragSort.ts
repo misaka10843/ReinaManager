@@ -27,7 +27,19 @@ export function useDragSort(options: {
 	const reorderCategoryGamesMutation = useReorderCategoryGames();
 
 	const [activeId, setActiveId] = useState<number | null>(null);
+	const [pendingOrder, setPendingOrder] = useState<{
+		sourceIds: number[];
+		ids: number[];
+	} | null>(null);
+	// 松手后的第一帧先采用目标顺序，Query 通知到达后交还显示控制权。
+	const ids =
+		enabled && pendingOrder?.sourceIds === gameIds ? pendingOrder.ids : gameIds;
 	const savingRef = useRef(false);
+	useEffect(() => {
+		setPendingOrder((order) =>
+			order && order.sourceIds !== gameIds ? null : order,
+		);
+	}, [gameIds]);
 	useEffect(() => {
 		if (!enabled) setActiveId(null);
 	}, [enabled]);
@@ -68,11 +80,12 @@ export function useDragSort(options: {
 				return;
 			}
 
-			const oldIndex = gameIds.indexOf(active.id as number);
-			const newIndex = gameIds.indexOf(over.id as number);
+			const oldIndex = ids.indexOf(active.id as number);
+			const newIndex = ids.indexOf(over.id as number);
 
 			if (oldIndex !== -1 && newIndex !== -1) {
-				const newIds = arrayMove(gameIds, oldIndex, newIndex);
+				const newIds = arrayMove(ids, oldIndex, newIndex);
+				setPendingOrder({ sourceIds: gameIds, ids: newIds });
 
 				try {
 					savingRef.current = true;
@@ -81,6 +94,7 @@ export function useDragSort(options: {
 						gameIds: newIds,
 					});
 				} catch (error) {
+					setPendingOrder(null);
 					console.error("排序更新失败:", error);
 					snackbar.error(
 						t("pages.Collection.gameSort.saveFailed", "排序保存失败，请重试"),
@@ -90,12 +104,12 @@ export function useDragSort(options: {
 				}
 			}
 		},
-		[gameIds, enabled, categoryId, reorderCategoryGamesMutation, t],
+		[gameIds, ids, enabled, categoryId, reorderCategoryGamesMutation, t],
 	);
 
 	return {
 		isSaving: reorderCategoryGamesMutation.isPending,
-		ids: gameIds,
+		ids,
 		activeId,
 		sensors,
 		handleDragStart,
