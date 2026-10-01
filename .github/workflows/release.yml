@@ -177,11 +177,11 @@ jobs:
         with:
           ref: ${{ needs.prepare.outputs.release_tag }}
       - name: Install Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: 24
       - name: Install pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@v6.1.0
         with:
           run_install: false
       - name: Install Rust
@@ -255,11 +255,11 @@ jobs:
         with:
           ref: ${{ needs.prepare.outputs.release_tag }}
       - name: Install Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: 24
       - name: Install pnpm
-        uses: pnpm/action-setup@v6
+        uses: pnpm/action-setup@v6.1.0
         with:
           run_install: false
       - name: Install Rust
