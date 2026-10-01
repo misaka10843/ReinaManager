@@ -11,17 +11,18 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { memo, useCallback, useMemo } from "react";
+import { useGridScrollPosition } from "@/hooks/common/useScrollRestore";
 import type { GameData } from "@/types";
 import { GameCardItem } from "./CardItem";
-import type { SortableCardItemProps } from "./types";
-import { useCardsController } from "./useCardsController";
-import { useDragSort } from "./useDragSort";
+import type { GameCardItemProps, SortableCardItemProps } from "./types";
+import type { useDragSort } from "./useDragSort";
 
 interface SortableCardsGridProps {
-	gameIds: number[];
-	dragSortEnabled: boolean;
+	dragSort: ReturnType<typeof useDragSort>;
 	displayById: Map<number, GameData>;
-	categoryId: number;
+	getCardProps: GameCardItemProps["getCardProps"];
+	closeContextMenu: () => void;
+	scrollRestoreKey: string;
 }
 
 const SortableCardItem = memo((props: SortableCardItemProps) => {
@@ -72,17 +73,16 @@ SortableCardItem.displayName = "SortableCardItem";
  */
 export const SortableCardsGrid = memo(
 	({
-		gameIds,
+		dragSort,
 		displayById,
-		categoryId,
-		dragSortEnabled,
+		getCardProps,
+		closeContextMenu,
+		scrollRestoreKey,
 	}: SortableCardsGridProps) => {
-		const { controls, getCardProps, closeContextMenu, showBatchControls } =
-			useCardsController({
-				gameIds,
-				categoryId,
-				enableSortFieldOverlay: true,
-			});
+		const { wrapperRef } = useGridScrollPosition({
+			scrollKey: scrollRestoreKey,
+			trackFullGrid: true,
+		});
 		const {
 			ids,
 			activeId,
@@ -91,13 +91,8 @@ export const SortableCardsGrid = memo(
 			handleDragCancel,
 			handleDragEnd,
 			isSaving,
-		} = useDragSort({
-			gameIds,
-			categoryId,
-			enabled: dragSortEnabled && !showBatchControls,
-		});
-		const canDragSort = dragSortEnabled && !showBatchControls;
-		const isDragSortEnabled = canDragSort && !isSaving;
+		} = dragSort;
+		const isDragSortEnabled = !isSaving;
 		const handleGridDragStart = useCallback(
 			(event: DragStartEvent) => {
 				closeContextMenu();
@@ -108,8 +103,6 @@ export const SortableCardsGrid = memo(
 
 		return (
 			<DndContext
-				// 搜索、筛选或批量模式切换时取消拖拽；保存状态变化保留卡片节点。
-				key={canDragSort ? "sortable" : "readonly"}
 				sensors={sensors}
 				collisionDetection={closestCenter}
 				onDragStart={isDragSortEnabled ? handleGridDragStart : undefined}
@@ -117,11 +110,10 @@ export const SortableCardsGrid = memo(
 				onDragEnd={isDragSortEnabled ? handleDragEnd : undefined}
 			>
 				<SortableContext items={ids} strategy={rectSortingStrategy}>
-					{controls}
-					<div className="flex-1 min-h-0">
+					<div ref={wrapperRef} className="flex-1 min-h-0">
 						<div
 							className={
-								"text-center grid lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 3xl:grid-cols-9 4xl:grid-cols-10 gap-4"
+								"text-center grid grid-cols-3 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 3xl:grid-cols-9 4xl:grid-cols-10 gap-4"
 							}
 						>
 							{ids.map((gameId) => {

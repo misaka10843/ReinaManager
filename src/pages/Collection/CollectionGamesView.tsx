@@ -1,7 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { SortableCardsGrid, VirtualCardsGrid } from "@/components/Cards";
+import { useCardsController } from "@/components/Cards/useCardsController";
+import { useDragSort } from "@/components/Cards/useDragSort";
+import { VirtualCardsGridContent } from "@/components/Cards/VirtualCardsGrid";
 import { GameListStateView } from "@/components/GameListStateView";
+import { setScrollPosition } from "@/hooks/common/useScrollRestore";
 import {
 	getActiveGameFilterCount,
 	useGameListFacade,
@@ -91,6 +95,7 @@ function RealCategoryGamesView({
 	gameIds,
 	loading,
 	error,
+	scrollRestoreKey,
 }: CollectionGamesViewProps & { realCategoryId: number }) {
 	const { t } = useTranslation();
 	const preferences = useGameListPreferences("collection");
@@ -100,10 +105,25 @@ function RealCategoryGamesView({
 		applyNsfwFilter: false,
 		preferencesScope: "collection",
 	});
+	const { controls, getCardProps, closeContextMenu, showBatchControls } =
+		useCardsController({
+			gameIds: gameList.gameIds,
+			categoryId: realCategoryId,
+			enableSortFieldOverlay: true,
+		});
 	const hasFilters =
 		search.trim().length > 0 || getActiveGameFilterCount(preferences) > 0;
 	const isManualSort = preferences.sortOption === "manual";
-	const canDragSort = isManualSort && !hasFilters && !gameList.isSearchPending;
+	const canDragSort =
+		isManualSort &&
+		!hasFilters &&
+		!gameList.isSearchPending &&
+		!showBatchControls;
+	const dragSort = useDragSort({
+		gameIds: gameList.gameIds,
+		categoryId: realCategoryId,
+		enabled: canDragSort,
+	});
 	const viewKey = JSON.stringify([
 		search,
 		preferences.gameFilterType,
@@ -113,30 +133,55 @@ function RealCategoryGamesView({
 		preferences.sortOrder,
 	]);
 	const previousViewKey = useRef(viewKey);
-	useEffect(() => {
+	const viewChanged = previousViewKey.current !== viewKey;
+	useLayoutEffect(() => {
 		if (previousViewKey.current !== viewKey) {
-			previousViewKey.current = viewKey;
 			document.querySelector<HTMLElement>("main")?.scrollTo({ top: 0 });
 		}
 	}, [viewKey]);
+	useEffect(() => {
+		// 旧网格卸载时会保存位置，等它完成后再清理，避免加载结束后恢复旧位置。
+		if (previousViewKey.current !== viewKey) {
+			previousViewKey.current = viewKey;
+			setScrollPosition(scrollRestoreKey, 0);
+		}
+	}, [viewKey, scrollRestoreKey]);
 
 	return (
-		<GameListStateView
-			loading={loading || gameList.isLoading}
-			error={error ?? (gameList.isError ? gameList.error : null)}
-			empty={gameList.gameIds.length === 0}
-			emptyMessage={
-				gameIds.length === 0
-					? t("pages.Collection.noGamesInCategory", "当前分类下暂无游戏")
-					: t("pages.Collection.noMatchingGames", "没有找到符合条件的游戏")
-			}
-		>
-			<SortableCardsGrid
-				gameIds={gameList.gameIds}
-				displayById={gameList.displayById}
-				categoryId={realCategoryId}
-				dragSortEnabled={canDragSort}
-			/>
-		</GameListStateView>
+		<>
+			{!loading &&
+				!gameList.isLoading &&
+				!error &&
+				!gameList.isError &&
+				controls}
+			<GameListStateView
+				loading={loading || gameList.isLoading}
+				error={error ?? (gameList.isError ? gameList.error : null)}
+				empty={gameList.gameIds.length === 0}
+				emptyMessage={
+					gameIds.length === 0
+						? t("pages.Collection.noGamesInCategory", "当前分类下暂无游戏")
+						: t("pages.Collection.noMatchingGames", "没有找到符合条件的游戏")
+				}
+			>
+				{canDragSort ? (
+					<SortableCardsGrid
+						dragSort={dragSort}
+						displayById={gameList.displayById}
+						getCardProps={getCardProps}
+						closeContextMenu={closeContextMenu}
+						scrollRestoreKey={scrollRestoreKey}
+					/>
+				) : (
+					<VirtualCardsGridContent
+						gameIds={gameList.gameIds}
+						displayById={gameList.displayById}
+						getCardProps={getCardProps}
+						scrollRestoreKey={scrollRestoreKey}
+						restoreScroll={!viewChanged}
+					/>
+				)}
+			</GameListStateView>
+		</>
 	);
 }
