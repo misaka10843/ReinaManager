@@ -171,6 +171,7 @@ function RealCategoryGamesView({
 						getCardProps={getCardProps}
 						closeContextMenu={closeContextMenu}
 						scrollRestoreKey={scrollRestoreKey}
+						restoreScroll={!viewChanged}
 					/>
 				) : (
 					<VirtualCardsGridContent

@@ -41,8 +41,10 @@ export interface GameCardItemProps {
 }
 
 export interface SortableCardItemProps extends GameCardItemProps {
+	index: number;
 	/** 是否禁用拖拽排序 */
 	disabledSortable?: boolean;
+	isLanding?: boolean;
 }
 
 /** 右键菜单位置状态 */

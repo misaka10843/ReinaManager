@@ -1,5 +1,5 @@
-import { memo, useState } from "react";
-import { VirtuosoGrid } from "react-virtuoso";
+import { memo, type ReactNode, useCallback, useState } from "react";
+import { type GridStateSnapshot, VirtuosoGrid } from "react-virtuoso";
 import { useVirtuosoGridRestore } from "@/hooks/common/useScrollRestore";
 import type { GameData } from "@/types";
 import { GameCardItem } from "./CardItem";
@@ -23,6 +23,11 @@ interface VirtualCardsGridContentProps
 	getCardProps: GameCardItemProps["getCardProps"];
 	/** 仅在挂载时使用；切换搜索、筛选或排序后忽略旧滚动快照。 */
 	restoreScroll?: boolean;
+	className?: string;
+	renderCard?: (game: GameData, index: number) => ReactNode;
+	onGridStateChanged?: (state: GridStateSnapshot, columns: number) => void;
+	/** 拖拽时按实测行高缓冲，避免宽窗口下又挂载完整列表。 */
+	bufferRows?: number;
 }
 
 /**
@@ -71,8 +76,13 @@ export const VirtualCardsGridContent = memo(
 		getCardProps,
 		scrollRestoreKey,
 		restoreScroll = true,
+		className,
+		renderCard,
+		onGridStateChanged,
+		bufferRows,
 	}: VirtualCardsGridContentProps) => {
 		const [shouldRestoreScroll] = useState(restoreScroll);
+		const [rowHeight, setRowHeight] = useState(0);
 		const { columns, gridRef, gridStyle } = useCardsGridLayout();
 
 		const {
@@ -86,9 +96,22 @@ export const VirtualCardsGridContent = memo(
 			scrollKey: scrollRestoreKey,
 			restoreScroll: shouldRestoreScroll,
 		});
+		const handleStateChanged = useCallback(
+			(state: GridStateSnapshot) => {
+				stateChanged(state);
+				if (columns !== null) onGridStateChanged?.(state, columns);
+				if (bufferRows !== undefined) {
+					setRowHeight(state.item.height + state.gap.row);
+				}
+			},
+			[stateChanged, columns, onGridStateChanged, bufferRows],
+		);
 
 		return (
-			<div ref={gridRef} className="flex-1 min-h-0 min-w-0">
+			<div
+				ref={gridRef}
+				className={`flex-1 min-h-0 min-w-0 ${className ?? ""}`}
+			>
 				<div ref={virtuosoWrapperRef}>
 					{scrollParent && columns !== null && (
 						<VirtuosoGrid
@@ -102,14 +125,19 @@ export const VirtualCardsGridContent = memo(
 							}
 							listClassName={`${CARDS_GRID_CLASS} pb-4`}
 							itemClassName="min-w-0"
-							increaseViewportBy={{ top: 600, bottom: 1200 }}
-							stateChanged={stateChanged}
+							increaseViewportBy={
+								bufferRows === undefined
+									? { top: 600, bottom: 1200 }
+									: rowHeight * bufferRows
+							}
+							stateChanged={handleStateChanged}
 							{...restoreProps}
 							style={gridStyle}
-							itemContent={(_, gameId) => {
+							itemContent={(index, gameId) => {
 								if (gameId === undefined) return null;
 								const game = displayById.get(gameId);
 								if (!game) return null;
+								if (renderCard) return renderCard(game, index);
 								return <GameCardItem game={game} getCardProps={getCardProps} />;
 							}}
 						/>
