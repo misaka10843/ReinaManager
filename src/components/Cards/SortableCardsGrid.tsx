@@ -14,6 +14,7 @@ import { memo, useCallback, useMemo } from "react";
 import { useGridScrollPosition } from "@/hooks/common/useScrollRestore";
 import type { GameData } from "@/types";
 import { GameCardItem } from "./CardItem";
+import { CARDS_GRID_CLASS, useCardsGridLayout } from "./CardsGridLayout";
 import type { GameCardItemProps, SortableCardItemProps } from "./types";
 import type { useDragSort } from "./useDragSort";
 
@@ -83,6 +84,7 @@ export const SortableCardsGrid = memo(
 			scrollKey: scrollRestoreKey,
 			trackFullGrid: true,
 		});
+		const { gridStyle } = useCardsGridLayout(wrapperRef);
 		const {
 			ids,
 			activeId,
@@ -110,11 +112,10 @@ export const SortableCardsGrid = memo(
 				onDragEnd={isDragSortEnabled ? handleDragEnd : undefined}
 			>
 				<SortableContext items={ids} strategy={rectSortingStrategy}>
-					<div ref={wrapperRef} className="flex-1 min-h-0">
+					<div ref={wrapperRef} className="flex-1 min-h-0 min-w-0">
 						<div
-							className={
-								"text-center grid grid-cols-3 lg:grid-cols-6 xl:grid-cols-7 2xl:grid-cols-8 3xl:grid-cols-9 4xl:grid-cols-10 gap-4"
-							}
+							className={`${CARDS_GRID_CLASS} text-center`}
+							style={gridStyle}
 						>
 							{ids.map((gameId) => {
 								const game = displayById.get(gameId);

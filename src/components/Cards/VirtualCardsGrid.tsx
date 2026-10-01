@@ -1,29 +1,11 @@
-import { memo, useEffect, useState } from "react";
+import { memo, useState } from "react";
 import { VirtuosoGrid } from "react-virtuoso";
 import { useVirtuosoGridRestore } from "@/hooks/common/useScrollRestore";
 import type { GameData } from "@/types";
 import { GameCardItem } from "./CardItem";
+import { CARDS_GRID_CLASS, useCardsGridLayout } from "./CardsGridLayout";
 import type { GameCardItemProps } from "./types";
 import { useCardsController } from "./useCardsController";
-
-const BREAKPOINTS = [
-	{ min: 2560, cols: 10 },
-	{ min: 1920, cols: 9 },
-	{ min: 1536, cols: 8 },
-	{ min: 1280, cols: 7 },
-	{ min: 1024, cols: 6 },
-] as const;
-
-const VIRTUAL_CARDS_GRID_CLASS =
-	"grid gap-4 pb-4 [grid-template-columns:repeat(var(--virtual-cards-grid-columns),minmax(0,1fr))]";
-
-function getColumnCount(): number {
-	const width = window.innerWidth;
-	for (const bp of BREAKPOINTS) {
-		if (width >= bp.min) return bp.cols;
-	}
-	return 3;
-}
 
 interface VirtualCardsGridProps {
 	gameIds: number[];
@@ -91,13 +73,7 @@ export const VirtualCardsGridContent = memo(
 		restoreScroll = true,
 	}: VirtualCardsGridContentProps) => {
 		const [shouldRestoreScroll] = useState(restoreScroll);
-		const [columns, setColumns] = useState(() => getColumnCount());
-
-		useEffect(() => {
-			const onResize = () => setColumns(getColumnCount());
-			window.addEventListener("resize", onResize);
-			return () => window.removeEventListener("resize", onResize);
-		}, []);
+		const { columns, gridRef, gridStyle } = useCardsGridLayout();
 
 		const {
 			restoreProps,
@@ -105,40 +81,40 @@ export const VirtualCardsGridContent = memo(
 			stateChanged,
 			wrapperRef: virtuosoWrapperRef,
 		} = useVirtuosoGridRestore({
-			columns,
+			columns: columns ?? 1,
 			itemCount: gameIds.length,
 			scrollKey: scrollRestoreKey,
 			restoreScroll: shouldRestoreScroll,
 		});
 
 		return (
-			<div ref={virtuosoWrapperRef} className="flex-1 min-h-0">
-				{scrollParent && (
-					<VirtuosoGrid
-						key={scrollRestoreKey ?? "no-scroll-restore"}
-						customScrollParent={scrollParent}
-						data={gameIds}
-						computeItemKey={(index, gameId) =>
-							gameId === undefined ? `missing-game-${index}` : `game-${gameId}`
-						}
-						listClassName={VIRTUAL_CARDS_GRID_CLASS}
-						itemClassName="min-w-0"
-						increaseViewportBy={{ top: 600, bottom: 1200 }}
-						stateChanged={stateChanged}
-						{...restoreProps}
-						style={
-							{
-								"--virtual-cards-grid-columns": columns,
-							} as React.CSSProperties
-						}
-						itemContent={(_, gameId) => {
-							if (gameId === undefined) return null;
-							const game = displayById.get(gameId);
-							if (!game) return null;
-							return <GameCardItem game={game} getCardProps={getCardProps} />;
-						}}
-					/>
-				)}
+			<div ref={gridRef} className="flex-1 min-h-0 min-w-0">
+				<div ref={virtuosoWrapperRef}>
+					{scrollParent && columns !== null && (
+						<VirtuosoGrid
+							key={scrollRestoreKey ?? "no-scroll-restore"}
+							customScrollParent={scrollParent}
+							data={gameIds}
+							computeItemKey={(index, gameId) =>
+								gameId === undefined
+									? `missing-game-${index}`
+									: `game-${gameId}`
+							}
+							listClassName={`${CARDS_GRID_CLASS} pb-4`}
+							itemClassName="min-w-0"
+							increaseViewportBy={{ top: 600, bottom: 1200 }}
+							stateChanged={stateChanged}
+							{...restoreProps}
+							style={gridStyle}
+							itemContent={(_, gameId) => {
+								if (gameId === undefined) return null;
+								const game = displayById.get(gameId);
+								if (!game) return null;
+								return <GameCardItem game={game} getCardProps={getCardProps} />;
+							}}
+						/>
+					)}
+				</div>
 			</div>
 		);
 	},
