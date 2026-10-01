@@ -20,6 +20,7 @@
 | 修改外部元数据源、搜索或展示合并 | [`architecture/metadata.md`](architecture/metadata.md) |
 | 新增或修改国际化字符串 | [i18n Skill](../.agents/skills/i18n/SKILL.md) |
 | 由 AI 操作 WebView2、截图并诊断前端 | [cdp Skill](../.agents/skills/cdp/SKILL.md)，或调用 `/cdp` |
+| 在项目内复用隔离浏览器环境，验证交互、性能或回归 | [frontend-test Skill](../.agents/skills/frontend-test/SKILL.md) |
 
 ## 维护原则
 
