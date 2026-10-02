@@ -95,7 +95,6 @@
 			"failurePreparation": "准备游戏数据失败",
 			"failureRequest": "批量导入请求失败",
 			"gameDirectory": "游戏目录",
-			"gamesCount": "共 {{count}} 个游戏",
 			"importAsCustom": "导入为自定义（{{count}}）",
 			"importAsCustomConfirmMessage": "将把这 {{count}} 个项目作为自定义游戏导入，仅保存名称和启动信息，不使用匹配元数据。是否继续？",
 			"importAsCustomConfirmTitle": "导入为自定义",

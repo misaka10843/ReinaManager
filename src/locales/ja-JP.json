@@ -95,7 +95,6 @@
 			"failurePreparation": "ゲームデータの準備に失敗",
 			"failureRequest": "一括インポートのリクエストに失敗",
 			"gameDirectory": "ゲームフォルダー",
-			"gamesCount_other": "全 {{count}} 件",
 			"importAsCustom_other": "カスタムとしてインポート（{{count}}）",
 			"importAsCustomConfirmMessage_other": "この {{count}} 件をカスタムゲームとしてインポートします。名前と起動情報のみ保存し、マッチしたメタデータは使用しません。続行しますか？",
 			"importAsCustomConfirmTitle": "カスタムとしてインポート",

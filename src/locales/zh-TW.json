@@ -95,7 +95,6 @@
 			"failurePreparation": "準備遊戲資料失敗",
 			"failureRequest": "批次匯入請求失敗",
 			"gameDirectory": "遊戲目錄",
-			"gamesCount_other": "共 {{count}} 個遊戲",
 			"importAsCustom_other": "匯入為自訂（{{count}}）",
 			"importAsCustomConfirmMessage_other": "將把這 {{count}} 個項目作為自訂遊戲匯入，僅儲存名稱和啟動資訊，不使用配對的中繼資料。是否繼續？",
 			"importAsCustomConfirmTitle": "匯入為自訂",

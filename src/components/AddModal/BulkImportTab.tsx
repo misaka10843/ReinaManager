@@ -979,20 +979,6 @@ const BulkImportTab = ({
 						>
 							<SettingsIcon />
 						</IconButton>
-
-						{items.length > 0 && (
-							<Typography
-								variant="body2"
-								color="text.secondary"
-								className="whitespace-nowrap shrink-0"
-							>
-								{t(
-									"components.BulkImportModal.gamesCount",
-									"共 {{count}} 个游戏",
-									{ count: items.length },
-								)}
-							</Typography>
-						)}
 					</Stack>
 
 					<Popover

@@ -95,8 +95,6 @@
 			"failurePreparation": "Failed to prepare game data",
 			"failureRequest": "Batch import request failed",
 			"gameDirectory": "Game Folder",
-			"gamesCount_one": "{{count}} game",
-			"gamesCount_other": "{{count}} games",
 			"importAsCustom_one": "Import as Custom ({{count}})",
 			"importAsCustom_other": "Import as Custom ({{count}})",
 			"importAsCustomConfirmMessage_one": "Import this {{count}} item as custom games? Only names and launch information will be saved; matched metadata will not be used.",
