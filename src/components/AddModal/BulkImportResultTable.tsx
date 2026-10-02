@@ -13,8 +13,14 @@ import {
 	Typography,
 } from "@mui/material";
 import type { TFunction } from "i18next";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Virtuoso } from "react-virtuoso";
+import type {
+	BulkImportDuplicate,
+	BulkImportDuplicateGroup,
+	BulkImportMode,
+} from "@/hooks/features/games/useGameMetadataFacade";
 import {
 	getCandidateSourceData,
 	getRuntimeSourceAdapter,
@@ -22,12 +28,23 @@ import {
 } from "@/metadata";
 import type { GameLaunchType, GameMetadataDraft } from "@/types";
 
+export type BulkImportOutcome =
+	| ({ kind: "duplicate" } & Omit<BulkImportDuplicate, "itemKey">)
+	| {
+			kind: "error";
+			phase: "preparation" | "insertion" | "request";
+			message: string;
+	  }
+	| { kind: "imported" };
+
 export interface BulkImportItem {
 	key: string;
 	name: string;
 	path?: string;
 	executables: string[];
-	status: "pending" | "matched" | "imported" | "error" | "not found";
+	status: "pending" | "matched" | "not found";
+	importOutcome?: BulkImportOutcome;
+	importMode?: BulkImportMode;
 	matchedData?: GameMetadataDraft;
 	selectedExe?: string;
 	launch_type?: GameLaunchType;
@@ -35,7 +52,7 @@ export interface BulkImportItem {
 }
 
 export type VisibleBulkImportItem = BulkImportItem & {
-	status: Exclude<BulkImportItem["status"], "imported">;
+	importOutcome?: Exclude<BulkImportOutcome, { kind: "imported" }>;
 };
 
 interface BulkImportResultTableProps {
@@ -97,19 +114,95 @@ function getMatchedGameName(
 	return fallbackName;
 }
 
-function getStatusLabel(
-	status: VisibleBulkImportItem["status"],
-	t: TFunction,
-): string {
-	switch (status) {
+function getStatusLabel(item: VisibleBulkImportItem, t: TFunction): string {
+	if (item.importOutcome?.kind === "duplicate") {
+		// 列表内重复由组标题提示，混合冲突时优先显示仓库状态，保持单行高度。
+		return item.importOutcome.inLibrary
+			? t("components.BulkImportModal.statusLibraryDuplicate", "仓库已存在")
+			: t("components.BulkImportModal.statusBatchDuplicate", "列表内重复");
+	}
+	if (item.importOutcome?.kind === "error")
+		return t("components.BulkImportModal.statusImportFailed", "导入失败");
+	if (item.importMode === "custom")
+		return t("components.BulkImportModal.statusCustom", "自定义");
+	switch (item.status) {
 		case "pending":
 			return t("components.BulkImportModal.statusPending", "待处理");
 		case "matched":
 			return t("components.BulkImportModal.statusMatched", "已匹配");
 		case "not found":
 			return t("components.BulkImportModal.statusNotFound", "未找到");
-		case "error":
-			return t("components.BulkImportModal.statusError", "错误");
+	}
+}
+
+type BulkDisplayRow =
+	| { kind: "group"; key: string; count: number }
+	| {
+			kind: "item";
+			key: string;
+			item: VisibleBulkImportItem;
+			grouped: boolean;
+	  };
+
+function buildDisplayRows(items: VisibleBulkImportItem[]): BulkDisplayRow[] {
+	const byKey = new Map(items.map((item) => [item.key, item]));
+	const componentByKey = new Map<string, VisibleBulkImportItem[]>();
+	const components: VisibleBulkImportItem[][] = [];
+	const visitedGroups = new Set<BulkImportDuplicateGroup>();
+	for (const item of items) {
+		if (componentByKey.has(item.key)) continue;
+		const members: VisibleBulkImportItem[] = [];
+		components.push(members);
+		const pending = [item.key];
+		componentByKey.set(item.key, members);
+		while (pending.length) {
+			const key = pending.pop();
+			if (!key) break;
+			const outcome = byKey.get(key)?.importOutcome;
+			if (outcome?.kind !== "duplicate") continue;
+			for (const group of outcome.groups) {
+				if (visitedGroups.has(group)) continue;
+				visitedGroups.add(group);
+				// 直接遍历共享成员列表，每个身份组只访问一次，不构造两两邻接表。
+				for (const memberKey of group.itemKeys) {
+					if (!byKey.has(memberKey) || componentByKey.has(memberKey)) continue;
+					componentByKey.set(memberKey, members);
+					pending.push(memberKey);
+				}
+			}
+		}
+	}
+	// 按原顺序填充展示组，保留最早成员的位置，也避免对大组重新排序。
+	for (const item of items) componentByKey.get(item.key)?.push(item);
+	const rows: BulkDisplayRow[] = [];
+	for (const members of components) {
+		const grouped = members.length > 1;
+		if (grouped)
+			rows.push({
+				kind: "group",
+				key: `group:${members[0].key}`,
+				count: members.length,
+			});
+		for (const item of members)
+			rows.push({ kind: "item", key: item.key, item, grouped });
+	}
+	return rows;
+}
+
+function getFailurePhase(
+	phase: "preparation" | "insertion" | "request",
+	t: TFunction,
+): string {
+	switch (phase) {
+		case "preparation":
+			return t(
+				"components.BulkImportModal.failurePreparation",
+				"准备游戏数据失败",
+			);
+		case "insertion":
+			return t("components.BulkImportModal.failureInsertion", "写入游戏失败");
+		case "request":
+			return t("components.BulkImportModal.failureRequest", "批量导入请求失败");
 	}
 }
 
@@ -123,6 +216,7 @@ export default function BulkImportResultTable({
 	onOpenDirectory,
 }: BulkImportResultTableProps) {
 	const { t, i18n } = useTranslation();
+	const displayRows = useMemo(() => buildDisplayRows(items), [items]);
 
 	return (
 		<Box
@@ -186,21 +280,47 @@ export default function BulkImportResultTable({
 				<Box sx={{ flex: "1 1 auto", minHeight: 0, width: "100%" }}>
 					<Virtuoso
 						style={{ height: "100%", width: "100%" }}
-						data={items}
+						data={displayRows}
 						computeItemKey={(_, item) => item.key}
 						overscan={300}
-						itemContent={(_, item) => {
+						itemContent={(_, row) => {
+							if (row.kind === "group")
+								return (
+									<Box
+										className="px-4 py-1"
+										sx={{
+											bgcolor: "action.hover",
+											borderLeft: 3,
+											borderColor: "warning.main",
+										}}
+									>
+										<Typography variant="caption" className="font-semibold">
+											{t(
+												"components.BulkImportModal.inlineDuplicateGroup",
+												"列表内重复（{{count}} 项）",
+												{ count: row.count },
+											)}
+										</Typography>
+									</Box>
+								);
+							const { item } = row;
+							const outcome = item.importOutcome;
+							const statusLabel = getStatusLabel(item, t);
 							const matchedName = getMatchedGameName(
-								item.matchedData,
+								item.importMode === "custom" ? undefined : item.matchedData,
 								i18n.language,
 							);
 							const directoryPath = item.path;
 							return (
 								<Box
+									data-bulk-item-key={item.key}
 									sx={{
 										...gridSx,
 										borderBottom: 1,
 										borderColor: "divider",
+										boxShadow: row.grouped
+											? "inset 3px 0 var(--mui-palette-warning-main)"
+											: undefined,
 									}}
 									className="min-h-11 px-4 py-0.5"
 								>
@@ -246,8 +366,19 @@ export default function BulkImportResultTable({
 									<Typography variant="body2" sx={cellSx} title={matchedName}>
 										{matchedName ?? "-"}
 									</Typography>
-									<Typography variant="body2" sx={cellSx}>
-										{getStatusLabel(item.status, t)}
+									<Typography
+										variant="body2"
+										noWrap
+										title={statusLabel}
+										color={
+											outcome?.kind === "duplicate"
+												? "warning.main"
+												: outcome?.kind === "error"
+													? "error.main"
+													: undefined
+										}
+									>
+										{statusLabel}
 									</Typography>
 									<Box sx={{ minWidth: 0 }}>
 										{item.launch_type === "steam" ? (
@@ -317,6 +448,10 @@ export default function BulkImportResultTable({
 									<Stack direction="row" justifyContent="center">
 										<IconButton
 											size="small"
+											aria-label={t(
+												"components.BulkImportModal.editMetadata",
+												"编辑游戏信息",
+											)}
 											onClick={() => onEditItem(item)}
 											disabled={loading}
 										>
@@ -324,12 +459,34 @@ export default function BulkImportResultTable({
 										</IconButton>
 										<IconButton
 											size="small"
+											aria-label={t(
+												"components.BulkImportModal.removeItem",
+												"移除项目",
+											)}
 											onClick={() => onDeleteItem(item.key)}
 											disabled={loading}
 										>
 											<DeleteIcon fontSize="small" />
 										</IconButton>
 									</Stack>
+									{outcome?.kind === "error" ? (
+										<Box
+											component="details"
+											className="col-span-5 min-w-0 pb-1"
+											sx={{ color: "error.main" }}
+										>
+											<summary className="w-fit cursor-pointer text-xs">
+												{getFailurePhase(outcome.phase, t)}
+											</summary>
+											<Typography
+												variant="caption"
+												component="div"
+												className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]"
+											>
+												{outcome.message}
+											</Typography>
+										</Box>
+									) : null}
 								</Box>
 							);
 						}}

@@ -29,6 +29,19 @@ export interface BulkImportActionInput extends BatchImportGameCandidate {
 	playStatus?: PlayStatus;
 }
 
+export type BulkImportMode = "metadata" | "custom";
+
+export interface BulkImportDuplicateGroup {
+	readonly identityKey: string;
+	readonly itemKeys: readonly string[];
+}
+
+export interface BulkImportDuplicate {
+	itemKey: string;
+	inLibrary: boolean;
+	groups: readonly BulkImportDuplicateGroup[];
+}
+
 export interface BulkImportPreparationError {
 	itemIndex: number;
 	message: string;
@@ -48,29 +61,22 @@ export interface BulkImportActionResult {
 }
 
 export function useGameDuplicateChecker() {
-	const { data: allGames = [] } = useAllGames();
+	const { data: allGames } = useAllGames();
 	const existingGameKeys = useMemo(() => {
 		const keys = new Set<string>();
-		for (const game of allGames) {
-			for (const key of getGameIdentityKeys(game)) {
-				keys.add(key);
-			}
+		for (const game of allGames ?? []) {
+			for (const key of getGameIdentityKeys(game)) keys.add(key);
 		}
 		return keys;
 	}, [allGames]);
 
 	const checkGameExists = useCallback(
-		(gameData: GameIdentityPayload) => {
-			return getGameIdentityKeys(gameData).some((key) =>
-				existingGameKeys.has(key),
-			);
-		},
+		(gameData: GameIdentityPayload) =>
+			getGameIdentityKeys(gameData).some((key) => existingGameKeys.has(key)),
 		[existingGameKeys],
 	);
 
-	return {
-		checkGameExists,
-	};
+	return { checkGameExists };
 }
 
 export function useSingleGameAddActions() {
@@ -117,9 +123,52 @@ export function useBulkGameAddActions() {
 	const batchAddGamesMutation = useBatchAddGames();
 	const { checkGameExists } = useGameDuplicateChecker();
 	const [isPreparingGames, setIsPreparingGames] = useState(false);
+	const findBulkImportDuplicates = useCallback(
+		(
+			items: (BulkImportActionInput & { key: string })[],
+		): BulkImportDuplicate[] => {
+			const membersByIdentity = new Map<string, string[]>();
+			const candidates = items.map((item) => {
+				const payload = {
+					sources: item.matchedData?.sources ?? [],
+					steam_launch_id: item.steam_launch_id,
+				};
+				const identities = getGameIdentityKeys(payload);
+				for (const identity of identities) {
+					const members = membersByIdentity.get(identity) ?? [];
+					members.push(item.key);
+					membersByIdentity.set(identity, members);
+				}
+				return {
+					itemKey: item.key,
+					identities,
+					inLibrary: checkGameExists(payload),
+				};
+			});
+			// 每个身份只保存一份成员列表，候选引用共享组，避免展开所有两两关系。
+			const groupsByIdentity = new Map<string, BulkImportDuplicateGroup>();
+			for (const [identityKey, itemKeys] of membersByIdentity) {
+				if (itemKeys.length > 1)
+					groupsByIdentity.set(identityKey, { identityKey, itemKeys });
+			}
+			return candidates.flatMap(({ itemKey, identities, inLibrary }) => {
+				const groups = identities.flatMap((identity) => {
+					const group = groupsByIdentity.get(identity);
+					return group ? [group] : [];
+				});
+				return inLibrary || groups.length
+					? [{ itemKey, inLibrary, groups }]
+					: [];
+			});
+		},
+		[checkGameExists],
+	);
 
 	const addGamesFromBulkImport = useCallback(
-		async (items: BulkImportActionInput[]): Promise<BulkImportActionResult> => {
+		async (
+			items: BulkImportActionInput[],
+			{ skipDuplicateCheck = false }: { skipDuplicateCheck?: boolean } = {},
+		): Promise<BulkImportActionResult> => {
 			setIsPreparingGames(true);
 			try {
 				const payloads: InsertGameParams[] = [];
@@ -187,19 +236,16 @@ export function useBulkGameAddActions() {
 						continue;
 					}
 
-					const identityKeys = getGameIdentityKeys(payload);
-					const existsInLibrary = checkGameExists(payload);
-					const duplicatedInCurrentBatch = identityKeys.some((key) =>
-						queuedIds.has(key),
-					);
-
-					if (existsInLibrary || duplicatedInCurrentBatch) {
-						duplicateItemIndices.push(index);
-						continue;
-					}
-
-					for (const key of identityKeys) {
-						queuedIds.add(key);
+					if (!skipDuplicateCheck) {
+						const identityKeys = getGameIdentityKeys(payload);
+						if (
+							checkGameExists(payload) ||
+							identityKeys.some((key) => queuedIds.has(key))
+						) {
+							duplicateItemIndices.push(index);
+							continue;
+						}
+						for (const key of identityKeys) queuedIds.add(key);
 					}
 
 					pendingPayloads.push({
@@ -247,6 +293,7 @@ export function useBulkGameAddActions() {
 
 	return {
 		addGamesFromBulkImport,
+		findBulkImportDuplicates,
 		checkGameExists,
 		isAddingGames: isPreparingGames,
 	};

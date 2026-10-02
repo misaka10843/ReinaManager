@@ -23,11 +23,15 @@ import {
 	TextField,
 	Typography,
 } from "@mui/material";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { AlertBox } from "@/components/AlertBox";
-import { useBulkGameAddActions } from "@/hooks/features/games/useGameMetadataFacade";
+import {
+	type BulkImportDuplicateGroup,
+	type BulkImportMode,
+	useBulkGameAddActions,
+} from "@/hooks/features/games/useGameMetadataFacade";
 import { useMetadataSearchFlow } from "@/hooks/features/games/useMetadataSearchFlow";
 import { useAllSettings } from "@/hooks/queries/useSettings";
 import { getRuntimeSourceAdapter, SEARCHABLE_SOURCE_KEYS } from "@/metadata";
@@ -97,7 +101,58 @@ const BULK_API_SOURCE_OPTIONS = SEARCHABLE_SOURCE_KEYS.map((source) => ({
 function isVisibleBulkImportItem(
 	item: BulkImportItem,
 ): item is VisibleBulkImportItem {
-	return item.status !== "imported";
+	return item.importOutcome?.kind !== "imported";
+}
+
+function isMetadataCandidate(item: BulkImportItem): boolean {
+	return (
+		isVisibleBulkImportItem(item) &&
+		item.status === "matched" &&
+		item.importMode !== "custom"
+	);
+}
+
+function isMatchedImportItem(item: BulkImportItem): boolean {
+	return isMetadataCandidate(item) && item.importOutcome?.kind !== "duplicate";
+}
+
+function invalidateBulkDuplicates(
+	items: BulkImportItem[],
+	keys: ReadonlySet<string>,
+): BulkImportItem[] {
+	// 每个共享组只过滤一次；替换引用而不修改旧组，保持上一次渲染的快照完整。
+	const updatedGroups = new Map<
+		BulkImportDuplicateGroup,
+		BulkImportDuplicateGroup | null
+	>();
+	return items.map((item) => {
+		const outcome = item.importOutcome;
+		if (outcome?.kind !== "duplicate") return item;
+		if (keys.has(item.key)) return { ...item, importOutcome: undefined };
+		let changed = false;
+		const groups = outcome.groups.flatMap((group) => {
+			if (!updatedGroups.has(group)) {
+				const itemKeys = group.itemKeys.filter((key) => !keys.has(key));
+				updatedGroups.set(
+					group,
+					itemKeys.length < 2
+						? null
+						: itemKeys.length === group.itemKeys.length
+							? group
+							: { ...group, itemKeys },
+				);
+			}
+			const updated = updatedGroups.get(group);
+			if (updated !== group) changed = true;
+			return updated ? [updated] : [];
+		});
+		if (!changed) return item;
+		return {
+			...item,
+			importOutcome:
+				outcome.inLibrary || groups.length ? { ...outcome, groups } : undefined,
+		};
+	});
 }
 
 function getBulkItemIdentities(item: BulkImportItem): string[] {
@@ -137,7 +192,8 @@ const BulkImportTab = ({
 			mixedEnabledSources: s.mixedEnabledSources,
 		})),
 	);
-	const { addGamesFromBulkImport, isAddingGames } = useBulkGameAddActions();
+	const { addGamesFromBulkImport, findBulkImportDuplicates, isAddingGames } =
+		useBulkGameAddActions();
 
 	const [isScanningGames, setIsScanningGames] = useState(false);
 	const [isMatchingMetadata, setIsMatchingMetadata] = useState(false);
@@ -156,11 +212,13 @@ const BulkImportTab = ({
 	const itemsRef = useRef(items);
 	const processingDropBatchIdRef = useRef<number | null>(null);
 	const loading = isMatchingMetadata || isScanningGames || isAddingGames;
-	const matchedImportCount = items.filter(
-		(item) => item.status === "matched",
-	).length;
+	const visibleItems = useMemo(
+		() => items.filter(isVisibleBulkImportItem),
+		[items],
+	);
+	const matchedImportCount = items.filter(isMatchedImportItem).length;
 	const customImportCount = items.filter(
-		(item) => item.status !== "matched",
+		(item) => isVisibleBulkImportItem(item) && !isMatchedImportItem(item),
 	).length;
 	const editMatchMode: MetadataMatchMode =
 		addMode === "single" ? "single" : "mixed";
@@ -181,14 +239,22 @@ const BulkImportTab = ({
 			if (!editItemKey) return;
 
 			setItems((prevItems) => {
-				const nextItems = [...prevItems];
+				const nextItems = invalidateBulkDuplicates(
+					prevItems,
+					new Set([editItemKey]),
+				);
 				const itemIndex = nextItems.findIndex(
 					(item) => item.key === editItemKey,
 				);
 				if (itemIndex !== -1) {
-					nextItems[itemIndex].name = editName;
-					nextItems[itemIndex].matchedData = resolvedData;
-					nextItems[itemIndex].status = "matched";
+					nextItems[itemIndex] = {
+						...nextItems[itemIndex],
+						name: editName,
+						matchedData: resolvedData,
+						status: "matched",
+						importMode: "metadata",
+						importOutcome: undefined,
+					};
 				}
 				return nextItems;
 			});
@@ -471,7 +537,7 @@ const BulkImportTab = ({
 		matchAbortControllerRef.current = controller;
 
 		setIsMatchingMetadata(true);
-		const nextItems = [...items];
+		const nextItems = items.map((item) => ({ ...item }));
 
 		try {
 			for (let index = 0; index < nextItems.length; index++) {
@@ -480,9 +546,9 @@ const BulkImportTab = ({
 				}
 
 				if (
-					nextItems[index].status !== "pending" &&
-					nextItems[index].status !== "not found" &&
-					nextItems[index].status !== "error"
+					nextItems[index].importMode === "custom" ||
+					(nextItems[index].status !== "pending" &&
+						nextItems[index].status !== "not found")
 				) {
 					continue;
 				}
@@ -514,6 +580,7 @@ const BulkImportTab = ({
 					if (matchedData) {
 						nextItems[index].matchedData = matchedData;
 						nextItems[index].status = "matched";
+						nextItems[index].importOutcome = undefined;
 					} else {
 						nextItems[index].status = "not found";
 					}
@@ -548,110 +615,148 @@ const BulkImportTab = ({
 		}
 	};
 
-	const importBulkItems = async (
-		importItems: { item: BulkImportItem; originalIndex: number }[],
-	) => {
-		const nextItems = [...items];
-
-		const result = await addGamesFromBulkImport(
-			importItems.map(({ item }) => item),
+	const importBulkItems = async (mode: BulkImportMode) => {
+		if (loading) return;
+		const requestedKeys = new Set(
+			items
+				.filter(
+					(item) =>
+						isVisibleBulkImportItem(item) &&
+						(mode === "metadata"
+							? isMatchedImportItem(item)
+							: !isMatchedImportItem(item)),
+				)
+				.map((item) => item.key),
 		);
-
-		for (const index of result.duplicateItemIndices) {
-			const originalIndex = importItems[index]?.originalIndex;
-			if (originalIndex !== undefined) {
-				nextItems[originalIndex].status = "error";
-			}
-		}
-
-		for (const preparationError of result.preparationErrors) {
-			const originalIndex =
-				importItems[preparationError.itemIndex]?.originalIndex;
-			if (originalIndex === undefined) continue;
-			nextItems[originalIndex].status = "error";
-			snackbar.warning(
-				`${nextItems[originalIndex].name}: ${preparationError.message}`,
+		if (requestedKeys.size === 0) return;
+		let nextItems = items.map((item) => ({ ...item }));
+		let skipped = 0;
+		if (mode === "metadata") {
+			// 旧重复项也参与比较，但本次只提交点击时计入“已匹配”的行。
+			const candidates = nextItems.filter(isMetadataCandidate);
+			const duplicatesByKey = new Map(
+				findBulkImportDuplicates(candidates).map((result) => [
+					result.itemKey,
+					result,
+				]),
 			);
-		}
-
-		if (!result.batchResult && !result.mutationError) {
-			setItems([...nextItems]);
-			snackbar.info(
-				t("components.BulkImportModal.noGamesFound", "未找到可导入的游戏"),
-			);
-			return;
-		}
-
-		if (result.batchResult) {
-			const failedIndices = new Set(
-				result.batchResult.errors.map((error) => error.index),
-			);
-
-			for (const { itemIndex, payloadIndex } of result.pendingPayloads) {
-				const originalIndex = importItems[itemIndex]?.originalIndex;
-				if (originalIndex !== undefined) {
-					nextItems[originalIndex].status = failedIndices.has(payloadIndex)
-						? "error"
-						: "imported";
-				}
-			}
-
-			if (result.batchResult.success > 0) {
-				snackbar.success(
-					t(
-						"components.BulkImportModal.importSummary",
-						"成功导入 {{success}}/{{total}} 个游戏",
-						{
-							success: result.batchResult.success,
-							total: importItems.length, // 去重逻辑在前端执行
+			nextItems = nextItems.map((item) => {
+				if (!isMetadataCandidate(item)) return item;
+				const duplicate = duplicatesByKey.get(item.key);
+				if (duplicate) {
+					if (requestedKeys.delete(item.key)) skipped++;
+					return {
+						...item,
+						importOutcome: {
+							kind: "duplicate",
+							inLibrary: duplicate.inLibrary,
+							groups: duplicate.groups,
 						},
-					),
-				);
-			}
-
-			if (result.batchResult.failed > 0) {
-				snackbar.warning(
-					t(
-						"components.BulkImportModal.importPartialFailed",
-						"{{failed}} 个游戏导入失败",
-						{
-							failed: result.batchResult.failed,
-						},
-					),
-				);
-			}
-		}
-
-		if (result.mutationError) {
-			snackbar.error(result.mutationError);
-			for (const { itemIndex } of result.pendingPayloads) {
-				const originalIndex = importItems[itemIndex]?.originalIndex;
-				if (originalIndex !== undefined) {
-					nextItems[originalIndex].status = "error";
+					};
 				}
+				return item.importOutcome?.kind === "duplicate"
+					? { ...item, importOutcome: undefined }
+					: item;
+			});
+		} else {
+			// 自定义提交放弃使用匹配身份，其关联的旧冲突也随之失效；失败仍按自定义重试。
+			nextItems = invalidateBulkDuplicates(nextItems, requestedKeys);
+		}
+		const submitted = nextItems
+			.filter((item) => requestedKeys.has(item.key))
+			.map((item) => ({
+				...item,
+				importMode: mode,
+				importOutcome: undefined,
+			}));
+		const submittedByKey = new Map(submitted.map((item) => [item.key, item]));
+		nextItems = nextItems.map((item) => submittedByKey.get(item.key) ?? item);
+		setItems(nextItems);
+
+		let success = 0;
+		let failed = 0;
+		if (submitted.length > 0) {
+			try {
+				const result = await addGamesFromBulkImport(
+					submitted.map((item) =>
+						mode === "custom"
+							? { ...item, matchedData: undefined, skipCloudStatusLookup: true }
+							: item,
+					),
+					{ skipDuplicateCheck: true },
+				);
+				const outcomes = new Map<string, BulkImportItem["importOutcome"]>();
+				for (const error of result.preparationErrors) {
+					outcomes.set(submitted[error.itemIndex].key, {
+						kind: "error",
+						phase: "preparation",
+						message: error.message,
+					});
+					failed++;
+				}
+				const payloadErrors = new Map(
+					result.batchResult?.errors.map((error) => [
+						error.index,
+						error.message,
+					]) ?? [],
+				);
+				for (const { itemIndex, payloadIndex } of result.pendingPayloads) {
+					const key = submitted[itemIndex].key;
+					if (result.mutationError) {
+						outcomes.set(key, {
+							kind: "error",
+							phase: "request",
+							message: result.mutationError,
+						});
+						failed++;
+					} else if (payloadErrors.has(payloadIndex)) {
+						outcomes.set(key, {
+							kind: "error",
+							phase: "insertion",
+							message:
+								payloadErrors.get(payloadIndex) ||
+								t("errors.unknownError", "未知错误"),
+						});
+						failed++;
+					} else if (result.batchResult) {
+						outcomes.set(key, { kind: "imported" });
+						success++;
+					}
+				}
+				nextItems = nextItems.map((item) =>
+					outcomes.has(item.key)
+						? { ...item, importOutcome: outcomes.get(item.key) }
+						: item,
+				);
+			} catch (error) {
+				const message = getUserErrorMessage(error, t);
+				nextItems = nextItems.map((item) =>
+					requestedKeys.has(item.key)
+						? {
+								...item,
+								importOutcome: { kind: "error", phase: "request", message },
+							}
+						: item,
+				);
+				failed = submitted.length;
 			}
 		}
-
-		setItems(nextItems.filter((item) => item.status !== "imported"));
+		setItems(nextItems.filter(isVisibleBulkImportItem));
+		const summary = t(
+			"components.BulkImportModal.importOutcomeSummary",
+			"成功 {{success}} 项、跳过重复 {{skipped}} 项、失败 {{failed}} 项",
+			{ success, skipped, failed },
+		);
+		if (failed > 0) snackbar.warning(summary);
+		else if (success > 0) snackbar.success(summary);
+		else snackbar.info(summary);
 	};
 
-	const handleImportMatched = () =>
-		importBulkItems(
-			items
-				.map((item, originalIndex) => ({ item, originalIndex }))
-				.filter(({ item }) => item.status === "matched"),
-		);
+	const handleImportMatched = () => importBulkItems("metadata");
 
 	const handleImportCustom = () => {
 		setCustomImportConfirmOpen(false);
-		return importBulkItems(
-			items
-				.map((item, originalIndex) => ({
-					item: { ...item, matchedData: undefined },
-					originalIndex,
-				}))
-				.filter(({ item }) => item.status !== "matched"),
-		);
+		return importBulkItems("custom");
 	};
 
 	const handleEditRowSearch = async () => {
@@ -686,7 +791,12 @@ const BulkImportTab = ({
 	};
 
 	const handleDeleteItem = useCallback((key: string) => {
-		setItems((prev) => prev.filter((item) => item.key !== key));
+		setItems((prev) =>
+			invalidateBulkDuplicates(
+				prev.filter((item) => item.key !== key),
+				new Set([key]),
+			),
+		);
 	}, []);
 
 	const handleExecutableChange = useCallback(
@@ -717,7 +827,7 @@ const BulkImportTab = ({
 	const handleEditRowSaveNameOnly = () => {
 		if (!editItemKey) return;
 
-		const nextItems = [...items];
+		const nextItems = items.map((item) => ({ ...item }));
 		const itemIndex = nextItems.findIndex((item) => item.key === editItemKey);
 		if (itemIndex !== -1) {
 			nextItems[itemIndex].name = editName;
@@ -984,7 +1094,7 @@ const BulkImportTab = ({
 					</Popover>
 
 					<BulkImportResultTable
-						items={items.filter(isVisibleBulkImportItem)}
+						items={visibleItems}
 						loading={loading}
 						emptyMessage={emptyMessage}
 						onDeleteItem={handleDeleteItem}
@@ -1178,7 +1288,7 @@ const BulkImportTab = ({
 				)}
 				message={t(
 					"components.BulkImportModal.importAsCustomConfirmMessage",
-					"将把已匹配以外的 {{count}} 个项目作为自定义游戏导入，仅保存名称和启动信息，不包含元数据。是否继续？",
+					"将把这 {{count}} 个项目作为自定义游戏导入，仅保存名称和启动信息，不使用匹配元数据。是否继续？",
 					{ count: customImportCount },
 				)}
 				onConfirm={handleImportCustom}
