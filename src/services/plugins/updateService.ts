@@ -5,6 +5,7 @@ import {
 	completeAppTermination,
 	requestAppTermination,
 } from "@/services/appExit";
+import { settingsService } from "@/services/invoke";
 import { useStore } from "@/store/appStore";
 
 export interface UpdateProgress {
@@ -35,6 +36,7 @@ function getUpdaterCheckOptions() {
 // 检查更新的主函数
 export const checkForUpdates = async (callbacks?: UpdateCallbacks) => {
 	try {
+		if (await settingsService.isDevelopment()) return null;
 		const update = await check(getUpdaterCheckOptions());
 		if (update) {
 			callbacks?.onUpdateFound?.(update);
@@ -55,6 +57,9 @@ export const downloadUpdate = async (
 	callbacks?: UpdateCallbacks,
 ) => {
 	try {
+		if (await settingsService.isDevelopment()) {
+			throw new Error("开发版不支持应用更新");
+		}
 		let downloaded = 0;
 		let contentLength = 0;
 
@@ -93,6 +98,7 @@ export const downloadUpdate = async (
 export const installDownloadedUpdate = async (
 	update: Update,
 ): Promise<UpdateInstallResult> => {
+	if (await settingsService.isDevelopment()) return "cancelled";
 	const permit = await requestAppTermination("update");
 	if (!permit) {
 		return "cancelled";
@@ -138,8 +144,7 @@ export const autoUpdate = async (callbacks?: UpdateCallbacks) => {
 // 静默检查更新（应用启动时调用）
 export const silentCheckForUpdates = async () => {
 	try {
-		// 开发环境下可能没有签名，先跳过检查
-		if (import.meta.env.DEV) {
+		if (await settingsService.isDevelopment()) {
 			return null;
 		}
 

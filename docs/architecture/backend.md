@@ -13,6 +13,36 @@
 
 根模块为 `backup`、`database`、`entity`、`game`、`install`、`oauth` 和 `utils`。
 
+## 开发与日用隔离
+
+`utils/runtime.rs` 在创建应用、初始化插件和访问数据前，通过 `tauri::is_dev()` 固定
+`reina-path::RuntimeEnvironment`。环境不能在进程运行中切换；不使用
+`debug_assertions` 判断，因而 `tauri dev --release` 仍是开发环境，
+`tauri build --debug` 仍沿用正式版环境。
+
+| 行为 | 开发版 | 正式版 |
+| --- | --- | --- |
+| 应用标识 / 单实例 | `com.reinamanager.dev.debug` | `com.reinamanager.dev` |
+| 业务数据根目录 | 系统 data 目录下的开发标识目录 | 沿用下文便携 / 标准模式 |
+| Tauri 设置、窗口状态、日志、WebView 存储 | 使用开发标识对应的目录 | 沿用原目录 |
+| 安装协议 | `reinamanager://install` | `reinamanager://install` |
+| 自动更新、开机启动 | 不注册插件，设置页禁用入口 | 沿用现有行为 |
+
+开发版忽略可执行文件旁的便携数据，首次启动创建空白开发数据库，不会自动复制或迁移
+历史共用目录中的数据。旧封面迁移复用源、目标路径相同时跳过的已有规则；数据库 schema migration 仍正常执行。
+需要测试数据时可以显式导入备份；备份中自定义的安装、游戏和存档路径仍指向原位置，
+不会因为环境隔离而改写。
+
+前端通过 `settingsService.isDevelopment()` 获取同一后端环境，避免 Vite 模式与
+Tauri 模式不一致时误调用系统功能。开发窗口标题和托盘名称带 Dev 标记。
+开发版与正式版共用安装协议，便于直接测试外部站点的下载推送。Windows/Linux 启动时
+沿用 `register_all()` 注册行为，最后成功注册的版本接收系统协议链接；单实例转发仍按
+各自的应用标识进行。开发版退出不会自动恢复正式版关联，需要退出并重新启动正式版。
+
+Windows 开发业务数据位于 `%APPDATA%/com.reinamanager.dev.debug`，
+数据库为其下的 `data/reina_manager.db`；日志与 WebView 缓存位于
+`%LOCALAPPDATA%/com.reinamanager.dev.debug`。
+
 ## 模块组织
 
 Rust 模块使用 `<模块>.rs + <模块>/` 结构，不使用 `mod.rs`。同级 `.rs` 只做子模块声明和重导出，业务逻辑位于子模块。
@@ -50,8 +80,9 @@ Tauri command
 
 `reina-path` 统一路径策略：
 
-- 便携模式：可执行文件旁存在 `resources/data`，数据根目录为 `<exe>/resources`。
-- 标准模式：数据根目录为系统 data 目录下的 `com.reinamanager.dev`。
+- 正式版便携模式：可执行文件旁存在 `resources/data`，数据根目录为 `<exe>/resources`。
+- 正式版标准模式：数据根目录为系统 data 目录下的 `com.reinamanager.dev`。
+- 开发版：始终使用系统 data 目录下的 `com.reinamanager.dev.debug`。
 - 数据库统一为 `<base>/data/reina_manager.db`。
 
 `reina-path::resolve_user_path` 统一解析用户配置路径。数据库始终保存原始配置；Windows

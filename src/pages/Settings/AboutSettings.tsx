@@ -11,12 +11,14 @@ import { open as openurl } from "@tauri-apps/plugin-shell";
 import type React from "react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useDevelopmentMode } from "@/hooks/queries/useSettings";
 import { checkForUpdates } from "@/services/plugins/updateService";
 import { useStore } from "@/store/appStore";
 import { getUserErrorMessage } from "@/utils/errors";
 
 export const AboutSection: React.FC = () => {
 	const { t } = useTranslation();
+	const { data: isDevelopment } = useDevelopmentMode();
 	const triggerUpdateModal = useStore((s) => s.triggerUpdateModal);
 	const [isCheckingUpdate, setIsCheckingUpdate] = useState(false);
 	const [updateStatus, setUpdateStatus] = useState<string>("");
@@ -92,7 +94,7 @@ export const AboutSection: React.FC = () => {
 						)
 					}
 					onClick={handleCheckUpdate}
-					disabled={isCheckingUpdate}
+					disabled={isCheckingUpdate || isDevelopment !== false}
 					size="small"
 				>
 					{isCheckingUpdate
@@ -100,6 +102,14 @@ export const AboutSection: React.FC = () => {
 						: t("pages.Settings.about.checkUpdate", "检查更新")}
 				</Button>
 			</Stack>
+			{isDevelopment && (
+				<Typography variant="body2" color="text.secondary">
+					{t(
+						"pages.Settings.developmentIntegrationDisabled",
+						"开发版已禁用此功能，避免影响日用版本。",
+					)}
+				</Typography>
+			)}
 			{/* 更新状态显示 */}
 			{updateStatus && (
 				<Typography

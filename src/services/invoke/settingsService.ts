@@ -47,6 +47,19 @@ export interface SavedataBackupRootMigrationResult {
 }
 
 class SettingsService extends BaseService {
+	private developmentMode?: Promise<boolean>;
+
+	isDevelopment(): Promise<boolean> {
+		// 前端构建模式可能与 Tauri 不同，系统集成功能统一以后端环境为准。
+		this.developmentMode ??= this.invoke<boolean>("is_development").catch(
+			(error) => {
+				this.developmentMode = undefined;
+				throw error;
+			},
+		);
+		return this.developmentMode;
+	}
+
 	/**
 	 * 动态设置日志输出级别（不持久化）
 	 */

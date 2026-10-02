@@ -934,6 +934,7 @@
 				"title": "実験性機能",
 				"tooltip": "以下の機能は実験的な機能です。慎重にお使いください"
 			},
+			"developmentIntegrationDisabled": "通常利用するバージョンへの影響を避けるため、開発版ではこの機能は無効です。",
 			"getToken": "トークンを取得",
 			"hikarinagiAuth": {
 				"description": "Hikarinagi OAuth でログインしてメタデータとプレイ状況を読み取り、レビューを投稿します。",

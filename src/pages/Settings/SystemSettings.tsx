@@ -16,16 +16,22 @@ import Select, { type SelectChangeEvent } from "@mui/material/Select";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import { path } from "@tauri-apps/api";
-import { isEnabled } from "@tauri-apps/plugin-autostart";
 import { load } from "@tauri-apps/plugin-store";
 import { join } from "pathe";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
-import { useLogLevel, useSetLogLevel } from "@/hooks/queries/useSettings";
+import {
+	useDevelopmentMode,
+	useLogLevel,
+	useSetLogLevel,
+} from "@/hooks/queries/useSettings";
 import { snackbar } from "@/providers/snackBar";
 import { fileService } from "@/services/invoke";
-import { toggleAutostart } from "@/services/plugins/autoStartService";
+import {
+	isAutostartEnabled,
+	toggleAutostart,
+} from "@/services/plugins/autoStartService";
 import { useStore } from "@/store/appStore";
 import { getUserErrorMessage } from "@/utils/errors";
 import {
@@ -48,13 +54,18 @@ const loadSettingsStore = () =>
 
 export const AutoStartSettings = () => {
 	const { t } = useTranslation();
+	const { data: isDevelopment } = useDevelopmentMode();
 	const [autoStart, setAutoStart] = useState(false);
 	const [silentStartup, setSilentStartup] = useState(false);
 	const [silentStartupLoading, setSilentStartupLoading] = useState(true);
 
 	useEffect(() => {
 		const checkAutoStart = async () => {
-			setAutoStart(await isEnabled());
+			try {
+				setAutoStart(await isAutostartEnabled());
+			} catch (error) {
+				console.error("读取开机启动状态失败:", error);
+			}
 		};
 		const loadSilentStartup = async () => {
 			try {
@@ -93,13 +104,21 @@ export const AutoStartSettings = () => {
 		<Stack spacing={2}>
 			<SettingsItem
 				title={t("pages.Settings.autoStart", "开机自启")}
-				description={t(
-					"pages.Settings.autoStartDescription",
-					"系统登录后自动启动应用。",
-				)}
+				description={
+					isDevelopment
+						? t(
+								"pages.Settings.developmentIntegrationDisabled",
+								"开发版已禁用此功能，避免影响日用版本。",
+							)
+						: t(
+								"pages.Settings.autoStartDescription",
+								"系统登录后自动启动应用。",
+							)
+				}
 			>
 				<Switch
 					checked={autoStart}
+					disabled={isDevelopment !== false}
 					onChange={() => {
 						const enabled = !autoStart;
 						setAutoStart(enabled);

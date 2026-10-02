@@ -934,6 +934,7 @@
 				"title": "實驗性功能",
 				"tooltip": "以下功能為實驗性功能，請謹慎使用"
 			},
+			"developmentIntegrationDisabled": "開發版已停用此功能，避免影響日用版本。",
 			"getToken": "獲取令牌",
 			"hikarinagiAuth": {
 				"description": "使用 Hikarinagi OAuth 登入以讀取中繼資料、遊玩狀態和推送評價。",

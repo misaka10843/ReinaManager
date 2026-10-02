@@ -956,6 +956,7 @@
 				"title": "Experimental Features",
 				"tooltip": "The following features are experimental, please use with caution"
 			},
+			"developmentIntegrationDisabled": "This feature is disabled in development builds to keep your everyday version unaffected.",
 			"getToken": "Get Token",
 			"hikarinagiAuth": {
 				"description": "Log in with Hikarinagi OAuth to read metadata, play status, and push reviews.",

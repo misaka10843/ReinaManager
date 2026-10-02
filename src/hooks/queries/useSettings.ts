@@ -42,7 +42,16 @@ export const settingsKeys = {
 	vndbCurrentUserProfileByToken: (token: string) =>
 		[...settingsKeys.vndbCurrentUserProfile(), token] as const,
 	logLevel: () => [...settingsKeys.all, "logLevel"] as const,
+	developmentMode: () => [...settingsKeys.all, "developmentMode"] as const,
 };
+
+export function useDevelopmentMode() {
+	return useQuery({
+		queryKey: settingsKeys.developmentMode(),
+		queryFn: () => settingsService.isDevelopment(),
+		staleTime: Number.POSITIVE_INFINITY,
+	});
+}
 
 type SettingsQueryOptions = {
 	enabled?: boolean;

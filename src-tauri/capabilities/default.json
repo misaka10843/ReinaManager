@@ -13,6 +13,7 @@
 		"core:event:allow-listen",
 		"shell:allow-open",
 		"core:app:allow-default-window-icon",
+		"core:app:allow-name",
 		"core:tray:allow-new",
 		"core:tray:default",
 		"core:menu:allow-new",

@@ -52,6 +52,7 @@ use utils::{
     image::register_image_proxy_protocol,
     legacy_migration::run_startup_migrations,
     logs::{get_reina_log_level, set_reina_log_level},
+    runtime::{configure_runtime, is_development},
 };
 
 #[cfg(target_os = "windows")]
@@ -71,32 +72,45 @@ fn restart_app(app: tauri::AppHandle) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    register_image_proxy_protocol(register_game_cover_protocol(tauri::Builder::default()))
-        // 单实例插件必须最先注册，第二实例传入的深链接才能稳定转交给主实例。
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
-            if let Some(window) = app.get_webview_window("main") {
-                let _ = window.show();
-                let _ = window.unminimize();
-                let _ = window.set_focus();
-            }
-        }))
-        .manage(InstallProtocolState::default())
-        .manage(TaskRuntimeState::default())
-        .plugin(tauri_plugin_store::Builder::new().build())
-        .plugin(
-            tauri_plugin_window_state::Builder::new()
-                .with_state_flags(
-                    tauri_plugin_window_state::StateFlags::all()
-                        .difference(tauri_plugin_window_state::StateFlags::VISIBLE),
-                )
-                .build(),
-        )
-        .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_deep_link::init())
-        .plugin(tauri_plugin_autostart::init(
-            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
-            Some(vec!["--startup"]), /* arbitrary number of args to pass to your app */
-        ))
+    let mut context = tauri::generate_context!();
+    configure_runtime(&mut context);
+
+    let builder =
+        register_image_proxy_protocol(register_game_cover_protocol(tauri::Builder::default()))
+            // 单实例插件必须最先注册，第二实例传入的深链接才能稳定转交给主实例。
+            .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.show();
+                    let _ = window.unminimize();
+                    let _ = window.set_focus();
+                }
+            }))
+            .manage(InstallProtocolState::default())
+            .manage(TaskRuntimeState::default())
+            .plugin(tauri_plugin_store::Builder::new().build())
+            .plugin(
+                tauri_plugin_window_state::Builder::new()
+                    .with_state_flags(
+                        tauri_plugin_window_state::StateFlags::all()
+                            .difference(tauri_plugin_window_state::StateFlags::VISIBLE),
+                    )
+                    .build(),
+            )
+            .plugin(tauri_plugin_deep_link::init());
+
+    // 开发版不注册会修改正式安装或系统启动项的插件，前端也同步禁用入口。
+    let builder = if is_development() {
+        builder
+    } else {
+        builder
+            .plugin(tauri_plugin_updater::Builder::new().build())
+            .plugin(tauri_plugin_autostart::init(
+                tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+                Some(vec!["--startup"]),
+            ))
+    };
+
+    builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_http::init())
@@ -111,6 +125,7 @@ pub fn run() {
             resolve_dropped_local_path,
             resolve_bulk_import_paths,
             is_portable_mode,
+            is_development,
             scan_directory_for_games,
             scan_steam_launch_targets,
             resolve_steam_shortcut_file,
@@ -330,7 +345,7 @@ pub fn run() {
             });
             Ok(())
         })
-        .build(tauri::generate_context!())
+        .build(context)
         .expect("error while building tauri application")
         .run(|app_handle, event| {
             // 监听应用退出事件

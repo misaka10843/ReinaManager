@@ -1,5 +1,5 @@
 import { version } from "@pkg";
-import { defaultWindowIcon } from "@tauri-apps/api/app";
+import { defaultWindowIcon, getName } from "@tauri-apps/api/app";
 import { Menu, MenuItem } from "@tauri-apps/api/menu";
 import type { TrayIconEvent } from "@tauri-apps/api/tray";
 import { TrayIcon } from "@tauri-apps/api/tray";
@@ -70,7 +70,7 @@ const initTrayInner = async () => {
 
 		const menu = await createTrayMenu();
 		const windowIcon = await defaultWindowIcon();
-		const tooltipText = `ReinaManager v${version}`;
+		const tooltipText = `${await getName()} v${version}`;
 		const existingTray = await TrayIcon.getById(TRAY_ID);
 
 		if (existingTray) {
