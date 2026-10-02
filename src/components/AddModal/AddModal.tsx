@@ -127,6 +127,7 @@ const AddModal: React.FC = () => {
 	const navigate = useNavigate();
 	const { data: settings } = useAllSettings();
 	const hasBgmAuth = Boolean(settings?.bgm_auth);
+	const hasHikarinagiAuth = Boolean(settings?.hikarinagi_auth?.access_token);
 	const addGameMutation = useAddGame();
 	const { addGameFromMetadata, isAddingGame } = useSingleGameAddActions();
 
@@ -175,7 +176,9 @@ const AddModal: React.FC = () => {
 	const nextDropBatchIdRef = useRef(1);
 	const singleDropGenerationRef = useRef(0);
 	const pendingSingleDropPathRef = useRef<string | null>(null);
-	const resolvedBulkApiSource = bulkApiSource ?? (hasBgmAuth ? "bgm" : "vndb");
+	const resolvedBulkApiSource =
+		bulkApiSource ??
+		(hasBgmAuth ? "bgm" : hasHikarinagiAuth ? "hikarinagi" : "vndb");
 
 	// 请求取消控制器
 	const abortControllerRef = useRef<AbortController | null>(null);
