@@ -1,3 +1,53 @@
+## [0.31.1](https://github.com/huoshen80/ReinaManager/compare/v0.31.0...v0.31.1) (2026-10-02)
+
+<details>
+<summary>查看中文版本</summary>
+
+### ✨ 新功能
+
+- *(runtime)* 隔离开发环境与日用环境 ([21b4e26](https://github.com/huoshen80/ReinaManager/commit/21b4e269ccce7fbd36d1677addb6b74ee5abbe5d))
+- *(import)* 在列表内分组展示重复候选项 ([86565ab](https://github.com/huoshen80/ReinaManager/commit/86565abfc1f68bc291471a7520062ce1cc9aab88))
+- *(metadata)* 混合模式不再默认启用 BGM ([9ec48a0](https://github.com/huoshen80/ReinaManager/commit/9ec48a0a0621c5fc992268b50ec47e9c8e1b51a8))
+
+### 🐛 Bug 修复
+
+- *(zoom)* 将 Ctrl+0 重置比例修正为 100% ([e9e89f5](https://github.com/huoshen80/ReinaManager/commit/e9e89f51151c832fd7776ec1ac7c02b6d474c5a7))
+- *(http)* 原生请求不再隐式携带 Origin ([75fd247](https://github.com/huoshen80/ReinaManager/commit/75fd247600feb0e02dd1ebb808f9e0950635b37d))
+- *(import)* 保持工具栏控件稳定 ([3a422c6](https://github.com/huoshen80/ReinaManager/commit/3a422c6372b0d26696564a7b4327ba49b30cfbad))
+- *(import)* 已认证时优先使用 Hikarinagi 而非 VNDB ([58234a1](https://github.com/huoshen80/ReinaManager/commit/58234a197785e430722f674f925795b6bafa205e))
+
+### 📚 文档
+
+- *(agents)* 将检查与修改操作分开执行 ([25c5b26](https://github.com/huoshen80/ReinaManager/commit/25c5b269291a389a22947dd05bb6fb025bc1bc7f))
+
+### 🚀 性能优化
+
+- *(collections)* 为拖拽排序启用虚拟化 ([622d3f7](https://github.com/huoshen80/ReinaManager/commit/622d3f71e7a5557bb3f0cbbbe9d8098114889a4f))
+
+</details>
+
+### ✨ Features
+
+- *(runtime)* Isolate development from daily use ([21b4e26](https://github.com/huoshen80/ReinaManager/commit/21b4e269ccce7fbd36d1677addb6b74ee5abbe5d))
+- *(import)* Group duplicate candidates inline ([86565ab](https://github.com/huoshen80/ReinaManager/commit/86565abfc1f68bc291471a7520062ce1cc9aab88))
+- *(metadata)* Stop enabling BGM in mixed by default ([9ec48a0](https://github.com/huoshen80/ReinaManager/commit/9ec48a0a0621c5fc992268b50ec47e9c8e1b51a8))
+
+### 🐛 Bug Fixes
+
+- *(zoom)* Reset Ctrl+0 to 100 percent ([e9e89f5](https://github.com/huoshen80/ReinaManager/commit/e9e89f51151c832fd7776ec1ac7c02b6d474c5a7))
+- *(http)* Omit implicit Origin for native requests ([75fd247](https://github.com/huoshen80/ReinaManager/commit/75fd247600feb0e02dd1ebb808f9e0950635b37d))
+- *(import)* Keep toolbar controls stable ([3a422c6](https://github.com/huoshen80/ReinaManager/commit/3a422c6372b0d26696564a7b4327ba49b30cfbad))
+- *(import)* Prefer authenticated Hikarinagi over VNDB ([58234a1](https://github.com/huoshen80/ReinaManager/commit/58234a197785e430722f674f925795b6bafa205e))
+
+### 📚 Documentation
+
+- *(agents)* Separate checks from mutations ([25c5b26](https://github.com/huoshen80/ReinaManager/commit/25c5b269291a389a22947dd05bb6fb025bc1bc7f))
+
+### 🚀 Performance
+
+- *(collections)* Virtualize drag sorting ([622d3f7](https://github.com/huoshen80/ReinaManager/commit/622d3f71e7a5557bb3f0cbbbe9d8098114889a4f))
+
+
 ## [0.31.0](https://github.com/huoshen80/ReinaManager/compare/v0.30.0...v0.31.0) (2026-10-01)
 
 <details>

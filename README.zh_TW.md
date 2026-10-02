@@ -79,6 +79,7 @@
 ![詳情頁](screenshots/detail.png)
 ![統計](screenshots/stats.png)
 ![收藏](screenshots/collection.png)
+![統計總覽](screenshots/statistics.png)
 
 更多資訊，您可以下載最新的發布版本：[下載](https://github.com/huoshen80/ReinaManager/releases)
 
@@ -133,7 +134,9 @@
 
 特別感謝這些平台提供的公共 API、數據與資源！
 
-- **[7-Zip ZS (7-Zip-zstd)](https://github.com/mcmilk/7-Zip-zstd)** - 基於 [7-Zip](https://www.7-zip.org/) 的增強分支，提供 Zstandard 等額外壓縮演算法支援。
+- **[7-Zip](https://www.7-zip.org/)** - Windows 版內建其官方命令列工具，用於解壓縮下載的遊戲壓縮檔。
+
+- **[7-Zip ZS (7-Zip-zstd)](https://github.com/mcmilk/7-Zip-zstd)** - 提供 Windows 版搭配 7-Zip 使用的 Zstd 外掛，以及 Linux x64/arm64 版使用的命令列工具。
 
 ## 許可證
 

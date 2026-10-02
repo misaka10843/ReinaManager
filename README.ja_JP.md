@@ -79,6 +79,7 @@
 ![詳細](screenshots/detail.png)
 ![統計](screenshots/stats.png)
 ![コレクション](screenshots/collection.png)
+![統計の概要](screenshots/statistics.png)
 
 詳細については、最新のリリース版をダウンロードしてください：[ダウンロード](https://github.com/huoshen80/ReinaManager/releases)
 
@@ -133,7 +134,9 @@ ReinaManager へのすべての貢献に感謝します！
 
 これらのプラットフォームが提供する公開 API、データ、リソースに心より感謝します！
 
-- **[7-Zip ZS (7-Zip-zstd)](https://github.com/mcmilk/7-Zip-zstd)** - [7-Zip](https://www.7-zip.org/) をベースに、Zstandard などの追加圧縮コーデックを提供する強化フォーク。
+- **[7-Zip](https://www.7-zip.org/)** - Windows 版に公式コマンドラインツールを同梱し、ダウンロードしたゲームのアーカイブ展開に使用しています。
+
+- **[7-Zip ZS (7-Zip-zstd)](https://github.com/mcmilk/7-Zip-zstd)** - Windows 版で 7-Zip と組み合わせて使用する Zstd プラグインと、Linux x64/arm64 版で使用するコマンドラインツールを提供しています。
 
 ## ライセンス
 

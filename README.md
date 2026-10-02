@@ -79,6 +79,7 @@ The migrator helps you seamlessly transfer your game library, play time records,
 ![Detail](screenshots/detail.png)
 ![Stats](screenshots/stats.png)
 ![Collection](screenshots/collection.png)
+![Statistics Overview](screenshots/statistics.png)
 
 For more, you can download the latest Release Version: [Download](https://github.com/huoshen80/ReinaManager/releases)
 
@@ -133,7 +134,9 @@ If you find this project helpful and would like to support its development, you 
 
 Special thanks to these platforms for providing public APIs, data, and resources!
 
-- **[7-Zip ZS (7-Zip-zstd)](https://github.com/mcmilk/7-Zip-zstd)** - a 7-Zip fork with additional compression codecs including Zstandard, based on [7-Zip](https://www.7-zip.org/).
+- **[7-Zip](https://www.7-zip.org/)** - provides the official command-line tool bundled on Windows to extract downloaded game archives.
+
+- **[7-Zip ZS (7-Zip-zstd)](https://github.com/mcmilk/7-Zip-zstd)** - provides the Zstd codec plugin bundled with 7-Zip on Windows and the command-line tool used on Linux x64/arm64.
 
 ## License
 

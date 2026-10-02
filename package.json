@@ -1,7 +1,7 @@
 {
 	"name": "reinamanager",
 	"private": true,
-	"version": "0.31.0",
+	"version": "0.31.1",
 	"type": "module",
 	"scripts": {
 		"dev": "vite",
@@ -32,8 +32,8 @@
 		"@mui/icons-material": "^7.3.11",
 		"@mui/material": "^7.3.11",
 		"@mui/x-charts": "^8.29.3",
-		"@tanstack/react-query": "^5.104.0",
-		"@tanstack/react-query-devtools": "^5.104.0",
+		"@tanstack/react-query": "^5.104.1",
+		"@tanstack/react-query-devtools": "^5.104.1",
 		"@tauri-apps/api": "~2.12.1",
 		"@tauri-apps/plugin-autostart": "~2.7.0",
 		"@tauri-apps/plugin-dialog": "~2.8.1",
@@ -59,9 +59,9 @@
 		"zustand": "^5.0.15"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^2.5.14",
+		"@biomejs/biome": "^2.5.15",
 		"@tauri-apps/cli": "~2.12.1",
-		"@types/node": "^24.19.0",
+		"@types/node": "^24.19.1",
 		"@types/react": "^18.3.31",
 		"@types/react-dom": "^18.3.7",
 		"@vitejs/plugin-react": "^6.1.1",
@@ -69,7 +69,7 @@
 		"i18next-cli": "=1.58.3",
 		"typescript": "^7.0.2",
 		"unocss": "^66.10.5",
-		"vite": "^8.3.1"
+		"vite": "^8.3.2"
 	},
 	"packageManager": "pnpm@12.8.1+sha512.f64ba907507f5ceafe06c8d38e6052d0179444580ec1279ddd5bfc11cb48aa8a2644b66598e07e761da84872a9fc57d5f902b87fa49d024198d558612aabbe45"
 }

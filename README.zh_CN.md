@@ -79,6 +79,7 @@
 ![详情页](screenshots/detail.png)
 ![统计](screenshots/stats.png)
 ![收藏](screenshots/collection.png)
+![统计总览](screenshots/statistics.png)
 
 更多内容，你可以下载最新的发布版本：[下载](https://github.com/huoshen80/ReinaManager/releases)
 
@@ -133,7 +134,9 @@
 
 特别感谢这些平台提供的公共 API 和数据以及资源！
 
-- **[7-Zip ZS (7-Zip-zstd)](https://github.com/mcmilk/7-Zip-zstd)** - 基于 [7-Zip](https://www.7-zip.org/) 的增强分支，提供 Zstandard 等额外压缩算法支持。
+- **[7-Zip](https://www.7-zip.org/)** - Windows 版内置其官方命令行工具，用于解压下载的游戏压缩包。
+
+- **[7-Zip ZS (7-Zip-zstd)](https://github.com/mcmilk/7-Zip-zstd)** - 提供 Windows 版搭配 7-Zip 使用的 Zstd 插件，以及 Linux x64/arm64 版使用的命令行工具。
 
 ## 许可证
 
