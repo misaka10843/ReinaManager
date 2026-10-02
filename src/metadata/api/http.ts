@@ -128,12 +128,18 @@ async function requestTauriHttp<T>(
 			});
 		}
 
+		const headers = new Headers(options?.headers);
+		if (method !== "GET" && !headers.has("Content-Type")) {
+			headers.set("Content-Type", "application/json");
+		}
+		// 配合 unsafe-headers，用空值移除插件自动添加的 WebView Origin，避免原生请求被跨域校验拒绝。
+		if (!headers.has("Origin")) {
+			headers.set("Origin", "");
+		}
+
 		return tauriFetch(fullUrl, {
 			method,
-			headers: {
-				...(method === "GET" ? {} : { "Content-Type": "application/json" }),
-				...options?.headers,
-			},
+			headers,
 			body:
 				method === "GET" || data === undefined
 					? undefined

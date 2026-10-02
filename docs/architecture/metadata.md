@@ -129,6 +129,7 @@ BGM / VNDB / Hikarinagi 用户收藏
 `src/metadata/api/http.ts` 统一使用 Tauri HTTP，并处理：
 
 - query 参数、JSON/文本响应与 HTTP 错误。
+- 原生请求默认不发送 `Origin`；调用方可通过请求头显式指定，头名称不区分大小写。移除默认来源依赖 Tauri HTTP 的 `unsafe-headers` feature。
 - 代理和局域网绕过。
 - `AbortSignal` 取消。
 - 按数据源限流、429 退避和稳定错误分类。
