@@ -13,7 +13,6 @@ export const SEARCHABLE_SOURCE_KEYS = SOURCE_TYPES.filter(
 );
 export const MIXED_SOURCE_KEYS = SEARCHABLE_SOURCE_KEYS;
 export const DEFAULT_MIXED_SOURCE_KEYS = [
-	"bgm",
 	"vndb",
 	"hikarinagi",
 ] as const satisfies readonly SourceType[];
