@@ -68,7 +68,9 @@
 需要从其他 galgame/视觉小说管理器迁移数据？请查看 [reina_migrator](https://github.com/huoshen80/reina_migrator) - 一个用于将其他管理器数据迁移到 ReinaManager 的工具。
 
 当前支持：
+
 - **WhiteCloud v0.4.0** 数据迁移
+- **Playnite 10** 数据迁移（需使用 [Reina Exporter](https://github.com/huoshen80/Reina-Playnite-Exporter) 插件）
 
 该迁移工具可帮助您无缝转移游戏库、游玩时间记录和其他数据到 ReinaManager。
 

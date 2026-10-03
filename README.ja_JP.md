@@ -63,12 +63,14 @@
 - [x] Bangumi と VNDB でゲームステータスを同期
 - [ ] 各ページの美化
 
-## 移住する
+## データ移行
 
 他のギャルゲー・ビジュアルノベル管理ツールからデータを移行する必要がありますか？[reina_migrator](https://github.com/huoshen80/reina_migrator) をご覧ください - 他の管理ツールのデータを ReinaManager に移行するためのツールです。
 
 現在サポート：
+
 - **WhiteCloud v0.4.0** データ移行
+- **Playnite 10** データ移行（[Reina Exporter](https://github.com/huoshen80/Reina-Playnite-Exporter) プラグインが必要）
 
 この移行ツールは、ゲームライブラリ、プレイ時間記録、その他のデータをサポートされている管理ツールから ReinaManager にシームレスに転送するのに役立ちます。
 

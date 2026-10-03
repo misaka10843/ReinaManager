@@ -68,7 +68,9 @@ The `Reina` in the name is the character <a href="https://vndb.org/c64303"><b>å¦
 Need to migrate your data from other galgame/visual-novel managers? Check out [reina_migrator](https://github.com/huoshen80/reina_migrator) - a tool for migrating others manager data into ReinaManager.
 
 Currently supports:
+
 - **WhiteCloud v0.4.0** data migration
+- **Playnite 10** data migration (requires the [Reina Exporter](https://github.com/huoshen80/Reina-Playnite-Exporter) plugin)
 
 The migrator helps you seamlessly transfer your game library, play time records, and other data from supported managers to ReinaManager.
 
