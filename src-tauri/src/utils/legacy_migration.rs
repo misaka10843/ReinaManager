@@ -75,7 +75,7 @@ fn m20260326_000001_migrate_legacy_covers() -> Result<StartupMigrationResult, St
     remove_dir_if_empty(&legacy_covers_dir)?;
 
     log::info!(
-        "启动迁移完成 name=m20260326_000001_migrate_legacy_covers from={} to={} migrated={} replaced={} removed_legacy={}",
+        "旧版封面迁移明细 name=m20260326_000001_migrate_legacy_covers from={} to={} migrated={} replaced={} removed_legacy={}",
         legacy_covers_dir.display(),
         current_covers_dir.display(),
         result.migrated_files,

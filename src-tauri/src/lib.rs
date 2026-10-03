@@ -62,7 +62,7 @@ use utils::http::{SystemProxyMonitor, start_system_proxy_monitor};
 use utils::zoom::listen_to_webview_zoom;
 
 const LOG_MAX_FILE_SIZE: u128 = 1_000_000;
-const LOG_KEEP_FILE_COUNT: usize = 5;
+const LOG_KEEP_FILE_COUNT: usize = 7;
 const SETTINGS_STORE_PATH: &str = "settings.json";
 const SILENT_STARTUP_STORE_KEY: &str = "silent_startup";
 
@@ -296,24 +296,31 @@ pub fn run() {
                 Err(error) => log::warn!("Windows 系统代理监听启动失败: {error}"),
             }
 
-            match run_startup_migrations() {
-                Ok(result) if result.executed == 0 => {
-                    log::debug!("启动迁移检查完成，无需执行");
-                }
-                Ok(result) => {
-                    log::info!(
-                        "启动迁移完成: executed={}, skipped={}, moved={}, replaced={}, removed_legacy={}",
-                        result.executed,
-                        result.skipped,
-                        result.migrated_files,
-                        result.replaced_files,
-                        result.removed_legacy_files
-                    );
-                }
+            let startup_context = format!(
+                "version={} os={} arch={} mode={} silent_startup={}",
+                app.package_info().version,
+                std::env::consts::OS,
+                std::env::consts::ARCH,
+                if reina_path::is_portable_mode() { "portable" } else { "standard" },
+                silent_startup,
+            );
+            // 文件迁移与数据库迁移执行不同操作，结果统一写入后面的启动摘要。
+            let file_migration_summary = match run_startup_migrations() {
+                Ok(result) if result.executed == 0 => "file_migration=skipped".to_string(),
+                Ok(result) => format!(
+                    "file_migration=completed executed={} skipped={} moved={} replaced={} removed_legacy={}",
+                    result.executed,
+                    result.skipped,
+                    result.migrated_files,
+                    result.replaced_files,
+                    result.removed_legacy_files,
+                ),
                 Err(err) => {
-                    log::error!("启动迁移失败: {}", err);
+                    log::error!("旧版文件迁移失败: {err}");
+                    "file_migration=failed".to_string()
                 }
-            }
+            };
+            let startup_context = format!("{startup_context} {file_migration_summary}");
 
             // 执行 SeaORM 数据库迁移并注册到状态管理
             let app_handle = app.handle().clone();
@@ -323,11 +330,12 @@ pub fn run() {
                         log::debug!("数据库连接建立成功");
 
                         // 执行数据库迁移
-                        log::debug!("开始执行数据库迁移...");
                         match migration::Migrator::up(&conn, None).await {
-                            Ok(_) => log::info!("数据库迁移完成"),
+                            Ok(_) => log::info!(
+                                "启动初始化完成: {startup_context} database_migration=completed"
+                            ),
                             Err(e) => {
-                                log::error!("数据库迁移失败: {}", e);
+                                log::error!("数据库迁移失败: {startup_context} error={e}");
                                 panic!("数据库迁移失败，已停止启动: {}", e);
                             }
                         }
@@ -341,7 +349,7 @@ pub fn run() {
                         }
                     }
                     Err(e) => {
-                        log::error!("无法建立数据库连接: {}", e);
+                        log::error!("无法建立数据库连接: {startup_context} error={e}");
                         panic!("数据库初始化失败: {}", e);
                     }
                 }
