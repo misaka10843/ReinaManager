@@ -16,6 +16,10 @@ import { checkForUpdates } from "@/services/plugins/updateService";
 import { useStore } from "@/store/appStore";
 import { getUserErrorMessage } from "@/utils/errors";
 
+const COMMUNITY_GROUP_NUMBER = "556984160";
+const COMMUNITY_GROUP_URL =
+	"https://qm.qq.com/cgi-bin/qm/qr?_wv=1027&k=KHB4Pm2fmtyWv3OklLNxDxkjIKtiwMBj&authKey=2KeSnTCv%2By6ORWuEOYEZx9q63pRrCKkQRK8VqpaOiGZUS1zZ%2BNVmCbRkN3F2lpc7&noverify=0&group_code=556984160";
+
 export const AboutSection: React.FC = () => {
 	const { t } = useTranslation();
 	const { data: isDevelopment } = useDevelopmentMode();
@@ -76,6 +80,10 @@ export const AboutSection: React.FC = () => {
 		openurl("https://huoshen80.top");
 	};
 
+	const openCommunity = () => {
+		openurl(COMMUNITY_GROUP_URL);
+	};
+
 	return (
 		<Box className="space-y-3">
 			{/* 版本信息和更新按钮 */}
@@ -119,12 +127,6 @@ export const AboutSection: React.FC = () => {
 					{updateStatus}
 				</Typography>
 			)}
-			{/* 作者信息 */}
-			<Typography variant="body2">
-				<strong>{t("pages.Settings.about.author", "作者")}: </strong>
-				huoshen80
-			</Typography>{" "}
-			{/* 使用文档和问题反馈 */}
 			{/* 项目链接 */}
 			<Typography variant="body2">
 				<strong>{t("pages.Settings.about.github", "项目地址")}: </strong>
@@ -149,8 +151,34 @@ export const AboutSection: React.FC = () => {
 					https://huoshen80.top
 				</Link>
 			</Typography>
-			{/* 使用文档和问题反馈 */}
-			<Stack direction="row" spacing={2} flexWrap="wrap">
+			<Typography variant="body2">
+				<strong>{t("pages.Settings.about.community", "Reina 交流群")}: </strong>
+				<Link
+					href={COMMUNITY_GROUP_URL}
+					variant="body2"
+					underline="hover"
+					className="select-text"
+					draggable={false}
+					onClick={(event) => {
+						event.preventDefault();
+						const selection = window.getSelection();
+						// 拖选群号时保留复制操作，避免松开鼠标后触发加群。
+						if (
+							event.detail !== 0 &&
+							selection &&
+							!selection.isCollapsed &&
+							selection.containsNode(event.currentTarget, true)
+						) {
+							return;
+						}
+						openCommunity();
+					}}
+				>
+					{COMMUNITY_GROUP_NUMBER}
+				</Link>
+			</Typography>
+			{/* 使用文档、问题反馈和赞助入口 */}
+			<Stack direction="row" className="flex-wrap gap-4">
 				<Button
 					variant="outlined"
 					startIcon={<MenuBookIcon />}

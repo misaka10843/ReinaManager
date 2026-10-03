@@ -849,11 +849,11 @@
 		},
 		"Settings": {
 			"about": {
-				"author": "Author",
 				"blog": "Author's Blog",
 				"checkFailed": "Failed to check for updates: {{error}}",
 				"checking": "Checking...",
 				"checkUpdate": "Check for Updates",
+				"community": "Reina Community",
 				"docs": "Documentation",
 				"feedback": "Report an Issue",
 				"github": "Project Repository",
