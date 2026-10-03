@@ -90,6 +90,7 @@ Tauri command
 Windows 应用内更新以当前 EXE 所在目录为安装目标，安装版同时更新安装记录。
 路径参数由 `utils/updater.rs` 生成，MSI 路径设置位于 `windows/update-path.wxs`，
 NSIS 的旧快捷方式修复位于 `windows/installer-hooks.nsh`。
+安装前若登记的旧目录中仍有 EXE，会显示两个目录供用户确认并写入日志。
 
 便携版通过 `/REINAPORTABLE` 使用同一个 NSIS 包的便携更新分支，只替换程序文件，
 保留 `resources`，不修改已有安装的记录、卸载器和快捷方式。

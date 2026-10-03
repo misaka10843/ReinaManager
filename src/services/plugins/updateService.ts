@@ -1,5 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
+import { ask } from "@tauri-apps/plugin-dialog";
 import { Update } from "@tauri-apps/plugin-updater";
+import i18n from "i18next";
 import {
 	completeAppTermination,
 	requestAppTermination,
@@ -22,6 +24,18 @@ export interface UpdateCallbacks {
 }
 
 export type UpdateInstallResult = "cancelled" | "started";
+
+export interface PreviousInstallation {
+	previousDirectory: string;
+	currentDirectory: string;
+}
+
+interface UpdateInstallOptions {
+	onPreviousInstallation?: (notice: PreviousInstallation) => Promise<boolean>;
+}
+
+// 仅在当前进程记住确认结果，安装记录修正后无需再保存提醒状态。
+const acknowledgedInstallations = new Set<string>();
 
 function getUpdaterCheckOptions() {
 	const { proxyConfig } = useStore.getState();
@@ -104,8 +118,43 @@ export const downloadUpdate = async (
 
 export const installDownloadedUpdate = async (
 	update: Update,
+	options?: UpdateInstallOptions,
 ): Promise<UpdateInstallResult> => {
 	if (await settingsService.isDevelopment()) return "cancelled";
+	const notice = await invoke<PreviousInstallation | null>(
+		"inspect_update_installation",
+	);
+	if (notice) {
+		const key = JSON.stringify([
+			notice.previousDirectory,
+			notice.currentDirectory,
+		]);
+		if (!acknowledgedInstallations.has(key)) {
+			const accepted = options?.onPreviousInstallation
+				? await options.onPreviousInstallation(notice)
+				: await ask(
+						i18n.t(
+							"components.Window.UpdateModal.previousInstallationMessage",
+							{
+								previousDirectory: notice.previousDirectory,
+								currentDirectory: notice.currentDirectory,
+							},
+						),
+						{
+							title: i18n.t(
+								"components.Window.UpdateModal.previousInstallationTitle",
+							),
+							kind: "warning",
+							okLabel: i18n.t(
+								"components.Window.UpdateModal.acknowledgeAndUpdate",
+							),
+							cancelLabel: i18n.t("common.cancel"),
+						},
+					);
+			if (!accepted) return "cancelled";
+			acknowledgedInstallations.add(key);
+		}
+	}
 	const permit = await requestAppTermination("update");
 	if (!permit) {
 		return "cancelled";

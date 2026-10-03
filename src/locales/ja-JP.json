@@ -460,6 +460,7 @@
 				"updateApp": "そのままアップデート"
 			},
 			"UpdateModal": {
+				"acknowledgeAndUpdate": "確認して更新を続ける",
 				"cancel": "キャンセル",
 				"changelog": "変更履歴",
 				"downloaded": "アップデートをダウンロードしました。インストールして再起動できます。",
@@ -467,6 +468,9 @@
 				"installAndRestart": "インストールして再起動",
 				"installing": "アップデートをインストールして再起動を準備しています...",
 				"newVersion": "新しいバージョン",
+				"openPreviousDirectory": "以前のフォルダーを開く",
+				"previousInstallationMessage": "別の ReinaManager が見つかりました：\n{{previousDirectory}}\n\n今回の更新先：\n{{currentDirectory}}\n\nもう一方のプログラムが必要か確認してください。削除する前に、その中のユーザーデータを確認してください。",
+				"previousInstallationTitle": "以前のフォルダーにあるプログラム",
 				"releaseDate": "リリース日",
 				"skipVersion": "このバージョンをスキップ",
 				"title": "新しいバージョンが利用可能",

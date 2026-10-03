@@ -20,14 +20,17 @@ import { open as openUrl } from "@tauri-apps/plugin-shell";
 import type { Update } from "@tauri-apps/plugin-updater";
 import parse, { domToReact, Element } from "html-react-parser";
 import { marked } from "marked";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { useProxyImageUrlResolver } from "@/hooks/common/useProxyImageUrlResolver";
+import { snackbar } from "@/providers/snackBar";
 import { destroyCurrentWindow } from "@/services/appExit";
+import { fileService } from "@/services/invoke";
 import {
 	downloadUpdate,
 	installDownloadedUpdate,
+	type PreviousInstallation,
 	silentCheckForUpdates,
 	type UpdateProgress,
 } from "@/services/plugins/updateService";
@@ -72,15 +75,36 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ open, onClose, update }) => {
 	const [phase, setPhase] = useState<UpdatePhase>("idle");
 	const [progress, setProgress] = useState<UpdateProgress | null>(null);
 	const [downloadError, setDownloadError] = useState<string>("");
+	const [previousInstallation, setPreviousInstallation] =
+		useState<PreviousInstallation | null>(null);
+	const reviewResponse = useRef<((accepted: boolean) => void) | null>(null);
 	const isBusy = phase === "downloading" || phase === "installing";
 
 	useEffect(() => {
 		return () => {
+			reviewResponse.current?.(false);
+			reviewResponse.current = null;
 			if (update) {
 				void releaseUpdate(update);
 			}
 		};
 	}, [update]);
+
+	const finishInstallationReview = (accepted: boolean) => {
+		const respond = reviewResponse.current;
+		reviewResponse.current = null;
+		setPreviousInstallation(null);
+		respond?.(accepted);
+	};
+
+	const openPreviousDirectory = async () => {
+		if (!previousInstallation) return;
+		try {
+			await fileService.openDirectory(previousInstallation.previousDirectory);
+		} catch (error) {
+			snackbar.error(getUserErrorMessage(error, t));
+		}
+	};
 
 	// 使用 marked 渲染 Markdown 内容，并处理链接点击
 	const renderedBody = useMemo(() => {
@@ -156,7 +180,13 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ open, onClose, update }) => {
 			}
 
 			setPhase("installing");
-			const result = await installDownloadedUpdate(update);
+			const result = await installDownloadedUpdate(update, {
+				onPreviousInstallation: (notice) =>
+					new Promise<boolean>((resolve) => {
+						reviewResponse.current = resolve;
+						setPreviousInstallation(notice);
+					}),
+			});
 			if (result === "cancelled") {
 				setPhase("downloaded");
 			}
@@ -345,6 +375,53 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ open, onClose, update }) => {
 								: t("components.Window.UpdateModal.update", "立即更新")}
 				</Button>
 			</DialogActions>
+			<Dialog
+				open={previousInstallation !== null}
+				onClose={() => finishInstallationReview(false)}
+				maxWidth="sm"
+				fullWidth
+			>
+				<DialogTitle>
+					{t(
+						"components.Window.UpdateModal.previousInstallationTitle",
+						"发现旧目录中的程序",
+					)}
+				</DialogTitle>
+				<DialogContent>
+					{previousInstallation && (
+						<Alert severity="warning" className="whitespace-pre-wrap break-all">
+							{t(
+								"components.Window.UpdateModal.previousInstallationMessage",
+								"检测到另一份 ReinaManager：\n{{previousDirectory}}\n\n本次更新使用的是：\n{{currentDirectory}}\n\n请确认另一份程序是否还需要，清理前检查其中的用户数据。",
+								{ ...previousInstallation },
+							)}
+						</Alert>
+					)}
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={() => void openPreviousDirectory()}>
+						{t(
+							"components.Window.UpdateModal.openPreviousDirectory",
+							"打开旧目录",
+						)}
+					</Button>
+					<Button
+						onClick={() => finishInstallationReview(false)}
+						color="inherit"
+					>
+						{t("common.cancel", "取消")}
+					</Button>
+					<Button
+						onClick={() => finishInstallationReview(true)}
+						variant="contained"
+					>
+						{t(
+							"components.Window.UpdateModal.acknowledgeAndUpdate",
+							"知道了，继续更新",
+						)}
+					</Button>
+				</DialogActions>
+			</Dialog>
 		</Dialog>
 	);
 };

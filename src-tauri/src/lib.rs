@@ -53,7 +53,7 @@ use utils::{
     legacy_migration::run_startup_migrations,
     logs::{get_reina_log_level, set_reina_log_level},
     runtime::{configure_runtime, is_development},
-    updater::check_app_update,
+    updater::{check_app_update, inspect_update_installation},
 };
 
 #[cfg(target_os = "windows")]
@@ -118,6 +118,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             check_app_update,
+            inspect_update_installation,
             // 工具类 commands
             launch_game,
             stop_game,

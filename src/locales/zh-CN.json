@@ -460,6 +460,7 @@
 				"updateApp": "仍然更新"
 			},
 			"UpdateModal": {
+				"acknowledgeAndUpdate": "知道了，继续更新",
 				"cancel": "取消",
 				"changelog": "更新说明",
 				"downloaded": "更新已下载，可以安装并重启应用。",
@@ -467,6 +468,9 @@
 				"installAndRestart": "安装并重启",
 				"installing": "正在安装更新并准备重启...",
 				"newVersion": "新版本",
+				"openPreviousDirectory": "打开旧目录",
+				"previousInstallationMessage": "检测到另一份 ReinaManager：\n{{previousDirectory}}\n\n本次更新使用的是：\n{{currentDirectory}}\n\n请确认另一份程序是否还需要，清理前检查其中的用户数据。",
+				"previousInstallationTitle": "发现旧目录中的程序",
 				"releaseDate": "发布日期",
 				"skipVersion": "跳过此版本",
 				"title": "发现新版本",

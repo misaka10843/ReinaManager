@@ -479,6 +479,7 @@
 				"updateApp": "Update Anyway"
 			},
 			"UpdateModal": {
+				"acknowledgeAndUpdate": "Got it, continue update",
 				"cancel": "Cancel",
 				"changelog": "Changelog",
 				"downloaded": "The update has been downloaded and is ready to install and restart.",
@@ -486,6 +487,9 @@
 				"installAndRestart": "Install and Restart",
 				"installing": "Installing the update and preparing to restart...",
 				"newVersion": "New Version",
+				"openPreviousDirectory": "Open previous folder",
+				"previousInstallationMessage": "Another ReinaManager copy was found:\n{{previousDirectory}}\n\nThis update will use:\n{{currentDirectory}}\n\nCheck whether you still need the other copy. Review its user data before removing it.",
+				"previousInstallationTitle": "Another copy in the previous folder",
 				"releaseDate": "Release Date",
 				"skipVersion": "Skip this version",
 				"title": "New Version Available",
