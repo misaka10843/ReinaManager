@@ -25,7 +25,6 @@ import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { useProxyImageUrlResolver } from "@/hooks/common/useProxyImageUrlResolver";
 import { destroyCurrentWindow } from "@/services/appExit";
-import { fileService } from "@/services/invoke";
 import {
 	downloadUpdate,
 	installDownloadedUpdate,
@@ -73,16 +72,7 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ open, onClose, update }) => {
 	const [phase, setPhase] = useState<UpdatePhase>("idle");
 	const [progress, setProgress] = useState<UpdateProgress | null>(null);
 	const [downloadError, setDownloadError] = useState<string>("");
-	const [isPortable, setIsPortable] = useState(false);
 	const isBusy = phase === "downloading" || phase === "installing";
-
-	useEffect(() => {
-		if (open) {
-			fileService.isPortableMode().then((res) => {
-				setIsPortable(res.is_portable);
-			});
-		}
-	}, [open]);
 
 	useEffect(() => {
 		return () => {
@@ -91,14 +81,6 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ open, onClose, update }) => {
 			}
 		};
 	}, [update]);
-
-	const handleManualUpdate = async () => {
-		try {
-			await openUrl("https://github.com/huoshen80/ReinaManager/releases");
-		} catch (error) {
-			console.error("Failed to open manual update link:", error);
-		}
-	};
 
 	// 使用 marked 渲染 Markdown 内容，并处理链接点击
 	const renderedBody = useMemo(() => {
@@ -220,15 +202,6 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ open, onClose, update }) => {
 
 			<DialogContent>
 				<Box className="space-y-4">
-					{isPortable && (
-						<Alert severity="warning">
-							{t(
-								"components.Window.UpdateModal.portableWarning",
-								"您正在使用便携版，自动更新可能无法工作。建议点击“手动更新”下载最新版本的压缩包进行替换（需要完整覆盖）。",
-							)}
-						</Alert>
-					)}
-
 					{/* 版本信息 */}
 					<Box>
 						<Typography variant="body2" color="text.secondary" gutterBottom>
@@ -370,14 +343,6 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ open, onClose, update }) => {
 										"安装并重启",
 									)
 								: t("components.Window.UpdateModal.update", "立即更新")}
-				</Button>
-				<Button
-					onClick={handleManualUpdate}
-					disabled={isBusy}
-					variant="outlined"
-					color="primary"
-				>
-					{t("components.Window.UpdateModal.manualUpdate", "手动更新")}
 				</Button>
 			</DialogActions>
 		</Dialog>

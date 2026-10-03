@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Fragment>
+    <ComponentGroup Id="ReinaUpdatePath" />
+    <!-- 更新时以运行中的程序目录为准，在注册表搜索完成后覆盖旧路径。 -->
+    <Property Id="REINA_UPDATEDIR" Secure="yes" />
+    <CustomAction Id="SetReinaUpdateDirectory" Property="INSTALLDIR" Value="[REINA_UPDATEDIR]" />
+    <InstallUISequence>
+      <Custom Action="SetReinaUpdateDirectory" After="AppSearch">REINA_UPDATEDIR AND NOT Installed</Custom>
+    </InstallUISequence>
+    <InstallExecuteSequence>
+      <Custom Action="SetReinaUpdateDirectory" After="AppSearch">REINA_UPDATEDIR AND NOT Installed</Custom>
+    </InstallExecuteSequence>
+  </Fragment>
+</Wix>

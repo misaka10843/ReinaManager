@@ -85,6 +85,18 @@ Tauri command
 - 开发版：始终使用系统 data 目录下的 `com.reinamanager.dev.debug`。
 - 数据库统一为 `<base>/data/reina_manager.db`。
 
+## 应用更新
+
+Windows 应用内更新以当前 EXE 所在目录为安装目标，安装版同时更新安装记录。
+路径参数由 `utils/updater.rs` 生成，MSI 路径设置位于 `windows/update-path.wxs`，
+NSIS 的旧快捷方式修复位于 `windows/installer-hooks.nsh`。
+
+便携版通过 `/REINAPORTABLE` 使用同一个 NSIS 包的便携更新分支，只替换程序文件，
+保留 `resources`，不修改已有安装的记录、卸载器和快捷方式。
+分支位于 `windows/installer.nsi`；便携模式判断优先于 EXE 的打包类型标记。
+
+## 数据与路径约束
+
 `reina-path::resolve_user_path` 统一解析用户配置路径。数据库始终保存原始配置；Windows
 只展开路径开头的 `%VAR%`，Linux 展开开头的 `$VAR`、`${VAR}`、`~` 和 `~/`。
 解析结果必须是绝对路径，但解析器不访问文件系统。command 或 workflow 在实际 I/O 前

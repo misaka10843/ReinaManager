@@ -52,7 +52,13 @@
 		"copyright": "Copyright © 2025 huoshen80",
 		"publisher": "huoshen80",
 		"windows": {
+			"wix": {
+				"fragmentPaths": ["windows/update-path.wxs"],
+				"componentGroupRefs": ["ReinaUpdatePath"]
+			},
 			"nsis": {
+				"template": "windows/installer.nsi",
+				"installerHooks": "windows/installer-hooks.nsh",
 				"installerIcon": "icons/icon.ico",
 				"languages": [
 					"English",

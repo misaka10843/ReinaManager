@@ -1,6 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { Update } from "@tauri-apps/plugin-updater";
-import { check } from "@tauri-apps/plugin-updater";
+import { Update } from "@tauri-apps/plugin-updater";
 import {
 	completeAppTermination,
 	requestAppTermination,
@@ -33,11 +32,19 @@ function getUpdaterCheckOptions() {
 	};
 }
 
+async function checkAppUpdate(): Promise<Update | null> {
+	const metadata = await invoke<ConstructorParameters<typeof Update>[0] | null>(
+		"check_app_update",
+		getUpdaterCheckOptions(),
+	);
+	return metadata ? new Update(metadata) : null;
+}
+
 // 检查更新的主函数
 export const checkForUpdates = async (callbacks?: UpdateCallbacks) => {
 	try {
 		if (await settingsService.isDevelopment()) return null;
-		const update = await check(getUpdaterCheckOptions());
+		const update = await checkAppUpdate();
 		if (update) {
 			callbacks?.onUpdateFound?.(update);
 			return update;
@@ -148,7 +155,7 @@ export const silentCheckForUpdates = async () => {
 			return null;
 		}
 
-		const update = await check(getUpdaterCheckOptions());
+		const update = await checkAppUpdate();
 		return update;
 	} catch (error) {
 		// 如果是签名相关错误，在开发环境下忽略
