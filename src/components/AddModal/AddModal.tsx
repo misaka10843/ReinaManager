@@ -476,11 +476,11 @@ const AddModal: React.FC = () => {
 		<>
 			{/* 拖拽遮罩层 */}
 			{isDragging && (
-				<Box className="fixed inset-0 z-[9999] bg-[rgba(25,118,210,0.15)] backdrop-blur-sm flex flex-col items-center justify-center pointer-events-none">
-					<CloudUploadIcon className="text-[80px] text-[#1976d2] mb-2 opacity-90" />
+				<Box className="fixed inset-0 z-[9999] bg-[color-mix(in_srgb,var(--mui-palette-primary-main)_15%,transparent)] backdrop-blur-sm flex flex-col items-center justify-center pointer-events-none">
+					<CloudUploadIcon className="text-[80px] text-[var(--mui-palette-primary-main)] mb-2 opacity-90" />
 					<Typography
 						variant="h5"
-						className="text-2xl font-semibold text-[#1976d2] text-center opacity-90"
+						className="text-2xl font-semibold text-[var(--mui-palette-primary-main)] text-center opacity-90"
 					>
 						{t("components.AddModal.dragDropHere", "拖拽文件到这里")}
 					</Typography>
