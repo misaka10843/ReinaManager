@@ -5,6 +5,7 @@
 - 开始任务前先阅读 [`docs/README.md`](docs/README.md)，再根据任务类型按需打开专题文档。
 - 不要预先读取整个 `docs` 目录。只加载当前任务需要的文档。
 - 文档与代码不一致时，以代码为准，并在本次改动中同步修正相关文档。
+- Git 提交与上游同步规则见 [`docs/git-workflow.md`](docs/git-workflow.md)；执行代码任务时必须遵守。
 
 ## 1. 语言规范
 
@@ -62,3 +63,11 @@
 - 带 `-Force` 的检查命令（如 `Get-ChildItem -Force`）应与删除、修改、服务启停等操作分成独立工具调用，不要放在同一脚本中；仅换行或用分号分隔无效。
 - 遇到 `blocked by policy`，先检查完整脚本是否混用了上述命令和参数，不要直接归因于权限不足。
 - 每步执行后核验实际结果；仍被拦截时如实记录命令和错误。
+
+## 4. Git 提交与上游协作
+
+- 按功能拆分小提交；每项功能完成并验证后，单独提交并及时同步 `upstream/main`，不要把多个功能堆成一个提交。
+- 提交标题使用英文 Conventional Commits 格式 `type(scope): summary`，例如 `feat(settings): add theme color presets`。类型、scope 和 summary 均使用英文，summary 使用简短小写动词短语，不加句号。
+- 提交前检查暂存区，只纳入当前功能所需的文件或代码块；保留并排除用户已有的工作区改动。
+- 同步上游前先提交当前功能，再执行 `git fetch upstream`，并将 `upstream/main` 合并到当前功能分支；解决冲突后运行受影响的检查再继续。
+- 提交格式、常用 scope 和 fork 上游 PR 流程见 [`docs/git-workflow.md`](docs/git-workflow.md)。
