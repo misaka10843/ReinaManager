@@ -85,6 +85,8 @@ export interface AppState {
 	// 关闭应用时的提醒设置，skip=不再提醒，行为为 'hide' 或 'close'
 	skipCloseRemind: boolean;
 	defaultCloseAction: "hide" | "close";
+	themePrimaryColor: string;
+	setThemePrimaryColor: (color: string) => void;
 	// 设置不再提醒及默认关闭行为
 	setSkipCloseRemind: (skip: boolean) => void;
 	setDefaultCloseAction: (action: "hide" | "close") => void;
@@ -253,6 +255,13 @@ export const useStore = create<AppState>()(
 			// 关闭应用时的提醒设置，skip=不再提醒，行为为 'hide' 或 'close'
 			skipCloseRemind: false,
 			defaultCloseAction: "hide",
+			themePrimaryColor: "#496c78",
+			setThemePrimaryColor: (color) =>
+				set({
+					themePrimaryColor: /^#[0-9a-fA-F]{6}$/.test(color)
+						? color
+						: "#496c78",
+				}),
 			// Setter: 不再提醒和默认关闭行为
 			setSkipCloseRemind: (skip: boolean) => set({ skipCloseRemind: skip }),
 			setDefaultCloseAction: (action: "hide" | "close") =>
@@ -622,6 +631,7 @@ export const useStore = create<AppState>()(
 				// 关闭应用相关
 				skipCloseRemind: state.skipCloseRemind,
 				defaultCloseAction: state.defaultCloseAction,
+				themePrimaryColor: state.themePrimaryColor,
 				autoBackupOnExit: state.autoBackupOnExit,
 				scheduledBackupEnabled: state.scheduledBackupEnabled,
 				scheduledBackupIntervalHours: state.scheduledBackupIntervalHours,

@@ -1044,6 +1044,12 @@
 				"description": "開啟後將使用中文翻譯顯示遊戲標籤",
 				"title": "TAG翻譯"
 			},
+			"themeColor": {
+				"custom": "自訂顏色",
+				"description": "選擇預設顏色或輸入自訂主色，所有主題模式都會同步更新。",
+				"hex": "十六進位顏色",
+				"title": "主題顏色"
+			},
 			"timeTrackingMode": {
 				"description": "選擇遊戲時間的計算方式，變更僅對之後啟動的遊戲生效。",
 				"elapsed": "遊戲啟動時間",

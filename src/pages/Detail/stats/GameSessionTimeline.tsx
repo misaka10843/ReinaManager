@@ -104,7 +104,7 @@ export function GameSessionTimeline({
 						)}
 						<Box className="relative flex gap-3 py-2 pl-1">
 							<Box className="flex flex-col items-center">
-								<Box className="w-2 h-2 rounded-full bg-[#1976d2] mt-2" />
+								<Box className="w-2 h-2 rounded-full bg-[var(--mui-palette-primary-main)] mt-2" />
 								{index !== sessions.length - 1 && (
 									<Box className="w-px flex-1 min-h-8 bg-gray-200 mt-1" />
 								)}

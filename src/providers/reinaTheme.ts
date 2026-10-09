@@ -1,6 +1,6 @@
-import { alpha, createTheme } from "@mui/material/styles";
+import { alpha, createTheme, type ThemeOptions } from "@mui/material/styles";
 
-export const reinaTheme = createTheme({
+const reinaThemeOptions: ThemeOptions = {
 	cssVariables: {
 		colorSchemeSelector: "data-toolpad-color-scheme",
 	},
@@ -83,7 +83,7 @@ export const reinaTheme = createTheme({
 					}),
 					backgroundImage: "none",
 					...(ownerState.color === "primary" && {
-						boxShadow: `0 12px 24px ${alpha("#496c78", 0.18)}`,
+						boxShadow: `0 12px 24px ${alpha(theme.palette.primary.main, 0.18)}`,
 					}),
 					...(ownerState.color === "error" && {
 						boxShadow: `0 12px 24px ${alpha(theme.palette.error.main, 0.18)}`,
@@ -373,4 +373,12 @@ export const reinaTheme = createTheme({
 			},
 		},
 	},
-});
+};
+
+export const createReinaTheme = (primaryColor: string) =>
+	createTheme(reinaThemeOptions, {
+		colorSchemes: {
+			light: { palette: { primary: { main: primaryColor } } },
+			dark: { palette: { primary: { main: primaryColor } } },
+		},
+	});

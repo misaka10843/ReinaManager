@@ -256,7 +256,7 @@ export const GameStatsOverview: React.FC<GameStatsOverviewProps> = ({
 					{statItems.map((item) => (
 						<Box key={item.title} className="p-4 overflow-hidden">
 							<div className="flex items-center space-x-2 mb-2">
-								<span className="text-[#1976d2] flex-shrink-0 flex items-center">
+								<span className="text-[var(--mui-palette-primary-main)] flex-shrink-0 flex items-center">
 									{item.icon}
 								</span>
 								<Typography

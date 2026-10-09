@@ -148,7 +148,7 @@ const UpdateModal: React.FC<UpdateModalProps> = ({ open, onClose, update }) => {
 								}
 							}}
 							style={{
-								color: "#1976d2",
+								color: "var(--mui-palette-primary-main)",
 								textDecoration: "underline",
 								cursor: "pointer",
 							}}

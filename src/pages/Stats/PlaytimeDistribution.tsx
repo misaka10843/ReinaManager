@@ -1,4 +1,4 @@
-import { Box, Paper, Skeleton, Typography } from "@mui/material";
+import { Box, Paper, Skeleton, Typography, useTheme } from "@mui/material";
 import { BarChart } from "@mui/x-charts/BarChart";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
@@ -12,7 +12,6 @@ interface DistributionPoint {
 	[key: string]: string | number;
 }
 
-const NORMAL_BAR_COLOR = "#10b981";
 const PEAK_BAR_COLOR = "#f59e0b";
 
 function getPeakIndex(values: number[]): number | null {
@@ -45,6 +44,8 @@ export function PlaytimeDistribution({
 	isError,
 }: PlaytimeDistributionProps) {
 	const { t } = useTranslation();
+	const theme = useTheme();
+	const normalBarColor = theme.palette.primary.main;
 	const hourlyValues = useMemo(
 		() =>
 			Array.from(
@@ -155,9 +156,7 @@ export function PlaytimeDistribution({
 										type: "ordinal",
 										values: hourlyData.map((item) => item.label),
 										colors: hourlyData.map((_, index) =>
-											index === hourPeakIndex
-												? PEAK_BAR_COLOR
-												: NORMAL_BAR_COLOR,
+											index === hourPeakIndex ? PEAK_BAR_COLOR : normalBarColor,
 										),
 									},
 								},
@@ -215,7 +214,7 @@ export function PlaytimeDistribution({
 										colors: weekdayData.map((_, index) =>
 											index === weekdayPeakIndex
 												? PEAK_BAR_COLOR
-												: NORMAL_BAR_COLOR,
+												: normalBarColor,
 										),
 									},
 								},

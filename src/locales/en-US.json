@@ -1066,6 +1066,12 @@
 				"description": "Enable Chinese translation for game tags",
 				"title": "TAG Translation"
 			},
+			"themeColor": {
+				"custom": "Custom color",
+				"description": "Choose a preset or enter a custom primary color. It applies to both theme modes.",
+				"hex": "Hex color",
+				"title": "Theme color"
+			},
 			"timeTrackingMode": {
 				"description": "Select how game time is calculated. Changes apply only to games launched afterward.",
 				"elapsed": "Total Elapsed Time",

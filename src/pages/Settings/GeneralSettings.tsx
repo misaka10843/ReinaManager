@@ -2,6 +2,8 @@ import { FormControlLabel, Radio, RadioGroup, Switch } from "@mui/material";
 import Box from "@mui/material/Box";
 import MenuItem from "@mui/material/MenuItem";
 import Select, { type SelectChangeEvent } from "@mui/material/Select";
+import TextField from "@mui/material/TextField";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { snackbar } from "@/providers/snackBar";
@@ -130,6 +132,78 @@ export const InterfaceZoomSettings = () => {
 				))}
 			</Select>
 		</SettingsItem>
+	);
+};
+
+const THEME_COLOR_PRESETS = [
+	{ name: "teal", color: "#496c78" },
+	{ name: "blue", color: "#3568c0" },
+	{ name: "violet", color: "#7651b5" },
+	{ name: "rose", color: "#bd526c" },
+	{ name: "orange", color: "#bd6b32" },
+	{ name: "green", color: "#3d8063" },
+] as const;
+
+export const ThemeColorSettings = () => {
+	const { t } = useTranslation();
+	const { themePrimaryColor, setThemePrimaryColor } = useStore(
+		useShallow((state) => ({
+			themePrimaryColor: state.themePrimaryColor,
+			setThemePrimaryColor: state.setThemePrimaryColor,
+		})),
+	);
+	const [draftColor, setDraftColor] = useState(themePrimaryColor);
+	useEffect(() => setDraftColor(themePrimaryColor), [themePrimaryColor]);
+
+	return (
+		<SettingsGroup
+			title={t("pages.Settings.themeColor.title", "主题颜色")}
+			description={t(
+				"pages.Settings.themeColor.description",
+				"选择预设颜色或输入自定义主色，所有主题模式会同步更新。",
+			)}
+		>
+			<div className="flex flex-wrap gap-3">
+				{THEME_COLOR_PRESETS.map(({ name, color }) => (
+					<button
+						key={color}
+						type="button"
+						aria-label={t(`pages.Settings.themeColor.${name}`, name)}
+						aria-pressed={themePrimaryColor.toLowerCase() === color}
+						onClick={() => setThemePrimaryColor(color)}
+						className="size-9 rounded-full border-2 border-solid border-[var(--mui-palette-divider)] p-1"
+						style={{ backgroundColor: color }}
+					/>
+				))}
+			</div>
+			<SettingsItem title={t("pages.Settings.themeColor.custom", "自定义颜色")}>
+				<div className="flex items-center gap-2">
+					<input
+						aria-label={t("pages.Settings.themeColor.custom", "自定义颜色")}
+						type="color"
+						value={themePrimaryColor}
+						onChange={(event) => {
+							setDraftColor(event.target.value);
+							setThemePrimaryColor(event.target.value);
+						}}
+						className="size-10 cursor-pointer rounded border-0 bg-transparent p-0"
+					/>
+					<TextField
+						value={draftColor}
+						onChange={(event) => {
+							const color = event.target.value;
+							setDraftColor(color);
+							if (/^#[0-9a-fA-F]{6}$/.test(color)) setThemePrimaryColor(color);
+						}}
+						size="small"
+						inputProps={{
+							maxLength: 7,
+							"aria-label": t("pages.Settings.themeColor.hex", "十六进制颜色"),
+						}}
+					/>
+				</div>
+			</SettingsItem>
+		</SettingsGroup>
 	);
 };
 

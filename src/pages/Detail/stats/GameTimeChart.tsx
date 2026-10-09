@@ -1,3 +1,4 @@
+import { useTheme } from "@mui/material/styles";
 import { axisClasses } from "@mui/x-charts/ChartsAxis";
 import { LineChart } from "@mui/x-charts/LineChart";
 import { useCallback, useMemo } from "react";
@@ -15,6 +16,7 @@ interface GameTimeChartProps {
 }
 
 export function GameTimeChart({ data, timeRange }: GameTimeChartProps) {
+	const theme = useTheme();
 	const maxPlaytime = data.reduce(
 		(maximum, item) => Math.max(maximum, item.playtime),
 		0,
@@ -59,7 +61,7 @@ export function GameTimeChart({ data, timeRange }: GameTimeChartProps) {
 			series={[
 				{
 					dataKey: "playtime",
-					color: "#1976d2",
+					color: theme.palette.primary.main,
 					showMark: timeRange === "7D",
 					valueFormatter: formatCompactPlayTime,
 				},
