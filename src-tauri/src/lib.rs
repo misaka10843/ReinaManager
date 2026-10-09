@@ -13,6 +13,10 @@ use backup::savedata::{
     change_savedata_backup_root, create_savedata_backup, delete_savedata_backup,
     delete_savedata_backup_record, open_savedata_backup_folder, restore_savedata_backup,
 };
+use backup::webdav::{
+    clear_webdav_secrets, get_webdav_config, get_webdav_secret_status, save_webdav_config,
+    set_webdav_secrets, test_webdav_connection,
+};
 use database::*;
 use game::cover::custom::{delete_game_covers, import_clipboard_image_to_temp};
 use game::cover::{delete_cloud_cache, register_game_cover_protocol};
@@ -157,6 +161,12 @@ pub fn run() {
             delete_cloud_cache,
             backup_database,
             create_auto_backup,
+            get_webdav_config,
+            save_webdav_config,
+            set_webdav_secrets,
+            get_webdav_secret_status,
+            clear_webdav_secrets,
+            test_webdav_connection,
             open_database_backup_folder,
             backup_custom_covers,
             import_database,

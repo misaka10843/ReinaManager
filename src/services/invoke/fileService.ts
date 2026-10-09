@@ -256,6 +256,37 @@ class FileService extends BaseService {
 		return this.invoke<AutoBackupResult>("create_auto_backup", { request });
 	}
 
+	async setWebDavSecrets(
+		password: string,
+		masterPassword: string,
+	): Promise<void> {
+		return this.invoke<void>("set_webdav_secrets", {
+			password,
+			masterPassword,
+		});
+	}
+
+	async getWebDavConfig(): Promise<WebDavBackupConfig> {
+		return this.invoke<WebDavBackupConfig>("get_webdav_config");
+	}
+
+	async saveWebDavConfig(config: WebDavBackupConfig): Promise<void> {
+		return this.invoke<void>("save_webdav_config", { config });
+	}
+
+	async testWebDavConnection(config: WebDavBackupConfig): Promise<void> {
+		return this.invoke<void>("test_webdav_connection", { config });
+	}
+
+	async getWebDavSecretStatus(): Promise<WebDavSecretStatus> {
+		return this.invoke<WebDavSecretStatus>("get_webdav_secret_status");
+	}
+
+	async clearWebDavSecrets(): Promise<void> {
+		return this.invoke<void>("clear_webdav_secrets");
+	}
+
+
 	/**
 	 * 导入数据库
 	 */

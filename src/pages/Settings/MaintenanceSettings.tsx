@@ -2,11 +2,17 @@ import BackupIcon from "@mui/icons-material/Backup";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import ImageIcon from "@mui/icons-material/Image";
 import RestoreIcon from "@mui/icons-material/Restore";
-import { CircularProgress, Switch, TextField, Typography } from "@mui/material";
+import {
+	Alert,
+	CircularProgress,
+	Switch,
+	TextField,
+	Typography,
+} from "@mui/material";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Stack from "@mui/material/Stack";
-import { type ChangeEvent, useState } from "react";
+import { type ChangeEvent, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { useRefreshSettings } from "@/hooks/queries/useSettings";
@@ -24,6 +30,7 @@ import {
 	selectDatabaseImportFile,
 } from "@/services/fs/dataMaintenance";
 import { openDatabaseBackupFolder } from "@/services/fs/savedataBackup";
+import { fileService } from "@/services/invoke";
 import { useStore } from "@/store/appStore";
 import { getUserErrorMessage } from "@/utils/errors";
 import { SettingsGroup, SettingsItem } from "./SettingsLayout";
@@ -34,6 +41,18 @@ export const DatabaseBackupSettings = () => {
 	const [isBackingUp, setIsBackingUp] = useState(false);
 	const [isBackingCovers, setIsBackingCovers] = useState(false);
 	const [isImporting, setIsImporting] = useState(false);
+	const [webdavEnabled, setWebdavEnabled] = useState(false);
+	const [webdavUrl, setWebdavUrl] = useState("");
+	const [webdavUsername, setWebdavUsername] = useState("");
+	const [webdavPath, setWebdavPath] = useState("ReinaManager");
+	const [webdavEncrypt, setWebdavEncrypt] = useState(false);
+	const [webdavPassword, setWebdavPassword] = useState("");
+	const [webdavMasterPassword, setWebdavMasterPassword] = useState("");
+	const [webdavSecretsConfigured, setWebdavSecretsConfigured] = useState(false);
+	const [webdavMasterConfigured, setWebdavMasterConfigured] = useState(false);
+	const [webdavSaving, setWebdavSaving] = useState(false);
+	const [webdavTesting, setWebdavTesting] = useState(false);
+	const [webdavError, setWebdavError] = useState<string | null>(null);
 	const {
 		autoBackupIncludeCovers,
 		autoBackupLastError,
@@ -86,6 +105,94 @@ export const DatabaseBackupSettings = () => {
 		? new Date(autoBackupLastSuccessAt).toLocaleString()
 		: t("pages.Settings.databaseBackup.autoNever", "从未自动备份");
 	const autoBackupEnabled = scheduledBackupEnabled || autoBackupOnExit;
+
+	useEffect(() => {
+		void Promise.all([
+			fileService.getWebDavConfig(),
+			fileService.getWebDavSecretStatus(),
+		])
+			.then(([config, secrets]) => {
+				setWebdavEnabled(config.enabled);
+				setWebdavUrl(config.url);
+				setWebdavUsername(config.username);
+				setWebdavPath(config.remotePath);
+				setWebdavEncrypt(config.encrypt);
+				setWebdavSecretsConfigured(secrets.passwordSaved);
+				setWebdavMasterConfigured(secrets.masterPasswordSaved);
+			})
+			.catch((error) => setWebdavError(getUserErrorMessage(error, t)));
+	}, [t]);
+
+	const handleSaveWebdav = async () => {
+		setWebdavSaving(true);
+		setWebdavError(null);
+		try {
+			if (webdavPassword || webdavMasterPassword) {
+				await fileService.setWebDavSecrets(
+					webdavPassword,
+					webdavMasterPassword,
+				);
+				setWebdavSecretsConfigured(
+					webdavSecretsConfigured || Boolean(webdavPassword),
+				);
+				setWebdavMasterConfigured(
+					webdavMasterConfigured || Boolean(webdavMasterPassword),
+				);
+				setWebdavPassword("");
+				setWebdavMasterPassword("");
+			}
+			await fileService.saveWebDavConfig({
+				enabled: webdavEnabled,
+				url: webdavUrl.trim(),
+				username: webdavUsername,
+				remotePath: webdavPath,
+				encrypt: webdavEncrypt,
+			});
+			snackbar.success(
+				t("pages.Settings.databaseBackup.webdavSaved", "WebDAV 设置已保存"),
+			);
+		} catch (error) {
+			setWebdavError(getUserErrorMessage(error, t));
+		} finally {
+			setWebdavSaving(false);
+		}
+	};
+
+	const handleTestWebdav = async () => {
+		setWebdavTesting(true);
+		setWebdavError(null);
+		try {
+			if (webdavPassword || webdavMasterPassword) {
+				await fileService.setWebDavSecrets(
+					webdavPassword,
+					webdavMasterPassword,
+				);
+				setWebdavSecretsConfigured(
+					webdavSecretsConfigured || Boolean(webdavPassword),
+				);
+				setWebdavMasterConfigured(
+					webdavMasterConfigured || Boolean(webdavMasterPassword),
+				);
+				setWebdavPassword("");
+				setWebdavMasterPassword("");
+			}
+			const config = {
+				enabled: webdavEnabled,
+				url: webdavUrl.trim(),
+				username: webdavUsername,
+				remotePath: webdavPath,
+				encrypt: webdavEncrypt,
+			};
+			await fileService.testWebDavConnection(config);
+			snackbar.success(
+				t("pages.Settings.databaseBackup.webdavConnected", "WebDAV 连接成功"),
+			);
+		} catch (error) {
+			setWebdavError(getUserErrorMessage(error, t));
+		} finally {
+			setWebdavTesting(false);
+		}
+	};
 
 	const handleBackupDatabase = async () => {
 		setIsBackingUp(true);
@@ -464,6 +571,128 @@ export const DatabaseBackupSettings = () => {
 					</Typography>
 				)}
 			</Box>
+			<SettingsGroup
+				title={t(
+					"pages.Settings.databaseBackup.webdavTitle",
+					"WebDAV 自动备份",
+				)}
+				description={t(
+					"pages.Settings.databaseBackup.webdavDescription",
+					"自动备份完成后上传数据库和可选封面到 WebDAV。连接密码保存在系统凭据库；远端加密使用用户主密码。",
+				)}
+			>
+				<SettingsItem
+					title={t(
+						"pages.Settings.databaseBackup.webdavEnabled",
+						"启用 WebDAV 上传",
+					)}
+				>
+					<Switch
+						checked={webdavEnabled}
+						onChange={(event) => setWebdavEnabled(event.target.checked)}
+					/>
+				</SettingsItem>
+				<Stack spacing={2}>
+					<TextField
+						size="small"
+						label="WebDAV URL"
+						value={webdavUrl}
+						onChange={(event) => setWebdavUrl(event.target.value)}
+					/>
+					<Stack direction="row" spacing={2} useFlexGap flexWrap="wrap">
+						<TextField
+							size="small"
+							label={t(
+								"pages.Settings.databaseBackup.webdavUsername",
+								"用户名",
+							)}
+							value={webdavUsername}
+							onChange={(event) => setWebdavUsername(event.target.value)}
+						/>
+						<TextField
+							size="small"
+							type="password"
+							label={t(
+								"pages.Settings.databaseBackup.webdavPassword",
+								"密码/应用令牌",
+							)}
+							value={webdavPassword}
+							helperText={
+								webdavSecretsConfigured
+									? t(
+											"pages.Settings.databaseBackup.webdavPasswordSaved",
+											"已保存；留空则保持不变",
+										)
+									: undefined
+							}
+							onChange={(event) => setWebdavPassword(event.target.value)}
+						/>
+						<TextField
+							size="small"
+							label={t("pages.Settings.databaseBackup.webdavPath", "远端目录")}
+							value={webdavPath}
+							onChange={(event) => setWebdavPath(event.target.value)}
+						/>
+					</Stack>
+					<SettingsItem
+						title={t(
+							"pages.Settings.databaseBackup.webdavEncrypt",
+							"加密远端备份",
+						)}
+						description={t(
+							"pages.Settings.databaseBackup.webdavEncryptDescription",
+							"启用后其他设备需要使用同一主密码解密；忘记密码将无法恢复。",
+						)}
+					>
+						<Switch
+							checked={webdavEncrypt}
+							onChange={(event) => setWebdavEncrypt(event.target.checked)}
+						/>
+					</SettingsItem>
+					{webdavEncrypt && (
+						<TextField
+							size="small"
+							type="password"
+							label={t(
+								"pages.Settings.databaseBackup.webdavMasterPassword",
+								"备份主密码",
+							)}
+							value={webdavMasterPassword}
+							helperText={
+								webdavMasterConfigured
+									? t(
+											"pages.Settings.databaseBackup.webdavMasterPasswordSaved",
+											"已保存；留空则保持不变",
+										)
+									: undefined
+							}
+							onChange={(event) => setWebdavMasterPassword(event.target.value)}
+						/>
+					)}
+					{webdavError && <Alert severity="error">{webdavError}</Alert>}
+					<Button
+						variant="outlined"
+						onClick={() => void handleSaveWebdav()}
+						disabled={webdavSaving}
+					>
+						{webdavSaving
+							? t("pages.Settings.databaseBackup.webdavSaving", "保存中…")
+							: t(
+									"pages.Settings.databaseBackup.webdavSave",
+									"保存 WebDAV 设置",
+								)}
+					</Button>
+					<Button
+						variant="outlined"
+						onClick={() => void handleTestWebdav()}
+						disabled={webdavTesting}
+					>
+						{webdavTesting
+							? t("pages.Settings.databaseBackup.webdavTesting", "测试中…")
+							: t("pages.Settings.databaseBackup.webdavTest", "测试连接")}
+					</Button>
+				</Stack>
+			</SettingsGroup>
 		</SettingsGroup>
 	);
 };

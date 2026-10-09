@@ -9,7 +9,7 @@ use crate::database::db::close_connection;
 use sea_orm::DatabaseConnection;
 use serde::{Deserialize, Serialize};
 use std::fs;
-use tauri::{State, command};
+use tauri::{AppHandle, State, command};
 
 #[derive(Debug, Clone, Copy, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -40,6 +40,7 @@ pub struct AutoBackupResult {
 pub async fn create_auto_backup(
     request: AutoBackupRequest,
     db: State<'_, DatabaseConnection>,
+    app: AppHandle,
 ) -> Result<AutoBackupResult, String> {
     let _operation_guard = acquire_database_backup_operation_lock().await;
     ensure_database_backup_available()?;
@@ -109,7 +110,23 @@ pub async fn create_auto_backup(
         }
     };
 
-    if let Err(error) = cleanup_auto_backup_batches(&backup_dir, request.max_auto_backups) {
+    let mut webdav_upload_failed = false;
+    if let Err(error) = crate::backup::webdav::upload_auto_backup(
+        app,
+        database.path.clone(),
+        covers.as_ref().and_then(|cover| cover.path.clone()),
+        batch_id.clone(),
+    )
+    .await
+    {
+        webdav_upload_failed = true;
+        log::warn!("本地自动备份成功，但 WebDAV 上传失败 batch_id={batch_id}: {error}");
+        warnings.push(format!("WebDAV 上传失败: {error}"));
+    }
+
+    if !webdav_upload_failed
+        && let Err(error) = cleanup_auto_backup_batches(&backup_dir, request.max_auto_backups)
+    {
         log::warn!("自动备份批次 {batch_id} 已创建，但清理旧批次失败: {error}");
         warnings.push(format!("清理旧自动备份失败: {error}"));
     }
