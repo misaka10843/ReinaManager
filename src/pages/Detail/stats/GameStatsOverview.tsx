@@ -261,7 +261,7 @@ export const GameStatsOverview: React.FC<GameStatsOverviewProps> = ({
 								</span>
 								<Typography
 									variant="body2"
-									className="font-medium text-gray-600 truncate"
+									className="font-medium text-[var(--mui-palette-text-secondary)] truncate"
 									title={item.title}
 									component="span"
 								>

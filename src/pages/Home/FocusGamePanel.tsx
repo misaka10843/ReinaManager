@@ -169,7 +169,8 @@ export function FocusGamePanel({
 										: t("home.random.start", "启动游戏")
 							}
 							size="small"
-							className="!self-start !bg-[rgba(37,99,235,.72)] !font-700 !text-white"
+							color="primary"
+							className="!self-start !font-700"
 						/>
 						<Typography
 							component="h1"

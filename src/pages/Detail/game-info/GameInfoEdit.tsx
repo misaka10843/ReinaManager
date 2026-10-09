@@ -522,7 +522,7 @@ export const GameInfoEdit: React.FC<GameInfoEditProps> = ({
 						<SmartImage
 							src={getCurrentCoverUrl()}
 							alt="Game Cover"
-							className="w-70 h-100 object-cover rounded-2 border border-gray-300"
+						className="w-70 h-100 object-cover rounded-2 border border-[var(--mui-palette-divider)]"
 						/>
 
 						{/* 封面操作按钮 */}

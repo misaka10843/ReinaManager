@@ -106,7 +106,7 @@ export function GameSessionTimeline({
 							<Box className="flex flex-col items-center">
 								<Box className="w-2 h-2 rounded-full bg-[var(--mui-palette-primary-main)] mt-2" />
 								{index !== sessions.length - 1 && (
-									<Box className="w-px flex-1 min-h-8 bg-gray-200 mt-1" />
+								<Box className="w-px flex-1 min-h-8 bg-[var(--mui-palette-divider)] mt-1" />
 								)}
 							</Box>
 							<Box className="min-w-0 flex-1">

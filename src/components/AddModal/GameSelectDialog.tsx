@@ -137,7 +137,7 @@ const GameSelectDialog: React.FC<GameSelectDialogProps> = ({
 												className="w-[60px] h-[80px] object-cover rounded mr-2"
 											/>
 										) : (
-											<Box className="w-[60px] h-[80px] bg-gray-300 rounded mr-2 flex items-center justify-center">
+											<Box className="w-[60px] h-[80px] bg-[var(--mui-palette-action-disabledBackground)] rounded mr-2 flex items-center justify-center">
 												<Typography variant="caption" color="text.secondary">
 													N/A
 												</Typography>

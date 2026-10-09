@@ -89,7 +89,7 @@ const reinaThemeOptions: ThemeOptions = {
 						boxShadow: `0 12px 24px ${alpha(theme.palette.error.main, 0.18)}`,
 					}),
 				}),
-				outlined: ({ ownerState }) => ({
+				outlined: ({ ownerState, theme }) => ({
 					...(ownerState.size === "medium" && {
 						paddingInline: 18,
 					}),
@@ -98,7 +98,7 @@ const reinaThemeOptions: ThemeOptions = {
 						borderColor: "var(--mui-palette-divider)",
 						color: "var(--mui-palette-text-primary)",
 						"&:hover": {
-							backgroundColor: "rgba(111, 143, 159, 0.08)",
+							backgroundColor: alpha(theme.palette.primary.main, 0.08),
 							borderColor: "var(--mui-palette-primary-main)",
 							color: "var(--mui-palette-primary-main)",
 						},
@@ -112,13 +112,37 @@ const reinaThemeOptions: ThemeOptions = {
 					borderRadius: 12,
 					transition: "all 0.2s ease-in-out",
 					"&:hover": {
-						backgroundColor: "rgba(0,0,0,0.08)",
+						backgroundColor: alpha(theme.palette.primary.main, 0.08),
 					},
-					...theme.applyStyles("dark", {
-						"&:hover": {
-							backgroundColor: "rgba(255,255,255,0.12)",
+				}),
+			},
+		},
+		MuiListItemButton: {
+			styleOverrides: {
+				root: ({ theme }) => ({
+					"&:hover": {
+						backgroundColor: alpha(theme.palette.primary.main, 0.08),
+					},
+					"&.Mui-selected": {
+						backgroundColor: alpha(theme.palette.primary.main, 0.14),
+						color: theme.palette.primary.main,
+						"& .MuiListItemIcon-root": {
+							color: theme.palette.primary.main,
 						},
-					}),
+						"&:hover": {
+							backgroundColor: alpha(theme.palette.primary.main, 0.2),
+						},
+					},
+				}),
+			},
+		},
+		MuiButtonBase: {
+			styleOverrides: {
+				root: ({ theme }) => ({
+					"&:focus-visible": {
+						outline: `2px solid ${alpha(theme.palette.primary.main, 0.6)}`,
+						outlineOffset: 2,
+					},
 				}),
 			},
 		},
