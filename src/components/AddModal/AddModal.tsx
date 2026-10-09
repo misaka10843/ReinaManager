@@ -19,12 +19,14 @@ import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
+import MenuItem from "@mui/material/MenuItem";
+import Select from "@mui/material/Select";
 import Stack from "@mui/material/Stack";
 import Tab from "@mui/material/Tab";
 import Tabs from "@mui/material/Tabs";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import { basename, dirname } from "pathe";
+import { basename, dirname, join } from "pathe";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -43,7 +45,10 @@ import {
 	splitExecutablePath,
 	trimDirnameToSearchName,
 } from "@/services/fs/fileDialog";
-import type { SteamLaunchTarget } from "@/services/invoke/fileService";
+import {
+	fileService,
+	type SteamLaunchTarget,
+} from "@/services/invoke/fileService";
 import { useStore } from "@/store/appStore";
 import type {
 	GameMetadataDraft,
@@ -141,6 +146,8 @@ const AddModal: React.FC = () => {
 		closeAddModal,
 		setAddModalPath,
 		cloudCollectionImportSource,
+		launcherPreferredPatterns,
+		launcherExcludedPatterns,
 	} = useStore(
 		useShallow((s) => ({
 			apiSource: s.apiSource,
@@ -152,6 +159,8 @@ const AddModal: React.FC = () => {
 			closeAddModal: s.closeAddModal,
 			setAddModalPath: s.setAddModalPath,
 			cloudCollectionImportSource: s.cloudCollectionImportSource,
+			launcherPreferredPatterns: s.launcherPreferredPatterns,
+			launcherExcludedPatterns: s.launcherExcludedPatterns,
 		})),
 	);
 	const [formText, setFormText] = useState("");
@@ -172,6 +181,10 @@ const AddModal: React.FC = () => {
 	const [launchSelection, setLaunchSelection] = useState<SingleLaunchSelection>(
 		{ kind: "none" },
 	);
+	const [launchCandidates, setLaunchCandidates] = useState<string[] | null>(
+		null,
+	);
+	const [selectedLaunchCandidate, setSelectedLaunchCandidate] = useState("");
 	const previousFocus = useRef<HTMLElement | null>(null);
 	const nextDropBatchIdRef = useRef(1);
 	const singleDropGenerationRef = useRef(0);
@@ -235,9 +248,32 @@ const AddModal: React.FC = () => {
 		cloudBusy;
 
 	const applyLaunchSelection = useCallback(
-		(selection: LaunchFileSelection) => {
+		async (selection: LaunchFileSelection) => {
 			setActiveTab("single");
 			if (selection.launchType === "local") {
+				let candidates = selection.candidatePaths;
+				if (!candidates) {
+					try {
+						const directory = dirname(selection.path);
+						const names = await fileService.scanExecutableCandidates(
+							directory,
+							launcherPreferredPatterns,
+							launcherExcludedPatterns,
+						);
+						candidates = await Promise.all(
+							names.map((name) => join(directory, name)),
+						);
+					} catch {
+						candidates = [selection.path];
+					}
+				}
+				const resolvedCandidates = candidates ?? [selection.path];
+				if (resolvedCandidates.length > 1) {
+					setLaunchCandidates(resolvedCandidates);
+					setSelectedLaunchCandidate(selection.path);
+					openAddModal("");
+					return;
+				}
 				setLaunchSelection({ kind: "local", path: selection.path });
 				openAddModal(selection.path);
 				return;
@@ -248,7 +284,12 @@ const AddModal: React.FC = () => {
 			setFormText(selection.target.name);
 			openAddModal("");
 		},
-		[openAddModal, setAddModalPath],
+		[
+			launcherExcludedPatterns,
+			launcherPreferredPatterns,
+			openAddModal,
+			setAddModalPath,
+		],
 	);
 
 	const invalidateSingleDrop = useCallback(() => {
@@ -282,7 +323,11 @@ const AddModal: React.FC = () => {
 				if (isBusy) return;
 				const generation = ++singleDropGenerationRef.current;
 				pendingSingleDropPathRef.current = paths[0];
-				void handleDroppedPath(paths[0])
+				void handleDroppedPath(
+					paths[0],
+					launcherPreferredPatterns,
+					launcherExcludedPatterns,
+				)
 					.then((selection) => {
 						if (selection && singleDropGenerationRef.current === generation) {
 							applyLaunchSelection(selection);
@@ -304,6 +349,8 @@ const AddModal: React.FC = () => {
 			enqueueBulkDrop,
 			invalidateSingleDrop,
 			isBusy,
+			launcherExcludedPatterns,
+			launcherPreferredPatterns,
 		],
 	);
 
@@ -343,6 +390,8 @@ const AddModal: React.FC = () => {
 		setFormText("");
 		setActiveTab("single");
 		setLaunchSelection({ kind: "none" });
+		setLaunchCandidates(null);
+		setSelectedLaunchCandidate("");
 		setBulkDropQueue([]);
 		setAddModalPath("");
 		setError("");
@@ -636,6 +685,49 @@ const AddModal: React.FC = () => {
 						</Button>
 					</DialogActions>
 				)}
+			</Dialog>
+			<Dialog
+				open={launchCandidates !== null}
+				onClose={() => setLaunchCandidates(null)}
+				fullWidth
+				maxWidth="sm"
+			>
+				<DialogTitle>
+					{t("components.AddModal.chooseLauncher", "选择优先启动程序")}
+				</DialogTitle>
+				<DialogContent>
+					<Select
+						fullWidth
+						value={selectedLaunchCandidate}
+						onChange={(event) => setSelectedLaunchCandidate(event.target.value)}
+					>
+						{(launchCandidates ?? []).map((candidate) => (
+							<MenuItem key={candidate} value={candidate}>
+								{candidate}
+							</MenuItem>
+						))}
+					</Select>
+				</DialogContent>
+				<DialogActions>
+					<Button onClick={() => setLaunchCandidates(null)}>
+						{t("components.AddModal.cancel", "取消")}
+					</Button>
+					<Button
+						variant="contained"
+						disabled={!selectedLaunchCandidate}
+						onClick={() => {
+							if (!selectedLaunchCandidate) return;
+							setLaunchSelection({
+								kind: "local",
+								path: selectedLaunchCandidate,
+							});
+							openAddModal(selectedLaunchCandidate);
+							setLaunchCandidates(null);
+						}}
+					>
+						{t("components.AddModal.confirm", "确认")}
+					</Button>
+				</DialogActions>
 			</Dialog>
 
 			<GameSelectDialog

@@ -1,5 +1,7 @@
 use crate::database::repository::games_repository::GamesRepository;
-use crate::game::scan::{ImportPathIndex, scan_executable_candidates, trim_dirname_to_search_name};
+use crate::game::scan::{
+    ImportPathIndex, scan_executable_candidates_with_rules, trim_dirname_to_search_name,
+};
 use crate::game::steam::{SteamLaunchTarget, resolve_steam_shortcut_files_blocking};
 use sea_orm::DatabaseConnection;
 use serde::Serialize;
@@ -81,7 +83,11 @@ fn is_supported_executable(path: &Path) -> bool {
     })
 }
 
-fn local_candidate(path: &Path) -> Result<BulkImportPathCandidate, BulkImportPathIssue> {
+fn local_candidate(
+    path: &Path,
+    preferred_patterns: &[String],
+    excluded_patterns: &[String],
+) -> Result<BulkImportPathCandidate, BulkImportPathIssue> {
     let metadata = fs::metadata(path).map_err(|error| {
         issue(
             path,
@@ -91,8 +97,9 @@ fn local_candidate(path: &Path) -> Result<BulkImportPathCandidate, BulkImportPat
     })?;
 
     if metadata.is_dir() {
-        let executables = scan_executable_candidates(path)
-            .map_err(|message| issue(path, BulkImportPathIssueCode::ReadFailed, message))?;
+        let executables =
+            scan_executable_candidates_with_rules(path, preferred_patterns, excluded_patterns)
+                .map_err(|message| issue(path, BulkImportPathIssueCode::ReadFailed, message))?;
         return Ok(BulkImportPathCandidate {
             name: path_display_name(path),
             path: Some(path.to_string_lossy().into_owned()),
@@ -155,6 +162,8 @@ fn resolve_paths_blocking(
     paths: Vec<String>,
     existing_directories: HashSet<String>,
     existing_steam_ids: HashSet<String>,
+    preferred_patterns: Vec<String>,
+    excluded_patterns: Vec<String>,
 ) -> BulkImportPathResult {
     let mut issues = Vec::new();
     let path_bufs = paths
@@ -212,7 +221,7 @@ fn resolve_paths_blocking(
                 }
             }
         } else {
-            local_candidate(&path)
+            local_candidate(&path, &preferred_patterns, &excluded_patterns)
         };
 
         let candidate = match candidate {
@@ -280,6 +289,8 @@ fn resolve_paths_blocking(
 pub async fn resolve_bulk_import_paths(
     db: State<'_, DatabaseConnection>,
     paths: Vec<String>,
+    preferred_patterns: Vec<String>,
+    excluded_patterns: Vec<String>,
 ) -> Result<BulkImportPathResult, String> {
     let existing_directories = GamesRepository::get_all_game_directories(&db)
         .await
@@ -293,6 +304,8 @@ pub async fn resolve_bulk_import_paths(
             paths,
             crate::game::scan::resolve_configured_path_set(existing_directories),
             existing_steam_ids,
+            preferred_patterns,
+            excluded_patterns,
         )
     })
     .await
@@ -331,6 +344,8 @@ mod tests {
             ],
             HashSet::new(),
             HashSet::new(),
+            vec![],
+            vec![],
         );
 
         assert_eq!(result.candidates.len(), 1);
@@ -357,6 +372,8 @@ mod tests {
             vec![game.to_string_lossy().into_owned()],
             HashSet::new(),
             HashSet::new(),
+            vec![],
+            vec![],
         );
 
         assert_eq!(result.candidates.len(), 1);
@@ -381,6 +398,8 @@ mod tests {
             ],
             existing,
             HashSet::new(),
+            vec![],
+            vec![],
         );
 
         assert!(result.candidates.is_empty());
@@ -403,7 +422,13 @@ mod tests {
         #[cfg(not(windows))]
         let path = "$GAME_ROOT/Title";
 
-        let result = resolve_paths_blocking(vec![path.to_string()], HashSet::new(), HashSet::new());
+        let result = resolve_paths_blocking(
+            vec![path.to_string()],
+            HashSet::new(),
+            HashSet::new(),
+            vec![],
+            vec![],
+        );
 
         assert!(result.candidates.is_empty());
         assert_eq!(result.issues.len(), 1);

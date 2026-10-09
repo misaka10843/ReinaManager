@@ -192,6 +192,12 @@ const BulkImportTab = ({
 			mixedEnabledSources: s.mixedEnabledSources,
 		})),
 	);
+	const { launcherPreferredPatterns, launcherExcludedPatterns } = useStore(
+		useShallow((s) => ({
+			launcherPreferredPatterns: s.launcherPreferredPatterns,
+			launcherExcludedPatterns: s.launcherExcludedPatterns,
+		})),
+	);
 	const { addGamesFromBulkImport, findBulkImportDuplicates, isAddingGames } =
 		useBulkGameAddActions();
 
@@ -327,6 +333,8 @@ const BulkImportTab = ({
 					maxDepth,
 					mode,
 					scanExecutables,
+					launcherPreferredPatterns,
+					launcherExcludedPatterns,
 				);
 				setItems(
 					subdirs.map((dir) => ({
@@ -344,14 +352,18 @@ const BulkImportTab = ({
 				setIsScanningGames(false);
 			}
 		},
-		[t],
+		[launcherExcludedPatterns, launcherPreferredPatterns, t],
 	);
 
 	const processDroppedPaths = useCallback(
 		async (paths: string[]) => {
 			setIsScanningGames(true);
 			try {
-				const result = await fileService.resolveBulkImportPaths(paths);
+				const result = await fileService.resolveBulkImportPaths(
+					paths,
+					launcherPreferredPatterns,
+					launcherExcludedPatterns,
+				);
 				const currentItems = itemsRef.current;
 				const existingIdentities = new Set(
 					currentItems.flatMap(getBulkItemIdentities),
@@ -430,7 +442,7 @@ const BulkImportTab = ({
 				setIsScanningGames(false);
 			}
 		},
-		[t],
+		[launcherExcludedPatterns, launcherPreferredPatterns, t],
 	);
 
 	useEffect(() => {

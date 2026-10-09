@@ -171,6 +171,7 @@ const EXCLUDED_EXE_PATTERNS: &[&str] = &[
     "uninstall",
     "setup", // 安装 / 配置向导
     "install",
+    "config",   // 配置器通常不是游戏本体
     "dxsetup",  // DirectX
     "vcredist", // VC++ 运行时
     "vc_redist",
@@ -233,11 +234,24 @@ fn is_excluded_dir(name: &str) -> bool {
     EXCLUDED_DIRS.iter().any(|&d| lower == d)
 }
 
+#[cfg(test)]
 fn is_excluded_exe(path: &Path) -> bool {
-    path.file_stem().is_some_and(|stem| {
-        let lower = stem.to_string_lossy().to_lowercase();
-        EXCLUDED_EXE_PATTERNS.iter().any(|&p| lower.contains(p))
-    })
+    path.file_stem()
+        .is_some_and(|stem| is_excluded_exe_name(&stem.to_string_lossy(), &[]))
+}
+
+fn is_excluded_exe_name(name: &str, custom_patterns: &[String]) -> bool {
+    let filename = Path::new(name)
+        .file_name()
+        .map(|name| name.to_string_lossy())
+        .unwrap_or_else(|| name.into());
+    let lower = filename.to_lowercase();
+    EXCLUDED_EXE_PATTERNS
+        .iter()
+        .any(|pattern| lower.contains(pattern))
+        || custom_patterns
+            .iter()
+            .any(|pattern| !pattern.trim().is_empty() && lower.contains(&pattern.to_lowercase()))
 }
 
 fn is_han_character(character: char) -> bool {
@@ -279,14 +293,40 @@ fn is_probably_chinese_executable(value: &str) -> bool {
     contains_han
 }
 
-fn sort_executables(executables: &mut [String], game_name: &str) {
+fn sort_executables(
+    executables: &mut Vec<String>,
+    game_name: &str,
+    preferred_patterns: &[String],
+    excluded_patterns: &[String],
+) {
     let lower_name = game_name.to_lowercase();
+    executables.retain(|executable| !is_excluded_exe_name(executable, excluded_patterns));
     executables.sort_by_cached_key(|executable| {
-        let lower = executable.to_lowercase();
+        let lower = Path::new(executable)
+            .file_name()
+            .map(|name| name.to_string_lossy().to_lowercase())
+            .unwrap_or_else(|| executable.to_lowercase());
         (
-            lower.contains("startup"),
-            !(lower.contains("chs") || lower.contains("cn")),
-            !is_probably_chinese_executable(executable),
+            preferred_patterns
+                .iter()
+                .position(|pattern| {
+                    !pattern.trim().is_empty() && lower.contains(&pattern.to_lowercase())
+                })
+                .unwrap_or(usize::MAX),
+            (
+                lower.contains("config"),
+                lower.contains("settings"),
+                lower.contains("options"),
+                lower.contains("benchmark"),
+                lower.contains("launcher"),
+                lower.contains("patcher"),
+                lower.contains("updater"),
+                lower.contains("setup"),
+                lower.contains("startup"),
+                !(lower.contains("_crack") || lower.contains("-crack")),
+                !(lower.contains("chs") || lower.contains("cn")),
+                !is_probably_chinese_executable(executable),
+            ),
             !lower.contains(&lower_name),
             executable.len(),
             lower,
@@ -294,8 +334,37 @@ fn sort_executables(executables: &mut [String], game_name: &str) {
     });
 }
 
+#[command]
+pub fn scan_executable_candidates_for_path(
+    path: String,
+    preferred_patterns: Vec<String>,
+    excluded_patterns: Vec<String>,
+) -> Result<Vec<String>, String> {
+    let executable_path = PathBuf::from(&path);
+    if !executable_path.is_absolute() {
+        return Err("启动文件路径必须是绝对路径".to_string());
+    }
+    let root = if executable_path.is_dir() {
+        executable_path
+    } else {
+        executable_path
+            .parent()
+            .ok_or_else(|| "启动文件缺少父目录".to_string())?
+            .to_path_buf()
+    };
+    scan_executable_candidates_with_rules(&root, &preferred_patterns, &excluded_patterns)
+}
+
 /// 复用批量导入的过滤和排序规则，只扫描游戏根目录直属的启动程序。
 pub fn scan_executable_candidates(root: &Path) -> Result<Vec<String>, String> {
+    scan_executable_candidates_with_rules(root, &[], &[])
+}
+
+pub fn scan_executable_candidates_with_rules(
+    root: &Path,
+    preferred_patterns: &[String],
+    excluded_patterns: &[String],
+) -> Result<Vec<String>, String> {
     if !root.is_dir() {
         return Err(format!("游戏目录不存在: {}", root.display()));
     }
@@ -308,7 +377,7 @@ pub fn scan_executable_candidates(root: &Path) -> Result<Vec<String>, String> {
         let file_type = entry
             .file_type()
             .map_err(|error| format!("读取游戏目录项类型失败: {error}"))?;
-        if !file_type.is_file() || file_type.is_symlink() || is_excluded_exe(&path) {
+        if !file_type.is_file() || file_type.is_symlink() {
             continue;
         }
         let Some(extension) = path.extension() else {
@@ -330,7 +399,12 @@ pub fn scan_executable_candidates(root: &Path) -> Result<Vec<String>, String> {
         .file_name()
         .and_then(|name| name.to_str())
         .unwrap_or_default();
-    sort_executables(&mut candidates, game_name);
+    sort_executables(
+        &mut candidates,
+        game_name,
+        preferred_patterns,
+        excluded_patterns,
+    );
     Ok(candidates)
 }
 
@@ -341,6 +415,8 @@ pub async fn scan_directory_for_games(
     max_depth: usize,
     scan_mode: ScanMode,
     scan_executables: bool,
+    preferred_patterns: Vec<String>,
+    excluded_patterns: Vec<String>,
 ) -> Result<Vec<ScanResult>, String> {
     let scan_root = PathBuf::from(&path);
     if !scan_root.is_absolute() {
@@ -379,6 +455,8 @@ pub async fn scan_directory_for_games(
             max_depth,
             scan_mode,
             scan_executables,
+            preferred_patterns,
+            excluded_patterns,
         )
     })
     .await
@@ -413,13 +491,23 @@ fn scan_games_blocking(
     max_depth: usize,
     scan_mode: ScanMode,
     scan_executables: bool,
+    preferred_patterns: Vec<String>,
+    excluded_patterns: Vec<String>,
 ) -> Result<Vec<ScanResult>, String> {
     match scan_mode {
-        ScanMode::Executable => scan_executable_games_blocking(path, existing_paths, max_depth),
+        ScanMode::Executable => scan_executable_games_blocking(
+            path,
+            existing_paths,
+            max_depth,
+            &preferred_patterns,
+            &excluded_patterns,
+        ),
         ScanMode::FirstLevelDirectory => Ok(scan_direct_child_directories(
             path,
             existing_paths,
             scan_executables,
+            &preferred_patterns,
+            &excluded_patterns,
         )),
     }
 }
@@ -428,6 +516,8 @@ fn scan_direct_child_directories(
     path: String,
     existing_paths: ImportPathIndex,
     scan_executables: bool,
+    preferred_patterns: &[String],
+    excluded_patterns: &[String],
 ) -> Vec<ScanResult> {
     let dir_path = PathBuf::from(path);
     let mut executables_by_dir: HashMap<PathBuf, Vec<String>> = HashMap::new();
@@ -461,7 +551,7 @@ fn scan_direct_child_directories(
             continue;
         }
 
-        if !entry.file_type().is_file() || is_excluded_exe(entry_path) {
+        if !entry.file_type().is_file() {
             continue;
         }
         let Some(ext) = entry_path.extension() else {
@@ -490,7 +580,12 @@ fn scan_direct_child_directories(
         .filter_map(|(game_dir, mut executables)| {
             let raw_name = game_dir.file_name()?.to_string_lossy();
             let name = trim_dirname_to_search_name(&raw_name);
-            sort_executables(&mut executables, &name);
+            sort_executables(
+                &mut executables,
+                &name,
+                preferred_patterns,
+                excluded_patterns,
+            );
             Some(ScanResult {
                 name,
                 path: game_dir.to_string_lossy().to_string(),
@@ -507,6 +602,8 @@ fn scan_executable_games_blocking(
     path: String,
     existing_paths: ImportPathIndex,
     max_depth: usize,
+    preferred_patterns: &[String],
+    excluded_patterns: &[String],
 ) -> Result<Vec<ScanResult>, String> {
     let dir_path = PathBuf::from(&path);
 
@@ -566,7 +663,6 @@ fn scan_executable_games_blocking(
                 && VALID_EXE_EXTENSIONS
                     .iter()
                     .any(|&e| ext.eq_ignore_ascii_case(e))
-                && !is_excluded_exe(entry_path)
             {
                 // 已导入目录同样视为“已有直属 exe”，避免继续扫描其子目录。
                 dirs_with_exe.insert(parent.to_path_buf());
@@ -616,7 +712,15 @@ fn scan_executable_games_blocking(
                         .map(|rel| rel.to_string_lossy().to_string())
                 })
                 .collect();
-            sort_executables(&mut executables, &name);
+            sort_executables(
+                &mut executables,
+                &name,
+                preferred_patterns,
+                excluded_patterns,
+            );
+            if executables.is_empty() {
+                return None;
+            }
 
             Some(ScanResult {
                 name,
@@ -670,7 +774,7 @@ mod tests {
             "游戏.exe".to_string(),
         ];
 
-        sort_executables(&mut executables, "Game");
+        sort_executables(&mut executables, "Game", &[], &[]);
 
         assert_eq!(
             executables,
@@ -686,12 +790,41 @@ mod tests {
             "Game.exe".to_string(),
         ];
 
-        sort_executables(&mut executables, "Game");
+        sort_executables(&mut executables, "Game", &[], &[]);
 
         assert_eq!(
             executables,
             ["Game_chs.exe", "Game.exe", "Game_startup.exe"]
         );
+    }
+
+    #[test]
+    fn executable_sort_prefers_crack_and_chinese_candidates_and_defers_tools() {
+        let mut executables = vec![
+            "config.exe".to_string(),
+            "Game.exe".to_string(),
+            "Game_cn.exe".to_string(),
+            "Game_crack.exe".to_string(),
+        ];
+
+        sort_executables(&mut executables, "Game", &[], &[]);
+
+        assert_eq!(executables, ["Game_crack.exe", "Game_cn.exe", "Game.exe"]);
+    }
+
+    #[test]
+    fn executable_sort_applies_user_preferences_and_exclusions() {
+        let mut executables = vec![
+            "Game.exe".to_string(),
+            "Game_cn.exe".to_string(),
+            "delfile.exe".to_string(),
+        ];
+        let preferred = vec!["_cn".to_string()];
+        let excluded = vec!["delfile".to_string()];
+
+        sort_executables(&mut executables, "Game", &preferred, &excluded);
+
+        assert_eq!(executables, ["Game_cn.exe", "Game.exe"]);
     }
 
     #[test]
@@ -745,6 +878,8 @@ mod tests {
             game_dir.to_string_lossy().into_owned(),
             existing_paths,
             5,
+            &[],
+            &[],
         )
         .expect("扫描应成功");
 
@@ -777,6 +912,8 @@ mod tests {
             root.to_string_lossy().into_owned(),
             existing_paths,
             true,
+            &[],
+            &[],
         );
 
         assert_eq!(results.len(), 2);
@@ -799,6 +936,7 @@ mod tests {
         assert!(is_excluded_exe(Path::new("全CG解锁程序.exe")));
         assert!(is_excluded_exe(Path::new("全CG解鎖程序.exe")));
         assert!(is_excluded_exe(Path::new("unins000.exe")));
+        assert!(is_excluded_exe(Path::new("config.exe")));
         assert!(!is_excluded_exe(Path::new("Game.exe")));
         assert!(!is_excluded_exe(Path::new("Start.bat")));
     }

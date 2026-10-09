@@ -40,6 +40,7 @@ export type LaunchFileSelection =
 	| {
 			launchType: "local";
 			path: string;
+			candidatePaths?: string[];
 	  }
 	| {
 			launchType: "steam";
@@ -237,16 +238,23 @@ async function resolveDialogDefaultPath(path: string): Promise<string> {
 
 export const handleDroppedPath = async (
 	droppedPath: string,
+	preferredPatterns: string[] = [],
+	excludedPatterns: string[] = [],
 ): Promise<LaunchFileSelection | null> => {
 	try {
 		if (extname(droppedPath).toLowerCase() === ".url") {
 			return await resolveLaunchFileSelection(droppedPath);
 		}
 
-		const result = await fileService.resolveDroppedLocalPath(droppedPath);
+		const result = await fileService.resolveDroppedLocalPath(
+			droppedPath,
+			preferredPatterns,
+			excludedPatterns,
+		);
 
 		switch (result.kind) {
 			case "executable":
+				return result.path ? { launchType: "local", path: result.path } : null;
 			case "single_executable":
 				return result.path ? { launchType: "local", path: result.path } : null;
 			case "no_executable":
@@ -262,12 +270,21 @@ export const handleDroppedPath = async (
 					),
 				);
 				{
-					const selectedPath = await handleExeFile(
-						result.directory ?? droppedPath,
+					const directory = result.directory ?? droppedPath;
+					const candidates = await fileService.scanExecutableCandidates(
+						directory,
+						preferredPatterns,
+						excludedPatterns,
 					);
-					return selectedPath
-						? await resolveLaunchFileSelection(selectedPath)
-						: null;
+					if (candidates.length === 0) return null;
+					const selected = candidates[0];
+					return {
+						launchType: "local",
+						path: await join(directory, selected),
+						candidatePaths: await Promise.all(
+							candidates.map((candidate) => join(directory, candidate)),
+						),
+					};
 				}
 			case "invalid":
 				snackbar.error(

@@ -61,7 +61,8 @@
 			"singleSourceMode": "Single Source",
 			"singleTab": "Single Add",
 			"timeout": "Request timed out, please try again later",
-			"viewMore": "View More"
+			"viewMore": "View More",
+			"chooseLauncher": "Choose Preferred Launch Program"
 		},
 		"AlertBox": {
 			"cancel": "Cancel",
@@ -1097,6 +1098,12 @@
 				"saveError": "Failed to save VNDB Token",
 				"saveSuccess": "VNDB Token saved successfully",
 				"userId": "User ID: {{id}}"
+			},
+			"launcherRules": {
+				"description": "Enter one filename keyword per line. Preferred rules are applied in order; excluded rules remove matching candidates.",
+				"excluded": "Excluded keywords",
+				"preferred": "Preferred keywords",
+				"title": "Import launcher rules"
 			}
 		},
 		"Stats": {

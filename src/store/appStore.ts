@@ -48,6 +48,15 @@ export type SelectedCategory =
 
 export type DataSourceUpdateMode = "search" | "manualId";
 export type StartupPage = "home" | "libraries" | "collection";
+export const DEFAULT_LAUNCHER_PREFERRED_PATTERNS = ["_crack", "_cn", "chs"];
+export const DEFAULT_LAUNCHER_EXCLUDED_PATTERNS = ["delfile", "点击我更新"];
+
+function normalizeLauncherPatterns(patterns: readonly string[]): string[] {
+	return [
+		...new Set(patterns.map((pattern) => pattern.trim()).filter(Boolean)),
+	];
+}
+
 
 export interface GameFilterSortConfig {
 	gameFilterType: GameType;
@@ -85,6 +94,10 @@ export interface AppState {
 	// 关闭应用时的提醒设置，skip=不再提醒，行为为 'hide' 或 'close'
 	skipCloseRemind: boolean;
 	defaultCloseAction: "hide" | "close";
+	launcherPreferredPatterns: string[];
+	launcherExcludedPatterns: string[];
+	setLauncherPreferredPatterns: (patterns: string[]) => void;
+	setLauncherExcludedPatterns: (patterns: string[]) => void;
 	themePrimaryColor: string;
 	setThemePrimaryColor: (color: string) => void;
 	// 设置不再提醒及默认关闭行为
@@ -255,6 +268,12 @@ export const useStore = create<AppState>()(
 			// 关闭应用时的提醒设置，skip=不再提醒，行为为 'hide' 或 'close'
 			skipCloseRemind: false,
 			defaultCloseAction: "hide",
+			launcherPreferredPatterns: [...DEFAULT_LAUNCHER_PREFERRED_PATTERNS],
+			launcherExcludedPatterns: [...DEFAULT_LAUNCHER_EXCLUDED_PATTERNS],
+			setLauncherPreferredPatterns: (patterns) =>
+				set({ launcherPreferredPatterns: normalizeLauncherPatterns(patterns) }),
+			setLauncherExcludedPatterns: (patterns) =>
+				set({ launcherExcludedPatterns: normalizeLauncherPatterns(patterns) }),
 			themePrimaryColor: "#496c78",
 			setThemePrimaryColor: (color) =>
 				set({
@@ -631,6 +650,8 @@ export const useStore = create<AppState>()(
 				// 关闭应用相关
 				skipCloseRemind: state.skipCloseRemind,
 				defaultCloseAction: state.defaultCloseAction,
+				launcherPreferredPatterns: state.launcherPreferredPatterns,
+				launcherExcludedPatterns: state.launcherExcludedPatterns,
 				themePrimaryColor: state.themePrimaryColor,
 				autoBackupOnExit: state.autoBackupOnExit,
 				scheduledBackupEnabled: state.scheduledBackupEnabled,

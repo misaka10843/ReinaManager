@@ -100,6 +100,18 @@ export interface BulkImportPathResult {
 }
 
 class FileService extends BaseService {
+	async scanExecutableCandidates(
+		path: string,
+		preferredPatterns: string[] = [],
+		excludedPatterns: string[] = [],
+	): Promise<string[]> {
+		return this.invoke<string[]>("scan_executable_candidates_for_path", {
+			path,
+			preferredPatterns,
+			excludedPatterns,
+		});
+	}
+
 	/** 解析用户配置路径并读取当前文件系统状态。 */
 	async inspectUserPath(path: string): Promise<UserPathInspection> {
 		return this.invoke<UserPathInspection>("inspect_user_path", { path });
@@ -123,9 +135,15 @@ class FileService extends BaseService {
 	}
 
 	/** 将混合拖拽路径解析为批量导入候选，并逐项返回跳过原因。 */
-	async resolveBulkImportPaths(paths: string[]): Promise<BulkImportPathResult> {
+	async resolveBulkImportPaths(
+		paths: string[],
+		preferredPatterns: string[] = [],
+		excludedPatterns: string[] = [],
+	): Promise<BulkImportPathResult> {
 		return this.invoke<BulkImportPathResult>("resolve_bulk_import_paths", {
 			paths,
+			preferredPatterns,
+			excludedPatterns,
 		});
 	}
 
@@ -137,12 +155,16 @@ class FileService extends BaseService {
 		maxDepth: number,
 		scanMode: GameDirectoryScanMode,
 		scanExecutables: boolean,
+		preferredPatterns: string[] = [],
+		excludedPatterns: string[] = [],
 	): Promise<ScanResult[]> {
 		return this.invoke<ScanResult[]>("scan_directory_for_games", {
 			path,
 			maxDepth,
 			scanMode,
 			scanExecutables,
+			preferredPatterns,
+			excludedPatterns,
 		});
 	}
 
@@ -158,9 +180,13 @@ class FileService extends BaseService {
 	 */
 	async resolveDroppedLocalPath(
 		droppedPath: string,
+		preferredPatterns: string[] = [],
+		excludedPatterns: string[] = [],
 	): Promise<DroppedLocalPathResult> {
 		return this.invoke<DroppedLocalPathResult>("resolve_dropped_local_path", {
 			droppedPath,
+			preferredPatterns,
+			excludedPatterns,
 		});
 	}
 

@@ -5,7 +5,7 @@ import {
 import type { SourceType } from "@/types";
 import { DefaultGroup } from "@/types/collection";
 
-export const APP_STORE_VERSION = 4;
+export const APP_STORE_VERSION = 5;
 
 type AppStorePersistedState = {
 	mixedEnabledSources?: SourceType[];

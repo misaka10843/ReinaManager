@@ -61,7 +61,8 @@
 			"singleSourceMode": "单源",
 			"singleTab": "单个添加",
 			"timeout": "请求超时，请稍后重试",
-			"viewMore": "查看更多"
+			"viewMore": "查看更多",
+			"chooseLauncher": "选择优先启动程序"
 		},
 		"AlertBox": {
 			"cancel": "取消",
@@ -1075,6 +1076,12 @@
 				"saveError": "VNDB Token 保存失败",
 				"saveSuccess": "VNDB Token 保存成功",
 				"userId": "用户 ID: {{id}}"
+			},
+			"launcherRules": {
+				"description": "每行填写一个文件名关键词；优先规则按顺序生效，排除规则会从候选中移除匹配项。",
+				"excluded": "排除关键词",
+				"preferred": "优先匹配关键词",
+				"title": "导入启动程序规则"
 			}
 		},
 		"Stats": {

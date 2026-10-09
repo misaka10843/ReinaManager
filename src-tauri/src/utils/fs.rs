@@ -1,3 +1,4 @@
+use crate::game::scan::scan_executable_candidates_with_rules;
 #[cfg(target_os = "windows")]
 use crate::utils::command_ext::CommandGuiExt;
 
@@ -224,6 +225,8 @@ pub async fn open_savedata_location(save_path: String) -> Result<(), String> {
 #[command]
 pub async fn resolve_dropped_local_path(
     dropped_path: String,
+    preferred_patterns: Vec<String>,
+    excluded_patterns: Vec<String>,
 ) -> Result<DroppedLocalPathResult, String> {
     tokio::task::spawn_blocking(move || {
         let path = PathBuf::from(&dropped_path);
@@ -234,39 +237,23 @@ pub async fn resolve_dropped_local_path(
             fs::metadata(&path).map_err(|e| format!("无法读取路径 '{}': {}", dropped_path, e))?;
 
         if metadata.is_dir() {
-            let mut executable_count = 0;
-            let mut first_executable = None;
-            for entry in fs::read_dir(&path).map_err(|e| format!("读取目录失败: {}", e))? {
-                let entry = entry.map_err(|e| format!("读取目录项失败: {}", e))?;
-                let entry_path = entry.path();
-                if entry_path.is_file() && is_supported_local_executable(&entry_path) {
-                    executable_count += 1;
-                    if first_executable.is_none() {
-                        first_executable = Some(entry_path.to_string_lossy().to_string());
-                    }
-                    if executable_count == 2 {
-                        break;
-                    }
-                }
-            }
-
-            return match executable_count {
-                0 => Ok(DroppedLocalPathResult {
-                    kind: DroppedLocalPathKind::NoExecutable,
-                    path: None,
-                    directory: Some(path.to_string_lossy().into_owned()),
-                }),
-                1 => Ok(DroppedLocalPathResult {
-                    kind: DroppedLocalPathKind::SingleExecutable,
-                    path: first_executable,
-                    directory: Some(path.to_string_lossy().into_owned()),
-                }),
-                _ => Ok(DroppedLocalPathResult {
-                    kind: DroppedLocalPathKind::MultipleExecutables,
-                    path: None,
-                    directory: Some(path.to_string_lossy().into_owned()),
-                }),
-            };
+            let executables = scan_executable_candidates_with_rules(
+                &path,
+                &preferred_patterns,
+                &excluded_patterns,
+            )?;
+            let first = executables
+                .first()
+                .map(|executable| path.join(executable).to_string_lossy().into_owned());
+            return Ok(DroppedLocalPathResult {
+                kind: match executables.len() {
+                    0 => DroppedLocalPathKind::NoExecutable,
+                    1 => DroppedLocalPathKind::SingleExecutable,
+                    _ => DroppedLocalPathKind::MultipleExecutables,
+                },
+                path: if executables.len() == 1 { first } else { None },
+                directory: Some(path.to_string_lossy().into_owned()),
+            });
         }
 
         if metadata.is_file() && is_supported_local_executable(&path) {

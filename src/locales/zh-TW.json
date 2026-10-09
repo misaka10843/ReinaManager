@@ -61,7 +61,8 @@
 			"singleSourceMode": "單源",
 			"singleTab": "單個添加",
 			"timeout": "請求逾時，請稍後再試",
-			"viewMore": "查看更多"
+			"viewMore": "查看更多",
+			"chooseLauncher": "選擇優先啟動程式"
 		},
 		"AlertBox": {
 			"cancel": "取消",
@@ -1075,6 +1076,12 @@
 				"saveError": "VNDB Token 儲存失敗",
 				"saveSuccess": "VNDB Token 儲存成功",
 				"userId": "使用者 ID: {{id}}"
+			},
+			"launcherRules": {
+				"description": "每行輸入一個檔名關鍵字；優先規則依序生效，排除規則會移除符合的候選項。",
+				"excluded": "排除關鍵字",
+				"preferred": "優先比對關鍵字",
+				"title": "匯入啟動程式規則"
 			}
 		},
 		"Stats": {

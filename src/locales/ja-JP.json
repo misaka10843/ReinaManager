@@ -61,7 +61,8 @@
 			"singleSourceMode": "単一ソース",
 			"singleTab": "単体追加",
 			"timeout": "タイムアウトしました。しばらくしてから再試行してください",
-			"viewMore": "もっと見る"
+			"viewMore": "もっと見る",
+			"chooseLauncher": "優先する起動プログラムを選択"
 		},
 		"AlertBox": {
 			"cancel": "キャンセル",
@@ -1075,6 +1076,12 @@
 				"saveError": "VNDB Token の保存に失敗しました",
 				"saveSuccess": "VNDB Token を保存しました",
 				"userId": "ユーザー ID: {{id}}"
+			},
+			"launcherRules": {
+				"description": "1 行にファイル名のキーワードを入力します。優先ルールは上から適用され、除外ルールに一致する候補は削除されます。",
+				"excluded": "除外キーワード",
+				"preferred": "優先キーワード",
+				"title": "インポート時の起動ファイル設定"
 			}
 		},
 		"Stats": {

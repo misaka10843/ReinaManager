@@ -207,6 +207,64 @@ export const ThemeColorSettings = () => {
 	);
 };
 
+const launcherPatternsToText = (patterns: string[]) => patterns.join("\n");
+const parseLauncherPatterns = (value: string) => value.split(/[\n,，]/);
+
+export const LauncherRulesSettings = () => {
+	const { t } = useTranslation();
+	const { preferred, excluded, setPreferred, setExcluded } = useStore(
+		useShallow((state) => ({
+			preferred: state.launcherPreferredPatterns,
+			excluded: state.launcherExcludedPatterns,
+			setPreferred: state.setLauncherPreferredPatterns,
+			setExcluded: state.setLauncherExcludedPatterns,
+		})),
+	);
+	const [preferredDraft, setPreferredDraft] = useState(
+		launcherPatternsToText(preferred),
+	);
+	const [excludedDraft, setExcludedDraft] = useState(
+		launcherPatternsToText(excluded),
+	);
+	useEffect(
+		() => setPreferredDraft(launcherPatternsToText(preferred)),
+		[preferred],
+	);
+	useEffect(
+		() => setExcludedDraft(launcherPatternsToText(excluded)),
+		[excluded],
+	);
+
+	return (
+		<SettingsGroup
+			title={t("pages.Settings.launcherRules.title", "导入启动程序规则")}
+			description={t(
+				"pages.Settings.launcherRules.description",
+				"每行填写一个文件名关键词；优先规则按顺序生效，排除规则会从候选中移除匹配项。",
+			)}
+		>
+			<TextField
+				fullWidth
+				multiline
+				minRows={2}
+				label={t("pages.Settings.launcherRules.preferred", "优先匹配关键词")}
+				value={preferredDraft}
+				onChange={(event) => setPreferredDraft(event.target.value)}
+				onBlur={() => setPreferred(parseLauncherPatterns(preferredDraft))}
+			/>
+			<TextField
+				fullWidth
+				multiline
+				minRows={2}
+				label={t("pages.Settings.launcherRules.excluded", "排除关键词")}
+				value={excludedDraft}
+				onChange={(event) => setExcludedDraft(event.target.value)}
+				onBlur={() => setExcluded(parseLauncherPatterns(excludedDraft))}
+			/>
+		</SettingsGroup>
+	);
+};
+
 export const NsfwSettings = () => {
 	const { t } = useTranslation();
 	const { nsfwFilter, setNsfwFilter, nsfwCoverReplace, setNsfwCoverReplace } =
