@@ -1,6 +1,9 @@
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
+import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
+import CropSquareRoundedIcon from "@mui/icons-material/CropSquareRounded";
 import DownloadRoundedIcon from "@mui/icons-material/DownloadRounded";
 import KeyboardArrowUpRoundedIcon from "@mui/icons-material/KeyboardArrowUpRounded";
+import MinimizeRoundedIcon from "@mui/icons-material/MinimizeRounded";
 import { Avatar, Box, Fab, Fade, Link } from "@mui/material";
 import AppBar from "@mui/material/AppBar";
 import Badge from "@mui/material/Badge";
@@ -10,6 +13,8 @@ import Stack from "@mui/material/Stack";
 import Toolbar from "@mui/material/Toolbar";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
+import { isTauri } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import { DashboardLayout } from "@toolpad/core/DashboardLayout";
 import { PageContainer } from "@toolpad/core/PageContainer";
 import { useEffect, useState } from "react";
@@ -219,6 +224,7 @@ const CustomAppTitle = () => {
 	const isLibraries = location.pathname === "/libraries";
 	const currentGroupId = useStore((state) => state.currentGroupId);
 	const selectedCategory = useStore((state) => state.selectedCategory);
+	const immersiveTitlebar = useStore((state) => state.immersiveTitlebar);
 	const collectionTitleMode = getCollectionTitleMode(
 		location.pathname,
 		currentGroupId,
@@ -236,6 +242,7 @@ const CustomAppTitle = () => {
 			alignItems="center"
 			spacing={2}
 			className="select-none"
+			{...(immersiveTitlebar ? { "data-tauri-drag-region": true } : {})}
 		>
 			<Tooltip title={t("components.AppLayout.back", "返回")} enterDelay={1000}>
 				<span>
@@ -271,44 +278,85 @@ const CustomAppTitle = () => {
 	);
 };
 
-const Header = () => (
-	<AppBar
-		color="inherit"
-		position="absolute"
-		className="print:hidden border-0 border-b border-solid shadow-none"
-		sx={{
-			borderColor: "divider",
-			zIndex: (theme) => theme.zIndex.drawer + 1,
-		}}
-	>
-		<Toolbar
-			className="bg-inherit"
+const Header = () => {
+	const immersiveTitlebar = useStore((state) => state.immersiveTitlebar);
+	const { t } = useTranslation();
+	useEffect(() => {
+		if (!isTauri()) return;
+		void getCurrentWindow()
+			.setDecorations(!immersiveTitlebar)
+			.catch((error) => {
+				console.warn("切换沉浸式标题栏失败:", error);
+			});
+	}, [immersiveTitlebar]);
+	return (
+		<AppBar
+			color="inherit"
+			position="absolute"
+			className="print:hidden border-0 border-b border-solid shadow-none"
 			sx={{
-				mx: {
-					xs: -0.75,
-					sm: -1,
-				},
+				borderColor: "divider",
+				zIndex: (theme) => theme.zIndex.drawer + 1,
 			}}
 		>
-			<Stack
-				direction="row"
-				justifyContent="space-between"
-				alignItems="center"
-				className="w-full flex-wrap"
+			<Toolbar
+				className="bg-inherit"
+				sx={{
+					mx: {
+						xs: -0.75,
+						sm: -1,
+					},
+				}}
 			>
-				<CustomAppTitle />
 				<Stack
 					direction="row"
+					justifyContent="space-between"
 					alignItems="center"
-					spacing={1}
-					className="ml-auto"
+					className="w-full flex-wrap"
 				>
-					<Toolbars />
+					<CustomAppTitle />
+					<Stack
+						direction="row"
+						alignItems="center"
+						spacing={1}
+						className="ml-auto"
+					>
+						<Toolbars />
+					</Stack>
+					{immersiveTitlebar && isTauri() && (
+						<Stack
+							direction="row"
+							alignItems="center"
+							className="ml-2 shrink-0"
+						>
+							<IconButton
+								aria-label={t("components.AppLayout.minimize", "最小化")}
+								size="small"
+								onClick={() => void getCurrentWindow().minimize()}
+							>
+								<MinimizeRoundedIcon fontSize="small" />
+							</IconButton>
+							<IconButton
+								aria-label={t("components.AppLayout.maximize", "最大化")}
+								size="small"
+								onClick={() => void getCurrentWindow().toggleMaximize()}
+							>
+								<CropSquareRoundedIcon fontSize="small" />
+							</IconButton>
+							<IconButton
+								aria-label={t("components.AppLayout.close", "关闭")}
+								size="small"
+								onClick={() => void getCurrentWindow().close()}
+							>
+								<CloseRoundedIcon fontSize="small" />
+							</IconButton>
+						</Stack>
+					)}
 				</Stack>
-			</Stack>
-		</Toolbar>
-	</AppBar>
-);
+			</Toolbar>
+		</AppBar>
+	);
+};
 
 const BackToTopButton = () => {
 	const { t } = useTranslation();

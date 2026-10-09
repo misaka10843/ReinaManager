@@ -79,7 +79,10 @@
 		},
 		"AppLayout": {
 			"back": "返回",
-			"backToTop": "返回頂部"
+			"backToTop": "返回頂部",
+			"close": "關閉",
+			"maximize": "最大化",
+			"minimize": "最小化"
 		},
 		"BulkImportModal": {
 			"actions": "操作",
@@ -1082,7 +1085,9 @@
 				"excluded": "排除關鍵字",
 				"preferred": "優先比對關鍵字",
 				"title": "匯入啟動程式規則"
-			}
+			},
+			"immersiveTitlebar": "沉浸式標題列",
+			"immersiveTitlebarDescription": "隱藏系統標題列並使用應用程式內的視窗控制按鈕。"
 		},
 		"Stats": {
 			"activeDays": "活躍天數",

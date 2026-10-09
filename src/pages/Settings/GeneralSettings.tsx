@@ -135,6 +135,31 @@ export const InterfaceZoomSettings = () => {
 	);
 };
 
+export const ImmersiveTitlebarSettings = () => {
+	const { t } = useTranslation();
+	const { immersiveTitlebar, setImmersiveTitlebar } = useStore(
+		useShallow((state) => ({
+			immersiveTitlebar: state.immersiveTitlebar,
+			setImmersiveTitlebar: state.setImmersiveTitlebar,
+		})),
+	);
+	return (
+		<SettingsItem
+			title={t("pages.Settings.immersiveTitlebar", "沉浸式标题栏")}
+			description={t(
+				"pages.Settings.immersiveTitlebarDescription",
+				"隐藏系统标题栏并使用应用内窗口控制按钮。",
+			)}
+		>
+			<Switch
+				checked={immersiveTitlebar}
+				onChange={(event) => setImmersiveTitlebar(event.target.checked)}
+				color="primary"
+			/>
+		</SettingsItem>
+	);
+};
+
 const THEME_COLOR_PRESETS = [
 	{ name: "teal", color: "#496c78" },
 	{ name: "blue", color: "#3568c0" },

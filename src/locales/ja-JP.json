@@ -79,7 +79,10 @@
 		},
 		"AppLayout": {
 			"back": "戻る",
-			"backToTop": "トップへ戻る"
+			"backToTop": "トップへ戻る",
+			"close": "閉じる",
+			"maximize": "最大化",
+			"minimize": "最小化"
 		},
 		"BulkImportModal": {
 			"actions": "操作",
@@ -1082,7 +1085,9 @@
 				"excluded": "除外キーワード",
 				"preferred": "優先キーワード",
 				"title": "インポート時の起動ファイル設定"
-			}
+			},
+			"immersiveTitlebar": "イマーシブタイトルバー",
+			"immersiveTitlebarDescription": "システムタイトルバーを非表示にし、アプリ内のウィンドウ操作ボタンを使用します。"
 		},
 		"Stats": {
 			"activeDays": "アクティブ日数",

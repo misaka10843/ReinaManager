@@ -79,7 +79,10 @@
 		},
 		"AppLayout": {
 			"back": "Back",
-			"backToTop": "Back to top"
+			"backToTop": "Back to top",
+			"close": "Close",
+			"maximize": "Maximize",
+			"minimize": "Minimize"
 		},
 		"BulkImportModal": {
 			"actions": "Actions",
@@ -1104,7 +1107,9 @@
 				"excluded": "Excluded keywords",
 				"preferred": "Preferred keywords",
 				"title": "Import launcher rules"
-			}
+			},
+			"immersiveTitlebar": "Immersive title bar",
+			"immersiveTitlebarDescription": "Hide the system title bar and use the in-app window controls."
 		},
 		"Stats": {
 			"activeDays": "Active days",

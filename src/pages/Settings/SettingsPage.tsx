@@ -20,6 +20,7 @@ import {
 } from "./DataSourceSettings";
 import {
 	CardClickModeSettings,
+	ImmersiveTitlebarSettings,
 	LauncherRulesSettings,
 	ThemeColorSettings,
 	InterfaceZoomSettings,
@@ -138,6 +139,7 @@ export const Settings: React.FC = () => {
 						<ThemeColorSettings />
 						<SettingsDivider />
 						<LauncherRulesSettings />
+						{isTauri() && <ImmersiveTitlebarSettings />}
 						{isTauri() && isWindowsPlatform && (
 							<>
 								<SettingsDivider />

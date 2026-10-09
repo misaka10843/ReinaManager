@@ -94,6 +94,8 @@ export interface AppState {
 	// 关闭应用时的提醒设置，skip=不再提醒，行为为 'hide' 或 'close'
 	skipCloseRemind: boolean;
 	defaultCloseAction: "hide" | "close";
+	immersiveTitlebar: boolean;
+	setImmersiveTitlebar: (enabled: boolean) => void;
 	launcherPreferredPatterns: string[];
 	launcherExcludedPatterns: string[];
 	setLauncherPreferredPatterns: (patterns: string[]) => void;
@@ -268,6 +270,9 @@ export const useStore = create<AppState>()(
 			// 关闭应用时的提醒设置，skip=不再提醒，行为为 'hide' 或 'close'
 			skipCloseRemind: false,
 			defaultCloseAction: "hide",
+			immersiveTitlebar: false,
+			setImmersiveTitlebar: (enabled: boolean) =>
+				set({ immersiveTitlebar: enabled }),
 			launcherPreferredPatterns: [...DEFAULT_LAUNCHER_PREFERRED_PATTERNS],
 			launcherExcludedPatterns: [...DEFAULT_LAUNCHER_EXCLUDED_PATTERNS],
 			setLauncherPreferredPatterns: (patterns) =>
@@ -650,6 +655,7 @@ export const useStore = create<AppState>()(
 				// 关闭应用相关
 				skipCloseRemind: state.skipCloseRemind,
 				defaultCloseAction: state.defaultCloseAction,
+				immersiveTitlebar: state.immersiveTitlebar,
 				launcherPreferredPatterns: state.launcherPreferredPatterns,
 				launcherExcludedPatterns: state.launcherExcludedPatterns,
 				themePrimaryColor: state.themePrimaryColor,

@@ -79,7 +79,10 @@
 		},
 		"AppLayout": {
 			"back": "返回",
-			"backToTop": "返回顶部"
+			"backToTop": "返回顶部",
+			"close": "关闭",
+			"maximize": "最大化",
+			"minimize": "最小化"
 		},
 		"BulkImportModal": {
 			"actions": "操作",
@@ -1082,7 +1085,9 @@
 				"excluded": "排除关键词",
 				"preferred": "优先匹配关键词",
 				"title": "导入启动程序规则"
-			}
+			},
+			"immersiveTitlebar": "沉浸式标题栏",
+			"immersiveTitlebarDescription": "隐藏系统标题栏并使用应用内窗口控制按钮。"
 		},
 		"Stats": {
 			"activeDays": "活跃天数",
