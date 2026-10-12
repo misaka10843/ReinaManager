@@ -1,150 +1,106 @@
-# 元数据适配架构
+# 元数据适配与合并
 
-本文档描述外部游戏元数据的注册、请求、标准化和展示合并边界。
+本页描述外部元数据的获取、来源身份、展示合并、更新保护和云端同步。持久化与缓存见 [`game-library.md`](game-library.md)，原生安装与 OAuth 见 [`backend.md`](backend.md)。
 
-## 模块地图
+## 职责边界
 
-```text
-src/metadata/
-├── sourceAdapter.ts       Adapter 接口、请求上下文与绑定器
-├── sourceRegistry.ts      Adapter 注册表和查询入口
-├── constants.ts           注册、搜索和混合源常量
-├── sourceCandidate.ts     搜索候选的统一中间形态
-├── sourceRecord.ts        聚合 `sources` 记录的读取工具
-├── sourceAutoResolve.ts   单源自动匹配
-├── adapters/              各数据源差异
-├── api/                   HTTP 客户端、限流与各源 API
-└── data/                  搜索编排、数据转换和展示合并
-```
+- `metadata/adapters`：封装单源的 ID 校验、外链、搜索、详情补全、展示投影和最终清洗。
+- `GameMetadataSession`：绑定请求上下文，编排单源、Mixed 和关联增强，返回草稿及失败来源。
+- `metadata/data/metadata.ts`：将候选转为新增或更新参数；更新时读取已有原始 `sources`，决定写入与保留。
+- `displayMergeRules.ts`：按显示源、字段优先级和自定义覆盖生成展示字段。
+- `services/requestContext.ts` 与 `metadataAuth.ts`：组装设置、取消信号及认证入口；认证只处理实际请求的来源。
 
-当前注册源由 `SOURCE_ADAPTERS` 决定，包括 BGM、VNDB、YMGal、Kungal、DLsite、ErogameScape 和 Hikarinagi。不在文档中复制派生源列表；以 `sourceRegistry.ts` 和 `constants.ts` 为准。
+Adapter 不负责跨源合并、数据库写入或 UI。Session 不读取已有游戏，也不决定旧来源的删除策略；失败来源属于执行结果，不写入来源 JSON。
 
-### 废弃源与历史兼容
+来源类型定义在 `src/types`，可搜索集合由 `constants.ts` 派生，Adapter 在 `sourceRegistry.ts` 注册。注册、在线可用性与历史展示分别处理：废弃来源停止新请求，已有数据仍可展示。有效外部 ID 用于请求、去重和外链；保存的完整数据可在缺少 ID 时参与展示。
 
-`constants.ts` 的 `DEPRECATED_SOURCE_KEYS` 将废弃源与在线源分开。注册表仍保留只读 Adapter，
-`SEARCHABLE_SOURCE_KEYS` 和 `MIXED_SOURCE_KEYS` 则只包含在线源。不要用在线源集合过滤历史展示、
-封面、简介或外链。详情页允许切换到已保存的废弃源，但不能搜索、修改其请求 ID 或刷新。
+Kungal 的来源键为 `kun`，网络提供者是 NextMoe，API 实现在 `api/nextmoe.ts`；`nextmoe` 不是独立元数据来源。
 
-旧 `kun` 为 Kungal v1，只保留历史类型、显示字段、ID 校验和旧外链；旧网络实现已经移除。
-服务层及旧 Adapter 均拒绝在线操作，mixed 请求过滤它。元数据更新 Payload 不覆盖或删除废弃源，
-避免刷新其他源时丢失旧数据及封面引用。
+## 数据与身份
 
-持久化的 Kungal 单源和 mixed 偏好仍保留，不发起请求。单源选择中的旧值标为已废弃；
-mixed 设置只显示在线源，不展示废弃源的勾选项，数量约束也只计算在线源。
-旧偏好不占名额，停用后只有一个在线源的存量配置仍可使用该源。
-当前不迁移源偏好，不改写游戏的旧 `kun` ID、数据或封面来源。
-
-## Adapter 边界
-
-`MetadataSourceAdapter<TData>` 将每个数据源统一为以下能力：
-
-- 描述源标识、显示名和图标。
-- 校验外部 ID，生成外部页面 URL。
-- 按 ID 获取 `GameMetadataDraft`。
-- 按名称搜索 `SourceCandidate<TData>[]`。
-- 必要时在用户选中后继续补全。
-- 将源私有数据投影为统一展示字段。
-
-Adapter 只处理本数据源的差异。混合搜索、优先级合并、写入本地数据库和 UI 不属于 Adapter。
-
-## 请求上下文
-
-`MetadataRequestContext` 携带一次元数据会话共享的信息：代理、取消信号、剧透等级和认证 token。`bindSourceAdapters` 将该上下文绑定到 adapters，业务流只需传入 `limit` 或 `enrichCrossSource` 等单次选项。
-
-请求上下文由 `src/services/requestContext.ts` 与认证 service 组装，不要在页面或 Adapter 中重复读取全局设置。
-
-## 数据形态
-
-| 形态 | 职责 |
+| 形态 | 用途 |
 | --- | --- |
-| 源 API 原始类型 | Adapter 内部解析和源特有字段 |
-| `SourceCandidate<TData>` | 统一搜索候选，同时保留原始源数据和标准展示字段 |
-| `GameMetadataDraft` | 可供新增/更新流程使用的标准化草稿 |
-| `GameSourceRecord` | 存入 `game_sources` 聚合的外部 ID 和 JSON 数据 |
-| `GameData` | 按当前源、混合规则和自定义覆盖展平的 UI 数据 |
+| `SourceCandidate` | 搜索候选，含来源私有数据、统一预览和关联身份 |
+| `GameMetadataDraft` | 本次采用的来源记录与自定义数据 |
+| `MetadataFetchResult` | 草稿及失败来源 |
+| `GameSourceRecord` | 持久化到 `game_sources` 的来源、外部 ID 和 JSON 数据 |
 
-## 主要数据流
+来源响应可提供其它站点的作品身份。身份按真实来源键存储；只有 ID 的记录使用 `data=null`，可用于去重、外链、同步和后续获取，不能计为完整元数据。Mixed 表示同时采用多个来源的完整元数据。
 
-### 单源搜索
+同源多个关联 ID 有歧义时舍弃关联；明确采用的完整候选优先于关联身份。关联字段可能受服务端能力和权限限制而缺失，缺失不能作为删除旧身份的依据；各源 ID 校验由 Adapter 负责。
 
-```text
-UI → GameMetadataSession
-→ bound adapter.searchByName 或 fetchById
-→ SourceCandidate
-→ adapter.enrichOnSelect（可选）
-→ GameMetadataDraft
-```
+各源数据由 Adapter 清洗，Session 在最终采用的来源身份确定后完成组合清洗。去除上游转译标签时须依据实际采用的完整来源，身份冲突时保留；清洗期间的标签归属信息不入库。源特有字段规则见 `metadata/api`。
 
-### 混合搜索
+## 获取路径
 
 ```text
-UI → GameMetadataSession
-→ 从 MIXED_SOURCE_KEYS 选取启用 adapters
-→ 并行搜索，保留每个源的成功/失败结果
-→ 用户选择或自动解析
-→ 必要时补全所选候选
-→ 组合 GameMetadataDraft
+UI / 批量匹配 → GameMetadataSession → 已绑定 Adapter
+→ 搜索候选 / 按 ID 获取 → 选中后补详情
+→ 来源组合与最终清洗 → MetadataFetchResult
 ```
 
-单个源失败不应立即使混合搜索失败；只有所有已尝试源都失败时才向上抛出整体错误。
+### 单源与关联增强
 
-### 下载安装元数据
+单源结果只保留 Mixed 设置中启用来源的关联身份，不依赖增强开关；主源自身不受该选择限制。增强按关联 ID 获取这些来源的元数据，直接调用目标 Adapter，避免递归增强。
 
-安装任务进入 `matching_metadata` 后，由 `InstallRequestHandler` 获取元数据并交回后端导入。
-请求来源取安装协议携带的 BGM、VNDB、Hikarinagi ID 与匹配开始时 `mixedEnabledSources` 的交集；
-不会按名称补查未携带 ID 的来源。Hikarinagi 还要求已配置 access token，必要时先刷新再请求；
-BGM、VNDB 不以登录状态作为请求开关。没有可请求来源时，使用安装标题创建自定义条目。
+主源始终保留完整数据，增强失败不影响成功结果。请求数量限制不裁剪已保存数据；默认来源与数量限制见 [`constants.ts`](../../src/metadata/constants.ts)。整个结果交由用户采用，获取层不会因本地旧 ID 不同而过滤它。
 
-### 展示合并
+本地批量匹配复用 `searchBestMatchResult` 和上述增强规则；身份冲突及导入策略由游戏库流程处理。
 
-```text
-FullGameData.sources
-→ sourceRecord 建立源映射
-→ 各 Adapter.toDisplayFields
-→ displayMergeRules 按字段优先级合并
-→ custom_data 覆盖/补充
-→ GameData
-```
+### Mixed
+
+- 名称搜索并行获取各源候选，确认时只补全勾选候选。未勾选来源不能通过另一候选的关联身份补回。
+- 按 ID 获取只请求填写且启用的来源，不按名称补搜，也不请求未填写来源。失败来源的关联身份不能替代用户填写的不同 ID。
+- 普通单源失败保留其它结果并记录失败来源；全部已尝试来源失败时抛整体错误。需要中止或交由认证流程处理的错误向上抛出，分类规则见 [`api/mixed.ts`](../../src/metadata/api/mixed.ts)。
+
+安装元数据匹配复用按 ID 获取，请求范围由协议中的来源身份、启用来源与鉴权能力确定。没有可请求来源时，按安装标题创建自定义游戏。
 
 ### 云端收藏导入
 
+`services/cloudCollectionImport.ts` 将云端收藏转为候选并补全详情。Kungal 与 Hikarinagi 复用 Session 的单源增强偏好和 Mixed 来源设置；主源详情与关联身份先参与本地库和本批次去重，未重复条目才执行增强。增强失败仍保留有效关联身份，增强后的间接关联与最终入库也参与去重；重复条目跳过，不合并到已有游戏。
+
+详情失败的条目不以预览数据入库。个人收藏状态与评价随完整游戏写入，复用批量新增路径，本地启动路径留空。认证、取消和限速沿用公共请求边界。
+
+### 云端状态与评价
+
+[`services/cloudPlayStatus`](../../src/services/cloudPlayStatus) 按来源身份、同步开关和账号权限读写游玩状态。本地状态写入成功后推送云端，云端失败返回来源列表并提示，不回滚本地结果。批量读取复用一次请求上下文中的状态映射。
+
+[`services/cloudUserReview.ts`](../../src/services/cloudUserReview.ts) 按用户选择推送评分和评论，各来源独立返回结果；本地评价保存与云端推送是独立操作。
+
+## 更新保护
+
+`buildMetadataUpdatePayload` 依据本次获取结果和已有原始 `sources` 生成写入计划：
+
+- 完整结果写入 `upsert_sources`，可以替换旧作品 ID。
+- 关联身份仅补本地缺失来源，不覆盖已有身份或完整数据。
+- 未出现在采用结果中的旧完整来源写入 `remove_sources`；失败或废弃来源保留。
+- 旧 ID-only 记录不因关联缺失或歧义而删除。
+- 日期由后端按实际写入、删除和保留的来源重算。
+
+Mixed 的取消勾选或清空 ID 会排除该来源；单源增强则将整份结果的关联身份交给上述保护规则。写入计划须读取 `FullGameData.sources`，不能从展平后的 `GameData` 反推。
+
+## 展示与网络
+
 ```text
-BGM / VNDB / Hikarinagi 用户收藏
-→ 统一收藏候选（来源 ID、状态、评分、评论、预览）
-→ 按同源 ID 排除本地已有游戏
-→ 获取完整 GameMetadataDraft
-→ 批量写入 localpath 为空的云端游戏
+FullGameData.sources → sourceRecord → Adapter.toDisplayFields
+→ displayMergeRules → custom_data 覆盖 / 补充 → GameData
 ```
 
-- BGM 收藏列表只用于预览和个人数据，选中后逐项读取完整条目详情。
-- VNDB 在 `ulist` 中显式选择个人字段及嵌套 `vn` 详情，同一次分页请求完成转换。
-- Hikarinagi 状态列表用于预览和个人数据，选中后逐项读取完整 Galgame 详情。
-- 收藏状态写入 `games.clear`，有效评分和非空评论写入 `custom_data`。详情失败的项目不使用预览数据降级入库。
-- 导入任务复用批量新增、身份去重和游戏缓存 patch；外部 API 请求统一沿用请求上下文、取消信号与限速队列。
+字段优先级集中在 `displayMergeRules.ts`；涉及基础字段优先级时，前后端 `MIXED_BASIC_SOURCE_PRIORITY` 必须一致。
 
-字段优先级属于 `displayMergeRules.ts`，不应复制到 Adapter 或 UI。
+`metadata/api/http.ts` 统一处理 Tauri HTTP、代理与局域网绕过、取消、按源限流、退避及错误分类。源特有请求参数和限速策略见 [`metadata/api`](../../src/metadata/api)。
 
-## HTTP 边界
+认证流程位于 `services/oauth` 与 Rust `oauth`，凭据持久化在 SQLite。刷新与凭据轮换须协调并发；取消登录或退出后，迟到的授权结果不能重新写回。NextMoe 用户数据请求必须保持登录身份，不能退回匿名。各源鉴权和匿名回退策略由 `metadataAuth.ts` 与对应 API 实现维护。
 
-`src/metadata/api/http.ts` 统一使用 Tauri HTTP，并处理：
+## 修改入口
 
-- query 参数、JSON/文本响应与 HTTP 错误。
-- 原生请求默认不发送 `Origin`；调用方可通过请求头显式指定，头名称不区分大小写。移除默认来源依赖 Tauri HTTP 的 `unsafe-headers` feature。
-- 代理和局域网绕过。
-- `AbortSignal` 取消。
-- 按数据源限流、429 退避和稳定错误分类。
+| 修改内容 | 入口 |
+| --- | --- |
+| 来源能力与注册 | `src/types`、`metadata/adapters`、`sourceRegistry.ts`、`constants.ts` |
+| API 与源数据清洗 | `metadata/api`；新域名同步 Tauri capabilities |
+| 搜索、增强与最终清洗 | `gameMetadataService.ts`、`sourceCandidate.ts` |
+| 更新写入策略 | `metadata/data/metadata.ts` |
+| 展示与封面来源 | `displayMergeRules.ts`；封面来源同步 Rust `CustomData` 类型 |
+| 请求与认证 | `services/requestContext.ts`、`metadataAuth.ts`、`services/oauth`、Rust `oauth` |
 
-新 API 实现应复用该边界，不在 Adapter 里自建重复 HTTP 客户端。
-
-## 新增数据源
-
-1. 在 `src/types` 定义源数据类型，并扩展 `SourceType` / `SOURCE_TYPES`。
-2. 在 `metadata/api` 实现该源请求和响应转换；若请求新域名，同步更新 Tauri capability。
-3. 在 `metadata/adapters` 实现 `MetadataSourceAdapter<TData>`。
-4. 在 `sourceRegistry.ts` 注册 Adapter 并扩展 `SourceAdapterMap`。
-5. 根据产品行为调整 `constants.ts` 中的搜索/混合源集合和默认值。
-6. 若新源对字段合并有意义，更新 `displayMergeRules.ts`；参与基础字段合并时，同步前后端的 `MIXED_BASIC_SOURCE_PRIORITY`。
-7. 若新源可作为用户选定的封面来源，同步扩展 Rust `CustomData::cover_source` 使用的 `SourceType` 枚举。
-8. 更新跨层类型、国际化文案和相关设置 UI，再按 i18n Skill 验证。
-
-新源应尽可能通过 registry 自动进入通用流程。仅在有真实产品差异时，才在上层增加源特有分支。
+新增来源时沿用 Adapter 和 registry 的通用流程，跨层类型、权限、展示规则及设置需保持一致。

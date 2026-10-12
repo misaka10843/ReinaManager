@@ -1,108 +1,46 @@
 # 游戏库数据与缓存
 
-本文档只描述游戏数据从 SQLite 到 UI 的读写路径，以及 Query 与 `GameIndex` 的一致性约束。
+## 数据形态与读取
 
-## 核心数据形态
+| 形态 | 职责 |
+| --- | --- |
+| `FullGameData` | 后端完整聚合，保留来源记录与自定义覆盖；用于主缓存和编辑 |
+| `GameData` | 合并来源与覆盖后的展示数据；用于卡片、详情和搜索 |
+| `GameIndex` | 从完整聚合派生的查找、来源可用性和开发商分类索引 |
 
-| 形态 | 含义 | 主要用途 |
-| --- | --- | --- |
-| `FullGameData` | 后端返回的完整聚合，含 `sources` 和 `custom_data` | Query 主缓存、编辑、数据源更新 |
-| `GameData` | `getDisplayGameData` 将多源和自定义覆盖展平后的数据 | 卡片、详情、搜索和分类 UI |
-| `GameIndex` | 从 `FullGameData[]` 派生的 List、Map 和分类索引 | 按 ID 查找、源可用性、开发商虚拟分类 |
+完整游戏库保存在 `gameKeys.all`。[`useGameIndex`](../../src/hooks/features/games/useGameListFacade.ts) 将其派生为 `gameKeys.index()`，展示读取 `displayById`，需要原始来源的编辑读取 `rawById`；页面不重复执行展示转换，也不维护独立的详情事实缓存。
 
-`GameIndex` 同时保存 `rawList/rawById`、`displayList/displayById`、ID、数据源可用性和开发商索引。业务代码应按需选择 raw 或 display，不要在组件中重复转换。
+列表入口为同文件中的 `useGameListFacade`：后端 `find_game_ids` 负责基础类型筛选和排序，只返回 ID；前端从索引组装展示数据，再应用作用域、游玩状态、标签、NSFW 和搜索过滤。切换排序不重新传输完整聚合。排序查询 key 包含语言，避免沿用另一语言的名称顺序。
 
-## Query key
+## 写入与一致性
 
-`src/hooks/queries/useGames.ts` 维护：
+新增和更新使用后端返回的完整聚合，删除按 ID 移除缓存。游戏 mutation 统一经过 [`gameCachePatch.ts`](../../src/hooks/queries/gameCachePatch.ts)，同时维护主缓存、Query 索引及按数组引用缓存的派生索引；索引算法入口为 [`gameIndex.ts`](../../src/utils/game/gameIndex.ts)。
 
-- `gameKeys.all`：`FullGameData[]` 主缓存。
-- `gameKeys.index()`：`GameIndex` 派生缓存。
-- `gameKeys.idList(params)`：后端排序/筛选后的轻量 ID 列表。
-- `gameKeys.bgmIds()` / `vndbIds()`：新增和导入时的重复检测辅助数据。
+必须遵守以下约束：
 
-## 读取路径
+- 不绕过缓存 patch 直接替换主缓存；不使用展示数据代替需要 `sources` 的原始聚合。
+- 索引的 `rawList` 对应 Query **最终保存**的数组引用。结构共享可能改变传入引用，不能直接用写入前的数组作为派生缓存键。
+- 单个游戏变更增量更新聚合和索引，避免全库 refetch；新增无法 patch 时才回退到完整聚合失效。
+- `gameKeys.all` 也是全部游戏查询的前缀。只刷新完整聚合时使用 `exact: true`，避免连带刷新索引、排序 ID 和来源 ID 查询。
 
-```text
-useAllGames → find_all_games → FullGameData[] → gameKeys.all
-                                             ↓
-                                         GameIndex
-                                             ↓
-useGameIdList → find_game_ids → number[] → displayById 组装
-                                             ↓
-                         状态 / 标签 / NSFW / 搜索过滤
-                                             ↓
-                                      虚拟化卡片列表
-```
+[`useGames.ts`](../../src/hooks/queries/useGames.ts) 集中管理失效范围。写入须维护受影响的列表、来源身份、收藏与统计缓存；局部更新优先 patch 聚合和索引。具体字段与失效查询的对应关系由 Query 层维护。
 
-前端首次加载完整游戏聚合。切换基础类型筛选或排序时，`find_game_ids` 只传输 ID，前端再从 `displayById` 取展示数据，避免重复传输整个游戏库。
+若单个更新触发全库展示转换，先检查是否绕过 patch、全量失效、索引引用失配，或在渲染路径重复转换。
 
-列表标准入口是 `useGameListFacade`。详情页默认读 `displayById`；只有编辑外部源或底层字段时才读 `rawById`。
+## 收藏与手动排序
 
-自定义收藏分类通过 `preferencesScope: "collection"` 复用列表门面，使用独立的搜索与筛选排序偏好，且保持收藏夹不过滤 NSFW 的现有规则。手动排序保留分类成员 ID 的原始顺序，其他排序使用后端排序 ID 与分类成员的交集。搜索和筛选只派生显示列表，不修改分类成员或已保存的手动顺序。
+真实分类成员及其手动顺序由数据库维护，开发商分类由 `GameIndex` 派生。自定义分类使用独立的搜索、筛选与排序偏好；搜索和筛选只改变显示结果，不修改成员或已保存的手动顺序。
 
-自定义分类的手动排序、其他排序、搜索筛选和批量模式均使用虚拟网格。只有在手动排序、无搜索和筛选、搜索派生已完成且未进入批量模式时启用拖拽；保存期间只暂停下一次拖拽，不切换网格。
+拖拽排序不能把显示子集保存为完整成员顺序；选择与正在保存的状态由分类视图持有，不能因网格切换丢失。具体交互条件见 [`CollectionGamesView.tsx`](../../src/pages/Collection/CollectionGamesView.tsx)。
 
-自定义分类的卡片控制器由分类视图持有，两种网格只负责卡片渲染；批量选择与右键菜单不会因网格切换或筛选为空而重置。虚拟网格沿用分类操作与排序字段展示。搜索、筛选或排序变化时回到顶部并清理当前分类的滚动快照；从分类页进入也回到顶部，从详情返回则恢复列表位置。进入或退出批量模式时接续当前位置；没有虚拟网格快照时，使用实际像素位置恢复，不估算行高。
+排序与成员替换使用独立的写入路径：排序在后端事务内校验完整成员集合，只更新顺序。Query 乐观更新的回滚不能覆盖已被其他操作更新的缓存；入口为 [`useCollections.ts`](../../src/hooks/queries/useCollections.ts)。
 
-普通、虚拟和拖拽网格共用 `GameCardItem`，传入稳定的 `GameData` 引用和 `getCardProps`，仅 ID 顺序变化时跳过卡片属性派生。拖拽位移与事件绑定在外层容器；`CardItem` 负责点击、选中与批量操作，内部展示层只比较封面语义键、名称、排序字段文字和选中态。交互回调或非展示游戏字段变化仍更新外层，避免使用过期数据；封面 URL 中的更新时间不会单独触发内容重绘或图片加载。排序保存期间只禁用拖拽，不重新挂载整个卡片树。
+## 导入身份边界
 
-拖拽状态也由分类视图持有，切换网格时保留正在保存的状态，避免快速进入并退出批量模式后重复提交排序。
+导入复用批量新增与缓存 patch，身份判断使用来源 ID 和 Steam 启动 ID。入口为 [`useGameMetadataFacade.ts`](../../src/hooks/features/games/useGameMetadataFacade.ts)。
 
-普通、虚拟和拖拽网格通过 `useCardsGridLayout` 统一监听容器宽度，以 160 CSS px 的卡片最小宽度和 16 CSS px 的间距计算列数，最多 10 列。界面缩放、窗口调整和侧栏展开都会重新排布；虚拟网格等待首次宽度测量完成后挂载，按实际列数选择滚动快照。
+- 匹配导入仅新增无身份冲突的候选；冲突按共享身份组表示，关联组不意味着所有成员两两重复。
+- 自定义导入保留名称与启动信息，放弃匹配元数据和来源身份；候选变更不能清除其它行之间仍成立的冲突。
+- 云端收藏导入不设置本地启动路径，并按来源身份避免导入已有游戏。
 
-拖拽网格复用 `VirtualCardsGridContent`，按实测行高在上下各缓冲两行。完整 ID 数组决定全局排序，只有虚拟窗口内的卡片挂载 `useSortable`；让位动画通过全局下标、列数、卡片尺寸和间距计算，不依赖离屏卡片的 DOM。拖动期间只改变位移，松手后才更新 ID 顺序。边缘自动滚动只操作主内容容器。
-拖拽源使用 CSS 类隐藏；浮层独立于虚拟窗口，源卡片卸载后仍能继续拖动。松手时根据当前落点的槽位播放短时落下动画，动画结束再显示真实卡片，避免默认落下动画依赖已卸载的源节点。拖拽网格关闭浏览器的滚动锚点补偿，防止卡片跨行让位后触发额外滚动。
-拖拽正式开始时通过卡片控制器关闭已打开的右键菜单，菜单状态仍隔离在菜单宿主中。
-确认进入拖拽后，源卡片与拖拽预览停用按压缩放和涟漪，避免松手后出现点击反馈；普通卡片仍保留点击与键盘焦点效果。拖拽预览不参与鼠标命中，并显示悬停时的外观；源卡片保留悬停缩放与阴影，使落下动画期间的样式与最终悬停状态连续。拖拽状态只传给卡片交互层，展示层不因此重绘。
-
-拖拽通过 `useReorderCategoryGames` 调用专用 `reorder_category_games`，后端在同一事务内检查分类存在、成员集合一致且 ID 不重复，只更新关联的 `sort_order`，不增删成员。松手时先同步显示目标 ID 顺序，避免落下动画在 Query 通知到达前向旧位置回退；收到新的列表引用后立即使用外部列表，并清理这份短期交互状态。失败时也清理交互状态。前端不重复校验完整成员列表；Query 乐观更新当前分类的 ID 缓存，成功后无需失效查询，失败时回滚尚未被其他操作更新的缓存并仅刷新当前分类。管理游戏继续使用 `update_category_games` 替换成员，成功后失效收藏相关查询。
-
-## 写入路径
-
-```text
-UI action
-→ useAddGame / useUpdateGame / useDeleteGame / 批量 mutation
-→ gameService
-→ Rust transaction
-→ 后端返回完整 FullGameData
-→ gameCachePatch 增量维护 gameKeys.all + GameIndex
-→ 按影响范围 invalidate ID、合集、统计或源 ID 缓存
-```
-
-`src/hooks/queries/gameCachePatch.ts` 是写缓存的统一入口：
-
-- `appendGamesToCaches`：新增。
-- `patchGameCaches` / `patchManyGameCaches`：更新。
-- `removeGamesFromCaches`：删除。
-
-这些函数同时维护 `gameKeys.all`、`gameKeys.index()` 和 WeakMap 派生缓存。它们会使用 React Query 最终保存的数组引用，避免 structural sharing 导致索引引用失配。
-
-## 失效规则
-
-- 新增、删除，或修改会影响归属/排序的字段：失效 `gameKeys.idLists()`。
-- 修改 BGM/VNDB 来源绑定：失效对应源 ID 缓存。
-- 删除游戏：同时失效合集和统计。
-- 新增游戏：同时失效合集和重复检测缓存。
-- 云端收藏导入复用批量新增路径；`localpath` 留空，并按各来源外部 ID 在准备和写入阶段双重去重。
-- 本地批量导入仅在点击“导入已匹配”时检查身份：覆盖当前全部有效匹配候选（包括旧重复项），按来源 ID 和 Steam 启动 ID 标记所有直接冲突方；写入阶段不重复检测，只提交点击时的已匹配候选中无冲突的部分。
-- 列表内重复按身份键保存共享成员列表，每行只引用所属身份组；仓库重复仅保存是否命中的标记，不展开两两关系或复制仓库对象。构建展示组和清理失效记录时，每个身份组只遍历一次；清理使用不可变替换，保留其他成员间的有效身份关联。
-- 重复项直接计入“导入为自定义”，保留匹配草稿供比较和修改；列表内的关联重复行相邻展示并保留组标题，状态列使用单行标签，与游戏库重复时优先显示“仓库已存在”。重复行不附加路径或重复详情，保持紧凑行高；关联组不代表所有成员两两重复。
-- 删除或重新匹配只撤销涉及该行的旧冲突，其他冲突仍保留；名称和启动程序修改不解除身份冲突。自定义提交不检测重复、不携带匹配元数据，保留名称与启动信息，并撤销候选关联的旧冲突；真实失败保留阶段、消息和提交方式供重试。扫描和拖拽原有的目录过滤独立保留。
-- 不影响列表归属或排序的局部更新：只 patch 聚合和索引。
-
-## 禁止的做法
-
-- 不在业务代码中直接替换 `gameKeys.all`，这会绕过 `GameIndex`。
-- 不在页面或组件中反复调用 `getDisplayGameData`。
-- 不因单个游戏更新而全量 refetch `gameKeys.all`。
-- 不用 `GameData` 执行需要原始 `sources` 的写入。
-
-## 排查全量重建
-
-单个更新如果触发接近游戏库总数的转换，依次检查：
-
-1. 是否有代码绕过 `gameCachePatch.ts` 写 `gameKeys.all`。
-2. 是否不必要地 invalidate/refetch 了 `gameKeys.all`。
-3. `gameKeys.index()` 的 `rawList` 是否对应 Query 实际保存的数组引用。
-4. 是否在渲染路径重复派生展示数据。
+来源合并与写入 payload 的规则见 [`metadata.md`](metadata.md)。

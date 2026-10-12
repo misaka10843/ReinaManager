@@ -1,6 +1,6 @@
 # 架构总览
 
-ReinaManager 是 React 前端与 Rust 后端组成的 Tauri 2 桌面应用。本页只描述系统边界和主路径；实现细节由下方专题文档继续分发。
+ReinaManager 是由 React 前端与 Rust 后端组成的 Tauri 2 桌面应用。
 
 ## 系统边界
 
@@ -14,22 +14,21 @@ flowchart LR
     Repo["Repositories"]
     DB[("SQLite")]
     Native["文件 / 进程 / 系统 API"]
-    Remote["外部元数据 API"]
+    Remote["外部 API / 下载服务"]
 
     UI --> Hooks --> Services --> Bridge --> Rust
     Rust --> Repo --> DB
     Rust --> Native
-    Services --> Remote
+    Services -->|元数据 HTTP| Remote
+    Rust -->|OAuth / 下载| Remote
     Rust -. event .-> UI
 ```
 
-主要职责：
+React 负责界面、用例编排、查询缓存和元数据整合；Rust 负责本地持久化、文件系统、游戏进程、安装、备份、OAuth 和桌面集成。SQLite 保存核心业务数据，TanStack Query 缓存查询结果，Zustand 保存 UI 状态和偏好。
 
-- React 负责界面、用例编排、查询缓存和外部元数据整合。
-- Rust 负责本地持久化、文件系统、游戏进程、安装任务、备份、OAuth 和桌面集成。
-- SQLite 是核心业务数据的事实源。TanStack Query 缓存这些事实，Zustand 保存 UI 状态和用户偏好。
+本地请求经 `src/services/invoke` 进入 Tauri commands；安装进度、游戏会话和授权结果通过 event 回传。元数据请求经前端 Tauri HTTP 插件发出，OAuth 与安装下载由 Rust 发起。图片协议提供本地封面和远程图片代理，`reinamanager://` 接收安装请求。
 
-该图是常规路径，不是全局严格分层。安装、备份、OAuth 和游戏启动会直接组合 repository、SeaORM entity、文件系统、HTTP 或 Tauri event。
+图中 repository 是常规数据库入口；安装、备份、OAuth 和游戏启动工作流也会直接访问 SeaORM entity。
 
 ## 目录地图
 
@@ -48,30 +47,16 @@ src/
 src-tauri/
 ├── src/                Tauri/Rust 应用代码
 ├── migration/          SeaORM 顺序迁移 crate
-├── reina-path/         标准/便携模式路径策略
+├── reina-path/         运行环境与标准/便携模式路径
+├── reina-download/     可暂停、恢复的下载引擎
 └── capabilities/       Tauri 权限声明
 ```
 
-## 通信方式
+## 启动边界
 
-- **IPC command**：有明确请求和响应的本地操作。前端统一经 `src/services/invoke` 调用。
-- **Tauri event**：后端主动推送安装进度、游戏会话和 OAuth 结果。
-- **Tauri HTTP**：前端元数据子系统经 `@tauri-apps/plugin-http` 访问外部 API。
-- **自定义协议**：图片/封面协议向 WebView 提供本地资源；`reinamanager://` 接收安装请求。
+后端入口 [`src-tauri/src/lib.rs`](../../src-tauri/src/lib.rs) 在访问数据前固定运行环境，完成数据库迁移后恢复持久化任务。数据库连接或 schema 迁移失败会停止启动。开发与正式环境的数据隔离由 `reina-path` 统一管理。
 
-## 启动主路径
-
-```text
-main.rs → lib::run
-→ 注册协议、插件、State 和 Commands
-→ 日志与旧文件迁移
-→ 建立 SQLite 并执行 SeaORM migrations
-→ 恢复中断安装任务
-→ 前端初始化 Zustand、计时、托盘和路径缓存
-→ 挂载 React
-```
-
-数据库连接或 schema migration 失败会停止启动，避免应用在未知 schema 上继续运行。
+前端入口 [`src/main.tsx`](../../src/main.tsx) 在挂载前完成首屏所需的状态和资源路径初始化；托盘、游戏会话监听和自动备份由应用级逻辑初始化，不依赖具体页面。
 
 ## 继续阅读
 
