@@ -857,26 +857,6 @@ mod tests {
         bytes
     }
 
-    fn extract_shortcut(bytes: &[u8]) -> SteamLaunchTarget {
-        let root = parse_binary_vdf(bytes).unwrap();
-        let BinaryVdfValue::Object(shortcuts) = binary_value_at(&root, "shortcuts").unwrap() else {
-            panic!("shortcuts 根节点类型错误");
-        };
-        let BinaryVdfValue::Object(shortcut) = shortcuts.get("0").unwrap() else {
-            panic!("快捷方式类型错误");
-        };
-        let BinaryVdfValue::U32(app_id) = binary_value_at(shortcut, "appid").unwrap() else {
-            panic!("appid 类型错误");
-        };
-        let executable_path = binary_string_at(shortcut, "exe").and_then(strip_outer_quotes);
-        SteamLaunchTarget {
-            steam_launch_id: shortcut_launch_id(*app_id),
-            name: binary_string_at(shortcut, "appname").unwrap().to_string(),
-            localpath: binary_string_at(shortcut, "StartDir").and_then(strip_outer_quotes),
-            executable: executable_path.as_deref().and_then(lexical_file_name),
-        }
-    }
-
     #[test]
     fn skips_library_entries_whose_steamapps_directory_is_missing() {
         let root = temp_test_dir("steam-library-test");
@@ -994,19 +974,28 @@ mod tests {
     #[test]
     fn parses_binary_shortcut_with_unsigned_app_id_and_split_path() {
         let app_id = 0xF123_4567;
-        let candidate = extract_shortcut(&shortcut_fixture(
-            app_id,
-            "测试游戏",
-            r#""D:\Games\Test\game.exe""#,
-            r#""D:\Games\Test""#,
-        ));
-        assert_eq!(
-            candidate.steam_launch_id,
-            ((u64::from(app_id) << 32) | STEAM_SHORTCUT_MARKER).to_string()
-        );
-        assert_eq!(candidate.name, "测试游戏");
-        assert_eq!(candidate.localpath.as_deref(), Some(r"D:\Games\Test"));
-        assert_eq!(candidate.executable.as_deref(), Some("game.exe"));
+        let root = temp_test_dir("binary-shortcut-test");
+        fs::create_dir_all(&root).unwrap();
+        let path = root.join("shortcuts.vdf");
+        for start_dir in [r#""D:\Games\Test""#, ""] {
+            fs::write(
+                &path,
+                shortcut_fixture(app_id, "测试游戏", r#""D:\Games\Test\game.exe""#, start_dir),
+            )
+            .unwrap();
+            let (candidates, warnings) = parse_shortcuts_vdf(&path).unwrap();
+            assert!(warnings.is_empty());
+            assert_eq!(candidates.len(), 1);
+            let candidate = &candidates[0];
+            assert_eq!(
+                candidate.steam_launch_id,
+                ((u64::from(app_id) << 32) | STEAM_SHORTCUT_MARKER).to_string()
+            );
+            assert_eq!(candidate.name, "测试游戏");
+            assert_eq!(candidate.localpath.as_deref(), Some(r"D:\Games\Test"));
+            assert_eq!(candidate.executable.as_deref(), Some("game.exe"));
+        }
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
@@ -1032,16 +1021,6 @@ mod tests {
         let mut trailing = fixture;
         trailing.push(0);
         assert!(parse_binary_vdf(&trailing).is_err());
-    }
-
-    #[test]
-    fn derives_start_directory_from_executable_when_missing() {
-        let executable = strip_outer_quotes(r#""D:\Games\Test\game.exe""#).unwrap();
-        assert_eq!(
-            lexical_parent(&executable).as_deref(),
-            Some(r"D:\Games\Test")
-        );
-        assert_eq!(lexical_file_name(&executable).as_deref(), Some("game.exe"));
     }
 
     #[test]

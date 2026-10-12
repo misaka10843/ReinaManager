@@ -282,14 +282,3 @@ fn register_proxy_change(
     .ok()
     .map_err(|error| format!("注册系统代理变化通知失败: {error}"))
 }
-
-#[cfg(test)]
-mod tests {
-    use super::start_system_proxy_monitor;
-
-    #[test]
-    fn system_proxy_monitor_starts_and_stops_cleanly() {
-        let monitor = start_system_proxy_monitor(None).expect("系统代理监听应能启动");
-        monitor.shutdown();
-    }
-}

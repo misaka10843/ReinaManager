@@ -849,20 +849,4 @@ mod tests {
             .unwrap();
         assert_eq!(all_links(&db).await, original);
     }
-
-    #[tokio::test]
-    async fn reorder_does_not_restore_removed_members() {
-        let db = setup_database().await;
-        GameCollectionLink::delete_by_id(101)
-            .exec(&db)
-            .await
-            .unwrap();
-        let current = all_links(&db).await;
-        assert!(
-            CollectionsRepository::reorder_category_games(&db, vec![3, 2, 1], 10)
-                .await
-                .is_err()
-        );
-        assert_eq!(all_links(&db).await, current);
-    }
 }

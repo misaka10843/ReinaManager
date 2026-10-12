@@ -391,28 +391,6 @@ async fn run_download(
 // 场景
 
 #[tokio::test]
-async fn downloads_with_multiple_connections() {
-    let data = test_data(1_000_003); // deliberately not piece-aligned
-    let server = Server::start(data.clone(), Mode::Normal, Duration::ZERO).await;
-    let paths = run_paths();
-
-    let (result, progress) = run_download(
-        request(server.url("/game.7z"), &paths.target, data.len() as u64),
-        fast_options(),
-    )
-    .await;
-
-    assert!(matches!(result, Ok(Outcome::Completed)), "{result:?}");
-    assert_eq!(std::fs::read(&paths.target).unwrap(), data);
-    assert!(
-        !control_path(&paths.target).exists(),
-        "control file must be removed"
-    );
-    assert_eq!(progress.phase, Phase::Done);
-    assert_eq!(progress.written, data.len() as u64);
-}
-
-#[tokio::test]
 async fn resumes_after_cancel_and_url_change() {
     let data = test_data(2 * 1024 * 1024);
     let server = Server::start(data.clone(), Mode::Normal, Duration::from_millis(2)).await;

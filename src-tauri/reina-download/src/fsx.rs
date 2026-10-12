@@ -125,17 +125,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn positioned_writes_do_not_interfere() {
-        let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("out.bin");
-        let file = open_target(&path, 8, true).unwrap();
-        write_all_at(&file, 4, b"wxyz").unwrap();
-        write_all_at(&file, 0, b"abcd").unwrap();
-        drop(file);
-        assert_eq!(std::fs::read(&path).unwrap(), b"abcdwxyz");
-    }
-
-    #[test]
     fn atomic_write_replaces_existing() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("control.json");

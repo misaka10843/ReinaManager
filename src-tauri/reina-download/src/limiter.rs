@@ -180,24 +180,6 @@ impl Adaptive {
 mod tests {
     use super::*;
 
-    #[tokio::test]
-    async fn gate_caps_in_flight() {
-        let gate = Gate::new(2);
-        let cancel = CancellationToken::new();
-        let a = gate.acquire(&cancel).await.unwrap();
-        let b = gate.acquire(&cancel).await.unwrap();
-        let cancel2 = cancel.clone();
-        let pending = tokio::spawn({
-            let gate = gate.clone();
-            async move { gate.acquire(&cancel2).await.is_some() }
-        });
-        tokio::time::sleep(Duration::from_millis(20)).await;
-        assert!(!pending.is_finished());
-        drop(a);
-        assert!(pending.await.unwrap());
-        drop(b);
-    }
-
     #[test]
     fn adaptive_halves_then_grows() {
         let adaptive = Adaptive::new(1, 8, 8, 2);

@@ -125,8 +125,6 @@ fn validate_payload(path: &Path, info: &ArchiveSaveInfo) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::super::service::restore_for_test;
-    #[cfg(windows)]
-    use super::save_name_eq;
     use crate::backup::savedata::archive::create_savedata_archive;
     use std::fs;
     use std::path::PathBuf;
@@ -147,7 +145,11 @@ mod tests {
         for directory in [false, true] {
             let root = root(if directory { "dir" } else { "file" });
             let source = root.join("source/save");
-            let target = root.join("game/save");
+            let target = root.join(if cfg!(windows) {
+                "game/SAVE"
+            } else {
+                "game/save"
+            });
             let archive = root.join("savedata_v2_replace.7z");
             fs::create_dir_all(source.parent().unwrap()).unwrap();
             fs::create_dir_all(target.parent().unwrap()).unwrap();
@@ -167,11 +169,11 @@ mod tests {
             let restored = if directory {
                 target.join("slot")
             } else {
-                target
+                target.clone()
             };
             assert_eq!(fs::read(restored).unwrap(), b"new");
             if directory {
-                assert!(!root.join("game/save/stale").exists());
+                assert!(!target.join("stale").exists());
             }
             fs::remove_dir_all(root).unwrap();
         }
@@ -222,11 +224,5 @@ mod tests {
         assert!(restore_for_test(&archive, &target).is_err());
         assert_eq!(fs::read(&target).unwrap(), b"keep");
         fs::remove_dir_all(root).unwrap();
-    }
-
-    #[cfg(windows)]
-    #[test]
-    fn save_names_follow_windows_ascii_case_semantics() {
-        assert!(save_name_eq("savedata", "SaveData"));
     }
 }

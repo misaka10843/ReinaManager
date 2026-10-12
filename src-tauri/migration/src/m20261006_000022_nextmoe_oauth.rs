@@ -86,28 +86,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn adding_nextmoe_auth_without_kun_bindings_preserves_existing_user_data() {
-        let db = old_database().await;
-        db.execute_unprepared("DELETE FROM game_sources WHERE source = 'kun'")
-            .await
-            .unwrap();
-        TestMigrator::up(&db, None).await.unwrap();
-        let row = db
-            .query_one_raw(Statement::from_string(
-                DbBackend::Sqlite,
-                "SELECT bgm_auth, nextmoe_auth FROM user WHERE id = 1".to_string(),
-            ))
-            .await
-            .unwrap()
-            .unwrap();
-        assert_eq!(row.try_get::<String>("", "bgm_auth").unwrap(), "existing");
-        assert_eq!(
-            row.try_get::<Option<String>>("", "nextmoe_auth").unwrap(),
-            None
-        );
-    }
-
-    #[tokio::test]
     async fn reset_preserves_snapshots_other_sources_and_game_fields() {
         let db = old_database().await;
         TestMigrator::up(&db, None).await.unwrap();

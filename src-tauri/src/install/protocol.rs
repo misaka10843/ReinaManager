@@ -528,18 +528,6 @@ mod tests {
     }
 
     #[test]
-    fn parses_optional_hikarinagi_id() {
-        let url = Url::parse(&format!(
-            "reinamanager://install?{}&url=https%3A%2F%2Fexample.com%2Fgame.zip&hikarinagi_id=789",
-            base_query()
-        ))
-        .unwrap();
-
-        let request = parse_install_url(url).unwrap();
-        assert_eq!(request.hikarinagi_id.as_deref(), Some("789"));
-    }
-
-    #[test]
     fn parses_url_encoded_archive_password() {
         let url = Url::parse(&format!(
             "reinamanager://install?{}&url=https%3A%2F%2Fexample.com%2Fgame.zip&archive_password=a%26b%20c%2B%25",

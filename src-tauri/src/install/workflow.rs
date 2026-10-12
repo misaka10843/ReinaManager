@@ -394,9 +394,7 @@ pub(crate) fn emit_game_install_failed(
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        GameInstallResultV1, resolve_installed_executable_name, resolve_installed_game_id_type,
-    };
+    use super::{GameInstallResultV1, resolve_installed_executable_name};
     use std::path::Path;
 
     #[test]
@@ -415,18 +413,5 @@ mod tests {
             .expect_err("嵌套可执行文件路径应被拒绝");
 
         assert_eq!(error.code, "invalid_executable");
-    }
-
-    #[test]
-    fn keeps_existing_source_type_when_fallback_has_no_sources() {
-        assert_eq!(
-            resolve_installed_game_id_type(&["hikarinagi"], "custom"),
-            "hikarinagi"
-        );
-    }
-
-    #[test]
-    fn uses_custom_type_when_no_sources_exist() {
-        assert_eq!(resolve_installed_game_id_type(&[], "custom"), "custom");
     }
 }

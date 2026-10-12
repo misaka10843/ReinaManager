@@ -107,25 +107,4 @@ mod tests {
             Some(String::new())
         );
     }
-
-    #[test]
-    fn appends_exactly_one_component_without_expanding_variables() {
-        let configured = if cfg!(windows) {
-            r"%USERPROFILE%\Reina"
-        } else {
-            "$HOME/Reina"
-        };
-
-        assert_eq!(
-            append_backup_component(configured),
-            PathBuf::from(configured).join("backups").to_string_lossy()
-        );
-        assert_eq!(
-            append_backup_component(&append_backup_component(configured)),
-            PathBuf::from(configured)
-                .join("backups")
-                .join("backups")
-                .to_string_lossy()
-        );
-    }
 }

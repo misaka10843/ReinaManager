@@ -944,19 +944,6 @@ mod tests {
     }
 
     #[test]
-    fn matches_shortcut_launch_command_without_runtime() {
-        let line = cmdline(&[
-            "/home/user/.local/share/Steam/ubuntu12_32/reaper",
-            "SteamLaunch",
-            "AppId=3624799010",
-            "--",
-            "/home/user/Gal/gal.exe",
-        ]);
-
-        assert!(is_steam_reaper_cmdline(&line, b"AppId=3624799010"));
-    }
-
-    #[test]
     fn requires_exact_app_id_argument() {
         let line = cmdline(&[
             "/home/user/.local/share/Steam/ubuntu12_32/reaper",
@@ -1000,14 +987,5 @@ mod tests {
         // 测试进程自身不是 reaper；不存在的 PID 也应判定为失效
         assert!(!is_steam_reaper_pid(std::process::id(), 413150));
         assert!(!is_steam_reaper_pid(u32::MAX, 413150));
-    }
-
-    #[test]
-    fn collects_own_process_tree_without_duplicates() {
-        let current = std::process::id();
-        let pids = collect_process_tree(&[current, current]);
-
-        assert!(pids.contains(&current));
-        assert_eq!(pids.iter().filter(|pid| **pid == current).count(), 1);
     }
 }

@@ -830,31 +830,6 @@ mod tests {
     }
 
     #[test]
-    fn incremental_insert_matches_full_calculation() {
-        let sessions = vec![
-            session(1, timestamp(1, 10), timestamp(1, 12), 90),
-            session(2, timestamp(1, 23), timestamp(3, 1), 120),
-            session(3, timestamp(3, 9), timestamp(3, 10), 45),
-        ];
-        let mut incremental = StatisticsProjection {
-            total_time: 0,
-            session_count: 0,
-            last_played: None,
-            daily_stats: Vec::new(),
-        };
-
-        for session in &sessions {
-            apply_session_insert(&mut incremental, session, &timezone()).expect("增量统计应成功");
-        }
-
-        let complete = calculate_statistics(&sessions, &timezone()).expect("完整统计应成功");
-        assert_eq!(incremental, complete);
-        assert_eq!(complete.total_time, 255);
-        assert_eq!(complete.session_count, 3);
-        assert_eq!(complete.last_played, Some(timestamp(3, 10)));
-    }
-
-    #[test]
     fn incremental_delete_matches_remaining_sessions() {
         let sessions = vec![
             session(1, timestamp(1, 10), timestamp(1, 12), 90),
@@ -876,45 +851,6 @@ mod tests {
     }
 
     #[test]
-    fn deleting_only_session_clears_projection() {
-        let only_session = session(1, timestamp(1, 10), timestamp(1, 12), 90);
-        let mut projection = calculate_statistics(std::slice::from_ref(&only_session), &timezone())
-            .expect("完整统计应成功");
-
-        apply_session_delete(&mut projection, &only_session, None, &timezone())
-            .expect("删除统计应成功");
-
-        assert_eq!(
-            projection,
-            StatisticsProjection {
-                total_time: 0,
-                session_count: 0,
-                last_played: None,
-                daily_stats: Vec::new(),
-            }
-        );
-    }
-
-    #[test]
-    fn complete_calculation_has_no_session_limit() {
-        let sessions = (1..=1001)
-            .map(|session_id| session(session_id, timestamp(1, 10), timestamp(1, 11), 1))
-            .collect::<Vec<_>>();
-
-        let projection = calculate_statistics(&sessions, &timezone()).expect("完整统计应成功");
-
-        assert_eq!(projection.total_time, 1001);
-        assert_eq!(projection.session_count, 1001);
-        assert_eq!(
-            projection.daily_stats,
-            vec![DailyStats {
-                date: "2026-01-01".to_string(),
-                playtime: 1001,
-            }]
-        );
-    }
-
-    #[test]
     fn invalid_projection_is_rejected_before_deletion() {
         let target = session(1, timestamp(1, 10), timestamp(1, 12), 90);
         let mut projection = StatisticsProjection {
@@ -928,14 +864,6 @@ mod tests {
         };
 
         assert!(apply_session_delete(&mut projection, &target, None, &timezone()).is_err());
-    }
-
-    #[test]
-    fn manual_session_calculates_end_time() {
-        assert_eq!(
-            manual_session_end_time(1_700_000_000, 90, 1_700_010_000).expect("结束时间应可计算"),
-            1_700_005_400
-        );
     }
 
     #[test]

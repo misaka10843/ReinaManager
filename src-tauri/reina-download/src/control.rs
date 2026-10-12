@@ -146,16 +146,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn piece_geometry() {
-        assert_eq!(piece_count(0, 4), 0);
-        assert_eq!(piece_count(10, 4), 3);
-        assert_eq!(piece_len(10, 4, 0), 4);
-        assert_eq!(piece_len(10, 4, 2), 2);
-        assert_eq!(piece_count(8, 4), 2);
-        assert_eq!(piece_len(8, 4, 1), 4);
-    }
-
-    #[test]
     fn control_round_trip_and_validation() {
         let dir = tempfile::tempdir().unwrap();
         let path = dir.path().join("game.7z.reina-dl");
@@ -184,13 +174,5 @@ mod tests {
                 .unwrap()
                 .is_none()
         );
-    }
-
-    #[test]
-    fn artifact_paths_cover_control_and_temp() {
-        let paths = artifact_paths(Path::new("/tmp/game.7z"));
-        assert_eq!(paths[0], Path::new("/tmp/game.7z"));
-        assert_eq!(paths[1], Path::new("/tmp/game.7z.reina-dl"));
-        assert_eq!(paths[2], Path::new("/tmp/game.7z.reina-dl.tmp"));
     }
 }

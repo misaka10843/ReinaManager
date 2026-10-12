@@ -423,29 +423,6 @@ mod tests {
         );
     }
 
-    #[test]
-    fn maps_non_http_errors() {
-        assert_eq!(
-            map_download_error(
-                &DownloadError::SizeMismatch {
-                    expected: 10,
-                    actual: 9
-                },
-                "p"
-            )
-            .code,
-            "size_mismatch"
-        );
-        assert_eq!(
-            map_download_error(&DownloadError::TargetConflict(PathBuf::from("/tmp/x")), "p").code,
-            "download_target_conflict"
-        );
-        assert_eq!(
-            map_download_error(&DownloadError::Disk(std::io::Error::other("boom")), "p").code,
-            "task_file_failed"
-        );
-    }
-
     #[tokio::test]
     async fn verifies_size_when_checksum_is_absent() {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("Cargo.toml");

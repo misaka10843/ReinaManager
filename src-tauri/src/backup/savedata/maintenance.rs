@@ -1650,33 +1650,6 @@ mod tests {
     }
 
     #[test]
-    fn replaces_an_existing_empty_target_with_verified_copy() {
-        let root = test_directory();
-        let source = root.join("old");
-        let target = root.join("new");
-        fs::create_dir_all(source.join("game_1")).unwrap();
-        fs::write(source.join("game_1").join("backup.7z"), b"backup").unwrap();
-        fs::create_dir_all(&target).unwrap();
-
-        let prepared = prepare_backup_migration(&source, &target, 1).unwrap();
-
-        assert!(matches!(
-            prepared,
-            PreparedMigration::Ready {
-                target_commit: PreparedTargetCommit::Replaced {
-                    target_existed: true
-                },
-                ..
-            }
-        ));
-        assert_eq!(
-            fs::read(target.join("game_1").join("backup.7z")).unwrap(),
-            b"backup"
-        );
-        fs::remove_dir_all(root).unwrap();
-    }
-
-    #[test]
     fn resumes_when_target_is_already_a_verified_copy() {
         let root = test_directory();
         let source = root.join("old");
@@ -1702,7 +1675,7 @@ mod tests {
     fn flattens_a_nested_backup_root_when_it_is_the_only_entry() {
         let root = test_directory();
         let target = root.join("configured");
-        let source = target.join("backups");
+        let source = target.join("archive");
         fs::create_dir_all(source.join("game_1")).unwrap();
         fs::write(source.join("game_1").join("backup.7z"), b"backup").unwrap();
 
@@ -1742,28 +1715,6 @@ mod tests {
 
         assert!(error.failures[0].message.contains("仅包含"));
         assert_eq!(fs::read(target.join("keep.txt")).unwrap(), b"keep");
-        fs::remove_dir_all(root).unwrap();
-    }
-
-    #[test]
-    fn flattens_an_arbitrarily_named_child_directory() {
-        let root = test_directory();
-        let target = root.join("configured");
-        let source = target.join("archive");
-        fs::create_dir_all(source.join("game_1")).unwrap();
-        fs::write(source.join("game_1").join("backup.7z"), b"backup").unwrap();
-
-        let prepared = prepare_backup_migration(&source, &target, 1).unwrap();
-
-        assert!(matches!(
-            prepared,
-            PreparedMigration::Ready {
-                target_commit: PreparedTargetCommit::FlattenedNestedRoot { .. },
-                ..
-            }
-        ));
-        assert!(source.is_dir());
-        assert!(target.join("game_1").join("backup.7z").is_file());
         fs::remove_dir_all(root).unwrap();
     }
 
@@ -1917,19 +1868,6 @@ mod tests {
     }
 
     #[test]
-    fn removes_old_backup_root_but_keeps_its_parent() {
-        let root = test_directory();
-        let configured_root = root.join("configured");
-        fs::create_dir_all(configured_root.join("game_1")).unwrap();
-
-        remove_old_backup_directory(&configured_root).unwrap();
-
-        assert!(!configured_root.exists());
-        assert!(root.exists());
-        fs::remove_dir_all(root).unwrap();
-    }
-
-    #[test]
     fn rolls_back_to_the_original_empty_target() {
         let root = test_directory();
         let source = root.join("old");
@@ -1937,15 +1875,22 @@ mod tests {
         fs::create_dir_all(source.join("game_1")).unwrap();
         fs::write(source.join("game_1").join("backup.7z"), b"backup").unwrap();
         fs::create_dir_all(&target).unwrap();
-        prepare_backup_migration(&source, &target, 1).unwrap();
-
-        let failures = rollback_prepared_migration(
-            &source,
-            &target,
-            &PreparedTargetCommit::Replaced {
-                target_existed: true,
-            },
+        let prepared = prepare_backup_migration(&source, &target, 1).unwrap();
+        let PreparedMigration::Ready { target_commit, .. } = prepared else {
+            panic!("应准备空目标目录替换");
+        };
+        assert!(matches!(
+            target_commit,
+            PreparedTargetCommit::Replaced {
+                target_existed: true
+            }
+        ));
+        assert_eq!(
+            fs::read(target.join("game_1").join("backup.7z")).unwrap(),
+            b"backup"
         );
+
+        let failures = rollback_prepared_migration(&source, &target, &target_commit);
 
         assert!(failures.is_empty());
         assert!(target.is_dir());

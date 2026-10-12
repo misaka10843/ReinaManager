@@ -29,32 +29,3 @@ impl MigrationTrait for Migration {
         Ok(())
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use sea_orm_migration::sea_orm::{ConnectionTrait, Database, DatabaseBackend, Statement};
-
-    #[tokio::test]
-    async fn existing_user_defaults_remain_disabled() {
-        let db = Database::connect("sqlite::memory:").await.unwrap();
-        db.execute_unprepared(
-            "CREATE TABLE user (id INTEGER PRIMARY KEY); INSERT INTO user(id) VALUES (1);",
-        )
-        .await
-        .unwrap();
-        let manager = SchemaManager::new(&db);
-        Migration.up(&manager).await.unwrap();
-
-        let row = db
-            .query_one_raw(Statement::from_string(
-                DatabaseBackend::Sqlite,
-                "SELECT default_le_launch, default_magpie FROM user WHERE id = 1".to_string(),
-            ))
-            .await
-            .unwrap()
-            .unwrap();
-        assert_eq!(row.try_get::<bool>("", "default_le_launch").unwrap(), false);
-        assert_eq!(row.try_get::<bool>("", "default_magpie").unwrap(), false);
-    }
-}

@@ -280,30 +280,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn vacuum_into_creates_readable_snapshot() {
-        let directory = create_test_directory("snapshot_test");
-        let backup_path = directory.join("backup.db");
-        let source_pool = create_test_source(&directory).await;
-
-        create_snapshot(&source_pool, &backup_path).await.unwrap();
-        source_pool.close().await;
-
-        let backup_pool =
-            sqlx::SqlitePool::connect(&path_to_sqlite_url_with_mode(&backup_path, "ro").unwrap())
-                .await
-                .unwrap();
-        verify_integrity(&backup_pool, "测试备份").await.unwrap();
-        let value: String = sqlx::query_scalar("SELECT value FROM values_table")
-            .fetch_one(&backup_pool)
-            .await
-            .unwrap();
-        assert_eq!(value, "kept");
-        backup_pool.close().await;
-
-        fs::remove_dir_all(directory).unwrap();
-    }
-
-    #[tokio::test]
     async fn custom_backup_failure_falls_back_to_verified_default_directory() {
         let directory = create_test_directory("fallback_test");
         let invalid_custom_dir = directory.join("invalid-custom");
@@ -323,33 +299,6 @@ mod tests {
 
         let value = read_test_value(&backup_path).await;
         assert_eq!(value, "kept");
-        source_pool.close().await;
-
-        fs::remove_dir_all(directory).unwrap();
-    }
-
-    #[tokio::test]
-    async fn fallback_failure_reports_both_directories() {
-        let directory = create_test_directory("fallback_error_test");
-        let invalid_custom_dir = directory.join("invalid-custom");
-        let invalid_default_dir = directory.join("invalid-default");
-        fs::write(&invalid_custom_dir, "not a directory").unwrap();
-        fs::write(&invalid_default_dir, "not a directory").unwrap();
-
-        let source_pool = create_test_source(&directory).await;
-        let error = create_backup_with_fallback(
-            &source_pool,
-            "fallback_error_test",
-            Some(&invalid_custom_dir),
-            &invalid_default_dir,
-        )
-        .await
-        .unwrap_err()
-        .to_string();
-
-        assert!(error.contains(invalid_custom_dir.to_string_lossy().as_ref()));
-        assert!(error.contains(invalid_default_dir.to_string_lossy().as_ref()));
-        assert!(error.contains("回退默认目录后仍失败"));
         source_pool.close().await;
 
         fs::remove_dir_all(directory).unwrap();

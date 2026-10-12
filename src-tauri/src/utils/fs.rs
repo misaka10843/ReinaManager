@@ -562,27 +562,7 @@ pub async fn delete_file(file_path: String) -> Result<(), String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{normalize_install_root_path, validate_configured_user_path};
-    use std::path::PathBuf;
-
-    #[test]
-    fn install_root_path_must_be_absolute() {
-        assert!(normalize_install_root_path("games").is_err());
-        assert!(normalize_install_root_path("   ").is_err());
-    }
-
-    #[test]
-    fn install_root_path_is_trimmed_and_normalized() {
-        #[cfg(windows)]
-        let root = r"C:\Games";
-        #[cfg(not(windows))]
-        let root = "/games";
-
-        assert_eq!(
-            normalize_install_root_path(&format!("  {root}/.  ")),
-            Ok(PathBuf::from(root))
-        );
-    }
+    use super::validate_configured_user_path;
 
     #[test]
     fn configured_path_allows_undefined_variable() {

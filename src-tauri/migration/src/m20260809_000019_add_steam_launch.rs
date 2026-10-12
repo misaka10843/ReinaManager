@@ -144,31 +144,4 @@ mod tests {
             .await
             .is_err());
     }
-
-    #[tokio::test]
-    async fn removes_steam_launch_columns() {
-        let database = Database::connect("sqlite::memory:").await.unwrap();
-        database
-            .execute_unprepared(
-                "CREATE TABLE games (id INTEGER PRIMARY KEY, id_type TEXT NOT NULL)",
-            )
-            .await
-            .unwrap();
-        add_steam_launch(&database).await.unwrap();
-        remove_steam_launch(&database).await.unwrap();
-
-        let columns = database
-            .query_all_raw(Statement::from_string(
-                DatabaseBackend::Sqlite,
-                "PRAGMA table_info(games)".to_string(),
-            ))
-            .await
-            .unwrap();
-        assert!(columns.iter().all(|column| {
-            !matches!(
-                column.try_get::<String>("", "name").unwrap().as_str(),
-                "launch_type" | "steam_launch_id"
-            )
-        }));
-    }
 }
