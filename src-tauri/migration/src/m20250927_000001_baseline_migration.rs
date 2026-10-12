@@ -2,8 +2,8 @@ use sea_orm::{ConnectionTrait, DatabaseBackend, Statement};
 use sea_orm_migration::prelude::*;
 use sea_orm_migration::sea_orm::TransactionTrait;
 
-use crate::backup::{backup_sqlite, path_to_sqlite_url};
-use reina_path::get_db_path;
+use crate::backup::{connected_database_path, path_to_sqlite_url};
+use crate::runner::has_existing_schema;
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -14,7 +14,7 @@ impl MigrationTrait for Migration {
         let conn = manager.get_connection();
 
         // 判断是否为新用户 - 检查是否存在任何遗留数据表
-        let is_new_user = !has_any_legacy_tables(conn).await?;
+        let is_new_user = !has_existing_schema(conn).await?;
 
         if is_new_user {
             // 新用户建表使用事务，保证 schema 初始化原子性。
@@ -23,44 +23,13 @@ impl MigrationTrait for Migration {
             create_modern_schema(&txn).await?;
             txn.commit().await?;
         } else {
-            // 迁移前备份数据库
-            match backup_sqlite("v0.6.9").await {
-                Ok(path) => log::info!("[MIGRATION] Database backed up to: {}", path.display()),
-                Err(e) => log::warn!("[MIGRATION] Backup failed (continuing anyway): {}", e),
-            }
             log::info!("[MIGRATION] Existing user detected, running legacy migration catch-up");
-            run_legacy_migrations_with_sqlx().await?;
+            run_legacy_migrations_with_sqlx(conn).await?;
         }
 
         log::info!("[MIGRATION] v1 baseline schema created successfully");
         Ok(())
     }
-}
-
-/// 检查是否存在任何遗留数据表或数据
-async fn has_any_legacy_tables<C>(conn: &C) -> Result<bool, DbErr>
-where
-    C: ConnectionTrait,
-{
-    // 老版本可能没有 _sqlx_migrations，只能通过业务表判断是否已有旧数据。
-    let legacy_table_exists = conn
-        .query_one_raw(Statement::from_string(
-            DatabaseBackend::Sqlite,
-            r#"SELECT 1 FROM sqlite_master
-               WHERE type='table'
-               AND name IN (
-                   '_sqlx_migrations',
-                   'games',
-                   'user',
-                   'game_sessions',
-                   'game_statistics',
-                   'savedata'
-               )
-               LIMIT 1"#,
-        ))
-        .await?
-        .is_some();
-    Ok(legacy_table_exists)
 }
 
 /// 为新用户创建现代的拆分表结构
@@ -265,12 +234,14 @@ where
 }
 
 /// 为现有用户运行旧的 tauri-plugin-sql 迁移，使用 sqlx 执行
-async fn run_legacy_migrations_with_sqlx() -> Result<(), DbErr> {
+async fn run_legacy_migrations_with_sqlx<C>(connection: &C) -> Result<(), DbErr>
+where
+    C: ConnectionTrait,
+{
     log::info!("[MIGRATION] Running legacy migrations with sqlx...");
 
-    // 获取数据库连接 URL（从系统目录推导）
-    let db_path =
-        get_db_path().map_err(|e| DbErr::Custom(format!("Failed to get database path: {}", e)))?;
+    // 使用当前连接的数据库，避免补偿迁移误操作其他环境的数据。
+    let db_path = connected_database_path(connection).await?;
     let database_url = path_to_sqlite_url(&db_path)?;
 
     // 创建 sqlx 连接池

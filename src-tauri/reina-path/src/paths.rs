@@ -1,4 +1,6 @@
-use std::path::PathBuf;
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::runtime_environment;
 
@@ -92,4 +94,84 @@ pub fn get_default_db_backup_path() -> Result<PathBuf, String> {
 /// 获取默认的存档备份路径
 pub fn get_default_savedata_backup_path() -> Result<PathBuf, String> {
     Ok(get_base_data_dir()?.join(BACKUP_SUBDIR))
+}
+
+/// 为同一秒内创建的备份分配不会覆盖现有文件的编号。
+///
+/// `artifacts` 列出共享该编号的所有产物；任意一个产物已存在都会跳过该编号。
+pub fn next_backup_id(
+    backup_dir: &Path,
+    timestamp: &str,
+    artifacts: &[(&str, &str)],
+) -> Result<String, String> {
+    for suffix in 0..1000 {
+        let backup_id = if suffix == 0 {
+            timestamp.to_string()
+        } else {
+            format!("{timestamp}_{suffix:03}")
+        };
+        let mut occupied = false;
+        for (prefix, extension) in artifacts {
+            let candidate = backup_dir.join(format!("{prefix}{backup_id}{extension}"));
+            match fs::symlink_metadata(&candidate) {
+                Ok(_) => {
+                    occupied = true;
+                    break;
+                }
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                Err(error) => {
+                    return Err(format!(
+                        "检查备份文件名是否冲突失败 {}: {error}",
+                        candidate.display()
+                    ));
+                }
+            }
+        }
+        if !occupied {
+            return Ok(backup_id);
+        }
+    }
+    Err("同一时间生成的备份文件过多，请稍后重试".to_string())
+}
+
+pub fn next_backup_filename(
+    backup_dir: &Path,
+    prefix: &str,
+    timestamp: &str,
+    extension: &str,
+) -> Result<String, String> {
+    let backup_id = next_backup_id(backup_dir, timestamp, &[(prefix, extension)])?;
+    Ok(format!("{prefix}{backup_id}{extension}"))
+}
+
+/// 在目标文件同目录生成唯一临时路径，确保后续提交不依赖跨卷移动。
+pub fn temporary_sibling_path(target: &Path, marker: &str) -> Result<PathBuf, String> {
+    let parent = target
+        .parent()
+        .ok_or_else(|| format!("目标文件缺少父目录: {}", target.display()))?;
+    let name = target
+        .file_name()
+        .ok_or_else(|| format!("目标文件缺少有效名称: {}", target.display()))?
+        .to_string_lossy();
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|error| format!("获取临时文件时间失败: {error}"))?
+        .as_nanos();
+    for index in 0..1000_u32 {
+        let candidate = parent.join(format!(
+            ".{name}.{marker}-{}-{timestamp}-{index}",
+            std::process::id()
+        ));
+        match fs::symlink_metadata(&candidate) {
+            Ok(_) => continue,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(candidate),
+            Err(error) => {
+                return Err(format!(
+                    "检查临时文件路径失败 {}: {error}",
+                    candidate.display()
+                ));
+            }
+        }
+    }
+    Err("无法生成唯一的临时文件路径".to_string())
 }

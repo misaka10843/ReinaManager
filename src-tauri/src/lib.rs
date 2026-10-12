@@ -29,7 +29,6 @@ use install::{
     delete_task, fail_game_install_metadata, list_tasks, pause_task, recover_interrupted_tasks,
     resume_pending_tasks, resume_task, retry_task,
 };
-use migration::MigratorTrait;
 use oauth::{
     bgm_auth::{
         bgm_oauth_cancel_login, bgm_oauth_exchange_code, bgm_oauth_refresh_token,
@@ -339,7 +338,7 @@ pub fn run() {
                         log::debug!("数据库连接建立成功");
 
                         // 执行数据库迁移
-                        match migration::Migrator::up(&conn, None).await {
+                        match migration::migrate_database(&conn, env!("CARGO_PKG_VERSION")).await {
                             Ok(_) => log::info!(
                                 "启动初始化完成: {startup_context} database_migration=completed"
                             ),

@@ -7,8 +7,6 @@
 //!
 //! 注意: id_type 字段是 NOT NULL，保持原样不处理
 
-use crate::backup::backup_sqlite;
-use log::{info, warn};
 use sea_orm_migration::prelude::*;
 
 #[derive(DeriveMigrationName)]
@@ -17,14 +15,6 @@ pub struct Migration;
 #[async_trait::async_trait]
 impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
-        // ========================================
-        // 备份数据库
-        // ========================================
-        info!("[MIGRATION] Starting database backup before clean empty strings migration...");
-        match backup_sqlite("v0.14.2").await {
-            Ok(backup_path) => info!("[MIGRATION] Backup successful: {:?}", backup_path),
-            Err(e) => warn!("[MIGRATION] Backup failed (continuing anyway): {}", e),
-        }
         let db = manager.get_connection();
 
         // 清洗 games 表中的空字符串为 NULL

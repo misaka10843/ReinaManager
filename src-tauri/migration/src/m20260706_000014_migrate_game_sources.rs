@@ -1,9 +1,7 @@
 //! 将 games 中的外部数据源宽列迁移到 game_sources。
 
-use crate::backup::backup_sqlite;
 use sea_orm_migration::prelude::*;
 use sea_orm_migration::sea_orm::{ConnectionTrait, Statement, TransactionTrait};
-use std::path::Path;
 
 #[derive(DeriveMigrationName)]
 pub struct Migration;
@@ -13,14 +11,8 @@ impl MigrationTrait for Migration {
     async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
         ensure_sqlite_version(manager.get_connection()).await?;
 
-        let backup_path = backup_sqlite("source_table_v2").await?;
-        log::info!(
-            "[MIGRATION] Source table backup created: {}",
-            backup_path.display()
-        );
-
         let transaction = manager.get_connection().begin().await?;
-        isolate_invalid_json(&transaction, &backup_path).await?;
+        isolate_invalid_json(&transaction).await?;
         migrate_schema(&transaction).await?;
         ensure_database_integrity(&transaction).await?;
         transaction.commit().await?;
@@ -168,15 +160,14 @@ where
     Ok(())
 }
 
-async fn isolate_invalid_json<C>(connection: &C, backup_path: &Path) -> Result<(), DbErr>
+async fn isolate_invalid_json<C>(connection: &C) -> Result<(), DbErr>
 where
     C: ConnectionTrait,
 {
-    isolate_invalid_json_column(connection, "custom_data", "custom_data", backup_path).await?;
+    isolate_invalid_json_column(connection, "custom_data", "custom_data").await?;
 
     for source in SOURCES {
-        isolate_invalid_json_column(connection, source.data_column, source.key, backup_path)
-            .await?;
+        isolate_invalid_json_column(connection, source.data_column, source.key).await?;
     }
 
     Ok(())
@@ -186,7 +177,6 @@ async fn isolate_invalid_json_column<C>(
     connection: &C,
     column: &str,
     label: &str,
-    backup_path: &Path,
 ) -> Result<(), DbErr>
 where
     C: ConnectionTrait,
@@ -205,11 +195,10 @@ where
 
     let game_ids = invalid_json_game_ids(connection, column).await?;
     log::warn!(
-        "[MIGRATION] Isolating {} invalid JSON row(s) from {}, game_id={:?}; original data is preserved in backup {}",
+        "[MIGRATION] 隔离 {} 条 {} 无效 JSON，game_id={:?}；原始数据请从本轮迁移前备份恢复，路径见迁移入口日志",
         invalid_count,
         label,
-        game_ids,
-        backup_path.display()
+        game_ids
     );
 
     connection

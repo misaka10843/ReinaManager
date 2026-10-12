@@ -2,8 +2,30 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use chrono::Local;
-use reina_path::get_db_path;
-use sea_orm_migration::sea_orm::DbErr;
+use reina_path::{next_backup_filename, temporary_sibling_path};
+use sea_orm_migration::sea_orm::{ConnectionTrait, DbBackend, DbErr, Statement};
+
+/// 从当前连接读取主数据库路径，备份与旧版补偿迁移必须操作同一个数据库。
+pub(crate) async fn connected_database_path<C>(connection: &C) -> Result<PathBuf, DbErr>
+where
+    C: ConnectionTrait,
+{
+    let databases = connection
+        .query_all_raw(Statement::from_string(
+            DbBackend::Sqlite,
+            "PRAGMA database_list",
+        ))
+        .await?;
+    for database in databases {
+        if database.try_get::<String>("", "name")? == "main" {
+            let file = database.try_get::<String>("", "file")?;
+            if !file.is_empty() {
+                return Ok(PathBuf::from(file));
+            }
+        }
+    }
+    Err(DbErr::Custom("当前连接没有可备份的主数据库文件".into()))
+}
 
 /// 使用 SQLite 一致性快照备份数据库。
 ///
@@ -11,24 +33,46 @@ use sea_orm_migration::sea_orm::DbErr;
 /// - 若存在且非空，则备份到该路径下
 /// - 否则备份到数据库所在目录的 `backups/` 子目录
 /// - 自定义目录备份失败时记录警告并回退默认目录；默认目录备份失败则终止迁移
-pub async fn backup_sqlite(version: &str) -> Result<PathBuf, DbErr> {
-    let db_path =
-        get_db_path().map_err(|e| DbErr::Custom(format!("Failed to get database path: {}", e)))?;
-    let db_url = path_to_sqlite_url(&db_path)?;
+pub(crate) async fn backup_sqlite(db_path: &Path, version: &str) -> Result<PathBuf, DbErr> {
+    let db_url = path_to_sqlite_url_with_mode(db_path, "rw")?;
 
     let pool = sqlx::SqlitePool::connect(&db_url)
         .await
         .map_err(|e| DbErr::Custom(format!("Failed to connect: {}", e)))?;
 
-    verify_integrity(&pool, "源数据库").await?;
+    let backup_result = backup_open_database(&pool, db_path, version).await;
+    pool.close().await;
+    backup_result
+}
 
-    let custom_path: Option<String> = sqlx::query_scalar("SELECT db_backup_path FROM user LIMIT 1")
-        .fetch_optional(&pool)
-        .await
-        .ok()
-        .flatten();
+async fn backup_open_database(
+    pool: &sqlx::SqlitePool,
+    db_path: &Path,
+    version: &str,
+) -> Result<PathBuf, DbErr> {
+    verify_integrity(pool, "源数据库").await?;
 
-    let default_dir = db_path.parent().unwrap().join("backups");
+    // 更老的 schema 可能没有该字段；其他读取错误必须上报，不能误当成未配置。
+    let has_backup_path: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM pragma_table_info('user') WHERE name = 'db_backup_path')",
+    )
+    .fetch_one(pool)
+    .await
+    .map_err(|e| DbErr::Custom(format!("检查数据库备份目录配置失败: {e}")))?;
+    let custom_path: Option<String> = if has_backup_path {
+        sqlx::query_scalar("SELECT db_backup_path FROM user LIMIT 1")
+            .fetch_optional(pool)
+            .await
+            .map_err(|e| DbErr::Custom(format!("读取数据库备份目录配置失败: {e}")))?
+            .flatten()
+    } else {
+        None
+    };
+
+    let default_dir = db_path
+        .parent()
+        .ok_or_else(|| DbErr::Custom("数据库文件缺少父目录".into()))?
+        .join("backups");
     let custom_dir = custom_path
         .as_deref()
         .map(str::trim)
@@ -44,10 +88,7 @@ pub async fn backup_sqlite(version: &str) -> Result<PathBuf, DbErr> {
             }
         });
 
-    let backup_result =
-        create_backup_with_fallback(&pool, version, custom_dir.as_deref(), &default_dir).await;
-    pool.close().await;
-    backup_result
+    create_backup_with_fallback(pool, version, custom_dir.as_deref(), &default_dir).await
 }
 
 /// 将文件路径转换为 sqlite 连接 URL
@@ -55,24 +96,25 @@ pub fn path_to_sqlite_url(path: &Path) -> Result<String, DbErr> {
     path_to_sqlite_url_with_mode(path, "rwc")
 }
 
-fn path_to_sqlite_url_with_mode(path: &Path, mode: &str) -> Result<String, DbErr> {
+pub(crate) fn path_to_sqlite_url_with_mode(path: &Path, mode: &str) -> Result<String, DbErr> {
     let db_url = url::Url::from_file_path(path)
         .map_err(|_| DbErr::Custom("Invalid database path".to_string()))?;
     Ok(format!("sqlite:{}?mode={}", db_url.path(), mode))
 }
 
 async fn verify_integrity(pool: &sqlx::SqlitePool, label: &str) -> Result<(), DbErr> {
-    let result: String = sqlx::query_scalar("PRAGMA integrity_check")
-        .fetch_one(pool)
+    let results: Vec<String> = sqlx::query_scalar("PRAGMA integrity_check")
+        .fetch_all(pool)
         .await
         .map_err(|e| DbErr::Custom(format!("Failed to check {} integrity: {}", label, e)))?;
 
-    if result.eq_ignore_ascii_case("ok") {
+    if results.len() == 1 && results[0].eq_ignore_ascii_case("ok") {
         Ok(())
     } else {
         Err(DbErr::Custom(format!(
             "{}完整性检查失败: {}",
-            label, result
+            label,
+            results.join("; ")
         )))
     }
 }
@@ -99,37 +141,55 @@ async fn create_verified_backup(
         ))
     })?;
 
-    let timestamp = Local::now().format("%Y%m%d_%H%M%S_%3f");
-    let backup_path = target_dir.join(format!("reina_manager_{}_{}.db", version, timestamp));
+    let timestamp = Local::now().format("%Y%m%d_%H%M%S").to_string();
+    let prefix = format!(
+        "reina_manager_pre_migration_v{}_",
+        version.trim_start_matches('v')
+    );
+    let backup_name =
+        next_backup_filename(target_dir, &prefix, &timestamp, ".db").map_err(DbErr::Custom)?;
+    let backup_path = target_dir.join(backup_name);
+    let temporary_path =
+        temporary_sibling_path(&backup_path, "reina-creating").map_err(DbErr::Custom)?;
 
-    create_snapshot(pool, &backup_path).await.map_err(|e| {
-        DbErr::Custom(format!(
-            "无法在 {} 创建数据库快照: {}",
-            backup_path.display(),
-            e
-        ))
-    })?;
+    // 先验证临时快照，成功后才发布正式文件，失败产物不能被误认为有效备份。
+    let result = async {
+        create_snapshot(pool, &temporary_path).await?;
+        let backup_url = path_to_sqlite_url_with_mode(&temporary_path, "ro")?;
+        let backup_pool = sqlx::SqlitePool::connect(&backup_url)
+            .await
+            .map_err(|e| DbErr::Custom(format!("无法打开备份数据库: {e}")))?;
+        let label = format!("备份数据库 {}", backup_path.display());
+        let integrity_result = verify_integrity(&backup_pool, &label).await;
+        backup_pool.close().await;
+        integrity_result?;
 
-    let backup_url = path_to_sqlite_url_with_mode(&backup_path, "ro").map_err(|e| {
-        DbErr::Custom(format!(
-            "无法生成备份数据库连接地址 {}: {}",
-            backup_path.display(),
-            e
-        ))
-    })?;
-    let backup_pool = sqlx::SqlitePool::connect(&backup_url).await.map_err(|e| {
-        DbErr::Custom(format!(
-            "无法打开备份数据库 {}: {}",
-            backup_path.display(),
-            e
-        ))
-    })?;
-    let label = format!("备份数据库 {}", backup_path.display());
-    let integrity_result = verify_integrity(&backup_pool, &label).await;
-    backup_pool.close().await;
-    integrity_result?;
-
-    Ok(backup_path)
+        match fs::symlink_metadata(&backup_path) {
+            Ok(_) => {
+                return Err(DbErr::Custom(format!(
+                    "备份文件已存在: {}",
+                    backup_path.display()
+                )))
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(DbErr::Custom(format!("检查备份文件失败: {error}"))),
+        }
+        fs::rename(&temporary_path, &backup_path)
+            .map_err(|e| DbErr::Custom(format!("发布数据库备份失败: {e}")))?;
+        Ok(backup_path)
+    }
+    .await;
+    if result.is_err() {
+        if let Err(error) = fs::remove_file(&temporary_path) {
+            if error.kind() != std::io::ErrorKind::NotFound {
+                log::warn!(
+                    "[MIGRATION] 清理失败的临时备份失败 {}: {error}",
+                    temporary_path.display()
+                );
+            }
+        }
+    }
+    result
 }
 
 async fn create_backup_with_fallback(
@@ -168,11 +228,14 @@ async fn create_backup_with_fallback(
 }
 
 #[cfg(test)]
+pub(crate) use tests::create_test_directory;
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use std::time::{SystemTime, UNIX_EPOCH};
 
-    fn create_test_directory(name: &str) -> PathBuf {
+    pub(crate) fn create_test_directory(name: &str) -> PathBuf {
         let unique = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap()
