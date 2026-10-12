@@ -77,7 +77,15 @@ const SOURCE_LABELS: Record<CloudCollectionSource, string> = {
 	bgm: "Bangumi",
 	vndb: "VNDB",
 	hikarinagi: "Hikarinagi",
+	kun: "Kungal",
 };
+
+function getImportSummarySeverity(summary: ImportSummary) {
+	if (summary.imported === 0 && summary.failed > 0) return "error";
+	if (summary.skipped > 0 || summary.failed > 0 || summary.imported === 0)
+		return "warning";
+	return "success";
+}
 
 function getDisplayName(item: CloudCollectionItem, language: string) {
 	return language === "zh-CN" && item.nameCn ? item.nameCn : item.name;
@@ -252,11 +260,24 @@ export default function CloudCollectionTab({
 		setPhase("preparing");
 		setProgress({ completed: 0, total: selectedItems.length });
 		setSummary(null);
+		const duplicateKeys = new Set<string>();
 		try {
 			const prepared = await prepareCloudCollectionItems(
 				selectedItems,
 				controller.signal,
 				(result) => {
+					if (result.duplicate) {
+						duplicateKeys.add(result.item.key);
+						setItems((current) =>
+							current.filter((item) => item.key !== result.item.key),
+						);
+						setSelectedKeys((current) => {
+							const next = new Set(current);
+							next.delete(result.item.key);
+							return next;
+						});
+						return;
+					}
 					setItems((current) =>
 						current.map((item) => {
 							if (item.key !== result.item.key) return item;
@@ -278,6 +299,7 @@ export default function CloudCollectionTab({
 					);
 				},
 				(completed, total) => setProgress({ completed, total }),
+				checkGameExists,
 			);
 			const failedDetails = new Map(
 				prepared
@@ -296,7 +318,11 @@ export default function CloudCollectionTab({
 			);
 
 			if (ready.length === 0) {
-				setSummary({ imported: 0, skipped: 0, failed: failedDetails.size });
+				setSummary({
+					imported: 0,
+					skipped: duplicateKeys.size,
+					failed: failedDetails.size,
+				});
 				setPhase("ready");
 				return;
 			}
@@ -321,7 +347,6 @@ export default function CloudCollectionTab({
 				result.batchResult?.errors.map((error) => error.index) ?? [],
 			);
 			const states = new Map<string, { error?: string; state: ImportState }>();
-			const duplicateKeys = new Set<string>();
 			for (let index = 0; index < ready.length; index++) {
 				const key = ready[index].item.key;
 				if (duplicateIndices.has(index)) {
@@ -375,14 +400,22 @@ export default function CloudCollectionTab({
 			const failed =
 				failedDetails.size +
 				[...states.values()].filter((state) => state.state === "error").length;
-			setSummary({ imported, skipped, failed });
+			const nextSummary = { imported, skipped, failed };
+			setSummary(nextSummary);
 			if (imported > 0) {
-				snackbar.success(
-					t("components.CloudCollectionImport.success", {
-						defaultValue: "成功导入 {{count}} 个云端游戏",
-						count: imported,
-					}),
-				);
+				const severity = getImportSummarySeverity(nextSummary);
+				const message =
+					severity === "success"
+						? t("components.CloudCollectionImport.success", {
+								defaultValue: "成功导入 {{count}} 个云端游戏",
+								count: imported,
+							})
+						: t("components.CloudCollectionImport.resultSummary", {
+								defaultValue:
+									"导入 {{imported}} 个，跳过 {{skipped}} 个，失败 {{failed}} 个",
+								...nextSummary,
+							});
+				snackbar[severity](message);
 			}
 			setPhase("ready");
 		} catch (error) {
@@ -570,14 +603,19 @@ export default function CloudCollectionTab({
 					)}
 
 					{summary && (
-						<Alert severity={summary.failed > 0 ? "warning" : "success"}>
-							{t("components.CloudCollectionImport.resultSummary", {
-								defaultValue:
-									"导入 {{imported}} 个，跳过 {{skipped}} 个，失败 {{failed}} 个",
-								imported: summary.imported,
-								skipped: summary.skipped,
-								failed: summary.failed,
-							})}
+						<Alert severity={getImportSummarySeverity(summary)}>
+							{summary.imported === 0 &&
+							summary.failed === 0 &&
+							summary.skipped > 0
+								? t("components.CloudCollectionImport.allDuplicates", {
+										defaultValue: "所选 {{count}} 个条目均已存在，未导入",
+										count: summary.skipped,
+									})
+								: t("components.CloudCollectionImport.resultSummary", {
+										defaultValue:
+											"导入 {{imported}} 个，跳过 {{skipped}} 个，失败 {{failed}} 个",
+										...summary,
+									})}
 						</Alert>
 					)}
 

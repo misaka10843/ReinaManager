@@ -26,7 +26,7 @@ const LOGIN_TIMEOUT: Duration = Duration::from_secs(300);
 const AUTHORIZATION_ENDPOINT: &str = "https://account.nextmoe.com/api/v1/oauth/authorize";
 const TOKEN_ENDPOINT: &str = "https://account.nextmoe.com/api/v1/oauth/token";
 const USERINFO_ENDPOINT: &str = "https://account.nextmoe.com/api/v1/oauth/userinfo";
-const SCOPES: &str = "openid profile catalog:read";
+const SCOPES: &str = "openid profile catalog:read folder:read";
 const AUTH_EXPIRED: &str = "nextmoe_auth_expired: Kungal 授权已失效，请重新登录";
 const STORE_ERROR: &str = "nextmoe_credential_store_error: 保存或读取 Kungal 授权信息失败，请重试";
 const LOGIN_CANCELLED: &str = "Kungal 登录已取消或过期，请重新登录";
@@ -394,6 +394,18 @@ mod tests {
             ..Default::default()
         };
         assert!(require_catalog_scope(&auth).is_err());
+    }
+
+    #[test]
+    fn folder_read_is_requested_but_legacy_catalog_auth_remains_valid() {
+        let scopes: Vec<_> = SCOPES.split_whitespace().collect();
+        assert!(scopes.contains(&"folder:read"));
+        assert!(!scopes.contains(&"folder:write"));
+        let auth = NextmoeAuth {
+            scope: "openid profile catalog:read".into(),
+            ..Default::default()
+        };
+        assert!(require_catalog_scope(&auth).is_ok());
     }
 
     #[tokio::test]

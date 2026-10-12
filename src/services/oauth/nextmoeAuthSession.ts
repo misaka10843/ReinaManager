@@ -120,6 +120,36 @@ function isNextmoeAuthRejected(error: unknown) {
 	);
 }
 
+/** 用户数据必须保持登录身份，不能像公开目录一样退回匿名请求。 */
+export async function withNextmoeUserAuth<T>(
+	fn: (token: string) => Promise<T>,
+): Promise<T> {
+	const auth = await getNextmoeAuth();
+	if (!auth?.access_token) {
+		throw new AppError({
+			code: "nextmoe_auth_missing",
+			message: "请先在账号设置中登录 Kungal (NextMoe)。",
+		});
+	}
+	try {
+		return await fn(auth.access_token);
+	} catch (error) {
+		if (!isHttpStatusFromHost(error, 401, "api.nextmoe.dev")) throw error;
+		const refreshed = await getNextmoeAuth({
+			forceRefresh: true,
+			expiredAccessToken: auth.access_token,
+		});
+		if (!refreshed?.access_token) {
+			throw new AppError({
+				code: "nextmoe_auth_expired",
+				message: getReloginMessage(),
+				cause: error,
+			});
+		}
+		return fn(refreshed.access_token);
+	}
+}
+
 /** 公开目录优先使用登录额度，凭据不可用时退回匿名读取。 */
 export async function withNextmoeAuth<T>(
 	fn: (token?: string, auth?: NextmoeAuth) => Promise<T>,

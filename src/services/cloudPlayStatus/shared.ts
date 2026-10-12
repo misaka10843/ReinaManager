@@ -10,11 +10,13 @@ import {
 } from "@/metadata/sourceRecord";
 import { queryClient } from "@/providers/queryClient";
 import { PlayStatus } from "@/types/collection";
+import type { NextmoePlayState } from "@/types/nextmoe";
 
 export interface CloudPlayStatusContext {
 	bgm?: Map<string, PlayStatus>;
 	vndb?: Map<string, PlayStatus>;
 	hikarinagi?: Map<string, PlayStatus>;
+	kun?: Map<string, PlayStatus>;
 }
 
 const VNDB_STATUS_LABEL_IDS = {
@@ -157,6 +159,40 @@ export function mapPlayStatusToHikarinagiStatus(
 	}
 }
 
+export function mapNextmoeStateToPlayStatus(state?: NextmoePlayState | null) {
+	switch (state) {
+		case "wish":
+			return PlayStatus.WISH;
+		case "doing":
+			return PlayStatus.PLAYING;
+		case "done":
+			return PlayStatus.PLAYED;
+		case "on_hold":
+			return PlayStatus.ON_HOLD;
+		case "dropped":
+			return PlayStatus.DROPPED;
+		default:
+			return undefined;
+	}
+}
+
+export function mapPlayStatusToNextmoeState(
+	status: PlayStatus,
+): NextmoePlayState {
+	switch (status) {
+		case PlayStatus.WISH:
+			return "wish";
+		case PlayStatus.PLAYING:
+			return "doing";
+		case PlayStatus.PLAYED:
+			return "done";
+		case PlayStatus.ON_HOLD:
+			return "on_hold";
+		case PlayStatus.DROPPED:
+			return "dropped";
+	}
+}
+
 export function resolveCloudPlayStatusFromContext(
 	game: SourceIdentityPayload,
 	context: CloudPlayStatusContext,
@@ -164,6 +200,7 @@ export function resolveCloudPlayStatusFromContext(
 	const bgmId = getAnySourceId(game, "bgm");
 	const vndbId = getAnySourceId(game, "vndb");
 	const hikarinagiId = getAnySourceId(game, "hikarinagi");
+	const kunId = getAnySourceId(game, "kun");
 
 	if (bgmId && context.bgm?.has(bgmId)) {
 		return context.bgm.get(bgmId);
@@ -173,6 +210,9 @@ export function resolveCloudPlayStatusFromContext(
 	}
 	if (hikarinagiId && context.hikarinagi?.has(hikarinagiId)) {
 		return context.hikarinagi.get(hikarinagiId);
+	}
+	if (kunId && context.kun?.has(kunId)) {
+		return context.kun.get(kunId);
 	}
 	return undefined;
 }

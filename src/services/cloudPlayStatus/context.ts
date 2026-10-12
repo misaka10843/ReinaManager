@@ -8,6 +8,7 @@ import {
 	fetchHikarinagiGameRate,
 	fetchHikarinagiRatesPage,
 } from "@/metadata/api/hikarinagi";
+import { fetchNextmoeWorkStates } from "@/metadata/api/nextmoe";
 import {
 	fetchVndbUserCollection,
 	fetchVndbUserCollectionsPage,
@@ -16,6 +17,7 @@ import {
 import { queryClient } from "@/providers/queryClient";
 import { withBgmAuth } from "@/services/oauth/bgmAuthSession";
 import { withHikarinagiAuth } from "@/services/oauth/hikarinagiAuthSession";
+import { withNextmoeUserAuth } from "@/services/oauth/nextmoeAuthSession";
 import { getNetworkRequestContext } from "@/services/requestContext";
 import { useStore } from "@/store/appStore";
 import type { PlayStatus } from "@/types/collection";
@@ -25,6 +27,7 @@ import {
 	getVndbToken,
 	mapBgmTypeToPlayStatus,
 	mapHikarinagiStatusToPlayStatus,
+	mapNextmoeStateToPlayStatus,
 	mapVndbCollectionToPlayStatus,
 } from "./shared";
 
@@ -32,6 +35,7 @@ export interface CloudPlayStatusContextInput {
 	bgmIds?: Iterable<string>;
 	vndbIds?: Iterable<string>;
 	hikarinagiIds?: Iterable<string>;
+	kunIds?: Iterable<string>;
 }
 
 const DIRECT_COLLECTION_LOOKUP_THRESHOLD = 1;
@@ -373,12 +377,39 @@ async function createHikarinagiPlayStatusMap(ids: Iterable<string>) {
 	}
 }
 
+async function createKunPlayStatusMap(ids: Iterable<string>) {
+	const uniqueIds = [...new Set(ids)].filter(Boolean);
+	if (uniqueIds.length === 0) return new Map<string, PlayStatus>();
+	try {
+		return await withNextmoeUserAuth(async (token) => {
+			const states = await fetchNextmoeWorkStates(
+				uniqueIds,
+				token,
+				getNetworkRequestContext(),
+			);
+			const statusMap = new Map<string, PlayStatus>();
+			for (const item of states) {
+				const status = mapNextmoeStateToPlayStatus(item.state);
+				if (status !== undefined) statusMap.set(item.work_id, status);
+			}
+			return statusMap;
+		});
+	} catch (error) {
+		console.error("获取 Kungal 游玩状态失败:", error);
+		return undefined;
+	}
+}
+
 export async function createCloudPlayStatusContext(
 	input: CloudPlayStatusContextInput = {},
 ): Promise<CloudPlayStatusContext> {
-	const { syncBgmCollection, syncVndbCollection, syncHikarinagiCollection } =
-		useStore.getState();
-	const [bgm, vndb, hikarinagi] = await Promise.all([
+	const {
+		syncBgmCollection,
+		syncVndbCollection,
+		syncHikarinagiCollection,
+		syncKunCollection,
+	} = useStore.getState();
+	const [bgm, vndb, hikarinagi, kun] = await Promise.all([
 		syncBgmCollection
 			? createBgmPlayStatusMap(input.bgmIds ?? [])
 			: Promise.resolve(undefined),
@@ -388,11 +419,15 @@ export async function createCloudPlayStatusContext(
 		syncHikarinagiCollection
 			? createHikarinagiPlayStatusMap(input.hikarinagiIds ?? [])
 			: Promise.resolve(undefined),
+		syncKunCollection
+			? createKunPlayStatusMap(input.kunIds ?? [])
+			: Promise.resolve(undefined),
 	]);
 
 	return {
 		...(bgm ? { bgm } : {}),
 		...(vndb ? { vndb } : {}),
 		...(hikarinagi ? { hikarinagi } : {}),
+		...(kun ? { kun } : {}),
 	};
 }

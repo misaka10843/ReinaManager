@@ -249,7 +249,7 @@ export const SOURCE_TYPES = [
 export type SourceType = (typeof SOURCE_TYPES)[number];
 export type CloudCollectionSource = Extract<
 	SourceType,
-	"bgm" | "vndb" | "hikarinagi"
+	"bgm" | "vndb" | "hikarinagi" | "kun"
 >;
 
 export type apiSourceType = SourceType | "mixed";

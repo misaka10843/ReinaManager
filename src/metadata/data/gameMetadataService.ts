@@ -173,25 +173,34 @@ export class GameMetadataSession {
 		};
 	}
 
-	private async completeSingleSource(
+	/** 按会话偏好保留来源身份，供导入流程在增强前去重；此时不做最终数据清洗。 */
+	filterSingleSourceDraft(
+		draft: GameMetadataDraft,
+		origin: SourceType,
+	): GameMetadataDraft {
+		const allowedSources = new Set<SourceType>([
+			origin,
+			...(this.context.mixedEnabledSources ?? []),
+		]);
+		return {
+			...draft,
+			sources: draft.sources.filter((record) =>
+				allowedSources.has(record.source),
+			),
+		};
+	}
+
+	/** 对已获取的详情执行关联增强与最终清洗，避免导入去重后重新请求主源。 */
+	async completeSingleSource(
 		draft: GameMetadataDraft,
 		origin: SourceType,
 	): Promise<MetadataFetchResult> {
 		const result = this.context.autoExpandSources?.includes(origin)
 			? await this.expandAssociatedSources(draft, origin)
 			: { data: draft, failedSources: [] };
-		const allowedSources = new Set<SourceType>([
-			origin,
-			...(this.context.mixedEnabledSources ?? []),
-		]);
 		// 主源始终保留；增强返回的间接关联也不能绕过 Mixed 选择。
 		return this.finalizeResult(
-			{
-				...result.data,
-				sources: result.data.sources.filter((record) =>
-					allowedSources.has(record.source),
-				),
-			},
+			this.filterSingleSourceDraft(result.data, origin),
 			{ failedSources: result.failedSources },
 		);
 	}
@@ -205,7 +214,10 @@ export class GameMetadataSession {
 		)
 			.flatMap((adapter) => {
 				const id = getCandidateSourceId(draft, adapter.key);
-				return adapter.key !== origin && id && adapter.validateId(id)
+				return adapter.key !== origin &&
+					getCandidateSourceData(draft, adapter.key) == null &&
+					id &&
+					adapter.validateId(id)
 					? [{ adapter, id }]
 					: [];
 			})
@@ -401,6 +413,15 @@ export class GameMetadataSession {
 		id: string,
 		source: SourceType,
 	): Promise<MetadataFetchResult> {
+		const draft = await this.getGameByIdDraft(id, source);
+		return this.completeSingleSource(draft, source);
+	}
+
+	/** 仅获取主源详情与允许的关联身份，增强和最终清洗由采用流程决定。 */
+	async getGameByIdDraft(
+		id: string,
+		source: SourceType,
+	): Promise<GameMetadataDraft> {
 		if (import.meta.env.DEV) {
 			console.log(`[MetadataService] getGameById called:`, {
 				id,
@@ -409,7 +430,7 @@ export class GameMetadataSession {
 		}
 		try {
 			const candidate = await this.getRuntimeAdapter(source).fetchById(id);
-			return await this.completeSingleSource(candidate, source);
+			return this.filterSingleSourceDraft(candidate, source);
 		} catch (error) {
 			throw createMetadataError(
 				`Failed to fetch ${source} metadata by id`,

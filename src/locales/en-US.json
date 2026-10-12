@@ -147,6 +147,8 @@
 			"removeFromCategorySuccess": "Removed from current category"
 		},
 		"CloudCollectionImport": {
+			"allDuplicates_one": "The selected entry already exists; nothing was imported",
+			"allDuplicates_other": "All {{count}} selected entries already exist; nothing was imported",
 			"cancel": "Cancel Task",
 			"cancelled": "Stopped. Retrieved metadata will remain available in this dialog.",
 			"clearVisible": "Clear",
@@ -925,6 +927,8 @@
 				"bgmTitle": "Enable Bangumi collection sync",
 				"hikarinagiDescription": "Try to read Hikarinagi play status when adding a game, and sync local status changes back to Hikarinagi.",
 				"hikarinagiTitle": "Enable Hikarinagi play status sync",
+				"kunDescription": "Try to read Kungal play status when adding a game, and sync local status changes back to Kungal.",
+				"kunTitle": "Enable Kungal play status sync",
 				"syncFailed": "Local status was updated, but failed to sync to {{source}}",
 				"vndbDescription": "Try to read the VNDB collection status when adding a game, and sync local status changes back to VNDB.",
 				"vndbTitle": "Enable VNDB collection sync"
@@ -1020,7 +1024,7 @@
 			},
 			"navigation": "Settings category navigation",
 			"nextmoeAuth": {
-				"description": "NextMoe provides metadata without requiring sign-in. Sign in for a higher request allowance and to sync play status and reviews.",
+				"description": "NextMoe provides metadata without requiring sign-in. Sign in for a higher request allowance, cloud collection import, and play status synchronization.",
 				"logout": "Sign out",
 				"logoutSuccess": "Signed out of Kungal (NextMoe)",
 				"oauthCancel": "Cancel Kungal (NextMoe) sign-in",

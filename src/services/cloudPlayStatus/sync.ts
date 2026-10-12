@@ -5,6 +5,10 @@ import {
 	updateHikarinagiGameRate,
 } from "@/metadata/api/hikarinagi";
 import {
+	fetchNextmoeWorkState,
+	updateNextmoeWorkState,
+} from "@/metadata/api/nextmoe";
+import {
 	fetchVndbUserCollection,
 	updateVndbUserCollection,
 } from "@/metadata/api/vndb";
@@ -15,6 +19,7 @@ import {
 import { queryClient } from "@/providers/queryClient";
 import { withBgmAuth } from "@/services/oauth/bgmAuthSession";
 import { withHikarinagiAuth } from "@/services/oauth/hikarinagiAuthSession";
+import { withNextmoeUserAuth } from "@/services/oauth/nextmoeAuthSession";
 import { getNetworkRequestContext } from "@/services/requestContext";
 import { useStore } from "@/store/appStore";
 import type { PlayStatus } from "@/types/collection";
@@ -24,14 +29,16 @@ import {
 	getVndbToken,
 	mapBgmTypeToPlayStatus,
 	mapHikarinagiStatusToPlayStatus,
+	mapNextmoeStateToPlayStatus,
 	mapPlayStatusToHikarinagiStatus,
+	mapPlayStatusToNextmoeState,
 	mapPlayStatusToVndbLabelId,
 	mapVndbCollectionToPlayStatus,
 	resolveCloudPlayStatusFromContext,
 	VNDB_NORMAL_STATUS_LABEL_IDS,
 } from "./shared";
 
-type CollectionSyncSource = "bgm" | "vndb" | "hikarinagi";
+type CollectionSyncSource = "bgm" | "vndb" | "hikarinagi" | "kun";
 
 async function resolveBgmPlayStatus(game: SourceIdentityPayload) {
 	const bgmId = getAnySourceId(game, "bgm");
@@ -99,12 +106,30 @@ async function resolveHikarinagiPlayStatus(game: SourceIdentityPayload) {
 	}
 }
 
+async function resolveKunPlayStatus(game: SourceIdentityPayload) {
+	const kunId = getAnySourceId(game, "kun");
+	if (!kunId) return undefined;
+	try {
+		const state = await withNextmoeUserAuth((token) =>
+			fetchNextmoeWorkState(kunId, token, getNetworkRequestContext()),
+		);
+		return mapNextmoeStateToPlayStatus(state?.state);
+	} catch (error) {
+		console.error("获取 Kungal 游玩状态失败:", error);
+		return undefined;
+	}
+}
+
 export async function resolveCloudPlayStatus(
 	game: SourceIdentityPayload,
 	context?: CloudPlayStatusContext,
 ) {
-	const { syncBgmCollection, syncVndbCollection, syncHikarinagiCollection } =
-		useStore.getState();
+	const {
+		syncBgmCollection,
+		syncVndbCollection,
+		syncHikarinagiCollection,
+		syncKunCollection,
+	} = useStore.getState();
 
 	if (context) {
 		const status = resolveCloudPlayStatusFromContext(game, context);
@@ -125,6 +150,10 @@ export async function resolveCloudPlayStatus(
 	if (syncHikarinagiCollection) {
 		const hikarinagiStatus = await resolveHikarinagiPlayStatus(game);
 		if (hikarinagiStatus !== undefined) return hikarinagiStatus;
+	}
+	if (syncKunCollection) {
+		const kunStatus = await resolveKunPlayStatus(game);
+		if (kunStatus !== undefined) return kunStatus;
 	}
 
 	return undefined;
@@ -170,7 +199,7 @@ async function syncPlayStatusToVndb(
 		const targetLabelId = mapPlayStatusToVndbLabelId(newStatus);
 		if (!targetLabelId) return true;
 
-		return updateVndbUserCollection(
+		return await updateVndbUserCollection(
 			vndbId,
 			{
 				labels_set: [targetLabelId],
@@ -210,28 +239,85 @@ async function syncPlayStatusToHikarinagi(
 	}
 }
 
+async function syncPlayStatusToKun(
+	game: SourceIdentityPayload,
+	newStatus: PlayStatus,
+) {
+	const kunId = getAnySourceId(game, "kun");
+	if (!kunId) return true;
+	try {
+		return await withNextmoeUserAuth((token) =>
+			updateNextmoeWorkState(
+				kunId,
+				mapPlayStatusToNextmoeState(newStatus),
+				token,
+				getNetworkRequestContext(),
+			),
+		);
+	} catch (error) {
+		console.error("同步 Kungal 游玩状态失败:", error);
+		return false;
+	}
+}
+
+const syncHandlers: Record<
+	CollectionSyncSource,
+	(game: SourceIdentityPayload, status: PlayStatus) => Promise<boolean>
+> = {
+	bgm: syncPlayStatusToBgm,
+	vndb: syncPlayStatusToVndb,
+	hikarinagi: syncPlayStatusToHikarinagi,
+	kun: syncPlayStatusToKun,
+};
+
+const pendingStatusSyncs = new Map<string, Promise<boolean>>();
+
+async function enqueueStatusSync(
+	source: CollectionSyncSource,
+	id: string,
+	status: PlayStatus,
+): Promise<boolean> {
+	const key = `${source}:${id}`;
+	// 串行的是完整同步任务，包含鉴权、读取和重试，避免旧状态稍后覆盖新状态。
+	// 使用云端身份作为键，让绑定同一条目的不同本地游戏也共享顺序。
+	const task = () =>
+		syncHandlers[source]({ sourceIds: { [source]: id } }, status);
+	const previous = pendingStatusSyncs.get(key) ?? Promise.resolve(true);
+	const result = previous.then(task, task);
+	pendingStatusSyncs.set(key, result);
+	try {
+		return await result;
+	} finally {
+		if (pendingStatusSyncs.get(key) === result) pendingStatusSyncs.delete(key);
+	}
+}
+
 export async function syncPlayStatusToCloud(
 	game: SourceIdentityPayload,
 	newStatus: PlayStatus,
 ): Promise<CollectionSyncSource[]> {
-	const { syncBgmCollection, syncVndbCollection, syncHikarinagiCollection } =
-		useStore.getState();
-	const failedSources: CollectionSyncSource[] = [];
-
-	if (syncBgmCollection) {
-		const success = await syncPlayStatusToBgm(game, newStatus);
-		if (!success) failedSources.push("bgm");
-	}
-
-	if (syncVndbCollection) {
-		const success = await syncPlayStatusToVndb(game, newStatus);
-		if (!success) failedSources.push("vndb");
-	}
-
-	if (syncHikarinagiCollection) {
-		const success = await syncPlayStatusToHikarinagi(game, newStatus);
-		if (!success) failedSources.push("hikarinagi");
-	}
-
-	return failedSources;
+	const {
+		syncBgmCollection,
+		syncVndbCollection,
+		syncHikarinagiCollection,
+		syncKunCollection,
+	} = useStore.getState();
+	const enabled: Record<CollectionSyncSource, boolean> = {
+		bgm: syncBgmCollection,
+		vndb: syncVndbCollection,
+		hikarinagi: syncHikarinagiCollection,
+		kun: syncKunCollection,
+	};
+	// 入队前固定本次采用的身份和开关；各来源独立执行并分别返回失败结果。
+	const results = await Promise.all(
+		(Object.keys(syncHandlers) as CollectionSyncSource[]).map(
+			async (source) => {
+				const id = getAnySourceId(game, source);
+				if (!enabled[source] || !id) return [];
+				const success = await enqueueStatusSync(source, id, newStatus);
+				return success ? [] : [source];
+			},
+		),
+	);
+	return results.flat();
 }

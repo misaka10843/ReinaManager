@@ -221,6 +221,7 @@ async function requestTauriHttp<T>(
 			url: fullUrl,
 			status: response.status,
 			statusText: response.statusText,
+			body: await response.json().catch(() => undefined),
 		});
 	}
 	if (rateLimitSource) {

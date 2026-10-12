@@ -1,6 +1,13 @@
 import type { GameMetadataDraft, KunData, SourceType } from "@/types";
-import type { NextmoeList, NextmoeWork, NextmoeWorkTag } from "@/types/nextmoe";
-import { AppError } from "@/utils/errors";
+import type {
+	NextmoeList,
+	NextmoePlayState,
+	NextmoeUserWork,
+	NextmoeWork,
+	NextmoeWorkState,
+	NextmoeWorkTag,
+} from "@/types/nextmoe";
+import { AppError, HttpResponseError, isHttpStatus } from "@/utils/errors";
 import { USER_AGENT } from "../constants";
 import type { SourceIdMap } from "../sourceAdapter";
 import {
@@ -14,6 +21,7 @@ import http, {
 } from "./http";
 
 const NEXTMOE_API_BASE_URL = "https://api.nextmoe.dev/v2/catalog";
+const NEXTMOE_USER_API_BASE_URL = "https://api.nextmoe.dev/v2/me";
 const NEXTMOE_DETAIL_INCLUDE =
 	"titles,refs,intros,companies,ratings,tags,playtimes,releases";
 const NEXTMOE_DETAIL_FIELDS =
@@ -55,6 +63,15 @@ function uniqueNames(names: Array<string | null | undefined>): string[] {
 
 function isGameWork(work: NextmoeWork): boolean {
 	return work.medium === "galgame" || work.medium === "doujin_game";
+}
+
+function assertNextmoeWorkId(id: string): void {
+	if (!/^\d+$/.test(id)) {
+		throw new AppError({
+			code: "invalid_game_id",
+			message: `Invalid NextMoe id: ${id}`,
+		});
+	}
 }
 
 function normalizeRefId(source: SourceType, id: string): string | undefined {
@@ -249,31 +266,65 @@ export async function fetchNextmoeById(
 	spoilerLevel = 0,
 	context: NetworkRequestContext = {},
 ): Promise<GameMetadataDraft> {
-	if (!/^\d+$/.test(id)) {
-		throw new AppError({
-			code: "invalid_game_id",
-			message: `Invalid NextMoe id: ${id}`,
-		});
+	assertNextmoeWorkId(id);
+	const visited = new Set<string>();
+	let currentId = id;
+	while (true) {
+		context.signal?.throwIfAborted();
+		visited.add(currentId);
+		let work: NextmoeWork;
+		try {
+			work = (
+				await http.get<NextmoeWork>(
+					`${NEXTMOE_API_BASE_URL}/works/${currentId}`,
+					{
+						...buildNextmoeOptions(token, context),
+						params: {
+							include: NEXTMOE_DETAIL_INCLUDE,
+							fields: NEXTMOE_DETAIL_FIELDS,
+							nsfw: true,
+							spoiler:
+								spoilerLevel >= 2
+									? "major"
+									: spoilerLevel >= 1
+										? "minor"
+										: "none",
+						},
+					},
+				)
+			).data;
+		} catch (error) {
+			const problem =
+				error instanceof HttpResponseError ? error.body : undefined;
+			// 只跟随作品合并的规范 ID，普通 404 保持失败；限制跳数并拒绝循环。
+			if (
+				error instanceof HttpResponseError &&
+				error.status === 404 &&
+				problem !== null &&
+				typeof problem === "object" &&
+				"code" in problem &&
+				problem.code === "ENTITY_MERGED" &&
+				"object" in problem &&
+				problem.object === "work" &&
+				"current_id" in problem &&
+				typeof problem.current_id === "string" &&
+				/^[1-9]\d*$/.test(problem.current_id) &&
+				!visited.has(problem.current_id) &&
+				visited.size <= 3
+			) {
+				currentId = problem.current_id;
+				continue;
+			}
+			throw error;
+		}
+		if (!work?.id || work.object !== "work" || !isGameWork(work)) {
+			throw new AppError({
+				code: "metadata_not_found",
+				message: `NextMoe game not found: ${currentId}`,
+			});
+		}
+		return transformNextmoeWork(work, spoilerLevel);
 	}
-	const work = (
-		await http.get<NextmoeWork>(`${NEXTMOE_API_BASE_URL}/works/${id}`, {
-			...buildNextmoeOptions(token, context),
-			params: {
-				include: NEXTMOE_DETAIL_INCLUDE,
-				fields: NEXTMOE_DETAIL_FIELDS,
-				nsfw: true,
-				spoiler:
-					spoilerLevel >= 2 ? "major" : spoilerLevel >= 1 ? "minor" : "none",
-			},
-		})
-	).data;
-	if (!work?.id || work.object !== "work" || !isGameWork(work)) {
-		throw new AppError({
-			code: "metadata_not_found",
-			message: `NextMoe game not found: ${id}`,
-		});
-	}
-	return transformNextmoeWork(work, spoilerLevel);
 }
 
 export async function fetchNextmoeByName(
@@ -305,4 +356,117 @@ export async function fetchNextmoeByName(
 			)
 		).data.items ?? [];
 	return works.filter(isGameWork).map((work) => transformNextmoeWork(work));
+}
+
+/** 收藏列表仅取预览，用户采用条目时仍需补全详情。 */
+export async function fetchNextmoeWorkPreviews(
+	ids: readonly string[],
+	token: string,
+	context: NetworkRequestContext = {},
+): Promise<GameMetadataDraft[]> {
+	ids.forEach(assertNextmoeWorkId);
+	const games: GameMetadataDraft[] = [];
+	for (let index = 0; index < ids.length; index += 100) {
+		const page = (
+			await http.get<NextmoeList<NextmoeWork>>(
+				`${NEXTMOE_API_BASE_URL}/works`,
+				{
+					...buildNextmoeOptions(token, context),
+					params: {
+						ids: ids.slice(index, index + 100).join(","),
+						nsfw: true,
+						include: "titles,companies",
+					},
+				},
+			)
+		).data;
+		games.push(
+			...page.items
+				.filter(isGameWork)
+				.map((work) => transformNextmoeWork(work)),
+		);
+	}
+	return games;
+}
+
+export async function fetchNextmoeUserWorksPage(
+	token: string,
+	cursor?: string,
+	context: NetworkRequestContext = {},
+): Promise<NextmoeList<NextmoeUserWork>> {
+	return (
+		await http.get<NextmoeList<NextmoeUserWork>>(
+			`${NEXTMOE_USER_API_BASE_URL}/works`,
+			{
+				...buildNextmoeOptions(token, context),
+				params: { cursor, limit: 100, nsfw: true },
+			},
+		)
+	).data;
+}
+
+export async function fetchNextmoeWorkStates(
+	ids: readonly string[],
+	token: string,
+	context: NetworkRequestContext = {},
+): Promise<NextmoeWorkState[]> {
+	ids.forEach(assertNextmoeWorkId);
+	const states: NextmoeWorkState[] = [];
+	for (let index = 0; index < ids.length; index += 100) {
+		const page = (
+			await http.get<NextmoeList<NextmoeWorkState>>(
+				`${NEXTMOE_USER_API_BASE_URL}/work-states`,
+				{
+					...buildNextmoeOptions(token, context),
+					params: {
+						work_ids: ids.slice(index, index + 100).join(","),
+						nsfw: true,
+					},
+				},
+			)
+		).data;
+		states.push(...page.items);
+	}
+	return states;
+}
+
+export async function fetchNextmoeWorkState(
+	id: string,
+	token: string,
+	context: NetworkRequestContext = {},
+): Promise<NextmoeWorkState | null> {
+	assertNextmoeWorkId(id);
+	try {
+		return (
+			await http.get<NextmoeWorkState>(
+				`${NEXTMOE_USER_API_BASE_URL}/work-states/${id}`,
+				buildNextmoeOptions(token, context),
+			)
+		).data;
+	} catch (error) {
+		if (isHttpStatus(error, 404)) return null;
+		throw error;
+	}
+}
+
+export async function updateNextmoeWorkState(
+	id: string,
+	state: NextmoePlayState,
+	token: string,
+	context: NetworkRequestContext = {},
+): Promise<boolean> {
+	assertNextmoeWorkId(id);
+	// PUT 未携带 completion 会清空远端值；本地没有该字段时先读取并保留它。
+	// wish 不允许 completion，回到想玩时则按接口规则移除。
+	const previous =
+		state === "wish" ? null : await fetchNextmoeWorkState(id, token, context);
+	await http.put<NextmoeWorkState>(
+		`${NEXTMOE_USER_API_BASE_URL}/work-states/${id}`,
+		{
+			state,
+			...(previous?.completion ? { completion: previous.completion } : {}),
+		},
+		buildNextmoeOptions(token, context),
+	);
+	return true;
 }

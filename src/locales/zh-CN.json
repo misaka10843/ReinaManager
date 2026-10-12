@@ -142,6 +142,7 @@
 			"removeFromCategorySuccess": "已从当前分类移除"
 		},
 		"CloudCollectionImport": {
+			"allDuplicates": "所选 {{count}} 个条目均已存在，未导入",
 			"cancel": "取消任务",
 			"cancelled": "已停止，已获取的元数据将在当前弹窗中保留",
 			"clearVisible": "清空",
@@ -903,6 +904,8 @@
 				"bgmTitle": "启用 Bangumi 收藏同步",
 				"hikarinagiDescription": "添加游戏时尝试读取 Hikarinagi 游玩状态，本地修改状态时同步回 Hikarinagi。",
 				"hikarinagiTitle": "启用 Hikarinagi 游玩状态同步",
+				"kunDescription": "添加游戏时尝试读取 Kungal 游玩状态，本地修改状态时同步回 Kungal。",
+				"kunTitle": "启用 Kungal 游玩状态同步",
 				"syncFailed": "本地状态已更新，但 {{source}} 云端同步失败",
 				"vndbDescription": "添加游戏时尝试读取 VNDB 收藏状态，本地修改状态时同步回 VNDB。",
 				"vndbTitle": "启用 VNDB 收藏同步"
@@ -998,7 +1001,7 @@
 			},
 			"navigation": "设置分类导航",
 			"nextmoeAuth": {
-				"description": "元数据由 NextMoe 提供，无需登录即可获取；登录可提高请求额度，并支持游玩状态和评价同步。",
+				"description": "元数据由 NextMoe 提供，无需登录即可获取；登录可提高请求额度，并支持导入云端收藏和同步游玩状态。",
 				"logout": "退出登录",
 				"logoutSuccess": "已退出 Kungal (NextMoe) 登录",
 				"oauthCancel": "取消 Kungal (NextMoe) 登录",

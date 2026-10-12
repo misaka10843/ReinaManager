@@ -954,6 +954,14 @@ export const NextmoeProviderSection = () => {
 		handleCancelOAuth,
 		handleLogout,
 	} = useNextmoeAuthController();
+	const { syncKunCollection, setSyncKunCollection, openCloudCollectionImport } =
+		useStore(
+			useShallow((state) => ({
+				syncKunCollection: state.syncKunCollection,
+				setSyncKunCollection: state.setSyncKunCollection,
+				openCloudCollectionImport: state.openCloudCollectionImport,
+			})),
+		);
 	const isConnected = Boolean(nextmoeAuth?.access_token);
 	const displayName = nextmoeAuth?.name || `#${nextmoeAuth?.user_id ?? "?"}`;
 
@@ -973,7 +981,7 @@ export const NextmoeProviderSection = () => {
 			<Typography variant="body2" color="text.secondary" className="mb-4">
 				{t(
 					"pages.Settings.nextmoeAuth.description",
-					"元数据由 NextMoe 提供，无需登录即可获取；登录可提高请求额度，并支持游玩状态和评价同步。",
+					"元数据由 NextMoe 提供，无需登录即可获取；登录可提高请求额度，并支持导入云端收藏和同步游玩状态。",
 				)}
 			</Typography>
 			{isConnected && nextmoeAuth ? (
@@ -1040,6 +1048,44 @@ export const NextmoeProviderSection = () => {
 						: t("pages.Settings.nextmoeAuth.oauthLogin", "OAuth 快捷登录")}
 				</Button>
 			)}
+			{isConnected ? (
+				<Stack direction="row" spacing={1} className="mt-3">
+					<Button
+						variant="outlined"
+						size="small"
+						startIcon={<CloudDownloadIcon />}
+						onClick={() => openCloudCollectionImport("kun")}
+						disabled={isOAuthLoading || isSaving}
+					>
+						{t("pages.Settings.importCloudCollection", "导入云端收藏")}
+					</Button>
+				</Stack>
+			) : null}
+			<Divider className="my-4" />
+			<Stack direction="row" justifyContent="space-between" alignItems="center">
+				<Box>
+					<Stack direction="row" spacing={1} alignItems="center">
+						<SyncIcon fontSize="small" color="action" />
+						<Typography variant="subtitle2" className="font-semibold">
+							{t(
+								"pages.Settings.collectionSync.kunTitle",
+								"启用 Kungal 游玩状态同步",
+							)}
+						</Typography>
+					</Stack>
+					<Typography variant="caption" color="text.secondary">
+						{t(
+							"pages.Settings.collectionSync.kunDescription",
+							"添加游戏时尝试读取 Kungal 游玩状态，本地修改状态时同步回 Kungal。",
+						)}
+					</Typography>
+				</Box>
+				<Switch
+					checked={syncKunCollection}
+					onChange={(event) => setSyncKunCollection(event.target.checked)}
+					color="primary"
+				/>
+			</Stack>
 			{authError ? (
 				<Typography variant="caption" color="error" className="block mt-2">
 					{getUserErrorMessage(authError, t)}

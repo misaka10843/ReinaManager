@@ -7,6 +7,7 @@ import {
 	useUpdatePlayStatus,
 } from "@/hooks/queries/usePlayStatus";
 import { getDisplayGameData } from "@/metadata/data/dataTransform";
+import { getRuntimeSourceAdapter } from "@/metadata/sourceRegistry";
 import { snackbar } from "@/providers/snackBar";
 import { syncPlayStatusToCloud } from "@/services/cloudPlayStatus";
 import type { FullGameData, GameData } from "@/types";
@@ -75,7 +76,7 @@ export function useGameStatusActions() {
 
 					if (failedSources.length > 0) {
 						const sourceLabel = failedSources
-							.map((source) => source.toUpperCase())
+							.map((source) => getRuntimeSourceAdapter(source).label)
 							.join(" / ");
 						snackbar.warning(
 							t(

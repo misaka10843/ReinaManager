@@ -56,4 +56,26 @@ export interface NextmoeWork {
 
 export interface NextmoeList<T> {
 	items: T[];
+	next_cursor?: string;
+}
+
+export type NextmoePlayState =
+	| "wish"
+	| "doing"
+	| "done"
+	| "on_hold"
+	| "dropped";
+
+export interface NextmoeWorkState {
+	object: "work_state";
+	work_id: string;
+	state: NextmoePlayState;
+	completion: "one_route" | "main" | "all" | null;
+}
+
+export interface NextmoeUserWork {
+	object: "user_work";
+	work_id: string;
+	folder_ids: string[];
+	work_state: NextmoeWorkState | null;
 }

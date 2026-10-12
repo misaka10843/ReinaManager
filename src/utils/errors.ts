@@ -117,6 +117,7 @@ interface HttpResponseErrorOptions {
 	url: string;
 	status: number;
 	statusText: string;
+	body?: unknown;
 	cause?: unknown;
 }
 
@@ -125,12 +126,14 @@ export class HttpResponseError extends AppError {
 	url: string;
 	status: number;
 	statusText: string;
+	body?: unknown;
 
 	constructor({
 		method,
 		url,
 		status,
 		statusText,
+		body,
 		cause,
 	}: HttpResponseErrorOptions) {
 		super({
@@ -143,6 +146,7 @@ export class HttpResponseError extends AppError {
 		this.url = url;
 		this.status = status;
 		this.statusText = statusText;
+		this.body = body;
 	}
 }
 
