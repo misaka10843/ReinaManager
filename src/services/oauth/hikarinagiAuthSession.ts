@@ -10,7 +10,7 @@ import {
 	nowUnixSeconds,
 } from "@/services/oauth/oauthAuthSession";
 import type { HikarinagiAuth } from "@/types";
-import { AppError, isHttpStatus } from "@/utils/errors";
+import { AppError, isHttpStatusFromHost } from "@/utils/errors";
 
 let hikarinagiRefreshPromise: Promise<HikarinagiAuth | null> | null = null;
 
@@ -116,7 +116,7 @@ export async function withHikarinagiAuth<T>(
 	try {
 		return await fn(token, auth ?? undefined);
 	} catch (error) {
-		if (token && isHttpStatus(error, 401)) {
+		if (token && isHttpStatusFromHost(error, 401, "api.hikarinagi.org")) {
 			await logoutHikarinagiAuth({ notify: true });
 			throw new AppError({
 				code: "hikarinagi_auth_expired",

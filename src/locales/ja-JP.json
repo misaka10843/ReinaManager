@@ -72,7 +72,7 @@
 			"deleteBackupTitle": "バックアップを削除",
 			"deleteGameMessage": "このゲームを削除してもよろしいですか？この操作でゲームをライブラリから削除しますが、ゲームファイルは削除しません。",
 			"deleteGameTitle": "ゲームを削除",
-			"gameName": "ゲーム名",
+			"metadataFetchFailed": "{{sources}} を取得できませんでした。既存のデータは保持されます。今回取得できた結果を下に表示しています。",
 			"processing": "処理中...",
 			"sourceData": "{{source}} データ"
 		},
@@ -488,6 +488,10 @@
 		"metadataNotFound": "対応するメタデータが見つかりませんでした",
 		"metadataRequestFailed": "メタデータの取得に失敗しました。後でもう一度お試しください",
 		"mixedSourcesFailed": "すべてのデータソースへのリクエストに失敗しました",
+		"nextmoeAuthExpired": "Kungal (NextMoe) の認可が失効しました。再度ログインしてください。",
+		"nextmoeAuthMissing": "先にアカウント設定で Kungal (NextMoe) にログインしてください。",
+		"nextmoeCredentialStore": "Kungal 認証情報の保存または読み取りに失敗しました。再試行してください。",
+		"nextmoeScopeRequired": "Kungal の認可にカタログ読み取り権限がありません。再度ログインしてください。",
 		"notFound": "対象の内容が見つかりませんでした",
 		"pathEmpty": "パスを空にすることはできません",
 		"pathInspectionFailed": "パスの状態を確認できませんでした",
@@ -669,7 +673,6 @@
 				"invalidIdType": "無効なIDタイプ",
 				"loading": "読み込み中...",
 				"manualIdMode": "手動 ID",
-				"noDataFetched": "データが取得されていないか、データソースが無効です。",
 				"noGameSelected": "ゲームが選択されていません",
 				"search": "検索",
 				"searching": "検索中...",
@@ -679,6 +682,7 @@
 				"sourceSwitchUnavailable": "このゲームには選択したデータソースのローカルデータがないため、表示ソースだけを切り替えられません。",
 				"switchDisplaySource": "表示ソースを切替",
 				"switchingSource": "切り替え中...",
+				"unboundKunData": "Kungal は NextMoe に切り替わりました。旧 ID の紐付けは解除されていますが、保存済みデータの閲覧と表示ソースの切り替えは可能です。更新するには名前で項目を選び直すか、新しい NextMoe ID を入力してください。Kungal を含まない新しい結果を適用すると、旧 Kungal データは削除されます。",
 				"updateFromSource": "データソースから更新"
 			},
 			"deleteGameSession": "記録を削除",
@@ -989,10 +993,25 @@
 				"title": "ログ設定"
 			},
 			"mixedSearchSources": {
-				"description": "この設定は Mixed モードに影響します。BGM と VNDB はデフォルトで有効、その他のソースは必要に応じて有効化できます。有効化できるソース数は 2-4 個です。",
+				"description": "有効なソースは Mixed 取得と単一ソースの自動拡張に使用されます。2-4 個のソースを有効化できます。",
 				"title": "Mixed 検索ソース"
 			},
 			"navigation": "設定カテゴリナビゲーション",
+			"nextmoeAuth": {
+				"description": "NextMoe のメタデータはログインなしで取得できます。ログインするとリクエスト上限が増え、プレイ状況とレビューを同期できます。",
+				"logout": "ログアウト",
+				"logoutSuccess": "Kungal (NextMoe) からログアウトしました",
+				"oauthCancel": "Kungal (NextMoe) ログインをキャンセル",
+				"oauthCancelled": "Kungal (NextMoe) ログインをキャンセルしました",
+				"oauthError": "Kungal (NextMoe) ログインに失敗しました: {{error}}",
+				"oauthLogin": "OAuth でログイン",
+				"oauthStartError": "Kungal (NextMoe) ログインの開始に失敗しました: {{error}}",
+				"oauthSuccess": "Kungal (NextMoe) にログインしました",
+				"oauthWaiting": "ブラウザーで Kungal (NextMoe) の認可を完了してください...",
+				"reloginRequired": "Kungal (NextMoe) の認可が失効しました。再度ログインしてください。",
+				"title": "鯤 Galgame フォーラム",
+				"tokenExpiresAt": "Token の有効期限: {{date}}"
+			},
 			"nsfw": {
 				"coverReplace": "NSFW表紙の置き換え",
 				"filter": "NSFWコンテンツのフィルタリング",
@@ -1029,6 +1048,14 @@
 			"silentStartupDescription": "アプリを起動するたびにメインウィンドウを表示せず、システムトレイで実行します。",
 			"skipCloseRemind": "再度確認しない",
 			"skipCloseRemindDescription": "終了確認を表示せず、下で選択した既定動作をすぐに実行します。",
+			"sourceExpansion": {
+				"description": "Mixed で有効なソースの関連 ID のみ、外部リンクと同期用に保存します。以下の設定は、それらのソースのメタデータ取得のみを制御します。",
+				"hikarinagi": "Hikarinagi を Mixed に自動拡張",
+				"hikarinagiDescription": "有効にすると、関連 ID を使って Mixed で有効な他のソースを取得し、Hikarinagi 自身のメタデータは保持します。",
+				"kun": "Kungal を Mixed に自動拡張",
+				"kunDescription": "有効にすると、関連 ID を使って Mixed で有効な他のソースを取得し、Kungal 自身のメタデータは保持します。",
+				"title": "単一ソースの自動拡張"
+			},
 			"spoilerLevel": {
 				"description": "ネタバレレベルを選択して、適切なタグコンテンツを取得する",
 				"level0": "0 - ネタバレなし",

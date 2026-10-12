@@ -5,7 +5,7 @@ export const USER_AGENT = `huoshen80/ReinaManager/${version} (https://github.com
 
 export const REGISTERED_SOURCE_KEYS = SOURCE_TYPES;
 // 废弃源仍参与历史读取；在线能力与源注册分离，避免停用后丢失旧数据。
-export const DEPRECATED_SOURCE_KEYS: readonly SourceType[] = ["kun"];
+export const DEPRECATED_SOURCE_KEYS: readonly SourceType[] = [];
 export const isDeprecatedSource = (source: string): boolean =>
 	DEPRECATED_SOURCE_KEYS.some((key) => key === source);
 export const SEARCHABLE_SOURCE_KEYS = SOURCE_TYPES.filter(

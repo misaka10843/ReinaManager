@@ -72,7 +72,7 @@
 			"deleteBackupTitle": "Delete Backup",
 			"deleteGameMessage": "Are you sure you want to delete this game? This will remove the game from your library without deleting its files.",
 			"deleteGameTitle": "Delete Game",
-			"gameName": "Game Name",
+			"metadataFetchFailed": "Could not fetch {{sources}}. Any existing data from these sources will be kept. Successfully fetched results are shown below.",
 			"processing": "Processing...",
 			"sourceData": "{{source}} Data"
 		},
@@ -507,6 +507,10 @@
 		"metadataNotFound": "No matching metadata was found",
 		"metadataRequestFailed": "Failed to fetch metadata. Please try again later",
 		"mixedSourcesFailed": "All data sources failed to respond",
+		"nextmoeAuthExpired": "Kungal (NextMoe) authorization has expired. Please sign in again.",
+		"nextmoeAuthMissing": "Please sign in to Kungal (NextMoe) in account settings first.",
+		"nextmoeCredentialStore": "Failed to save or read Kungal credentials. Please retry.",
+		"nextmoeScopeRequired": "Kungal authorization lacks catalog read permission. Please sign in again.",
 		"notFound": "The requested content was not found",
 		"pathEmpty": "Path cannot be empty",
 		"pathInspectionFailed": "Failed to inspect the path",
@@ -690,7 +694,6 @@
 				"invalidIdType": "Invalid ID type",
 				"loading": "Loading...",
 				"manualIdMode": "Manual ID",
-				"noDataFetched": "No data fetched or data source invalid.",
 				"noGameSelected": "No game selected",
 				"search": "Search",
 				"searching": "Searching...",
@@ -700,6 +703,7 @@
 				"sourceSwitchUnavailable": "This game has no local data for that source, so only the display source cannot be switched.",
 				"switchDisplaySource": "Switch display source",
 				"switchingSource": "Switching...",
+				"unboundKunData": "Kungal now uses NextMoe. Legacy IDs have been unlinked, but saved data can still be viewed and selected for display. To update, select the entry again by name or enter its new NextMoe ID. Applying a new result without Kungal removes the old Kungal data.",
 				"updateFromSource": "Update from data source"
 			},
 			"deleteGameSession": "Delete Record",
@@ -1011,10 +1015,25 @@
 				"title": "Log Settings"
 			},
 			"mixedSearchSources": {
-				"description": "This setting affects Mixed mode. BGM and VNDB are enabled by default, while other sources can be enabled as needed. You can enable 2-4 sources.",
+				"description": "Enabled sources are used for Mixed fetching and single-source auto-expansion. You can enable 2-4 sources.",
 				"title": "Mixed Search Sources"
 			},
 			"navigation": "Settings category navigation",
+			"nextmoeAuth": {
+				"description": "NextMoe provides metadata without requiring sign-in. Sign in for a higher request allowance and to sync play status and reviews.",
+				"logout": "Sign out",
+				"logoutSuccess": "Signed out of Kungal (NextMoe)",
+				"oauthCancel": "Cancel Kungal (NextMoe) sign-in",
+				"oauthCancelled": "Kungal (NextMoe) sign-in cancelled",
+				"oauthError": "Kungal (NextMoe) sign-in failed: {{error}}",
+				"oauthLogin": "Sign in with OAuth",
+				"oauthStartError": "Failed to start Kungal (NextMoe) sign-in: {{error}}",
+				"oauthSuccess": "Signed in to Kungal (NextMoe)",
+				"oauthWaiting": "Complete Kungal (NextMoe) authorization in your browser...",
+				"reloginRequired": "Kungal (NextMoe) authorization has expired. Please sign in again.",
+				"title": "KUN Galgame Forum",
+				"tokenExpiresAt": "Token expires at: {{date}}"
+			},
 			"nsfw": {
 				"coverReplace": "NSFW cover replace",
 				"filter": "Filter NSFW content",
@@ -1051,6 +1070,14 @@
 			"silentStartupDescription": "Start without showing the main window and keep the app in the system tray on every launch.",
 			"skipCloseRemind": "Don't remind again",
 			"skipCloseRemindDescription": "Skip the close confirmation and immediately perform the selected default action.",
+			"sourceExpansion": {
+				"description": "Only linked IDs for sources enabled in Mixed are saved for external links and synchronization. These switches only control fetching metadata from those sources.",
+				"hikarinagi": "Automatically expand Hikarinagi to Mixed",
+				"hikarinagiDescription": "When enabled, linked IDs are used to fetch other sources enabled in Mixed, while Hikarinagi's own metadata is kept.",
+				"kun": "Automatically expand Kungal to Mixed",
+				"kunDescription": "When enabled, linked IDs are used to fetch other sources enabled in Mixed, while Kungal's own metadata is kept.",
+				"title": "Single-source auto-expansion"
+			},
 			"spoilerLevel": {
 				"description": "Select spoiler level to get appropriate tag content",
 				"level0": "0 - No Spoiler",

@@ -53,7 +53,7 @@ export const MixedSearchSourceSettings = () => {
 			title={t("pages.Settings.mixedSearchSources.title", "Mixed 搜索源")}
 			description={t(
 				"pages.Settings.mixedSearchSources.description",
-				"该设置影响 Mixed 模式，BGM 与 VNDB 默认启用，其它源可按需开启，启用数量限制为 2-4 个源。",
+				"已启用的源用于 Mixed 获取，也用于单源自动增强；可启用 2-4 个源。",
 			)}
 		>
 			<Stack
@@ -84,6 +84,66 @@ export const MixedSearchSourceSettings = () => {
 					);
 				})}
 			</Stack>
+		</SettingsGroup>
+	);
+};
+
+export const SourceExpansionSettings = () => {
+	const { t } = useTranslation();
+	const {
+		kunAutoExpand,
+		setKunAutoExpand,
+		hikarinagiAutoExpand,
+		setHikarinagiAutoExpand,
+	} = useStore(
+		useShallow((state) => ({
+			kunAutoExpand: state.kunAutoExpand,
+			setKunAutoExpand: state.setKunAutoExpand,
+			hikarinagiAutoExpand: state.hikarinagiAutoExpand,
+			setHikarinagiAutoExpand: state.setHikarinagiAutoExpand,
+		})),
+	);
+
+	return (
+		<SettingsGroup
+			title={t("pages.Settings.sourceExpansion.title", "单源自动增强")}
+			description={t(
+				"pages.Settings.sourceExpansion.description",
+				"只保存 Mixed 中启用来源的关联 ID，供外链和同步使用。以下开关只决定是否获取这些来源的元数据。",
+			)}
+		>
+			<SettingsItem
+				title={t(
+					"pages.Settings.sourceExpansion.kun",
+					"Kungal 自动扩展为 Mixed",
+				)}
+				description={t(
+					"pages.Settings.sourceExpansion.kunDescription",
+					"开启后，按关联 ID 获取 Mixed 中启用的其它源元数据，并保留 Kungal 自身元数据。",
+				)}
+			>
+				<Switch
+					checked={kunAutoExpand}
+					onChange={(event) => setKunAutoExpand(event.target.checked)}
+					color="primary"
+				/>
+			</SettingsItem>
+			<SettingsItem
+				title={t(
+					"pages.Settings.sourceExpansion.hikarinagi",
+					"Hikarinagi 自动扩展为 Mixed",
+				)}
+				description={t(
+					"pages.Settings.sourceExpansion.hikarinagiDescription",
+					"开启后，按关联 ID 获取 Mixed 中启用的其它源元数据，并保留 Hikarinagi 自身元数据。",
+				)}
+			>
+				<Switch
+					checked={hikarinagiAutoExpand}
+					onChange={(event) => setHikarinagiAutoExpand(event.target.checked)}
+					color="primary"
+				/>
+			</SettingsItem>
 		</SettingsGroup>
 	);
 };

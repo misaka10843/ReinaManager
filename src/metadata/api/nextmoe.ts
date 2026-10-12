@@ -1,0 +1,308 @@
+import type { GameMetadataDraft, KunData, SourceType } from "@/types";
+import type { NextmoeList, NextmoeWork, NextmoeWorkTag } from "@/types/nextmoe";
+import { AppError } from "@/utils/errors";
+import { USER_AGENT } from "../constants";
+import type { SourceIdMap } from "../sourceAdapter";
+import {
+	createGameCandidate,
+	createSourceCandidateRecord,
+} from "../sourceCandidate";
+import { normalizeDlsiteId } from "./dlsite";
+import http, {
+	type NetworkRequestContext,
+	type TauriHttpOptions,
+} from "./http";
+
+const NEXTMOE_API_BASE_URL = "https://api.nextmoe.dev/v2/catalog";
+const NEXTMOE_DETAIL_INCLUDE =
+	"titles,refs,intros,companies,ratings,tags,playtimes,releases";
+const NEXTMOE_DETAIL_FIELDS =
+	"medium,display_name,latin,localized,olang,content_rating,content_limit,cover,titles,refs,intros,companies,ratings,tags,playtimes,releases";
+
+const NEXTMOE_SOURCE_MAP: Partial<Record<string, SourceType>> = {
+	bangumi: "bgm",
+	vndb: "vndb",
+	dlsite: "dlsite",
+	erogamescape: "erogamescape",
+};
+
+// 标签来源只在本次获取和清洗中使用，避免把多源原始结构泄漏到入库模型。
+const draftTagOrigins = new WeakMap<KunData, NextmoeWorkTag[]>();
+const draftRefOrigins = new WeakMap<KunData, SourceIdMap>();
+
+function buildNextmoeOptions(
+	token: string | undefined,
+	context: NetworkRequestContext,
+): TauriHttpOptions {
+	const credential = token?.trim();
+	return {
+		...context,
+		headers: {
+			Accept: "application/json",
+			"User-Agent": USER_AGENT,
+			...(credential ? { Authorization: `Bearer ${credential}` } : {}),
+		},
+		// 匿名目录按 IP 限流，登录后使用用户额度；不在本地假定每日配额。
+		rateLimit: { source: "nextmoe", minIntervalMs: credential ? 600 : 1200 },
+	};
+}
+
+function uniqueNames(names: Array<string | null | undefined>): string[] {
+	return [
+		...new Set(names.map((name) => name?.trim()).filter(Boolean)),
+	] as string[];
+}
+
+function isGameWork(work: NextmoeWork): boolean {
+	return work.medium === "galgame" || work.medium === "doujin_game";
+}
+
+function normalizeRefId(source: SourceType, id: string): string | undefined {
+	const value = id.trim();
+	switch (source) {
+		case "vndb":
+			// 作品 refs 同时可能带 release r-ID，不能当成 VN 身份写入。
+			return /^v\d+$/i.test(value) ? value.toLowerCase() : undefined;
+		case "dlsite":
+			return /^(RJ|VJ)\d+$/i.test(value) ? normalizeDlsiteId(value) : undefined;
+		case "bgm":
+		case "erogamescape":
+			return /^\d+$/.test(value) ? value : undefined;
+		default:
+			return undefined;
+	}
+}
+
+/** 同源出现多个有效作品 ID 时不自动挑选，避免将不同版本误绑定。 */
+export function extractNextmoeSourceIds(work: NextmoeWork): SourceIdMap {
+	const references = new Map<SourceType, Set<string>>();
+	for (const ref of work.refs ?? []) {
+		const source = NEXTMOE_SOURCE_MAP[ref.source];
+		if (typeof source !== "string") continue;
+		const id = normalizeRefId(source, ref.external_id);
+		if (!id) continue;
+		const ids = references.get(source) ?? new Set<string>();
+		ids.add(id);
+		references.set(source, ids);
+	}
+	const sourceIds: SourceIdMap = {};
+	for (const [source, ids] of references) {
+		if (ids.size === 1) sourceIds[source] = [...ids][0];
+	}
+	return sourceIds;
+}
+
+function cleanTags(
+	tags: readonly NextmoeWorkTag[],
+	spoilerLevel: number,
+	replacedSources: ReadonlySet<SourceType> = new Set(),
+): string[] {
+	const levels = { none: 0, minor: 1, major: 2 };
+	return uniqueNames(
+		tags
+			.filter((tag) => {
+				const source = NEXTMOE_SOURCE_MAP[tag.source];
+				return (
+					tag.tier !== "hidden" &&
+					levels[tag.spoiler] <= spoilerLevel &&
+					(typeof source !== "string" || !replacedSources.has(source))
+				);
+			})
+			.map((tag) => tag.display_name),
+	);
+}
+
+/** 只使用正式发行日期，不能用体验版的最早日期代替作品正式发售日。 */
+export function getNextmoeFormalReleaseDate(
+	work: NextmoeWork,
+): string | undefined {
+	const dates = (work.releases ?? [])
+		.filter((release) =>
+			["default", "digital", "physical"].includes(release.release_kind),
+		)
+		.map((release) => release.date)
+		.filter((date): date is string => {
+			if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return false;
+			const time = Date.parse(`${date}T00:00:00Z`);
+			return (
+				Number.isFinite(time) &&
+				new Date(time).toISOString().slice(0, 10) === date
+			);
+		});
+	return dates.toSorted()[0];
+}
+
+/** 样本数优先；未提供有效样本数和同票时，使用稳定的来源优先级。 */
+export function getNextmoeAverageHours(work: NextmoeWork): number | undefined {
+	let selected: { minutes: number; votes: number } | undefined;
+	for (const source of ["vndb", "erogamescape", "nextmoe"]) {
+		for (const item of work.playtimes ?? []) {
+			if (
+				item.source !== source ||
+				!Number.isFinite(item.minutes) ||
+				item.minutes <= 0
+			)
+				continue;
+			const votes =
+				Number.isFinite(item.vote_count) && item.vote_count > 0
+					? item.vote_count
+					: 0;
+			if (!selected || votes > selected.votes)
+				selected = { minutes: item.minutes, votes };
+		}
+	}
+	return selected ? Number((selected.minutes / 60).toFixed(1)) : undefined;
+}
+
+export function transformNextmoeWork(
+	work: NextmoeWork,
+	spoilerLevel = 0,
+): GameMetadataDraft {
+	const chineseTitle =
+		work.localized?.["zh-Hans"]?.value ||
+		work.titles?.find((title) => /^zh(-Hans|-CN)?$/i.test(title.lang))?.title ||
+		work.localized?.["zh-Hant"]?.value ||
+		work.titles?.find((title) => /^zh/i.test(title.lang))?.title;
+	const intros = (work.intros ?? []).filter((intro) => intro.value?.trim());
+	const summary =
+		intros.find((intro) => /^zh/i.test(intro.lang) && !intro.is_machine) ||
+		intros.find((intro) => /^zh/i.test(intro.lang)) ||
+		intros.find((intro) => intro.lang === work.olang && !intro.is_machine) ||
+		intros.find((intro) => !intro.is_machine) ||
+		intros[0];
+	const rating = work.ratings?.find((item) => item.source === "nextmoe");
+	const rawTags = (work.tags ?? []).filter(
+		(tag) =>
+			tag.tier !== "hidden" &&
+			{ none: 0, minor: 1, major: 2 }[tag.spoiler] <= spoilerLevel,
+	);
+	const allTitles = uniqueNames([
+		work.display_name,
+		work.latin,
+		...Object.values(work.localized ?? {}).map((title) => title.value),
+		...(work.titles ?? []).flatMap((title) => [title.title, title.latin]),
+	]);
+	const data: KunData = {
+		name: work.display_name,
+		name_cn: chineseTitle,
+		image: work.cover?.url,
+		summary: summary?.value,
+		developer:
+			uniqueNames(
+				(work.companies ?? [])
+					.filter((company) => company.attribution_role === "developer")
+					.map((company) => company.display_name),
+			).join("/") || undefined,
+		date: getNextmoeFormalReleaseDate(work),
+		nsfw: work.content_rating === "r18" || work.content_limit === "nsfw",
+		all_titles: allTitles,
+		aliases: allTitles.filter(
+			(title) => title !== work.display_name && title !== chineseTitle,
+		),
+		tags: cleanTags(rawTags, spoilerLevel),
+		// 不把来自其他站点的评分伪装成 NextMoe 或真实上游元数据。
+		score: rating && Number.isFinite(rating.score) ? rating.score : undefined,
+		average_hours: getNextmoeAverageHours(work),
+	};
+	draftTagOrigins.set(data, rawTags);
+	const references = extractNextmoeSourceIds(work);
+	draftRefOrigins.set(data, references);
+	return createGameCandidate({
+		idType: "kun",
+		sources: [
+			createSourceCandidateRecord("kun", work.id, data),
+			...Object.entries(references).map(([source, id]) =>
+				createSourceCandidateRecord(source as SourceType, id, null),
+			),
+		],
+	});
+}
+
+/** 扩展成功后只移除该源的转译标签，失败和未知来源的标签仍然保留。 */
+export function cleanNextmoeTags(
+	data: KunData,
+	adoptedIds: SourceIdMap,
+): KunData {
+	const rawTags = draftTagOrigins.get(data);
+	if (!rawTags) return data;
+	const refs = draftRefOrigins.get(data) ?? {};
+	const replacedSources = new Set(
+		(Object.keys(adoptedIds) as SourceType[]).filter(
+			(source) => !refs[source] || refs[source] === adoptedIds[source],
+		),
+	);
+	const cleaned = { ...data, tags: cleanTags(rawTags, 2, replacedSources) };
+	draftTagOrigins.set(
+		cleaned,
+		rawTags.filter((tag) => {
+			const source = NEXTMOE_SOURCE_MAP[tag.source];
+			return typeof source !== "string" || !replacedSources.has(source);
+		}),
+	);
+	draftRefOrigins.set(cleaned, refs);
+	return cleaned;
+}
+
+export async function fetchNextmoeById(
+	id: string,
+	token?: string,
+	spoilerLevel = 0,
+	context: NetworkRequestContext = {},
+): Promise<GameMetadataDraft> {
+	if (!/^\d+$/.test(id)) {
+		throw new AppError({
+			code: "invalid_game_id",
+			message: `Invalid NextMoe id: ${id}`,
+		});
+	}
+	const work = (
+		await http.get<NextmoeWork>(`${NEXTMOE_API_BASE_URL}/works/${id}`, {
+			...buildNextmoeOptions(token, context),
+			params: {
+				include: NEXTMOE_DETAIL_INCLUDE,
+				fields: NEXTMOE_DETAIL_FIELDS,
+				nsfw: true,
+				spoiler:
+					spoilerLevel >= 2 ? "major" : spoilerLevel >= 1 ? "minor" : "none",
+			},
+		})
+	).data;
+	if (!work?.id || work.object !== "work" || !isGameWork(work)) {
+		throw new AppError({
+			code: "metadata_not_found",
+			message: `NextMoe game not found: ${id}`,
+		});
+	}
+	return transformNextmoeWork(work, spoilerLevel);
+}
+
+export async function fetchNextmoeByName(
+	name: string,
+	token?: string,
+	limit = 8,
+	context: NetworkRequestContext = {},
+): Promise<GameMetadataDraft[]> {
+	const keyword = name.trim();
+	if (!keyword) return [];
+	// 作品列表按标题搜索即可返回预览，避免先取命中 ID 再批量读取作品。
+	const works =
+		(
+			await http.get<NextmoeList<NextmoeWork>>(
+				`${NEXTMOE_API_BASE_URL}/works`,
+				{
+					...buildNextmoeOptions(token, context),
+					params: {
+						q: keyword,
+						nsfw: true,
+						limit: Number.isFinite(limit)
+							? Math.min(100, Math.max(1, Math.floor(limit)))
+							: 8,
+						include: "titles,companies",
+						fields:
+							"medium,display_name,latin,localized,olang,content_rating,content_limit,cover,companies",
+					},
+				},
+			)
+		).data.items ?? [];
+	return works.filter(isGameWork).map((work) => transformNextmoeWork(work));
+}

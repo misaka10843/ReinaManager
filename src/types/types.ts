@@ -76,6 +76,15 @@ export interface HikarinagiAuth extends OAuthAuth {
 	scope?: Nullable<string>;
 }
 
+/** NextMoe OAuth 授权与其它账号统一保存到用户数据库，不进入偏好 Store。 */
+export interface NextmoeAuth extends OAuthAuth {
+	expires_at: number;
+	scope: string;
+	user_id?: Nullable<string>;
+	name?: Nullable<string>;
+	avatar?: Nullable<string>;
+}
+
 // ==================== 元数据结构 ====================
 
 /**
@@ -149,6 +158,8 @@ export interface KunData {
 	summary?: string;
 	tags?: string[];
 	developer?: string;
+	score?: number;
+	average_hours?: number;
 	nsfw?: boolean;
 	date?: string;
 }
@@ -217,6 +228,7 @@ export interface CustomData {
 }
 
 export interface SourceScores {
+	kun?: number;
 	bgm?: number;
 	vndb?: number;
 	erogamescape?: number;

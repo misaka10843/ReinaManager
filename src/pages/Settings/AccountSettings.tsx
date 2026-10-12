@@ -39,8 +39,10 @@ import { snackbar } from "@/providers/snackBar";
 import { hasHikarinagiScope } from "@/services/oauth/hikarinagiAuthSession";
 import { useStore } from "@/store/appStore";
 import type { BgmAuth, HikarinagiAuth } from "@/types";
+import { getUserErrorMessage } from "@/utils/errors";
 import { useBgmAuthController } from "./useBgmAuthController";
 import { useHikarinagiAuthController } from "./useHikarinagiAuthController";
+import { useNextmoeAuthController } from "./useNextmoeAuthController";
 
 // ==================== 品牌字标 组件 ====================
 
@@ -939,6 +941,114 @@ export const VndbProviderSection = () => {
 
 export const VndbTokenSettings = VndbProviderSection;
 
+export const NextmoeProviderSection = () => {
+	const { t } = useTranslation();
+	const resolveImageUrl = useProxyImageUrlResolver();
+	const {
+		nextmoeAuth,
+		authError,
+		isSettingsLoading,
+		isOAuthLoading,
+		isSaving,
+		handleOAuthLogin,
+		handleCancelOAuth,
+		handleLogout,
+	} = useNextmoeAuthController();
+	const isConnected = Boolean(nextmoeAuth?.access_token);
+	const displayName = nextmoeAuth?.name || `#${nextmoeAuth?.user_id ?? "?"}`;
+
+	return (
+		<Paper variant="outlined" className="p-5 rounded">
+			<Stack direction="row" spacing={1.5} alignItems="center" className="mb-2">
+				<Box
+					component="img"
+					src="/images/kungal-icon.webp"
+					alt=""
+					className="size-8 shrink-0 rounded-full object-contain"
+				/>
+				<Typography variant="h6" className="font-semibold">
+					{t("pages.Settings.nextmoeAuth.title", "鲲 Galgame 论坛")}
+				</Typography>
+			</Stack>
+			<Typography variant="body2" color="text.secondary" className="mb-4">
+				{t(
+					"pages.Settings.nextmoeAuth.description",
+					"元数据由 NextMoe 提供，无需登录即可获取；登录可提高请求额度，并支持游玩状态和评价同步。",
+				)}
+			</Typography>
+			{isConnected && nextmoeAuth ? (
+				<Stack direction="row" spacing={2} alignItems="center">
+					<Avatar
+						src={resolveImageUrl(nextmoeAuth.avatar ?? undefined)}
+						alt={displayName}
+					>
+						{displayName.slice(0, 1).toUpperCase()}
+					</Avatar>
+					<Box className="min-w-0 flex-1">
+						<Stack direction="row" spacing={1} alignItems="center">
+							<Typography className="font-semibold">{displayName}</Typography>
+							<Chip
+								label="OAuth"
+								size="small"
+								color="primary"
+								variant="outlined"
+							/>
+						</Stack>
+						<Typography variant="caption" color="text.secondary">
+							{t(
+								"pages.Settings.nextmoeAuth.tokenExpiresAt",
+								"Token 有效期至: {{date}}",
+								{
+									date: new Date(
+										nextmoeAuth.expires_at * 1000,
+									).toLocaleString(),
+								},
+							)}
+						</Typography>
+					</Box>
+					<Button
+						variant="outlined"
+						color="error"
+						size="small"
+						onClick={handleLogout}
+						disabled={isOAuthLoading || isSaving}
+					>
+						{t("pages.Settings.nextmoeAuth.logout", "退出登录")}
+					</Button>
+				</Stack>
+			) : (
+				<Button
+					variant="contained"
+					color={isOAuthLoading ? "warning" : "primary"}
+					startIcon={
+						isSaving || isSettingsLoading ? (
+							<CircularProgress size={18} />
+						) : isOAuthLoading ? (
+							<CancelIcon />
+						) : (
+							<LoginIcon />
+						)
+					}
+					onClick={isOAuthLoading ? handleCancelOAuth : handleOAuthLogin}
+					disabled={isSaving || isSettingsLoading}
+				>
+					{isOAuthLoading
+						? t(
+								"pages.Settings.nextmoeAuth.oauthCancel",
+								"取消 Kungal (NextMoe) 登录",
+							)
+						: t("pages.Settings.nextmoeAuth.oauthLogin", "OAuth 快捷登录")}
+				</Button>
+			)}
+			{authError ? (
+				<Typography variant="caption" color="error" className="block mt-2">
+					{getUserErrorMessage(authError, t)}
+				</Typography>
+			) : null}
+		</Paper>
+	);
+};
+
 // 保留 CollectionSyncSettings 供旧界面防报错导出
 export const CollectionSyncSettings = () => null;
 
@@ -949,6 +1059,7 @@ export const AccountSettings = () => {
 		<Stack spacing={2.5}>
 			<BgmProviderSection />
 			<HikarinagiProviderSection />
+			<NextmoeProviderSection />
 			<VndbProviderSection />
 		</Stack>
 	);

@@ -2,6 +2,7 @@ import type { NetworkRequestContext } from "@/metadata/api/http";
 import { GameMetadataSession } from "@/metadata/data/gameMetadataService";
 import type { MetadataRequestContext } from "@/metadata/sourceAdapter";
 import { useStore } from "@/store/appStore";
+import { withSourceMetadataAuth } from "./metadataAuth";
 
 export function getNetworkRequestContext(
 	signal?: AbortSignal,
@@ -17,6 +18,7 @@ export function getMetadataRequestContext(
 	options: {
 		bgmToken?: string;
 		hikarinagiToken?: string;
+		nextmoeToken?: string;
 		signal?: AbortSignal;
 	} = {},
 ): MetadataRequestContext {
@@ -28,6 +30,13 @@ export function getMetadataRequestContext(
 		spoilerLevel: state.spoilerLevel,
 		bgmToken: options.bgmToken,
 		hikarinagiToken: options.hikarinagiToken,
+		nextmoeToken: options.nextmoeToken,
+		autoExpandSources: [
+			...(state.kunAutoExpand ? ["kun" as const] : []),
+			...(state.hikarinagiAutoExpand ? ["hikarinagi" as const] : []),
+		],
+		mixedEnabledSources: [...state.mixedEnabledSources],
+		authenticateSource: withSourceMetadataAuth,
 	};
 }
 
@@ -35,6 +44,7 @@ export function createMetadataSession(
 	options: {
 		bgmToken?: string;
 		hikarinagiToken?: string;
+		nextmoeToken?: string;
 		signal?: AbortSignal;
 	} = {},
 ): GameMetadataSession {

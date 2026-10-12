@@ -264,6 +264,7 @@ pub struct GameSourceData {
 pub struct UpsertGameSourceData {
     pub source: String,
     pub external_id: Option<String>,
+    /// 为空时仅补充缺失源的 ID，不覆盖已有身份或元数据；删除使用 remove_sources。
     pub data: Option<Value>,
 }
 

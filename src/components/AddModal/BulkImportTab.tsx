@@ -35,25 +35,15 @@ import {
 import { useMetadataSearchFlow } from "@/hooks/features/games/useMetadataSearchFlow";
 import { useAllSettings } from "@/hooks/queries/useSettings";
 import { getRuntimeSourceAdapter, SEARCHABLE_SOURCE_KEYS } from "@/metadata";
+import type { MetadataFetchResult } from "@/metadata/data/metadata";
 import { snackbar } from "@/providers/snackBar";
 import { handleFolder, normalizeDirectoryPath } from "@/services/fs/fileDialog";
 import { fileService } from "@/services/invoke";
-import {
-	isBgmAuthExpiredError,
-	withBgmAuth,
-} from "@/services/oauth/bgmAuthSession";
-import {
-	isHikarinagiAuthExpiredError,
-	withHikarinagiAuth,
-} from "@/services/oauth/hikarinagiAuthSession";
+import { isBgmAuthExpiredError } from "@/services/oauth/bgmAuthSession";
+import { isHikarinagiAuthExpiredError } from "@/services/oauth/hikarinagiAuthSession";
 import { createMetadataSession } from "@/services/requestContext";
 import { useStore } from "@/store/appStore";
-import type {
-	GameDirectoryScanMode,
-	GameMetadataDraft,
-	GameScanMode,
-	SourceType,
-} from "@/types";
+import type { GameDirectoryScanMode, GameScanMode, SourceType } from "@/types";
 import { createAbortableRunner, isAbortError } from "@/utils/async";
 import { getUserErrorMessage, isApiRateLimitError } from "@/utils/errors";
 import BulkImportResultTable, {
@@ -235,7 +225,7 @@ const BulkImportTab = ({
 	}, []);
 
 	const handleResolvedEditMetadata = useCallback(
-		async (resolvedData: GameMetadataDraft) => {
+		async (result: MetadataFetchResult) => {
 			if (!editItemKey) return;
 
 			setItems((prevItems) => {
@@ -250,7 +240,8 @@ const BulkImportTab = ({
 					nextItems[itemIndex] = {
 						...nextItems[itemIndex],
 						name: editName,
-						matchedData: resolvedData,
+						matchedData: result.data,
+						failedSources: result.failedSources,
 						status: "matched",
 						importMode: "metadata",
 						importOutcome: undefined,
@@ -554,31 +545,18 @@ const BulkImportTab = ({
 				}
 
 				try {
-					const runSearch = (tokens: {
-						bgmToken?: string;
-						hikarinagiToken?: string;
-					}) =>
-						withAbort(
-							createMetadataSession({
-								...tokens,
-								signal: controller.signal,
-							}).searchBestMatch({
-								query: nextItems[index].name,
-								source: bulkApiSource,
-							}),
-						);
+					const result = await withAbort(
+						createMetadataSession({
+							signal: controller.signal,
+						}).searchBestMatchResult({
+							query: nextItems[index].name,
+							source: bulkApiSource,
+						}),
+					);
 
-					const matchedData =
-						bulkApiSource === "bgm"
-							? await withBgmAuth((token) => runSearch({ bgmToken: token }))
-							: bulkApiSource === "hikarinagi"
-								? await withHikarinagiAuth((token) =>
-										runSearch({ hikarinagiToken: token }),
-									)
-								: await runSearch({});
-
-					if (matchedData) {
-						nextItems[index].matchedData = matchedData;
+					nextItems[index].matchedData = result?.data;
+					nextItems[index].failedSources = result?.failedSources;
+					if (result) {
 						nextItems[index].status = "matched";
 						nextItems[index].importOutcome = undefined;
 					} else {
@@ -603,6 +581,8 @@ const BulkImportTab = ({
 						`${nextItems[index].name}: ${getUserErrorMessage(error, t)}`,
 					);
 					nextItems[index].status = "not found";
+					nextItems[index].matchedData = undefined;
+					nextItems[index].failedSources = undefined;
 				}
 
 				setItems([...nextItems]);

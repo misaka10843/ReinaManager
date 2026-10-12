@@ -18,10 +18,7 @@ export type {
 	SourceIdMap,
 } from "./sourceAdapter";
 export type { AutoResolveSourceCandidateParams } from "./sourceAutoResolve";
-export {
-	resolveAutoSelectedGameDraft,
-	resolveAutoSelectedSourceCandidate,
-} from "./sourceAutoResolve";
+export { resolveAutoSelectedGameDraft } from "./sourceAutoResolve";
 export type {
 	SourceCandidate,
 	SourceDisplayFields,

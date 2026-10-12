@@ -257,23 +257,52 @@ fn handle_oauth_connection(
 }
 
 fn validate_callback(query: OAuthCallbackQuery, expected_state: &str) -> Result<String, String> {
-    if let Some(error) = query.error {
-        let detail = query.error_description.unwrap_or_default();
-        return Err(if detail.is_empty() {
-            format!("OAuth 授权失败: {error}")
-        } else {
-            format!("OAuth 授权失败: {error}（{detail}）")
-        });
-    }
-
+    // 失败回调也必须先核对 state，且不将上游任意错误正文转发到 UI 或日志。
     if query.state.as_deref() != Some(expected_state) {
         return Err("OAuth state 校验失败，请重新登录".to_string());
+    }
+    if let Some(error) = query.error {
+        return Err(match error.as_str() {
+            "access_denied" => "用户取消了 OAuth 授权".to_string(),
+            "invalid_scope" => "OAuth 授权范围无效，请检查应用权限".to_string(),
+            _ => "OAuth 授权失败，请重试".to_string(),
+        });
     }
 
     query
         .code
         .filter(|code| !code.is_empty())
         .ok_or_else(|| "OAuth 回调缺少授权码".to_string())
+}
+
+#[cfg(test)]
+mod callback_validation_tests {
+    use super::*;
+
+    #[test]
+    fn failure_callbacks_require_state_and_do_not_expose_remote_descriptions() {
+        let query = OAuthCallbackQuery {
+            state: Some("wrong".into()),
+            error: Some("access_denied".into()),
+            error_description: Some("private-description".into()),
+            ..Default::default()
+        };
+        assert!(
+            validate_callback(query, "expected")
+                .unwrap_err()
+                .contains("state")
+        );
+        let query = OAuthCallbackQuery {
+            state: Some("expected".into()),
+            error: Some("access_denied".into()),
+            error_description: Some("private-description".into()),
+            ..Default::default()
+        };
+        assert_eq!(
+            validate_callback(query, "expected").unwrap_err(),
+            "用户取消了 OAuth 授权"
+        );
+    }
 }
 
 fn expire_oauth_callbacks(server: &OAuthCallbackServer) {

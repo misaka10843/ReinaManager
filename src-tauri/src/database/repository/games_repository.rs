@@ -308,6 +308,10 @@ impl GamesRepository {
             source_data.remove(source);
         }
         for source in updates.upsert_sources.as_deref().unwrap_or_default() {
+            // 仅关联 ID 的输入不能替换已有源，日期投影必须与实际写入保持一致。
+            if source.data.is_none() && source_data.contains_key(&source.source) {
+                continue;
+            }
             source_data.insert(source.source.clone(), source.data.clone());
         }
 
@@ -467,6 +471,16 @@ impl GamesRepository {
         C: ConnectionTrait,
     {
         for source in sources {
+            // ID-only 只补充缺失来源：同 ID 保留完整元数据，冲突 ID 保留原身份。
+            // 显式替换必须携带完整元数据，删除则使用 remove_sources。
+            if source.data.is_none()
+                && GameSources::find_by_id((game_id, source.source.clone()))
+                    .one(db)
+                    .await?
+                    .is_some()
+            {
+                continue;
+            }
             GameSources::insert(Self::build_source_active_model(game_id, source))
                 .on_conflict(
                     OnConflict::columns([
@@ -1227,6 +1241,7 @@ mod tests {
                     id INTEGER PRIMARY KEY,
                     bgm_auth TEXT,
                     hikarinagi_auth TEXT,
+                    nextmoe_auth TEXT,
                     vndb_token TEXT,
                     save_root_path TEXT,
                     db_backup_path TEXT,
@@ -1484,6 +1499,198 @@ mod tests {
                 "name": "新标题"
             }))
         );
+    }
+
+    #[tokio::test]
+    async fn id_only_upserts_preserve_existing_identity_metadata_and_date() {
+        let database = setup_database().await;
+        let original = json!({"name": "Title", "date": "2024-01-02", "score": 8.2});
+        let inserted = GamesRepository::insert(
+            &database,
+            insert_data("vndb", None, vec![source("vndb", "v1", original.clone())]),
+        )
+        .await
+        .unwrap();
+
+        // 同 ID 不能清空元数据；不同 ID 的自动关联也不能替换已有作品身份。
+        for incoming_id in ["v1", "v2"] {
+            let updated = GamesRepository::update(
+                &database,
+                inserted.id,
+                UpdateGameData {
+                    upsert_sources: Some(vec![source("vndb", incoming_id, Value::Null)]),
+                    ..Default::default()
+                },
+            )
+            .await
+            .unwrap();
+
+            assert_eq!(updated.date.as_deref(), Some("2024-01-02"));
+            assert_eq!(updated.sources[0].external_id.as_deref(), Some("v1"));
+            assert_eq!(updated.sources[0].data, Some(original.clone()));
+            let persisted = GameSources::find_by_id((inserted.id, "vndb".to_string()))
+                .one(&database)
+                .await
+                .unwrap()
+                .unwrap();
+            assert_eq!(persisted.score, Some(8.2));
+        }
+    }
+
+    #[tokio::test]
+    async fn metadata_only_snapshot_can_switch_relink_and_be_removed() {
+        let db = setup_database().await;
+        let original = json!({"name": "旧快照", "summary": "保留内容", "date": "2016-07-29"});
+        let mut old_kun = source("kun", "923", original.clone());
+        old_kun.external_id = None;
+        let game = GamesRepository::insert(&db, insert_data("mixed", None, vec![old_kun]))
+            .await
+            .unwrap();
+        assert!(
+            GamesRepository::get_source_bindings(&db, "kun")
+                .await
+                .unwrap()
+                .is_empty()
+        );
+
+        let switched = GamesRepository::update(
+            &db,
+            game.id,
+            UpdateGameData {
+                id_type: Some("kun".into()),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(switched.id_type, "kun");
+        assert_eq!(switched.sources[0].external_id, None);
+        assert_eq!(switched.sources[0].data, Some(original.clone()));
+
+        let unchanged = GamesRepository::update(
+            &db,
+            game.id,
+            UpdateGameData {
+                upsert_sources: Some(vec![source("kun", "100", Value::Null)]),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(unchanged.sources[0].external_id, None);
+        assert_eq!(unchanged.sources[0].data, Some(original));
+        assert_eq!(unchanged.date.as_deref(), Some("2016-07-29"));
+
+        let new_data = json!({"name": "新快照", "score": 7.6, "date": "2017-01-01"});
+        let relinked = GamesRepository::update(
+            &db,
+            game.id,
+            UpdateGameData {
+                upsert_sources: Some(vec![source("kun", "100", new_data.clone())]),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+        assert_eq!(relinked.sources[0].external_id.as_deref(), Some("100"));
+        assert_eq!(relinked.sources[0].data, Some(new_data));
+        assert_eq!(relinked.date.as_deref(), Some("2017-01-01"));
+        assert_eq!(
+            GamesRepository::get_source_bindings(&db, "kun")
+                .await
+                .unwrap(),
+            vec![(game.id, "100".into())]
+        );
+
+        let removed = GamesRepository::update(
+            &db,
+            game.id,
+            UpdateGameData {
+                id_type: Some("custom".into()),
+                remove_sources: Some(vec!["kun".into()]),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+        assert!(removed.sources.is_empty());
+    }
+
+    #[tokio::test]
+    async fn id_only_upserts_add_missing_sources_and_preserve_existing_id_only_identity() {
+        let database = setup_database().await;
+        let inserted = GamesRepository::insert(
+            &database,
+            insert_data(
+                "nextmoe",
+                None,
+                vec![source(
+                    "nextmoe",
+                    "15",
+                    json!({"name": "Title", "date": "2016-07-29"}),
+                )],
+            ),
+        )
+        .await
+        .unwrap();
+
+        for incoming_id in ["v19073", "v1"] {
+            let updated = GamesRepository::update(
+                &database,
+                inserted.id,
+                UpdateGameData {
+                    upsert_sources: Some(vec![source("vndb", incoming_id, Value::Null)]),
+                    ..Default::default()
+                },
+            )
+            .await
+            .unwrap();
+
+            let identity = updated
+                .sources
+                .iter()
+                .find(|source| source.source == "vndb")
+                .unwrap();
+            assert_eq!(identity.external_id.as_deref(), Some("v19073"));
+            assert_eq!(identity.data, None);
+            assert_eq!(updated.date.as_deref(), Some("2016-07-29"));
+        }
+    }
+
+    #[tokio::test]
+    async fn full_metadata_upserts_replace_identity_data_and_generated_score() {
+        let database = setup_database().await;
+        let inserted = GamesRepository::insert(
+            &database,
+            insert_data(
+                "vndb",
+                None,
+                vec![source("vndb", "v1", json!({"name": "Old", "score": 8.2}))],
+            ),
+        )
+        .await
+        .unwrap();
+        let replacement = json!({"name": "New", "score": 7.5, "date": "2025-01-01"});
+        let updated = GamesRepository::update(
+            &database,
+            inserted.id,
+            UpdateGameData {
+                upsert_sources: Some(vec![source("vndb", "v2", replacement.clone())]),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(updated.date.as_deref(), Some("2025-01-01"));
+        assert_eq!(updated.sources[0].external_id.as_deref(), Some("v2"));
+        assert_eq!(updated.sources[0].data, Some(replacement));
+        let persisted = GameSources::find_by_id((inserted.id, "vndb".to_string()))
+            .one(&database)
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(persisted.score, Some(7.5));
     }
 
     #[tokio::test]

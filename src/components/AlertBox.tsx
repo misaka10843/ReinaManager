@@ -17,7 +17,7 @@
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
-import Dialog from "@mui/material/Dialog";
+import Dialog, { type DialogProps } from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
@@ -56,6 +56,7 @@ interface AlertBoxProps {
 	confirmVariant?: "text" | "outlined" | "contained";
 	autoCloseOnConfirm?: boolean; // 确认后是否自动关闭
 	isLoading?: boolean; // 新增属性：加载状态
+	maxWidth?: DialogProps["maxWidth"];
 	customMessage?: string; // 新增属性：自定义消息
 	// 可选的第三个功能按钮
 	extraButtonText?: string;
@@ -87,6 +88,7 @@ interface ViewGameBoxProps {
 	onConfirm: () => void;
 	title: string;
 	isLoading?: boolean;
+	warningMessage?: string;
 }
 
 /**
@@ -107,6 +109,7 @@ export function AlertBox({
 	confirmVariant = "text",
 	autoCloseOnConfirm = true,
 	isLoading = false,
+	maxWidth,
 	// 可选的第三个功能按钮
 	extraButtonText,
 	extraButtonColor = "primary",
@@ -138,6 +141,7 @@ export function AlertBox({
 	return (
 		<Dialog
 			open={open}
+			maxWidth={maxWidth}
 			onClose={handleClose}
 			aria-labelledby="alert-dialog-title"
 			aria-describedby="alert-dialog-description"
@@ -245,6 +249,7 @@ export const ViewGameBox: React.FC<ViewGameBoxProps> = ({
 	onConfirm,
 	title,
 	isLoading = false,
+	warningMessage,
 }) => {
 	const { t } = useTranslation();
 	const viewGameSources: ViewGameSourceItem[] = [];
@@ -259,38 +264,60 @@ export const ViewGameBox: React.FC<ViewGameBoxProps> = ({
 				label: t("components.AlertBox.sourceData", "{{source}} 数据", {
 					source: adapter.label,
 				}),
-				name: display.name,
+				name: display.name_cn || display.name,
 				image: display.image,
 				alt: `${adapter.label} ${display.name ?? ""}`,
 			});
 		}
 	});
 
-	// 根据 showExtraButton 切换标题：有查看更多按钮时表示添加流程，否则为更新流程
 	return (
 		<AlertBox
 			open={open}
 			setOpen={setOpen}
 			title={title}
+			maxWidth={
+				viewGameSources.length === 3
+					? "md"
+					: viewGameSources.length === 1
+						? "xs"
+						: "sm"
+			}
 			message={
-				<Box className="flex gap-2 items-start w-full">
-					{viewGameSources.map((source) => (
-						<Box key={source.key} className="text-left">
-							<Typography variant="subtitle1" gutterBottom>
-								{source.label}
-							</Typography>
-							<Typography variant="body2" className="mb-1">
-								{t("components.AlertBox.gameName", "游戏名称")}: {source.name}
-							</Typography>
-							{source.image && (
+				<Box className="flex flex-col gap-3 w-full">
+					{warningMessage && (
+						<Typography variant="body2" color="warning.main">
+							{warningMessage}
+						</Typography>
+					)}
+					<Box
+						className={`grid gap-4 w-fit max-w-full ${viewGameSources.length === 3 ? "grid-cols-3" : viewGameSources.length >= 2 ? "grid-cols-2" : "grid-cols-1"}`}
+					>
+						{viewGameSources.map((source) => (
+							<Box
+								key={source.key}
+								color="text.primary"
+								className="w-48 max-w-full min-w-0 text-left"
+							>
+								<Typography variant="subtitle1" gutterBottom>
+									{source.label}
+								</Typography>
+								<Typography
+									variant="body2"
+									className="mb-1"
+									noWrap
+									title={source.name}
+								>
+									{source.name}
+								</Typography>
 								<SmartImage
 									src={source.image}
 									alt={source.alt}
-									className="w-full h-auto max-h-64 object-contain rounded"
+									className="block w-full h-64 object-contain object-left-top rounded"
 								/>
-							)}
-						</Box>
-					))}
+							</Box>
+						))}
+					</Box>
 				</Box>
 			}
 			onConfirm={onConfirm}
@@ -298,6 +325,7 @@ export const ViewGameBox: React.FC<ViewGameBoxProps> = ({
 			cancelText={t("components.AlertBox.cancel", "取消")}
 			confirmColor="primary"
 			confirmVariant="contained"
+			autoCloseOnConfirm={false}
 			isLoading={isLoading}
 		/>
 	);

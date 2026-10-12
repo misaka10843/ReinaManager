@@ -37,7 +37,6 @@ import {
 	type TaskProgressEvent,
 	taskService,
 } from "@/services/invoke";
-import { withMetadataAuth } from "@/services/metadataAuth";
 import { createMetadataSession } from "@/services/requestContext";
 import { useStore } from "@/store/appStore";
 import type { SourceType } from "@/types";
@@ -166,36 +165,29 @@ export function InstallRequestHandler() {
 				const metadataResult =
 					enabledSources.length === 0
 						? customMetadataResult
-						: await withMetadataAuth(
-								enabledSources,
-								async ({ bgmToken, hikarinagiToken }) => {
-									const session = createMetadataSession({
-										bgmToken,
-										hikarinagiToken,
+						: await (async () => {
+								const session = createMetadataSession();
+								try {
+									return await session.getGameByIds({
+										sourceIds: {
+											bgm: bgmId,
+											vndb: vndbId,
+											...(shouldFetchHikarinagi
+												? { hikarinagi: hikarinagiId }
+												: {}),
+										},
+										enabledSources,
 									});
-									try {
-										return await session.getGameByIds({
-											sourceIds: {
-												bgm: bgmId,
-												vndb: vndbId,
-												...(shouldFetchHikarinagi
-													? { hikarinagi: hikarinagiId }
-													: {}),
-											},
-											enabledSources,
-										});
-									} catch (error) {
-										const metadataNotFound =
-											isHttpStatus(error, 404) ||
-											(error instanceof AppError &&
-												error.code === "metadata_not_found");
-										if (!metadataNotFound) throw error;
+								} catch (error) {
+									const metadataNotFound =
+										isHttpStatus(error, 404) ||
+										(error instanceof AppError &&
+											error.code === "metadata_not_found");
+									if (!metadataNotFound) throw error;
 
-										return customMetadataResult;
-									}
-								},
-								{ requireHikarinagi: shouldFetchHikarinagi },
-							);
+									return customMetadataResult;
+								}
+							})();
 				const insertData = await buildInsertGameData(metadataResult.data);
 				await taskService.completeGameInstall(taskId, insertData);
 			} catch (error) {

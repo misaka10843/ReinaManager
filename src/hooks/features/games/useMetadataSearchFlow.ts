@@ -7,15 +7,15 @@ import {
 	type SourceCandidate,
 } from "@/metadata";
 import type {
+	MetadataFetchResult,
 	MixedSourceCandidates,
 	MixedSourceEnabled,
 	MixedSourceSelection,
 } from "@/metadata/data/metadata";
-import { withMetadataAuth } from "@/services/metadataAuth";
 import { isBgmAuthExpiredError } from "@/services/oauth/bgmAuthSession";
 import { isHikarinagiAuthExpiredError } from "@/services/oauth/hikarinagiAuthSession";
 import { createMetadataSession } from "@/services/requestContext";
-import type { apiSourceType, GameMetadataDraft, SourceType } from "@/types";
+import type { apiSourceType, SourceType } from "@/types";
 import { isAbortError } from "@/utils/async";
 import { getUserErrorMessage } from "@/utils/errors";
 
@@ -41,10 +41,7 @@ interface SearchMetadataParams {
 interface MetadataSearchFlowOptions {
 	mixedEnabledSources?: readonly SourceType[];
 	t: TFunction;
-	onResolved: (
-		gameData: GameMetadataDraft,
-		failedSources?: readonly SourceType[],
-	) => void | Promise<void>;
+	onResolved: (result: MetadataFetchResult) => void | Promise<void>;
 	onError: (message: string) => void;
 }
 
@@ -129,21 +126,15 @@ export function useMetadataSearchFlow({
 
 			try {
 				if (source === "mixed") {
-					const searchMixedCandidates = (tokens: {
-						bgmToken?: string;
-						hikarinagiToken?: string;
-					}) => {
-						const session = createMetadataSession({ ...tokens, signal });
+					const searchMixedCandidates = () => {
+						const session = createMetadataSession({ signal });
 						const candidatesPromise = session.searchMixedSourceCandidates({
 							query,
 							mixedEnabledSources,
 						});
 						return withAbort ? withAbort(candidatesPromise) : candidatesPromise;
 					};
-					const result = await withMetadataAuth(
-						mixedEnabledSources ?? REGISTERED_SOURCE_KEYS,
-						searchMixedCandidates,
-					);
+					const result = await searchMixedCandidates();
 
 					if (!hasAnyMixedCandidate(result.candidates)) {
 						throw new Error(getNoResultsText(source));
@@ -158,37 +149,17 @@ export function useMetadataSearchFlow({
 				}
 
 				if (getRuntimeSourceAdapter(source).validateId(query.trim())) {
-					const searchById = (tokens: {
-						bgmToken?: string;
-						hikarinagiToken?: string;
-					}) => {
-						const searchPromise = createMetadataSession({
-							...tokens,
-							signal,
-						}).searchGames({
-							query,
-							source,
-						});
-						return withAbort ? withAbort(searchPromise) : searchPromise;
-					};
-					const results = await withMetadataAuth([source], searchById, {
-						requireHikarinagi: source === "hikarinagi",
-					});
-
-					if (results.length === 0) {
-						throw new Error(getNoResultsText(source));
-					}
-
-					await onResolved(results[0]);
+					const request = createMetadataSession({ signal }).getGameByIdResult(
+						query,
+						source,
+					);
+					const result = await (withAbort ? withAbort(request) : request);
+					await onResolved(result);
 					return;
 				}
 
-				const searchCandidates = (tokens: {
-					bgmToken?: string;
-					hikarinagiToken?: string;
-				}) => {
+				const searchCandidates = () => {
 					const searchPromise = createMetadataSession({
-						...tokens,
 						signal,
 					}).searchByName({
 						query,
@@ -196,9 +167,7 @@ export function useMetadataSearchFlow({
 					});
 					return withAbort ? withAbort(searchPromise) : searchPromise;
 				};
-				const results = await withMetadataAuth([source], searchCandidates, {
-					requireHikarinagi: source === "hikarinagi",
-				});
+				const results = await searchCandidates();
 
 				if (results.length === 0) {
 					throw new Error(getNoResultsText(source));
@@ -235,16 +204,10 @@ export function useMetadataSearchFlow({
 
 			setIsSearching(true);
 			try {
-				const resolvedGame = await withMetadataAuth(
-					[selectedCandidate.source],
-					(tokens) =>
-						createMetadataSession(tokens).resolveSourceCandidateSelection({
-							candidate: selectedCandidate,
-						}),
-					{
-						requireHikarinagi: selectedCandidate.source === "hikarinagi",
-					},
-				);
+				const resolvedGame =
+					await createMetadataSession().resolveSourceCandidateSelection({
+						candidate: selectedCandidate,
+					});
 				await onResolved(resolvedGame);
 				closeSearchResult();
 			} catch (error) {
@@ -260,21 +223,13 @@ export function useMetadataSearchFlow({
 		async (selection: MixedSourceSelection, enabled: MixedSourceEnabled) => {
 			setIsSearching(true);
 			try {
-				const selectedSources = REGISTERED_SOURCE_KEYS.filter(
-					(source) => enabled[source] && Boolean(selection[source]),
-				);
-				const gameData = await withMetadataAuth(
-					selectedSources,
-					(tokens) =>
-						createMetadataSession(tokens).resolveMixedSourceSelection({
-							selection,
-							enabled,
-						}),
-					{
-						requireHikarinagi: selectedSources.includes("hikarinagi"),
-					},
-				);
-				await onResolved(gameData, mixedCandidateState.failedSources);
+				const result =
+					await createMetadataSession().resolveMixedSourceSelection({
+						selection,
+						enabled,
+						failedSources: mixedCandidateState.failedSources,
+					});
+				await onResolved(result);
 				closeMixedCandidates();
 			} catch (error) {
 				closeMixedCandidates();

@@ -122,7 +122,16 @@ async function requestTauriHttp<T>(
 
 		if (import.meta.env.DEV) {
 			console.log(`[TauriHTTP] ${method} ${fullUrl}`, {
-				headers: options?.headers,
+				headers: options?.headers
+					? Object.fromEntries(
+							Object.entries(options.headers).map(([key, value]) => [
+								key,
+								/authorization|cookie|api[-_]?key/i.test(key)
+									? "[REDACTED]"
+									: value,
+							]),
+						)
+					: undefined,
 				body: data,
 				proxy: proxyOption,
 			});
@@ -158,6 +167,7 @@ async function requestTauriHttp<T>(
 						rateLimitSource,
 						fetchResponse,
 						options?.signal,
+						options?.rateLimit?.minIntervalMs,
 					)
 				: await fetchResponse();
 
@@ -165,10 +175,21 @@ async function requestTauriHttp<T>(
 				break;
 			}
 
+			let quotaExceeded = false;
+			if (rateLimitSource === "nextmoe") {
+				// 日配额耗尽与分钟限流都返回 429，但只有分钟限流适合短暂退避重试。
+				const problem: unknown = await response.json().catch(() => null);
+				quotaExceeded =
+					typeof problem === "object" &&
+					problem !== null &&
+					"code" in problem &&
+					problem.code === "QUOTA_EXCEEDED";
+			}
 			const handling = handleApiRateLimited(
 				rateLimitSource,
 				response.headers,
 				attempt,
+				quotaExceeded,
 			);
 			if (!handling.shouldRetry) {
 				throw new ApiRateLimitError({
@@ -232,6 +253,7 @@ function inferRateLimitSource(url: string): ApiRateLimitSource | undefined {
 		if (host === "www.dlsite.com") return "dlsite";
 		if (host === "erogamescape.org") return "erogamescape";
 		if (host === "www.hikarinagi.org") return "hikarinagi";
+		if (host === "api.nextmoe.dev") return "nextmoe";
 	} catch {
 		return undefined;
 	}
@@ -251,6 +273,8 @@ function getApiRateLimitErrorMessage(source: ApiRateLimitSource): string {
 			return "ErogameScape 请求被限速，请稍后重试";
 		case "hikarinagi":
 			return "Hikarinagi 请求被限速，请稍后重试";
+		case "nextmoe":
+			return "Kungal 请求被限速，请稍后重试";
 	}
 }
 

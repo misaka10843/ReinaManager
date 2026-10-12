@@ -28,6 +28,8 @@ export interface SourceCandidate<TData = unknown> {
 	externalId?: string;
 	data: TData;
 	display: SourceDisplayFields;
+	// 详情中的关联身份随候选保留，但不参与元数据源数量判断。
+	associatedSources?: SourceCandidateRecord[];
 }
 
 const SOURCE_ORDER = [...SOURCE_TYPES];
@@ -75,15 +77,27 @@ export function mergeCandidateSources(
 	candidates: readonly GameMetadataDraft[],
 ): SourceCandidateRecord[] {
 	const sourceMap = new Map<SourceType, SourceCandidateRecord>();
+	const associatedIds = new Map<SourceType, Set<string>>();
 
 	for (const candidate of candidates) {
 		for (const source of SOURCE_ORDER) {
 			const record = getCandidateSourceRecord(candidate, source);
 			if (record) {
+				if (record.data == null) {
+					const ids = associatedIds.get(source) ?? new Set<string>();
+					ids.add(record.external_id);
+					associatedIds.set(source, ids);
+				}
 				// 后传入的草稿优先级更高，用于详情数据覆盖搜索结果数据。
-				sourceMap.set(source, record);
+				const existing = sourceMap.get(source);
+				if (record.data != null || !existing) sourceMap.set(source, record);
 			}
 		}
+	}
+	// 两个已采用条目提供不同关联时不能任意选择；明确的完整候选仍优先。
+	for (const [source, ids] of associatedIds) {
+		if (ids.size > 1 && sourceMap.get(source)?.data == null)
+			sourceMap.delete(source);
 	}
 
 	return SOURCE_ORDER.map((source) => sourceMap.get(source)).filter(
@@ -109,11 +123,13 @@ export function normalizeGameCandidateSources(
 	candidate: GameMetadataDraft,
 	fallbackIdType?: string,
 ): GameMetadataDraft {
-	return createGameCandidate({
-		idType: candidate.id_type ?? fallbackIdType,
-		sources: mergeCandidateSources([candidate]),
-		customData: candidate.custom_data,
-	});
+	return {
+		...createGameCandidate({
+			idType: candidate.id_type ?? fallbackIdType,
+			sources: mergeCandidateSources([candidate]),
+			customData: candidate.custom_data,
+		}),
+	};
 }
 
 export function getCandidateSourceRecord(
@@ -165,11 +181,14 @@ export function sourceCandidateToDraft(
 
 	return createGameCandidate({
 		idType: candidate.source,
-		source: createSourceCandidateRecord(
-			candidate.source,
-			candidate.externalId,
-			candidate.data,
-		),
+		sources: [
+			createSourceCandidateRecord(
+				candidate.source,
+				candidate.externalId,
+				candidate.data,
+			),
+			...(candidate.associatedSources ?? []),
+		],
 	});
 }
 
@@ -226,12 +245,17 @@ export function getSourceCandidateFromGame<TData>(
 		throw new Error(`Missing ${source.key} data in ${source.key} candidate`);
 	}
 
-	return createSourceCandidate({
-		source: source.key,
-		externalId: getCandidateSourceId(game, source.key),
-		data,
-		display,
-	});
+	return {
+		...createSourceCandidate({
+			source: source.key,
+			externalId: getCandidateSourceId(game, source.key),
+			data,
+			display,
+		}),
+		associatedSources: game.sources.filter(
+			(record) => record.source !== source.key,
+		),
+	};
 }
 
 export function buildGameCandidateFromSourceSelection(params: {
@@ -259,6 +283,11 @@ export function buildGameCandidateFromSourceSelection(params: {
 
 	return {
 		id_type: sources.length === 1 ? sources[0].source : "mixed",
-		sources,
+		sources: mergeCandidateSources([
+			...selected.map((candidate) => ({
+				sources: candidate.associatedSources ?? [],
+			})),
+			{ sources },
+		]),
 	};
 }

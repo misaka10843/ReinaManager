@@ -16,6 +16,7 @@ import { AccountSettings } from "./AccountSettings";
 import {
 	DevSettings,
 	MixedSearchSourceSettings,
+	SourceExpansionSettings,
 	VndbDataSettings,
 } from "./DataSourceSettings";
 import {
@@ -117,6 +118,8 @@ export const Settings: React.FC = () => {
 						<MixedSearchSourceSettings />
 						<SettingsDivider />
 						<VndbDataSettings />
+						<SettingsDivider />
+						<SourceExpansionSettings />
 						<SettingsDivider />
 						<DevSettings />
 					</>

@@ -18,6 +18,7 @@ import { fetchVndbCurrentUserProfile } from "@/metadata/api/vndb";
 import { remoteQueryOptions } from "@/providers/queryClient";
 import { settingsService } from "@/services/invoke";
 import { withHikarinagiAuth } from "@/services/oauth/hikarinagiAuthSession";
+import { getNextmoeAuth } from "@/services/oauth/nextmoeAuthSession";
 import { getNetworkRequestContext } from "@/services/requestContext";
 import type { LogLevel, UpdateSettingsParams } from "@/types";
 import { saveDataKeys } from "./useSavedata";
@@ -43,7 +44,18 @@ export const settingsKeys = {
 		[...settingsKeys.vndbCurrentUserProfile(), token] as const,
 	logLevel: () => [...settingsKeys.all, "logLevel"] as const,
 	developmentMode: () => [...settingsKeys.all, "developmentMode"] as const,
+	nextmoeAuth: () => [...settingsKeys.all, "nextmoeAuth"] as const,
 };
+
+export function useNextmoeAuth(options?: SettingsQueryOptions) {
+	return useQuery({
+		queryKey: settingsKeys.nextmoeAuth(),
+		queryFn: () => getNextmoeAuth(),
+		enabled: options?.enabled,
+		staleTime: 30_000,
+		retry: false,
+	});
+}
 
 export function useDevelopmentMode() {
 	return useQuery({

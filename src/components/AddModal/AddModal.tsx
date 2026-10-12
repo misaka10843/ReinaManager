@@ -158,7 +158,7 @@ const AddModal: React.FC = () => {
 	const [error, setError] = useState("");
 	const [customLoading, setCustomLoading] = useState(false);
 	const [addMode, setAddMode] = useState<AddGameMode>("mixed");
-	const isSourceDeprecated =
+	const isSourceUnavailable =
 		addMode === "single" && isDeprecatedSource(apiSource);
 	const [bulkApiSource, setBulkApiSource] = useState<SourceType>();
 	const [scanMode, setScanMode] = useState<GameScanMode>(DEFAULT_SCAN_MODE);
@@ -225,7 +225,7 @@ const AddModal: React.FC = () => {
 	const metadataSearchFlow = useMetadataSearchFlow({
 		mixedEnabledSources,
 		t,
-		onResolved: handleAddGame,
+		onResolved: (result) => handleAddGame(result.data),
 		onError: showError,
 	});
 	const isBusy =
@@ -371,7 +371,7 @@ const AddModal: React.FC = () => {
 	 * - 单一数据源的名称搜索使用列表选择弹窗，并在选择后直接添加。
 	 */
 	const handleSubmit = async () => {
-		if (isSourceDeprecated) return;
+		if (isSourceUnavailable) return;
 		if (isBusy) return;
 		const { controller, withAbort } = createAbortableRunner();
 		if (abortControllerRef.current) abortControllerRef.current.abort();
@@ -627,7 +627,7 @@ const AddModal: React.FC = () => {
 						<Button
 							variant="contained"
 							onClick={handleSubmit}
-							disabled={formText === "" || isBusy || isSourceDeprecated}
+							disabled={formText === "" || isBusy || isSourceUnavailable}
 							startIcon={isBusy ? <CircularProgress size={20} /> : null}
 						>
 							{isBusy

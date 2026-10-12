@@ -26,7 +26,7 @@ import {
 	getRuntimeSourceAdapter,
 	SEARCHABLE_SOURCE_KEYS,
 } from "@/metadata";
-import type { GameLaunchType, GameMetadataDraft } from "@/types";
+import type { GameLaunchType, GameMetadataDraft, SourceType } from "@/types";
 
 export type BulkImportOutcome =
 	| ({ kind: "duplicate" } & Omit<BulkImportDuplicate, "itemKey">)
@@ -46,6 +46,7 @@ export interface BulkImportItem {
 	importOutcome?: BulkImportOutcome;
 	importMode?: BulkImportMode;
 	matchedData?: GameMetadataDraft;
+	failedSources?: SourceType[];
 	selectedExe?: string;
 	launch_type?: GameLaunchType;
 	steam_launch_id?: string;

@@ -5,6 +5,7 @@ import {
 } from "@/services/cloudPlayStatus";
 import type {
 	CustomData,
+	FullGameData,
 	GameData,
 	GameLaunchType,
 	GameMetadataDraft,
@@ -150,7 +151,7 @@ export function buildGameFromMixedSelection(params: {
 		throw new Error("At least one mixed source must be selected");
 	}
 
-	return buildGameCandidateFromSourceSelection({
+	const draft = buildGameCandidateFromSourceSelection({
 		selection: Object.fromEntries(
 			MIXED_SOURCE_KEYS.map((source) => [
 				source,
@@ -158,6 +159,11 @@ export function buildGameFromMixedSelection(params: {
 			]),
 		) as MixedSourceSelection,
 	});
+	// Mixed 的来源由用户逐项选择，不能通过另一候选的关联身份补回未采用来源。
+	return {
+		...draft,
+		sources: draft.sources.filter((record) => enabled[record.source]),
+	};
 }
 
 // ---------------------- 核心业务逻辑区 ----------------------
@@ -191,7 +197,6 @@ export async function fetchMetadataForUpdate({
 		});
 	}
 
-	let apiData: GameMetadataDraft;
 	if (isSourceType(idType)) {
 		assertSourceAvailable(idType);
 		const sourceId = sourceIds?.[idType];
@@ -201,26 +206,12 @@ export async function fetchMetadataForUpdate({
 			);
 		}
 
-		apiData = await session.getGameById(sourceId, idType);
+		return session.getGameByIdResult(sourceId, idType);
 	} else {
 		throw new Error(
 			i18n.t("pages.Detail.DataSourceUpdate.invalidIdType", "无效的ID类型"),
 		);
 	}
-
-	if (!apiData) {
-		throw new Error(
-			i18n.t(
-				"pages.Detail.DataSourceUpdate.noDataFetched",
-				"未获取到数据或数据源无效。",
-			),
-		);
-	}
-
-	return {
-		data: apiData,
-		failedSources: [],
-	};
 }
 
 function getGameCandidateDate(gameData: GameMetadataDraft): string | undefined {
@@ -269,41 +260,39 @@ export async function buildInsertGameData(
 }
 
 export function buildMetadataUpdatePayload(
-	gameData: GameMetadataDraft,
-	failedSources: readonly SourceType[] = [],
+	result: MetadataFetchResult,
+	existingGame: Pick<FullGameData, "sources">,
 ): UpdateGameParams {
+	const { data: gameData, failedSources } = result;
 	if (gameData.id_type && isSourceType(gameData.id_type)) {
 		assertSourceAvailable(gameData.id_type);
 	}
-	// 网络更新不负责写入或移除废弃源，旧快照及其封面引用始终保留。
-	const records = candidateSourcesToGameSources(gameData.sources).filter(
-		(record) => !isDeprecatedSource(record.source),
+	const existingSources = new Map(
+		existingGame.sources.map((record) => [record.source, record]),
 	);
-	const presentSources = new Set(records.map((record) => record.source));
+	// 完整结果由用户确认采用；关联身份只补缺，不能覆盖已有身份或完整数据。
+	const records = candidateSourcesToGameSources(gameData.sources).filter(
+		(record) => {
+			if (isDeprecatedSource(record.source)) return false;
+			return record.data != null || !existingSources.has(record.source);
+		},
+	);
+	const presentSources = new Set(
+		gameData.sources.map((record) => record.source),
+	);
 	const failedSourceSet = new Set(failedSources);
-	const sourceDate = getGameCandidateDate(gameData);
-	const updateData: UpdateGameParams = {
+	return {
 		id_type: gameData.id_type,
+		upsert_sources: records,
+		// 关联字段缺失不能删除旧身份；失败来源也保留。
+		// 日期由后端根据实际写入、删除和保留的来源统一重算。
+		remove_sources: SEARCHABLE_SOURCE_KEYS.filter(
+			(source) =>
+				existingSources.get(source)?.data != null &&
+				!presentSources.has(source) &&
+				!failedSourceSet.has(source),
+		),
 	};
-	if (sourceDate) {
-		updateData.date = sourceDate;
-	}
-
-	if (gameData.id_type && isSourceType(gameData.id_type)) {
-		updateData.upsert_sources = records.filter(
-			(record) => record.source === gameData.id_type,
-		);
-		updateData.remove_sources = SEARCHABLE_SOURCE_KEYS.filter(
-			(source) => source !== gameData.id_type && !failedSourceSet.has(source),
-		);
-	} else {
-		updateData.upsert_sources = records;
-		updateData.remove_sources = SEARCHABLE_SOURCE_KEYS.filter(
-			(source) => !presentSources.has(source) && !failedSourceSet.has(source),
-		);
-	}
-
-	return updateData;
 }
 
 export function buildGameLaunchUpdatePayload(

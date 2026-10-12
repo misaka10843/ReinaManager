@@ -72,6 +72,9 @@ export function getDisplayGameData(fullData: FullGameData): GameData {
 		rank: undefined,
 		score: undefined,
 		sourceScores: {
+			kun: sourceDataMap.kun
+				? getSourceDisplayFields("kun", sourceDataMap.kun).score
+				: undefined,
 			bgm: sourceDataMap.bgm
 				? getSourceDisplayFields("bgm", sourceDataMap.bgm).score
 				: undefined,

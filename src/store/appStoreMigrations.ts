@@ -1,11 +1,13 @@
 import {
 	DEFAULT_MIXED_SOURCE_KEYS,
+	MIXED_SOURCE_KEYS,
+	MIXED_SOURCE_MAX_COUNT,
 	REGISTERED_SOURCE_KEYS,
 } from "@/metadata/constants";
 import type { SourceType } from "@/types";
 import { DefaultGroup } from "@/types/collection";
 
-export const APP_STORE_VERSION = 3;
+export const APP_STORE_VERSION = 4;
 
 type AppStorePersistedState = {
 	mixedEnabledSources?: SourceType[];
@@ -34,7 +36,7 @@ function normalizeMixedEnabledSources(
 	const enabled = new Set(
 		sources.filter((source) => REGISTERED_SOURCE_KEYS.includes(source)),
 	);
-	// 老版本偏好仍保存废弃源；是否发起请求由在线源集合决定。
+	// 只规范化偏好，源的迁移待完成状态由请求入口处理。
 	const filtered = REGISTERED_SOURCE_KEYS.filter((source) =>
 		enabled.has(source),
 	);
@@ -65,7 +67,29 @@ export function migrateAppStorePersistedState(
 		migrateAutoBackupInterval(state);
 	}
 
+	if (version < 4) {
+		migrateKunSourcePreferences(state);
+	}
+
 	return state;
+}
+
+function migrateKunSourcePreferences(state: AppStorePersistedState) {
+	if (state.mixedEnabledSources) {
+		const sources = state.mixedEnabledSources;
+		const otherSources = new Set<SourceType>(
+			sources.filter((source) => source !== "kun"),
+		);
+		const onlineCount = MIXED_SOURCE_KEYS.filter((source) =>
+			otherSources.has(source),
+		).length;
+		const canInheritKun = onlineCount < MIXED_SOURCE_MAX_COUNT;
+		// 已满四个其它源时不额外加入 Kun，保留原有的其它选择。
+		// 只改请求偏好，不改写数据库中旧 Kun 的作品 ID 和元数据。
+		state.mixedEnabledSources = [
+			...new Set(sources.filter((source) => source !== "kun" || canInheritKun)),
+		];
+	}
 }
 
 function migrateMixedSourceFlagsToEnabledSources(

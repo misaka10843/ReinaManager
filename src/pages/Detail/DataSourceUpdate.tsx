@@ -32,17 +32,11 @@ import {
 } from "@/metadata/data/metadata";
 import { getSourceIdFromDisplay } from "@/metadata/sourceRecord";
 import { snackbar } from "@/providers/snackBar";
-import { withMetadataAuth } from "@/services/metadataAuth";
 import { isBgmAuthExpiredError } from "@/services/oauth/bgmAuthSession";
 import { isHikarinagiAuthExpiredError } from "@/services/oauth/hikarinagiAuthSession";
 import { createMetadataSession } from "@/services/requestContext";
 import { useStore } from "@/store/appStore";
-import type {
-	apiSourceType,
-	GameData,
-	GameMetadataDraft,
-	SourceType,
-} from "@/types";
+import type { apiSourceType, GameData, SourceType } from "@/types";
 import { isSourceType } from "@/types";
 import { getUserErrorMessage } from "@/utils/errors";
 import { getGameDisplayName } from "@/utils/game";
@@ -50,11 +44,8 @@ import { getGameDisplayName } from "@/utils/game";
 interface DataSourceUpdateProps {
 	selectedGame: GameData;
 	sourceAvailability: Record<SourceType, boolean>;
-	onDataFetched: (result: MetadataFetchResult) => void;
-	onDirectDataUpdate: (
-		data: GameMetadataDraft,
-		failedSources?: readonly SourceType[],
-	) => Promise<void>;
+	onDataFetched: (result: MetadataFetchResult) => Promise<void>;
+	onDirectDataUpdate: (result: MetadataFetchResult) => Promise<void>;
 	onSourceSwitch: (idType: string) => Promise<void>;
 	disabled?: boolean;
 }
@@ -105,6 +96,8 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 	const showMixedInputs = idType === "mixed";
 	const isSearchMode = dataSourceUpdateMode === "search";
 	const isSourceDeprecated = isDeprecatedSource(idType);
+	const hasUnboundKunData =
+		sourceAvailability.kun && !getSourceIdFromDisplay(selectedGame, "kun");
 	const searchSource: apiSourceType | null =
 		idType === "mixed" || (isSourceType(idType) && !isSourceDeprecated)
 			? idType
@@ -130,7 +123,11 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 		};
 	});
 	const selectableSources = REGISTERED_SOURCE_KEYS.filter((source) =>
-		Boolean(getSourceIdFromDisplay(selectedGame, source) || source === idType),
+		Boolean(
+			!isDeprecatedSource(source) ||
+				getSourceIdFromDisplay(selectedGame, source) ||
+				source === idType,
+		),
 	);
 	const hasEnabledMixedSourceId = sourceInputs.some(
 		({ source, value }) => isMixedSourceEnabled(source) && Boolean(value),
@@ -143,10 +140,7 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 				Boolean(sourceIds[idType]);
 
 	const hasSelectedSourceData = (source: SourceType) => {
-		return Boolean(
-			getSourceIdFromDisplay(selectedGame, source) &&
-				sourceAvailability[source],
-		);
+		return sourceAvailability[source];
 	};
 
 	const canSwitchSource = () => {
@@ -178,8 +172,8 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 		setSearchName(selectedGameDisplayName);
 	}, [selectedGameDisplayName]);
 
-	// 获取并预览游戏数据
-	const handleFetchAndPreview = async () => {
+	// 获取 ID 对应数据，由结果决定直接更新或进入预览。
+	const handleFetchByIds = async () => {
 		if (isSourceDeprecated) return;
 		if (idType === "custom") {
 			snackbar.error(
@@ -193,26 +187,14 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 
 		try {
 			setIsLoading(true);
-			const enabledSources =
-				idType === "mixed"
-					? mixedEnabledSources
-					: isSourceType(idType)
-						? [idType]
-						: [];
-			const result = await withMetadataAuth(
-				enabledSources,
-				(tokens) =>
-					fetchMetadataForUpdate({
-						selectedGame,
-						idType,
-						sourceIds,
-						enabledSources:
-							idType === "mixed" ? mixedEnabledSources : undefined,
-						session: createMetadataSession(tokens),
-					}),
-				{ requireHikarinagi: idType === "hikarinagi" },
-			);
-			onDataFetched(result);
+			const result = await fetchMetadataForUpdate({
+				selectedGame,
+				idType,
+				sourceIds,
+				enabledSources: idType === "mixed" ? mixedEnabledSources : undefined,
+				session: createMetadataSession(),
+			});
+			await onDataFetched(result);
 		} catch (error) {
 			if (isBgmAuthExpiredError(error) || isHikarinagiAuthExpiredError(error)) {
 				return;
@@ -336,6 +318,14 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 					)}
 				</Alert>
 			)}
+			{hasUnboundKunData && (
+				<Alert severity="info">
+					{t(
+						"pages.Detail.DataSourceUpdate.unboundKunData",
+						"Kungal 已切换为 NextMoe，旧编号已解绑，已有数据仍可查看和切换显示。更新时请按名称重新选择条目或填写新的 NextMoe ID；采用不含 Kungal 的新结果会移除旧 Kungal 数据。",
+					)}
+				</Alert>
+			)}
 
 			<ToggleButtonGroup
 				exclusive
@@ -412,7 +402,11 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 								variant="outlined"
 								fullWidth
 								value={value}
-								slotProps={{ input: { readOnly: isDeprecatedSource(source) } }}
+								slotProps={{
+									input: {
+										readOnly: isDeprecatedSource(source),
+									},
+								}}
 								onChange={(e) => setValue(e.target.value)}
 								disabled={isBusy}
 								required={idType === source}
@@ -425,7 +419,7 @@ export const DataSourceUpdate: React.FC<DataSourceUpdateProps> = ({
 						color="primary"
 						fullWidth
 						disabled={idType === "custom" || isBusy || !hasManualSourceId}
-						onClick={handleFetchAndPreview}
+						onClick={handleFetchByIds}
 						startIcon={
 							isLoading ? (
 								<CircularProgress size={20} color="inherit" />

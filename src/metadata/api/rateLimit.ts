@@ -4,7 +4,8 @@ export type ApiRateLimitSource =
 	| "ymgal"
 	| "dlsite"
 	| "erogamescape"
-	| "hikarinagi";
+	| "hikarinagi"
+	| "nextmoe";
 
 interface ApiRateLimitPolicy {
 	source: ApiRateLimitSource;
@@ -27,6 +28,7 @@ interface ApiRateLimitState {
 
 export interface ApiRateLimitedRequestOptions {
 	source: ApiRateLimitSource;
+	minIntervalMs?: number;
 }
 
 export interface ApiRateLimitHandling {
@@ -98,6 +100,14 @@ const API_RATE_LIMIT_POLICIES: Record<ApiRateLimitSource, ApiRateLimitPolicy> =
 			max429Retries: 2,
 			stopOn429: false,
 		},
+		nextmoe: {
+			source: "nextmoe",
+			minIntervalMs: 1200,
+			defaultBackoffMs: 60 * 1000,
+			maxBackoffMs: 60 * 1000,
+			max429Retries: 2,
+			stopOn429: false,
+		},
 	};
 
 const rateLimitStates: Record<ApiRateLimitSource, ApiRateLimitState> = {
@@ -107,6 +117,7 @@ const rateLimitStates: Record<ApiRateLimitSource, ApiRateLimitState> = {
 	dlsite: createInitialState(),
 	erogamescape: createInitialState(),
 	hikarinagi: createInitialState(),
+	nextmoe: createInitialState(),
 };
 
 const listeners = new Set<ApiRateLimitListener>();
@@ -173,16 +184,16 @@ async function runWhenAvailable<T>(
 	source: ApiRateLimitSource,
 	task: () => Promise<T>,
 	signal?: AbortSignal,
+	minIntervalMs = API_RATE_LIMIT_POLICIES[source].minIntervalMs,
 ): Promise<T> {
 	if (signal?.aborted) throw createAbortError();
 
 	const state = rateLimitStates[source];
-	const policy = API_RATE_LIMIT_POLICIES[source];
 	await waitUntil(state.backoffUntil, signal);
 	await waitUntil(state.nextStartAt, signal);
 
 	if (signal?.aborted) throw createAbortError();
-	state.nextStartAt = Date.now() + policy.minIntervalMs;
+	state.nextStartAt = Date.now() + minIntervalMs;
 	notifyRateLimitListeners();
 
 	return task();
@@ -192,14 +203,15 @@ export async function scheduleApiRequest<T>(
 	source: ApiRateLimitSource,
 	task: () => Promise<T>,
 	signal?: AbortSignal,
+	minIntervalMs?: number,
 ): Promise<T> {
 	const state = rateLimitStates[source];
 	state.queuedCount += 1;
 	notifyRateLimitListeners();
 
 	const result = state.tail.then(
-		() => runWhenAvailable(source, task, signal),
-		() => runWhenAvailable(source, task, signal),
+		() => runWhenAvailable(source, task, signal, minIntervalMs),
+		() => runWhenAvailable(source, task, signal, minIntervalMs),
 	);
 
 	state.tail = result.then(
@@ -219,6 +231,7 @@ export function handleApiRateLimited(
 	source: ApiRateLimitSource,
 	headers: Headers,
 	attempt: number,
+	quotaExceeded = false,
 ): ApiRateLimitHandling {
 	const state = rateLimitStates[source];
 	const policy = API_RATE_LIMIT_POLICIES[source];
@@ -235,9 +248,12 @@ export function handleApiRateLimited(
 					? "Hikarinagi 请求过于频繁，正在等待配额恢复"
 					: "请求被限速，当前任务已停止";
 
-	if (policy.stopOn429) {
+	if (policy.stopOn429 || quotaExceeded) {
 		notifyRateLimitListeners();
+		const retryAfterMs = quotaExceeded ? getRetryAfterMs(headers) : undefined;
 		return {
+			retryAfterMs,
+			backoffUntil: retryAfterMs !== undefined ? now + retryAfterMs : undefined,
 			shouldRetry: false,
 			fatal: true,
 		};

@@ -72,7 +72,7 @@
 			"deleteBackupTitle": "删除备份",
 			"deleteGameMessage": "确定要删除该游戏吗？此操作将从库中移除该游戏，但不会删除游戏文件。",
 			"deleteGameTitle": "删除游戏",
-			"gameName": "游戏名称",
+			"metadataFetchFailed": "{{sources}} 获取失败，将保留其已有数据。下方为本次成功获取的结果。",
 			"processing": "处理中...",
 			"sourceData": "{{source}} 数据"
 		},
@@ -488,6 +488,10 @@
 		"metadataNotFound": "未找到对应的元数据",
 		"metadataRequestFailed": "获取元数据失败，请稍后重试",
 		"mixedSourcesFailed": "所有数据源请求均失败",
+		"nextmoeAuthExpired": "Kungal (NextMoe) 登录已失效，请重新登录。",
+		"nextmoeAuthMissing": "请先在账号设置中登录 Kungal (NextMoe)。",
+		"nextmoeCredentialStore": "保存或读取 Kungal 授权信息失败，请重试。",
+		"nextmoeScopeRequired": "Kungal 授权缺少目录读取权限，请重新登录。",
 		"notFound": "未找到相关内容",
 		"pathEmpty": "路径不能为空",
 		"pathInspectionFailed": "无法读取路径状态",
@@ -669,7 +673,6 @@
 				"invalidIdType": "无效的ID类型",
 				"loading": "正在获取...",
 				"manualIdMode": "手动 ID",
-				"noDataFetched": "未获取到数据或数据源无效。",
 				"noGameSelected": "未选择游戏",
 				"search": "搜索",
 				"searching": "正在搜索...",
@@ -679,6 +682,7 @@
 				"sourceSwitchUnavailable": "当前游戏没有该数据源的本地数据，无法仅切换显示源。",
 				"switchDisplaySource": "切换显示源",
 				"switchingSource": "正在切换...",
+				"unboundKunData": "Kungal 已切换为 NextMoe，旧编号已解绑，已有数据仍可查看和切换显示。更新时请按名称重新选择条目或填写新的 NextMoe ID；采用不含 Kungal 的新结果会移除旧 Kungal 数据。",
 				"updateFromSource": "从数据源更新数据"
 			},
 			"deleteGameSession": "删除记录",
@@ -989,10 +993,25 @@
 				"title": "日志设置"
 			},
 			"mixedSearchSources": {
-				"description": "该设置影响 Mixed 模式，BGM 与 VNDB 默认启用，其它源可按需开启，启用数量限制为 2-4 个源。",
+				"description": "已启用的源用于 Mixed 获取，也用于单源自动增强；可启用 2-4 个源。",
 				"title": "Mixed 搜索源"
 			},
 			"navigation": "设置分类导航",
+			"nextmoeAuth": {
+				"description": "元数据由 NextMoe 提供，无需登录即可获取；登录可提高请求额度，并支持游玩状态和评价同步。",
+				"logout": "退出登录",
+				"logoutSuccess": "已退出 Kungal (NextMoe) 登录",
+				"oauthCancel": "取消 Kungal (NextMoe) 登录",
+				"oauthCancelled": "Kungal (NextMoe) 登录已取消",
+				"oauthError": "Kungal (NextMoe) 登录失败: {{error}}",
+				"oauthLogin": "OAuth 快捷登录",
+				"oauthStartError": "启动 Kungal (NextMoe) 登录失败: {{error}}",
+				"oauthSuccess": "Kungal (NextMoe) 登录成功",
+				"oauthWaiting": "请在浏览器中完成 Kungal (NextMoe) 授权...",
+				"reloginRequired": "Kungal (NextMoe) 登录已失效，请重新登录。",
+				"title": "鲲 Galgame 论坛",
+				"tokenExpiresAt": "Token 有效期至: {{date}}"
+			},
 			"nsfw": {
 				"coverReplace": "NSFW 封面替换",
 				"filter": "过滤 NSFW 内容",
@@ -1029,6 +1048,14 @@
 			"silentStartupDescription": "每次启动应用时不显示主窗口，应用将在系统托盘中运行。",
 			"skipCloseRemind": "不再提醒",
 			"skipCloseRemindDescription": "开启后不再显示关闭确认弹窗，直接执行下方选择的默认行为。",
+			"sourceExpansion": {
+				"description": "只保存 Mixed 中启用来源的关联 ID，供外链和同步使用。以下开关只决定是否获取这些来源的元数据。",
+				"hikarinagi": "Hikarinagi 自动扩展为 Mixed",
+				"hikarinagiDescription": "开启后，按关联 ID 获取 Mixed 中启用的其它源元数据，并保留 Hikarinagi 自身元数据。",
+				"kun": "Kungal 自动扩展为 Mixed",
+				"kunDescription": "开启后，按关联 ID 获取 Mixed 中启用的其它源元数据，并保留 Kungal 自身元数据。",
+				"title": "单源自动增强"
+			},
 			"spoilerLevel": {
 				"description": "选择剧透等级以获取合适的标签内容",
 				"level0": "0 - 无剧透",

@@ -15,6 +15,8 @@ pub enum SourceType {
     Hikarinagi,
     Ymgal,
     Kun,
+    // 只兼容开发原型的封面引用，不再注册为新的元数据来源；待映射迁移一并归回 Kun。
+    Nextmoe,
     Dlsite,
     Erogamescape,
 }

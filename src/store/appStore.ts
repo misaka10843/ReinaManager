@@ -142,6 +142,10 @@ export interface AppState {
 	setApiSource: (source: SourceType) => void;
 	mixedEnabledSources: SourceType[];
 	toggleMixedSource: (source: SourceType) => void;
+	kunAutoExpand: boolean;
+	setKunAutoExpand: (enabled: boolean) => void;
+	hikarinagiAutoExpand: boolean;
+	setHikarinagiAutoExpand: (enabled: boolean) => void;
 	dataSourceUpdateMode: DataSourceUpdateMode;
 	setDataSourceUpdateMode: (mode: DataSourceUpdateMode) => void;
 
@@ -309,11 +313,16 @@ export const useStore = create<AppState>()(
 				set({ apiSource: source });
 			},
 			mixedEnabledSources: [...DEFAULT_MIXED_SOURCE_KEYS],
+			kunAutoExpand: false,
+			setKunAutoExpand: (enabled: boolean) => set({ kunAutoExpand: enabled }),
+			hikarinagiAutoExpand: false,
+			setHikarinagiAutoExpand: (enabled: boolean) =>
+				set({ hikarinagiAutoExpand: enabled }),
 			toggleMixedSource: (source: SourceType) => {
 				if (!MIXED_SOURCE_KEYS.includes(source)) return;
 				set((state) => {
 					const current = state.mixedEnabledSources;
-					// 保留旧 Kungal 偏好供 v2 继承，但不占在线源的数量名额。
+					// 兼容历史配置中的废弃源，但不占在线源的数量名额。
 					const deprecatedSources = current.filter(isDeprecatedSource);
 					const enabledAfterAdd = MIXED_SOURCE_KEYS.filter(
 						(item) => item === source || current.includes(item),
@@ -635,6 +644,8 @@ export const useStore = create<AppState>()(
 				// 数据来源选择
 				apiSource: state.apiSource,
 				mixedEnabledSources: state.mixedEnabledSources,
+				kunAutoExpand: state.kunAutoExpand,
+				hikarinagiAutoExpand: state.hikarinagiAutoExpand,
 				dataSourceUpdateMode: state.dataSourceUpdateMode,
 				// nsfw相关
 				nsfwFilter: state.nsfwFilter,

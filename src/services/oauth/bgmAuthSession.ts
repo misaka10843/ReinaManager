@@ -10,7 +10,7 @@ import {
 	nowUnixSeconds,
 } from "@/services/oauth/oauthAuthSession";
 import type { BgmAuth } from "@/types";
-import { AppError, isHttpStatus } from "@/utils/errors";
+import { AppError, isHttpStatusFromHost } from "@/utils/errors";
 
 let bgmRefreshPromise: Promise<BgmAuth | null> | null = null;
 
@@ -113,7 +113,7 @@ export async function withBgmAuth<T>(fn: (token?: string) => Promise<T>) {
 	try {
 		return await fn(token);
 	} catch (error) {
-		if (token && isHttpStatus(error, 401)) {
+		if (token && isHttpStatusFromHost(error, 401, "api.bgm.tv")) {
 			await logoutBgmAuth({ notify: true });
 			throw new AppError({
 				code: "bgm_auth_expired",

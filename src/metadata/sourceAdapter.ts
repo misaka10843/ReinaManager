@@ -6,6 +6,12 @@ import type { SourceCandidate, SourceDisplayFields } from "./sourceCandidate";
 
 export type SourceIdMap = Partial<Record<SourceType, string>>;
 
+export interface MetadataAuthTokens {
+	bgmToken?: string;
+	hikarinagiToken?: string;
+	nextmoeToken?: string;
+}
+
 export const DEFAULT_METADATA_SEARCH_LIMIT = 8;
 
 export function createDeprecatedSourceError(source: SourceType): AppError {
@@ -22,21 +28,23 @@ export function assertSourceAvailable(source: SourceType): void {
 	}
 }
 
-export interface MetadataRequestContext extends NetworkRequestContext {
+export interface MetadataRequestContext
+	extends NetworkRequestContext,
+		MetadataAuthTokens {
 	spoilerLevel: number;
-	bgmToken?: string;
-	hikarinagiToken?: string;
+	autoExpandSources?: readonly SourceType[];
+	mixedEnabledSources?: readonly SourceType[];
+	authenticateSource?: <T>(
+		source: SourceType,
+		task: (tokens: MetadataAuthTokens) => Promise<T>,
+	) => Promise<T>;
 }
 
 export interface MetadataSourceContext extends MetadataRequestContext {
-	enrichCrossSource?: boolean;
 	limit?: number;
 }
 
-export type MetadataSourceOptions = Pick<
-	MetadataSourceContext,
-	"enrichCrossSource" | "limit"
->;
+export type MetadataSourceOptions = Pick<MetadataSourceContext, "limit">;
 
 export interface MetadataSourceAdapter<TData = unknown> {
 	key: SourceType;
@@ -44,6 +52,7 @@ export interface MetadataSourceAdapter<TData = unknown> {
 	iconUrl: string;
 	validateId: (id: string) => boolean;
 	getExternalUrl(id: string): string;
+	finalizeData?(data: TData, adoptedIds: SourceIdMap): TData;
 	fetchById(id: string, ctx: MetadataSourceContext): Promise<GameMetadataDraft>;
 	searchByName(
 		name: string,
@@ -79,23 +88,35 @@ export function bindMetadataSourceAdapter<TData>(
 	context: MetadataRequestContext,
 ): BoundMetadataSourceAdapter<TData> {
 	const { fetchById, searchByName, enrichOnSelect, ...definition } = adapter;
+	const request = <T>(task: (ctx: MetadataRequestContext) => Promise<T>) => {
+		assertSourceAvailable(adapter.key);
+		return context.authenticateSource
+			? context.authenticateSource(adapter.key, (tokens) =>
+					task({ ...context, ...tokens }),
+				)
+			: task(context);
+	};
 
 	return {
 		...definition,
 		fetchById: (id, options = {}) =>
-			fetchById.call(adapter, id, { ...context, ...options }),
+			request((ctx) => fetchById.call(adapter, id, { ...ctx, ...options })),
 		searchByName: (name, options = {}) =>
-			searchByName.call(adapter, name, { ...context, ...options }),
+			request((ctx) =>
+				searchByName.call(adapter, name, { ...ctx, ...options }),
+			),
 		...(enrichOnSelect
 			? {
 					enrichOnSelect: (
 						candidate: SourceCandidate<TData>,
 						options: MetadataSourceOptions = {},
 					) =>
-						enrichOnSelect.call(adapter, candidate, {
-							...context,
-							...options,
-						}),
+						request((ctx) =>
+							enrichOnSelect.call(adapter, candidate, {
+								...ctx,
+								...options,
+							}),
+						),
 				}
 			: {}),
 	};

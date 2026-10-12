@@ -39,6 +39,8 @@ interface HikarinagiGameResponse {
 	covers?: HikarinagiCover[];
 	developer?: string | null;
 	id: number;
+	// catalog:sync 未上线、未授权或旧响应会省略；省略不能清除已经保存的关联。
+	external_source?: { bangumi?: string | null; vndb?: string | null } | null;
 	nsfw?: boolean;
 	origin_intro?: string | null;
 	origin_title?: string;
@@ -189,13 +191,26 @@ function toHikarinagiSearchData(
 }
 
 function toHikarinagiDraft(game: HikarinagiGameResponse): GameMetadataDraft {
+	const bgmId = game.external_source?.bangumi?.trim();
+	const vndbId = game.external_source?.vndb?.trim().toLowerCase();
+	const associatedSources = [
+		...(bgmId && /^\d+$/.test(bgmId)
+			? [createSourceCandidateRecord("bgm", bgmId, null)]
+			: []),
+		...(vndbId && /^v\d+$/.test(vndbId)
+			? [createSourceCandidateRecord("vndb", vndbId, null)]
+			: []),
+	];
 	return createGameCandidate({
 		idType: "hikarinagi",
-		source: createSourceCandidateRecord(
-			"hikarinagi",
-			String(game.id),
-			toHikarinagiData(game),
-		),
+		sources: [
+			createSourceCandidateRecord(
+				"hikarinagi",
+				String(game.id),
+				toHikarinagiData(game),
+			),
+			...associatedSources,
+		],
 	});
 }
 

@@ -13,6 +13,7 @@ import { SnackbarUtilsConfigurator } from "@/providers/snackBar";
 import { ToolpadReactRouterAppProvider } from "@/providers/ToolpadReactRouterAppProvider";
 import { initBgmAuthRefresh } from "@/services/oauth/bgmAuthSession";
 import { initHikarinagiAuthRefresh } from "@/services/oauth/hikarinagiAuthSession";
+import { initNextmoeAuthRefresh } from "@/services/oauth/nextmoeAuthSession";
 
 const App: React.FC = () => {
 	const { t } = useTranslation();
@@ -20,6 +21,7 @@ const App: React.FC = () => {
 	useEffect(() => {
 		void initBgmAuthRefresh();
 		void initHikarinagiAuthRefresh();
+		return initNextmoeAuthRefresh();
 	}, []);
 
 	// 从路由配置动态生成导航菜单

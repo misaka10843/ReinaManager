@@ -72,7 +72,7 @@
 			"deleteBackupTitle": "刪除備份",
 			"deleteGameMessage": "確定要刪除該遊戲嗎？此操作將從遊戲庫中移除此遊戲，但不會刪除遊戲檔案。",
 			"deleteGameTitle": "刪除遊戲",
-			"gameName": "遊戲名稱",
+			"metadataFetchFailed": "{{sources}} 取得失敗，將保留其既有資料。下方為本次成功取得的結果。",
 			"processing": "處理中...",
 			"sourceData": "{{source}} 資料"
 		},
@@ -488,6 +488,10 @@
 		"metadataNotFound": "找不到對應的中繼資料",
 		"metadataRequestFailed": "取得中繼資料失敗，請稍後再試",
 		"mixedSourcesFailed": "所有資料來源請求都失敗了",
+		"nextmoeAuthExpired": "Kungal (NextMoe) 登入已失效，請重新登入。",
+		"nextmoeAuthMissing": "請先在帳號設定中登入 Kungal (NextMoe)。",
+		"nextmoeCredentialStore": "儲存或讀取 Kungal 授權資訊失敗，請重試。",
+		"nextmoeScopeRequired": "Kungal 授權缺少目錄讀取權限，請重新登入。",
 		"notFound": "找不到相關內容",
 		"pathEmpty": "路徑不能為空",
 		"pathInspectionFailed": "無法讀取路徑狀態",
@@ -669,7 +673,6 @@
 				"invalidIdType": "無效的ID類型",
 				"loading": "正在獲取...",
 				"manualIdMode": "手動 ID",
-				"noDataFetched": "未獲取到數據或數據源無效。",
 				"noGameSelected": "未選擇遊戲",
 				"search": "搜尋",
 				"searching": "正在搜尋...",
@@ -679,6 +682,7 @@
 				"sourceSwitchUnavailable": "目前遊戲沒有該數據源的本地數據，無法僅切換顯示源。",
 				"switchDisplaySource": "切換顯示源",
 				"switchingSource": "正在切換...",
+				"unboundKunData": "Kungal 已改用 NextMoe，舊編號已解除綁定，既有資料仍可檢視及切換顯示。更新時請依名稱重新選擇條目或輸入新的 NextMoe ID；採用不含 Kungal 的新結果會移除舊 Kungal 資料。",
 				"updateFromSource": "從數據源更新數據"
 			},
 			"deleteGameSession": "刪除記錄",
@@ -989,10 +993,25 @@
 				"title": "日誌設置"
 			},
 			"mixedSearchSources": {
-				"description": "此設定會影響 Mixed 模式，BGM 與 VNDB 預設啟用，其他來源可依需求啟用，啟用數量限制為 2-4 個來源。",
+				"description": "已啟用的來源用於 Mixed 取得，也用於單一來源自動增強；可啟用 2-4 個來源。",
 				"title": "Mixed 搜尋來源"
 			},
 			"navigation": "設定分類導覽",
+			"nextmoeAuth": {
+				"description": "中繼資料由 NextMoe 提供，無需登入即可取得；登入可提高請求額度，並支援遊玩狀態和評價同步。",
+				"logout": "登出",
+				"logoutSuccess": "已登出 Kungal (NextMoe)",
+				"oauthCancel": "取消 Kungal (NextMoe) 登入",
+				"oauthCancelled": "Kungal (NextMoe) 登入已取消",
+				"oauthError": "Kungal (NextMoe) 登入失敗: {{error}}",
+				"oauthLogin": "OAuth 快速登入",
+				"oauthStartError": "啟動 Kungal (NextMoe) 登入失敗: {{error}}",
+				"oauthSuccess": "Kungal (NextMoe) 登入成功",
+				"oauthWaiting": "請在瀏覽器中完成 Kungal (NextMoe) 授權...",
+				"reloginRequired": "Kungal (NextMoe) 登入已失效，請重新登入。",
+				"title": "鯤 Galgame 論壇",
+				"tokenExpiresAt": "Token 有效期至: {{date}}"
+			},
 			"nsfw": {
 				"coverReplace": "模糊NSFW替換",
 				"filter": "過濾NSFW内容",
@@ -1029,6 +1048,14 @@
 			"silentStartupDescription": "每次啟動應用程式時不顯示主視窗，應用程式會在系統匣中執行。",
 			"skipCloseRemind": "不再提醒",
 			"skipCloseRemindDescription": "開啟後不再顯示關閉確認彈窗，直接執行下方選擇的預設行為。",
+			"sourceExpansion": {
+				"description": "只儲存 Mixed 中啟用來源的關聯 ID，供外部連結和同步使用。以下開關僅決定是否取得這些來源的中繼資料。",
+				"hikarinagi": "Hikarinagi 自動擴展為 Mixed",
+				"hikarinagiDescription": "開啟後，依關聯 ID 取得 Mixed 中啟用的其他來源中繼資料，並保留 Hikarinagi 自身的中繼資料。",
+				"kun": "Kungal 自動擴展為 Mixed",
+				"kunDescription": "開啟後，依關聯 ID 取得 Mixed 中啟用的其他來源中繼資料，並保留 Kungal 自身的中繼資料。",
+				"title": "單一來源自動增強"
+			},
 			"spoilerLevel": {
 				"description": "選擇劇透等級以獲取適當的標籤內容",
 				"level0": "0 - 無劇透",

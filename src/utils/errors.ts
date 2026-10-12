@@ -23,7 +23,8 @@ type ApiRateLimitSource =
 	| "ymgal"
 	| "dlsite"
 	| "erogamescape"
-	| "hikarinagi";
+	| "hikarinagi"
+	| "nextmoe";
 
 interface AppErrorOptions {
 	code: AppErrorCode | string;
@@ -93,8 +94,17 @@ export function normalizeTauriError(
 		error,
 		`Tauri command failed: ${context.command}`,
 	);
+	const nextmoeCode = context.command.startsWith("nextmoe_oauth_")
+		? normalizedError.message.split(":", 1)[0]
+		: "";
 	return new AppError({
-		code: "tauri_invoke_failed",
+		code: [
+			"nextmoe_auth_expired",
+			"nextmoe_scope_required",
+			"nextmoe_credential_store_error",
+		].includes(nextmoeCode)
+			? nextmoeCode
+			: "tauri_invoke_failed",
 		message:
 			normalizedError.message || `Tauri command failed: ${context.command}`,
 		cause: normalizedError,
@@ -249,6 +259,44 @@ export function isHttpStatus(
 	return false;
 }
 
+export function isHttpStatusFromHost(
+	error: unknown,
+	status: number,
+	hostname: string,
+	depth = 0,
+): boolean {
+	if (depth > 8) return false;
+
+	if (error instanceof AppError && !(error instanceof HttpResponseError)) {
+		return error.cause
+			? isHttpStatusFromHost(error.cause, status, hostname, depth + 1)
+			: false;
+	}
+
+	const response =
+		error instanceof HttpResponseError
+			? error
+			: error && typeof error === "object" && "response" in error
+				? error.response
+				: undefined;
+	if (
+		!response ||
+		typeof response !== "object" ||
+		!("status" in response) ||
+		response.status !== status ||
+		!("url" in response) ||
+		typeof response.url !== "string"
+	) {
+		return false;
+	}
+	try {
+		// 无法确认请求归属时不注销账号，避免混合请求中其他站点的 401 误伤登录状态。
+		return new URL(response.url).hostname === hostname;
+	} catch {
+		return false;
+	}
+}
+
 function getAppErrorDetailMessage(error: AppError): string {
 	const messages = [
 		error.message,
@@ -310,6 +358,26 @@ export function getUserErrorMessage(
 
 	if (error instanceof AppError) {
 		switch (error.code) {
+			case "nextmoe_auth_missing":
+				return t(
+					"errors.nextmoeAuthMissing",
+					"请先在账号设置中登录 Kungal (NextMoe)。",
+				);
+			case "nextmoe_auth_expired":
+				return t(
+					"errors.nextmoeAuthExpired",
+					"Kungal (NextMoe) 登录已失效，请重新登录。",
+				);
+			case "nextmoe_scope_required":
+				return t(
+					"errors.nextmoeScopeRequired",
+					"Kungal 授权缺少目录读取权限，请重新登录。",
+				);
+			case "nextmoe_credential_store_error":
+				return t(
+					"errors.nextmoeCredentialStore",
+					"保存或读取 Kungal 授权信息失败，请重试。",
+				);
 			case "metadata_not_found":
 				return t("errors.metadataNotFound", "未找到对应的元数据");
 			case "invalid_game_id":

@@ -6,19 +6,18 @@
  * @copyright AGPL-3.0
  *
  * 逻辑说明：
- * 1. 根据传入的参数智能获取：
- *    - 只有单个数据源ID：获取该数据，用其名称搜索其他数据源
- *    - 多个数据源ID：并行获取所有指定的数据源
+ * 1. 根据传入的参数获取：
+ *    - 一个或多个数据源 ID：仅并行获取指定的数据源
  *    - 只有名称：同时搜索所有数据源
  * 2. 使用安全模式避免单个数据源失败导致整体失败
  * 3. 按 source 返回候选列表
  *
  * 主要导出：
  * - fetchMixedData：通用混合数据获取，返回按 source 分组的候选列表
- * - fetchMultiSourceData：多数据源搜索和获取的统一接口
  */
 
 import type { GameMetadataDraft, SourceType } from "@/types";
+import { isAbortError } from "@/utils/async";
 import {
 	AppError,
 	isApiRateLimitError,
@@ -26,7 +25,6 @@ import {
 	toError,
 } from "@/utils/errors";
 import { isDeprecatedSource } from "../constants";
-import { resolveAutoSelectedSourceCandidate } from "../sourceAutoResolve";
 import {
 	getCandidateSourceData,
 	getSourceCandidateFromGame,
@@ -38,7 +36,6 @@ interface SafeFetchResult {
 	source: SourceType;
 	data: SourceCandidate[];
 	failed: boolean;
-	attempted: boolean;
 	error?: unknown;
 }
 
@@ -66,25 +63,18 @@ async function fetchAdapterSafely(
 			source: adapter.key,
 			data: await task(),
 			failed: false,
-			attempted: true,
 		};
 	} catch (error) {
+		if (isAbortError(error)) throw error;
 		if (isApiRateLimitError(error)) throw error;
 		if (adapter.key === "bgm" && isHttpStatus(error, 401)) throw error;
 		return {
 			source: adapter.key,
 			data: [],
 			failed: true,
-			attempted: true,
 			error,
 		};
 	}
-}
-
-function createEmptyResult(
-	adapter: RuntimeBoundSourceAdapter,
-): SafeFetchResult {
-	return { source: adapter.key, data: [], failed: false, attempted: false };
 }
 
 function isMetadataNotFound(error: unknown) {
@@ -99,12 +89,8 @@ function assertNotAllAttemptedSourcesFailed(
 	message: string,
 	cause?: Error,
 ) {
-	const attemptedResults = results.filter((result) => result.attempted);
-	if (
-		attemptedResults.length > 0 &&
-		attemptedResults.every((result) => result.failed)
-	) {
-		if (attemptedResults.every((result) => isMetadataNotFound(result.error))) {
+	if (results.length > 0 && results.every((result) => result.failed)) {
+		if (results.every((result) => isMetadataNotFound(result.error))) {
 			throw new AppError({
 				code: "metadata_not_found",
 				message: "No metadata found from attempted mixed sources",
@@ -134,14 +120,6 @@ function toSourceResult(results: SafeFetchResult[]): MixedSourceFetchResult {
 	};
 }
 
-function extractNameFromApi(
-	candidate: SourceCandidate | undefined,
-): string | undefined {
-	if (!candidate) return undefined;
-
-	return candidate.display.name || candidate.display.name_cn;
-}
-
 function getSourceCandidateFromDraft(
 	adapter: RuntimeBoundSourceAdapter,
 	draft: GameMetadataDraft,
@@ -165,7 +143,7 @@ function getProvidedSourceIds(
 	return adapters
 		.map((adapter) => ({
 			adapter,
-			id: options.sourceIds?.[adapter.key],
+			id: options.sourceIds?.[adapter.key]?.trim(),
 		}))
 		.filter(
 			(
@@ -179,8 +157,7 @@ function getProvidedSourceIds(
 
 /**
  * 多数据源混合数据获取函数
- * 根据新的设计思路：添加游戏只能输入单id、游戏名称两种
- * - 单id：对应源返回单元素列表，并用其名称搜索其他源候选列表
+ * - 一个或多个 ID：各源按指定 ID 独立获取，不扩展未填写的源
  * - 游戏名称：所有源都返回候选列表
  *
  * @param options 配置选项
@@ -194,63 +171,13 @@ export async function fetchMixedData(options: FetchMixedDataOptions) {
 		(adapter) => !isDeprecatedSource(adapter.key),
 	);
 	const providedSourceIds = getProvidedSourceIds(options, adapters);
-	const providedIds = providedSourceIds.length;
 
-	// 场景1: 单个ID提供 - 获取该数据源，然后用名称搜索其他数据源（取第一个结果）
-	if (providedIds === 1) {
-		let searchName: string | undefined;
-		const [{ adapter: sourceAdapter, id: sourceId }] = providedSourceIds;
-		let sourceResult = createEmptyResult(sourceAdapter);
-
-		sourceResult = await fetchAdapterSafely(sourceAdapter, async () => [
-			getSourceCandidateFromDraft(
-				sourceAdapter,
-				await sourceAdapter.fetchById(sourceId, {
-					enrichCrossSource: false,
-				}),
-			),
-		]);
-		searchName = extractNameFromApi(sourceResult.data[0]);
-
-		const results: SafeFetchResult[] = searchName
-			? await Promise.all(
-					adapters.map((adapter) => {
-						if (adapter.key === sourceAdapter.key) {
-							return Promise.resolve(sourceResult);
-						}
-
-						return fetchAdapterSafely(adapter, async () => {
-							const candidate = await resolveAutoSelectedSourceCandidate({
-								query: searchName,
-								adapter,
-								enrichCrossSource: false,
-							});
-							return candidate ? [candidate] : [];
-						});
-					}),
-				)
-			: adapters.map((adapter) =>
-					adapter.key === sourceAdapter.key
-						? sourceResult
-						: createEmptyResult(adapter),
-				);
-		assertNotAllAttemptedSourcesFailed(
-			results,
-			"All mixed source requests failed for single-id lookup",
-		);
-
-		return toSourceResult(results);
-	}
-
-	// 场景2: 提供多个来源 ID，各来源独立获取，单源失败不阻断其他来源。
-	if (providedIds > 1) {
+	// ID 的数量不改变获取语义，只有用户明确填写的来源会进入请求。
+	if (providedSourceIds.length > 0) {
 		const results = await Promise.all(
 			providedSourceIds.map(({ adapter, id }) =>
 				fetchAdapterSafely(adapter, async () => [
-					getSourceCandidateFromDraft(
-						adapter,
-						await adapter.fetchById(id, { enrichCrossSource: false }),
-					),
+					getSourceCandidateFromDraft(adapter, await adapter.fetchById(id)),
 				]),
 			),
 		);
@@ -262,7 +189,7 @@ export async function fetchMixedData(options: FetchMixedDataOptions) {
 		return toSourceResult(results);
 	}
 
-	// 场景3: 只有名称（用于搜索）- 同时搜索所有数据源候选列表
+	// 名称搜索返回各源独立候选，由上层交给用户选择。
 	if (name?.trim()) {
 		const searchName = name.trim();
 		const results = await Promise.all(
@@ -284,6 +211,6 @@ export async function fetchMixedData(options: FetchMixedDataOptions) {
 
 	throw new AppError({
 		code: "invalid_game_id",
-		message: "Mixed fetch requires a single source id or a name query",
+		message: "Mixed fetch requires source ids or a name query",
 	});
 }

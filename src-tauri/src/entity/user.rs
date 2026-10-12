@@ -29,6 +29,19 @@ pub struct HikarinagiAuth {
     pub scope: Option<String>,
 }
 
+/// NextMoe OIDC/PKCE 授权信息，与现有账号统一保存在本地数据库。
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, FromJsonQueryResult)]
+#[serde(default)]
+pub struct NextmoeAuth {
+    pub access_token: String,
+    pub refresh_token: Option<String>,
+    pub expires_at: i64,
+    pub scope: String,
+    pub user_id: Option<String>,
+    pub name: Option<String>,
+    pub avatar: Option<String>,
+}
+
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "user")]
 pub struct Model {
@@ -38,6 +51,8 @@ pub struct Model {
     pub bgm_auth: Option<BgmAuth>,
     #[sea_orm(column_type = "Text", nullable)]
     pub hikarinagi_auth: Option<HikarinagiAuth>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub nextmoe_auth: Option<NextmoeAuth>,
     #[sea_orm(column_type = "Text", nullable)]
     pub vndb_token: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]

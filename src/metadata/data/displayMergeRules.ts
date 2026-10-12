@@ -224,10 +224,12 @@ export function applyMixedSourceDisplay(
 		displays.bgm?.score ??
 		displays.erogamescape?.score ??
 		displays.vndb?.score ??
-		displays.hikarinagi?.score;
+		displays.hikarinagi?.score ??
+		displays.kun?.score;
 	target.rank = displays.bgm?.rank;
 	target.all_titles = mergeArrays(displays, MIXED_TITLE_SOURCES, "all_titles");
-	target.average_hours = displays.vndb?.average_hours;
+	target.average_hours =
+		displays.vndb?.average_hours ?? displays.kun?.average_hours;
 }
 
 export function applyCustomDataOverride(

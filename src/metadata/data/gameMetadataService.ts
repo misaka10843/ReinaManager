@@ -7,19 +7,17 @@
  */
 
 import type { apiSourceType, GameMetadataDraft, SourceType } from "@/types";
+import { isAbortError } from "@/utils/async";
 import { AppError, toError } from "@/utils/errors";
 import { fetchMixedData } from "../api/mixed";
-import {
-	assertSourceAvailable,
-	type MetadataRequestContext,
-	type MetadataSourceOptions,
-	type SourceIdMap,
-} from "../sourceAdapter";
+import { MIXED_SOURCE_MAX_COUNT } from "../constants";
+import type { MetadataRequestContext, SourceIdMap } from "../sourceAdapter";
 import { resolveAutoSelectedGameDraft } from "../sourceAutoResolve";
 import {
 	getCandidateSourceData,
 	getCandidateSourceId,
 	getSourceCandidateFromGame,
+	mergeCandidateSources,
 	type SourceCandidate,
 	sourceCandidateToDraft,
 } from "../sourceCandidate";
@@ -46,15 +44,16 @@ const mixedIdTypePriority: readonly SourceType[] = [
 	"hikarinagi",
 	"vndb",
 	"ymgal",
+	"kun",
 	"dlsite",
 	"erogamescape",
 ];
 
-function hasSourceId(
+function hasSourceData(
 	game: Partial<GameMetadataDraft>,
 	source: SourceType,
 ): boolean {
-	return Boolean(getCandidateSourceId(game as GameMetadataDraft, source));
+	return getCandidateSourceData(game as GameMetadataDraft, source) != null;
 }
 
 function getSourceId(sourceIds: SourceIdMap | undefined, source: SourceType) {
@@ -80,7 +79,11 @@ function createMetadataError(
 	scope: string,
 	error: unknown,
 	fallback: string,
-): AppError {
+): Error {
+	// 取消必须保持原始类型，调用方才能中止整条搜索链路。
+	if (isAbortError(error)) {
+		return toError(error);
+	}
 	if (error instanceof AppError) {
 		return error;
 	}
@@ -134,15 +137,106 @@ export interface GameSearchParams {
  */
 export class GameMetadataSession {
 	private readonly adapters: BoundSourceAdapterMap;
-	private readonly hasBgmToken: boolean;
+	private readonly context: MetadataRequestContext;
 
 	constructor(context: MetadataRequestContext) {
+		this.context = context;
 		this.adapters = bindSourceAdapters(context);
-		this.hasBgmToken = Boolean(context.bgmToken);
+	}
+
+	private finalizeResult(
+		draft: GameMetadataDraft,
+		options: {
+			failedSources?: SourceType[];
+		} = {},
+	): MetadataFetchResult {
+		const sources = draft.sources;
+		const adoptedIds = Object.fromEntries(
+			sources
+				.filter((record) => record.data != null)
+				.map((record) => [record.source, record.external_id]),
+		) as SourceIdMap;
+		// 最终采用身份确定后统一收尾；通用流程不解释任何来源的标签规则。
+		const data = {
+			...draft,
+			sources: sources.map((record) => {
+				const adapter = this.getRuntimeAdapter(record.source);
+				return record.data != null && adapter.finalizeData
+					? { ...record, data: adapter.finalizeData(record.data, adoptedIds) }
+					: record;
+			}),
+		};
+		data.id_type = this.determineIdType(data);
+		return {
+			data,
+			failedSources: options.failedSources ?? [],
+		};
+	}
+
+	private async completeSingleSource(
+		draft: GameMetadataDraft,
+		origin: SourceType,
+	): Promise<MetadataFetchResult> {
+		const result = this.context.autoExpandSources?.includes(origin)
+			? await this.expandAssociatedSources(draft, origin)
+			: { data: draft, failedSources: [] };
+		const allowedSources = new Set<SourceType>([
+			origin,
+			...(this.context.mixedEnabledSources ?? []),
+		]);
+		// 主源始终保留；增强返回的间接关联也不能绕过 Mixed 选择。
+		return this.finalizeResult(
+			{
+				...result.data,
+				sources: result.data.sources.filter((record) =>
+					allowedSources.has(record.source),
+				),
+			},
+			{ failedSources: result.failedSources },
+		);
+	}
+
+	private async expandAssociatedSources(
+		draft: GameMetadataDraft,
+		origin: SourceType,
+	): Promise<MetadataFetchResult> {
+		const targets = this.getEnabledMixedAdapters(
+			this.context.mixedEnabledSources ?? [],
+		)
+			.flatMap((adapter) => {
+				const id = getCandidateSourceId(draft, adapter.key);
+				return adapter.key !== origin && id && adapter.validateId(id)
+					? [{ adapter, id }]
+					: [];
+			})
+			.slice(0, MIXED_SOURCE_MAX_COUNT);
+		const results = await Promise.all(
+			targets.map(async ({ adapter, id }) => {
+				try {
+					// 直接请求 Adapter，不重新进入单源流程，避免关联扩展递归。
+					const data = await adapter.fetchById(id);
+					if (getCandidateSourceData(data, adapter.key) != null)
+						return { source: adapter.key, data };
+				} catch (error) {
+					if (isAbortError(error) || this.context.signal?.aborted) throw error;
+				}
+				return { source: adapter.key, data: null };
+			}),
+		);
+		const expansions = results.flatMap((result) =>
+			result.data ? [result.data] : [],
+		);
+		// 定位源同样保留完整元数据，更新时可同时替换其旧快照和来源 ID。
+		const sources = mergeCandidateSources([draft, ...expansions]);
+		return {
+			data: { ...draft, sources },
+			failedSources: results
+				.filter((result) => !result.data)
+				.map((result) => result.source),
+		};
 	}
 
 	private getRuntimeAdapter(source: SourceType): RuntimeBoundSourceAdapter {
-		assertSourceAvailable(source);
 		return this.adapters[source] as RuntimeBoundSourceAdapter;
 	}
 
@@ -225,13 +319,13 @@ export class GameMetadataSession {
 		}
 	}
 
-	async searchBestMatch(params: {
+	async searchBestMatchResult(params: {
 		query: string;
 		source: SourceType;
-	}): Promise<GameMetadataDraft | null> {
+	}): Promise<MetadataFetchResult | null> {
 		const { query, source } = params;
 		if (source === "dlsite" && this.shouldUseIdSearch(query, source)) {
-			return this.getGameById(query, source);
+			return this.getGameByIdResult(query, source);
 		}
 
 		const draft = await resolveAutoSelectedGameDraft({
@@ -239,7 +333,7 @@ export class GameMetadataSession {
 			adapter: this.getRuntimeAdapter(source),
 		});
 
-		return draft;
+		return draft ? this.completeSingleSource(draft, source) : null;
 	}
 
 	/**
@@ -300,16 +394,22 @@ export class GameMetadataSession {
 		id: string,
 		source: SourceType,
 	): Promise<GameMetadataDraft> {
+		return (await this.getGameByIdResult(id, source)).data;
+	}
+
+	async getGameByIdResult(
+		id: string,
+		source: SourceType,
+	): Promise<MetadataFetchResult> {
 		if (import.meta.env.DEV) {
 			console.log(`[MetadataService] getGameById called:`, {
 				id,
 				source,
-				hasBgmToken: this.hasBgmToken,
 			});
 		}
 		try {
 			const candidate = await this.getRuntimeAdapter(source).fetchById(id);
-			return candidate;
+			return await this.completeSingleSource(candidate, source);
 		} catch (error) {
 			throw createMetadataError(
 				`Failed to fetch ${source} metadata by id`,
@@ -320,20 +420,17 @@ export class GameMetadataSession {
 	}
 
 	/**
-	 * 处理“用户从搜索结果中选择一项”后的详情补全。
-	 * 规则：
-	 * - mixed 搜索：直接返回原数据
-	 * - 单源名称搜索：仅特定数据源需要按 id 拉取完整详情
+	 * 单源候选确认：补全详情、按会话偏好扩展，再返回统一获取结果。
 	 */
 	async resolveSourceCandidateSelection(params: {
 		candidate: SourceCandidate;
-	}): Promise<GameMetadataDraft> {
-		return this.resolveSourceCandidateDraft(params.candidate);
+	}): Promise<MetadataFetchResult> {
+		const draft = await this.resolveSourceCandidateDraft(params.candidate);
+		return this.completeSingleSource(draft, params.candidate.source);
 	}
 
 	private async resolveSourceCandidateDraft(
 		candidate: SourceCandidate,
-		options: MetadataSourceOptions = {},
 	): Promise<GameMetadataDraft> {
 		const adapter = this.getRuntimeAdapter(candidate.source);
 		// BGM 未实现 enrichOnSelect，确认阶段不会发起 BGM 请求，
@@ -342,14 +439,13 @@ export class GameMetadataSession {
 			return sourceCandidateToDraft(candidate);
 		}
 
-		return adapter.enrichOnSelect(candidate, options);
+		return adapter.enrichOnSelect(candidate);
 	}
 
 	private async enrichSourceCandidateDetails(
 		candidate: SourceCandidate,
-		options: MetadataSourceOptions = {},
 	): Promise<SourceCandidate> {
-		const draft = await this.resolveSourceCandidateDraft(candidate, options);
+		const draft = await this.resolveSourceCandidateDraft(candidate);
 		const adapter = this.getRuntimeAdapter(candidate.source);
 		return getSourceCandidateFromGame(
 			draft,
@@ -381,10 +477,8 @@ export class GameMetadataSession {
 					return;
 				}
 
-				nextSelection[source] = await this.enrichSourceCandidateDetails(
-					selectedCandidate,
-					{ enrichCrossSource: false },
-				);
+				nextSelection[source] =
+					await this.enrichSourceCandidateDetails(selectedCandidate);
 			}),
 		);
 
@@ -398,16 +492,20 @@ export class GameMetadataSession {
 	async resolveMixedSourceSelection(params: {
 		selection: MixedSourceSelection;
 		enabled: MixedSourceEnabled;
-	}): Promise<GameMetadataDraft> {
+		failedSources?: SourceType[];
+	}): Promise<MetadataFetchResult> {
 		const { selection, enabled } = params;
 		const enrichedSelection = await this.enrichMixedSourceSelection(
 			selection,
 			enabled,
 		);
-		return buildGameFromMixedSelection({
-			selection: enrichedSelection,
-			enabled,
-		});
+		return this.finalizeResult(
+			buildGameFromMixedSelection({
+				selection: enrichedSelection,
+				enabled,
+			}),
+			{ failedSources: params.failedSources },
+		);
 	}
 
 	/**
@@ -423,7 +521,11 @@ export class GameMetadataSession {
 				adapters: this.getEnabledMixedAdapters(enabledSources),
 			});
 
-			return mergeMixedResult(pickFirstMixedResult(result.candidates));
+			const draft = mergeMixedResult(pickFirstMixedResult(result.candidates));
+			return draft
+				? this.finalizeResult(draft, { failedSources: result.failedSources })
+						.data
+				: null;
 		} catch (error) {
 			throw createMetadataError(
 				"Failed to search mixed metadata by name",
@@ -468,12 +570,19 @@ export class GameMetadataSession {
 			const mergedResult = ensureMixedResult(
 				mergeMixedResult(pickFirstMixedResult(result.candidates)),
 			);
-			mergedResult.id_type = this.determineIdType(mergedResult);
-
-			return {
-				data: mergedResult,
-				failedSources: result.failedSources,
-			};
+			return this.finalizeResult(
+				{
+					...mergedResult,
+					// Mixed 按 ID 的结果仅包含明确填写的来源，关联身份不补回已清空项。
+					sources: mergedResult.sources.filter(
+						(record) =>
+							providedSources.includes(record.source) &&
+							(record.data != null ||
+								record.external_id === enabledSourceIds[record.source]),
+					),
+				},
+				{ failedSources: result.failedSources },
+			);
 		} catch (error) {
 			throw createMetadataError(
 				"Failed to fetch metadata by multiple ids",
@@ -485,11 +594,11 @@ export class GameMetadataSession {
 
 	/**
 	 * 根据游戏数据确定 ID 类型
-	 * 只要有任意 2 个 id 就应归为 mixed
+	 * 关联身份不等于元数据，至少两份真实数据才归为 mixed。
 	 */
 	private determineIdType(game: Partial<GameMetadataDraft>): string {
 		const matchedSources = mixedIdTypePriority.filter((source) =>
-			hasSourceId(game, source),
+			hasSourceData(game, source),
 		);
 
 		if (matchedSources.length >= 2) {

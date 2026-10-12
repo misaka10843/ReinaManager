@@ -39,6 +39,10 @@ use oauth::{
         hikarinagi_oauth_cancel_login, hikarinagi_oauth_exchange_code,
         hikarinagi_oauth_refresh_token, hikarinagi_oauth_start_login,
     },
+    nextmoe_auth::{
+        nextmoe_oauth_cancel_login, nextmoe_oauth_exchange_code, nextmoe_oauth_get_auth,
+        nextmoe_oauth_logout, nextmoe_oauth_start_login,
+    },
 };
 use tauri::Manager;
 use tauri_plugin_log::{RotationStrategy, Target, TargetKind, TimezoneStrategy};
@@ -199,6 +203,11 @@ pub fn run() {
             hikarinagi_oauth_cancel_login,
             hikarinagi_oauth_exchange_code,
             hikarinagi_oauth_refresh_token,
+            nextmoe_oauth_start_login,
+            nextmoe_oauth_cancel_login,
+            nextmoe_oauth_exchange_code,
+            nextmoe_oauth_get_auth,
+            nextmoe_oauth_logout,
             // 日志相关 commands（运行时动态调整）
             set_reina_log_level,
             get_reina_log_level,
