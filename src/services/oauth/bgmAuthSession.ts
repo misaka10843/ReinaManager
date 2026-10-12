@@ -95,7 +95,11 @@ async function getValidBgmAuth() {
 	const validAuth = isBgmAuthRefreshDue(auth)
 		? await refreshBgmAuthSingleFlight(auth)
 		: auth;
-	return isOAuthAuthExpired(validAuth) ? null : validAuth;
+	if (isOAuthAuthExpired(validAuth)) {
+		await logoutBgmAuth({ notify: true });
+		return null;
+	}
+	return validAuth;
 }
 
 async function getValidBgmAccessToken() {
@@ -107,13 +111,21 @@ export function isBgmAuthExpiredError(error: unknown) {
 	return error instanceof Error && error.name === "BgmAuthExpiredError";
 }
 
-export async function withBgmAuth<T>(fn: (token?: string) => Promise<T>) {
-	const token = await getValidBgmAccessToken();
+export async function withBgmAuth<T>(
+	fn: (token?: string) => Promise<T>,
+	accessToken?: string,
+) {
+	// 补全已保存的授权时，按实际请求使用的 token 处理失效。
+	const token = accessToken ?? (await getValidBgmAccessToken());
 
 	try {
 		return await fn(token);
 	} catch (error) {
-		if (token && isHttpStatusFromHost(error, 401, "api.bgm.tv")) {
+		if (
+			token &&
+			(isHttpStatusFromHost(error, 401, "api.bgm.tv") ||
+				isHttpStatusFromHost(error, 401, "bgm.tv"))
+		) {
 			await logoutBgmAuth({ notify: true });
 			throw new AppError({
 				code: "bgm_auth_expired",

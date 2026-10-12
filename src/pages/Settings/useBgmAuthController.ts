@@ -6,7 +6,11 @@ import { useAllSettings, useUpdateSettings } from "@/hooks/queries/useSettings";
 import { buildManualBgmAuth, completeBgmAuth } from "@/metadata/api/bgm";
 import { snackbar } from "@/providers/snackBar";
 import { settingsService } from "@/services/invoke";
-import { logoutBgmAuth } from "@/services/oauth/bgmAuthSession";
+import {
+	isBgmAuthExpiredError,
+	logoutBgmAuth,
+	withBgmAuth,
+} from "@/services/oauth/bgmAuthSession";
 import type { OAuthCallbackPayload } from "@/services/oauth/oauthAuthSession";
 import { getNetworkRequestContext } from "@/services/requestContext";
 import { toError } from "@/utils/errors";
@@ -298,7 +302,10 @@ export function useBgmAuthController() {
 			setIsCompletingAuth(true);
 
 			await updateSettingsMutation.mutateAsync({
-				bgmAuth: await completeBgmAuth(bgmAuth, getNetworkRequestContext()),
+				bgmAuth: await withBgmAuth(
+					() => completeBgmAuth(bgmAuth, getNetworkRequestContext()),
+					bgmAuth.access_token,
+				),
 			});
 			snackbar.success(
 				t(
@@ -307,6 +314,7 @@ export function useBgmAuthController() {
 				),
 			);
 		} catch (error) {
+			if (isBgmAuthExpiredError(error)) return;
 			console.error(error);
 			snackbar.error(
 				t(
