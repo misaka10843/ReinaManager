@@ -210,7 +210,10 @@ export const AlertConfirmBox: React.FC<AlertConfirmBoxProps> = ({
 			title={title || t("components.AlertBox.deleteGameTitle", "删除游戏")}
 			message={
 				message ||
-				t("components.AlertBox.deleteGameMessage", "确定要删除该游戏吗？")
+				t(
+					"components.AlertBox.deleteGameMessage",
+					"确定要删除该游戏吗？此操作将从库中移除该游戏，但不会删除游戏文件。",
+				)
 			}
 			onConfirm={onConfirm}
 			confirmText={

@@ -224,7 +224,8 @@ export const CardsBatchBar: React.FC<CardsBatchBarProps> = ({
 				title={t("components.Toolbar.Batch.deleteTitle", "批量删除游戏")}
 				message={t("components.Toolbar.Batch.deleteMessage", {
 					count: selectedCount,
-					defaultValue: "确定要删除选中的 {{count}} 个游戏吗？此操作无法撤销。",
+					defaultValue:
+						"确定要删除选中的 {{count}} 个游戏吗？此操作将从库中移除这些游戏，但不会删除游戏文件。",
 				})}
 			/>
 
