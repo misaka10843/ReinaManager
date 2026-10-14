@@ -1,6 +1,6 @@
 import i18next from "i18next";
 import type { GameMetadataDraft, NextmoeData } from "@/types";
-import { AppError } from "@/utils/errors";
+import { AppError, isHttpStatus } from "@/utils/errors";
 import { isChineseLocale } from "@/utils/locale";
 import { USER_AGENT } from "../constants";
 import type { SourceDisplayFields } from "../sourceCandidate";
@@ -74,6 +74,52 @@ interface NextmoeWork {
 
 interface NextmoeListResponse {
 	items?: NextmoeWork[];
+}
+
+export type NextmoeWorkState =
+	| "wish"
+	| "doing"
+	| "done"
+	| "on_hold"
+	| "dropped";
+
+interface NextmoeWorkStateItem {
+	state?: string;
+	work_id?: string;
+}
+
+interface NextmoeWorkStateListResponse {
+	items?: NextmoeWorkStateItem[];
+	next_cursor?: string | null;
+}
+
+export interface NextmoeWorkStateEntry {
+	state: string;
+	workId: string;
+}
+
+export function chunkNextmoeItems<T>(items: readonly T[], size = 100): T[][] {
+	const chunks: T[][] = [];
+	for (let index = 0; index < items.length; index += size) {
+		chunks.push(items.slice(index, index + size));
+	}
+	return chunks;
+}
+
+function buildNextmoeUserOptions(
+	token: string,
+	context: NetworkRequestContext = {},
+	params: Record<string, unknown> = {},
+): TauriHttpOptions {
+	return {
+		...context,
+		headers: {
+			...NEXTMOE_JSON_HEADERS,
+			Authorization: `Bearer ${token}`,
+		},
+		params,
+		rateLimit: { source: "nextmoe" },
+	};
 }
 
 function buildNextmoeOptions(
@@ -226,6 +272,57 @@ export async function fetchNextmoeByName(
 				},
 			});
 		});
+}
+
+export async function fetchNextmoeWorkStates(
+	token: string,
+	workIds: readonly string[],
+	context: NetworkRequestContext = {},
+): Promise<NextmoeWorkStateEntry[]> {
+	if (workIds.length === 0) return [];
+
+	const response = await http.get<NextmoeWorkStateListResponse>(
+		`${NEXTMOE_API_BASE_URL}/me/work-states`,
+		buildNextmoeUserOptions(token, context, { work_ids: workIds.join(",") }),
+	);
+
+	return (response.data?.items ?? []).flatMap((item) =>
+		item.work_id && item.state
+			? [{ workId: item.work_id, state: item.state }]
+			: [],
+	);
+}
+
+export async function fetchNextmoeWorkState(
+	token: string,
+	workId: string,
+	context: NetworkRequestContext = {},
+): Promise<string | undefined> {
+	try {
+		const response = await http.get<NextmoeWorkStateItem>(
+			`${NEXTMOE_API_BASE_URL}/me/work-states/${workId}`,
+			buildNextmoeUserOptions(token, context),
+		);
+		return normalizeText(response.data?.state);
+	} catch (error) {
+		if (isHttpStatus(error, 404)) return undefined;
+		throw error;
+	}
+}
+
+export async function updateNextmoeWorkState(
+	token: string,
+	workId: string,
+	state: NextmoeWorkState,
+	context: NetworkRequestContext = {},
+) {
+	const response = await http.put<NextmoeWorkStateItem>(
+		`${NEXTMOE_API_BASE_URL}/me/work-states/${workId}`,
+		{ state },
+		buildNextmoeUserOptions(token, context),
+	);
+
+	return Boolean(response.data);
 }
 
 export function getNextmoeDataDisplayFields(

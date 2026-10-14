@@ -921,6 +921,8 @@
 				"bgmTitle": "Enable Bangumi collection sync",
 				"hikarinagiDescription": "Try to read Hikarinagi play status when adding a game, and sync local status changes back to Hikarinagi.",
 				"hikarinagiTitle": "Enable Hikarinagi play status sync",
+				"nextmoeDescription": "Try to read NextMoe play status when adding a game, and sync local status changes back to NextMoe.",
+				"nextmoeTitle": "Enable NextMoe play status sync",
 				"syncFailed": "Local status was updated, but failed to sync to {{source}}",
 				"vndbDescription": "Try to read the VNDB collection status when adding a game, and sync local status changes back to VNDB.",
 				"vndbTitle": "Enable VNDB collection sync"

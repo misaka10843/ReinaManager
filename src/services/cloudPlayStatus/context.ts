@@ -9,6 +9,10 @@ import {
 	fetchHikarinagiRatesPage,
 } from "@/metadata/api/hikarinagi";
 import {
+	chunkNextmoeItems,
+	fetchNextmoeWorkStates,
+} from "@/metadata/api/nextmoe";
+import {
 	fetchVndbUserCollection,
 	fetchVndbUserCollectionsPage,
 	type VndbUserCollectionItem,
@@ -16,6 +20,7 @@ import {
 import { queryClient } from "@/providers/queryClient";
 import { withBgmAuth } from "@/services/oauth/bgmAuthSession";
 import { withHikarinagiAuth } from "@/services/oauth/hikarinagiAuthSession";
+import { withNextmoeAuth } from "@/services/oauth/nextmoeAuthSession";
 import { getNetworkRequestContext } from "@/services/requestContext";
 import { useStore } from "@/store/appStore";
 import type { PlayStatus } from "@/types/collection";
@@ -25,6 +30,7 @@ import {
 	getVndbToken,
 	mapBgmTypeToPlayStatus,
 	mapHikarinagiStatusToPlayStatus,
+	mapNextmoeStateToPlayStatus,
 	mapVndbCollectionToPlayStatus,
 } from "./shared";
 
@@ -32,12 +38,14 @@ export interface CloudPlayStatusContextInput {
 	bgmIds?: Iterable<string>;
 	vndbIds?: Iterable<string>;
 	hikarinagiIds?: Iterable<string>;
+	nextmoeIds?: Iterable<string>;
 }
 
 const DIRECT_COLLECTION_LOOKUP_THRESHOLD = 1;
 const BGM_COLLECTION_PAGE_SIZE = 50;
 const VNDB_COLLECTION_PAGE_SIZE = 100;
 const HIKARINAGI_COLLECTION_PAGE_SIZE = 100;
+const NEXTMOE_BATCH_SIZE = 100;
 
 interface BgmCollectionPage {
 	offset: number;
@@ -373,12 +381,49 @@ async function createHikarinagiPlayStatusMap(ids: Iterable<string>) {
 	}
 }
 
+async function createNextmoePlayStatusMap(ids: Iterable<string>) {
+	try {
+		const uniqueIds = [...new Set(ids)].filter(Boolean);
+		if (uniqueIds.length === 0) {
+			return new Map<string, PlayStatus>();
+		}
+
+		return await withNextmoeAuth(async (token) => {
+			if (!token) return undefined;
+
+			const statusMap = new Map<string, PlayStatus>();
+			for (const chunk of chunkNextmoeItems(uniqueIds, NEXTMOE_BATCH_SIZE)) {
+				const entries = await fetchNextmoeWorkStates(
+					token,
+					chunk,
+					getNetworkRequestContext(),
+				);
+				for (const entry of entries) {
+					const status = mapNextmoeStateToPlayStatus(entry.state);
+					if (status !== undefined) {
+						statusMap.set(entry.workId, status);
+					}
+				}
+			}
+
+			return statusMap;
+		});
+	} catch (error) {
+		console.error("获取 NextMoe 游玩状态失败:", error);
+		return undefined;
+	}
+}
+
 export async function createCloudPlayStatusContext(
 	input: CloudPlayStatusContextInput = {},
 ): Promise<CloudPlayStatusContext> {
-	const { syncBgmCollection, syncVndbCollection, syncHikarinagiCollection } =
-		useStore.getState();
-	const [bgm, vndb, hikarinagi] = await Promise.all([
+	const {
+		syncBgmCollection,
+		syncVndbCollection,
+		syncHikarinagiCollection,
+		syncNextmoeCollection,
+	} = useStore.getState();
+	const [bgm, vndb, hikarinagi, nextmoe] = await Promise.all([
 		syncBgmCollection
 			? createBgmPlayStatusMap(input.bgmIds ?? [])
 			: Promise.resolve(undefined),
@@ -388,11 +433,15 @@ export async function createCloudPlayStatusContext(
 		syncHikarinagiCollection
 			? createHikarinagiPlayStatusMap(input.hikarinagiIds ?? [])
 			: Promise.resolve(undefined),
+		syncNextmoeCollection
+			? createNextmoePlayStatusMap(input.nextmoeIds ?? [])
+			: Promise.resolve(undefined),
 	]);
 
 	return {
 		...(bgm ? { bgm } : {}),
 		...(vndb ? { vndb } : {}),
 		...(hikarinagi ? { hikarinagi } : {}),
+		...(nextmoe ? { nextmoe } : {}),
 	};
 }

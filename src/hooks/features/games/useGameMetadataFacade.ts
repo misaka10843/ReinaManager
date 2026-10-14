@@ -180,6 +180,7 @@ export function useBulkGameAddActions() {
 				const cloudBgmIds = new Set<string>();
 				const cloudVndbIds = new Set<string>();
 				const cloudHikarinagiIds = new Set<string>();
+				const cloudNextmoeIds = new Set<string>();
 				for (const item of items) {
 					if (item.status === "imported") {
 						continue;
@@ -196,6 +197,9 @@ export function useBulkGameAddActions() {
 					const hikarinagiId = item.matchedData
 						? getSourceIdFromRecords(item.matchedData, "hikarinagi")
 						: undefined;
+					const nextmoeId = item.matchedData
+						? getSourceIdFromRecords(item.matchedData, "nextmoe")
+						: undefined;
 					if (bgmId) {
 						cloudBgmIds.add(bgmId);
 					}
@@ -205,11 +209,15 @@ export function useBulkGameAddActions() {
 					if (hikarinagiId) {
 						cloudHikarinagiIds.add(hikarinagiId);
 					}
+					if (nextmoeId) {
+						cloudNextmoeIds.add(nextmoeId);
+					}
 				}
 				const cloudStatusContext = await createCloudPlayStatusContext({
 					bgmIds: cloudBgmIds,
 					vndbIds: cloudVndbIds,
 					hikarinagiIds: cloudHikarinagiIds,
+					nextmoeIds: cloudNextmoeIds,
 				});
 
 				for (let index = 0; index < items.length; index++) {

@@ -899,6 +899,8 @@
 				"bgmTitle": "啟用 Bangumi 收藏同步",
 				"hikarinagiDescription": "新增遊戲時嘗試讀取 Hikarinagi 遊玩狀態，本機修改狀態時同步回 Hikarinagi。",
 				"hikarinagiTitle": "啟用 Hikarinagi 遊玩狀態同步",
+				"nextmoeDescription": "新增遊戲時嘗試讀取 NextMoe 遊玩狀態，本機修改狀態時同步回 NextMoe。",
+				"nextmoeTitle": "啟用 NextMoe 遊玩狀態同步",
 				"syncFailed": "本地狀態已更新，但 {{source}} 雲端同步失敗",
 				"vndbDescription": "新增遊戲時會嘗試讀取 VNDB 收藏狀態，本地修改狀態時會同步回 VNDB。",
 				"vndbTitle": "啟用 VNDB 收藏同步"

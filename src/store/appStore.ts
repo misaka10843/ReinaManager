@@ -172,6 +172,8 @@ export interface AppState {
 	setSyncVndbCollection: (enabled: boolean) => void;
 	syncHikarinagiCollection: boolean;
 	setSyncHikarinagiCollection: (enabled: boolean) => void;
+	syncNextmoeCollection: boolean;
+	setSyncNextmoeCollection: (enabled: boolean) => void;
 
 	// 剧透等级
 	spoilerLevel: number;
@@ -405,6 +407,10 @@ export const useStore = create<AppState>()(
 			syncHikarinagiCollection: false,
 			setSyncHikarinagiCollection: (enabled: boolean) => {
 				set({ syncHikarinagiCollection: enabled });
+			},
+			syncNextmoeCollection: false,
+			setSyncNextmoeCollection: (enabled: boolean) => {
+				set({ syncNextmoeCollection: enabled });
 			},
 
 			// 剧透等级
@@ -650,6 +656,7 @@ export const useStore = create<AppState>()(
 				syncBgmCollection: state.syncBgmCollection,
 				syncVndbCollection: state.syncVndbCollection,
 				syncHikarinagiCollection: state.syncHikarinagiCollection,
+				syncNextmoeCollection: state.syncNextmoeCollection,
 				// 剧透等级
 				spoilerLevel: state.spoilerLevel,
 				// 计时模式：playtime 或 elapsed

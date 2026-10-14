@@ -5,6 +5,10 @@ import {
 	updateHikarinagiGameRate,
 } from "@/metadata/api/hikarinagi";
 import {
+	fetchNextmoeWorkState,
+	updateNextmoeWorkState,
+} from "@/metadata/api/nextmoe";
+import {
 	fetchVndbUserCollection,
 	updateVndbUserCollection,
 } from "@/metadata/api/vndb";
@@ -15,6 +19,7 @@ import {
 import { queryClient } from "@/providers/queryClient";
 import { withBgmAuth } from "@/services/oauth/bgmAuthSession";
 import { withHikarinagiAuth } from "@/services/oauth/hikarinagiAuthSession";
+import { withNextmoeAuth } from "@/services/oauth/nextmoeAuthSession";
 import { getNetworkRequestContext } from "@/services/requestContext";
 import { useStore } from "@/store/appStore";
 import type { PlayStatus } from "@/types/collection";
@@ -24,14 +29,16 @@ import {
 	getVndbToken,
 	mapBgmTypeToPlayStatus,
 	mapHikarinagiStatusToPlayStatus,
+	mapNextmoeStateToPlayStatus,
 	mapPlayStatusToHikarinagiStatus,
+	mapPlayStatusToNextmoeState,
 	mapPlayStatusToVndbLabelId,
 	mapVndbCollectionToPlayStatus,
 	resolveCloudPlayStatusFromContext,
 	VNDB_NORMAL_STATUS_LABEL_IDS,
 } from "./shared";
 
-type CollectionSyncSource = "bgm" | "vndb" | "hikarinagi";
+type CollectionSyncSource = "bgm" | "vndb" | "hikarinagi" | "nextmoe";
 
 async function resolveBgmPlayStatus(game: SourceIdentityPayload) {
 	const bgmId = getAnySourceId(game, "bgm");
@@ -99,12 +106,36 @@ async function resolveHikarinagiPlayStatus(game: SourceIdentityPayload) {
 	}
 }
 
+async function resolveNextmoePlayStatus(game: SourceIdentityPayload) {
+	const nextmoeId = getAnySourceId(game, "nextmoe");
+	if (!nextmoeId) return undefined;
+
+	try {
+		const state = await withNextmoeAuth(async (token) => {
+			if (!token) return undefined;
+			return fetchNextmoeWorkState(
+				token,
+				nextmoeId,
+				getNetworkRequestContext(),
+			);
+		});
+		return mapNextmoeStateToPlayStatus(state);
+	} catch (error) {
+		console.error("解析 NextMoe 游玩状态失败:", error);
+		return undefined;
+	}
+}
+
 export async function resolveCloudPlayStatus(
 	game: SourceIdentityPayload,
 	context?: CloudPlayStatusContext,
 ) {
-	const { syncBgmCollection, syncVndbCollection, syncHikarinagiCollection } =
-		useStore.getState();
+	const {
+		syncBgmCollection,
+		syncVndbCollection,
+		syncHikarinagiCollection,
+		syncNextmoeCollection,
+	} = useStore.getState();
 
 	if (context) {
 		const status = resolveCloudPlayStatusFromContext(game, context);
@@ -125,6 +156,11 @@ export async function resolveCloudPlayStatus(
 	if (syncHikarinagiCollection) {
 		const hikarinagiStatus = await resolveHikarinagiPlayStatus(game);
 		if (hikarinagiStatus !== undefined) return hikarinagiStatus;
+	}
+
+	if (syncNextmoeCollection) {
+		const nextmoeStatus = await resolveNextmoePlayStatus(game);
+		if (nextmoeStatus !== undefined) return nextmoeStatus;
 	}
 
 	return undefined;
@@ -210,12 +246,39 @@ async function syncPlayStatusToHikarinagi(
 	}
 }
 
+async function syncPlayStatusToNextmoe(
+	game: SourceIdentityPayload,
+	newStatus: PlayStatus,
+) {
+	const nextmoeId = getAnySourceId(game, "nextmoe");
+	if (!nextmoeId) return true;
+
+	try {
+		return await withNextmoeAuth(async (token) => {
+			if (!token) return true;
+			return updateNextmoeWorkState(
+				token,
+				nextmoeId,
+				mapPlayStatusToNextmoeState(newStatus),
+				getNetworkRequestContext(),
+			);
+		});
+	} catch (error) {
+		console.error("同步 NextMoe 游玩状态失败:", error);
+		return false;
+	}
+}
+
 export async function syncPlayStatusToCloud(
 	game: SourceIdentityPayload,
 	newStatus: PlayStatus,
 ): Promise<CollectionSyncSource[]> {
-	const { syncBgmCollection, syncVndbCollection, syncHikarinagiCollection } =
-		useStore.getState();
+	const {
+		syncBgmCollection,
+		syncVndbCollection,
+		syncHikarinagiCollection,
+		syncNextmoeCollection,
+	} = useStore.getState();
 	const failedSources: CollectionSyncSource[] = [];
 
 	if (syncBgmCollection) {
@@ -231,6 +294,11 @@ export async function syncPlayStatusToCloud(
 	if (syncHikarinagiCollection) {
 		const success = await syncPlayStatusToHikarinagi(game, newStatus);
 		if (!success) failedSources.push("hikarinagi");
+	}
+
+	if (syncNextmoeCollection) {
+		const success = await syncPlayStatusToNextmoe(game, newStatus);
+		if (!success) failedSources.push("nextmoe");
 	}
 
 	return failedSources;

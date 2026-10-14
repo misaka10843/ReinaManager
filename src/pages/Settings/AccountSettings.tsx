@@ -780,6 +780,13 @@ export const NextmoeProviderSection = () => {
 		handleLogout,
 	} = useNextmoeAuthController();
 
+	const { syncNextmoeCollection, setSyncNextmoeCollection } = useStore(
+		useShallow((s) => ({
+			syncNextmoeCollection: s.syncNextmoeCollection,
+			setSyncNextmoeCollection: s.setSyncNextmoeCollection,
+		})),
+	);
+
 	const isConnected = Boolean(nextmoeAuth?.access_token);
 
 	return (
@@ -844,6 +851,33 @@ export const NextmoeProviderSection = () => {
 					</Stack>
 				)}
 			</Box>
+
+			<Divider className="my-4" />
+
+			<Stack direction="row" justifyContent="space-between" alignItems="center">
+				<Box>
+					<Stack direction="row" spacing={1} alignItems="center">
+						<SyncIcon fontSize="small" color="action" />
+						<Typography variant="subtitle2" className="font-semibold">
+							{t(
+								"pages.Settings.collectionSync.nextmoeTitle",
+								"启用 NextMoe 游玩状态同步",
+							)}
+						</Typography>
+					</Stack>
+					<Typography variant="caption" color="text.secondary">
+						{t(
+							"pages.Settings.collectionSync.nextmoeDescription",
+							"添加游戏时尝试读取 NextMoe 游玩状态，本地修改状态时同步回 NextMoe。",
+						)}
+					</Typography>
+				</Box>
+				<Switch
+					checked={syncNextmoeCollection}
+					onChange={(e) => setSyncNextmoeCollection(e.target.checked)}
+					color="primary"
+				/>
+			</Stack>
 		</Paper>
 	);
 };
