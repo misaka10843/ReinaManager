@@ -27,6 +27,7 @@ import { getSourceIdFromDisplay } from "@/metadata/sourceRecord";
 import { snackbar } from "@/providers/snackBar";
 import {
 	hasUserRating,
+	NEXTMOE_MAX_PLAYTIME_MINUTES,
 	normalizeUserRating,
 	pushGameUserReviewToCloud,
 	type UserReviewPushResult,
@@ -84,6 +85,8 @@ function getSourceLabel(source: UserReviewPushResult["source"]) {
 			return "VNDB";
 		case "hikarinagi":
 			return "Hikarinagi";
+		case "nextmoe":
+			return "NextMoe";
 		default:
 			return assertNever(source);
 	}
@@ -101,6 +104,7 @@ export const Review: React.FC<ReviewProps> = ({ selectedGame }) => {
 	const bgmId = getSourceIdFromDisplay(selectedGame, "bgm");
 	const vndbId = getSourceIdFromDisplay(selectedGame, "vndb");
 	const hikarinagiId = getSourceIdFromDisplay(selectedGame, "hikarinagi");
+	const nextmoeId = getSourceIdFromDisplay(selectedGame, "nextmoe");
 	const hasVndbId = Boolean(vndbId);
 	const { data: vndbProfile, isLoading: isVndbProfileLoading } =
 		useVndbCurrentUserProfile({ enabled: hasVndbId });
@@ -113,6 +117,7 @@ export const Review: React.FC<ReviewProps> = ({ selectedGame }) => {
 	const [pushBgm, setPushBgm] = useState(Boolean(bgmId));
 	const [pushVndb, setPushVndb] = useState(Boolean(vndbId));
 	const [pushHikarinagi, setPushHikarinagi] = useState(Boolean(hikarinagiId));
+	const [pushNextmoe, setPushNextmoe] = useState(Boolean(nextmoeId));
 	const [bgmPrivate, setBgmPrivate] = useState(false);
 	const [hikarinagiSpoiler, setHikarinagiSpoiler] = useState(false);
 	const [pushHikarinagiPlaytime, setPushHikarinagiPlaytime] = useState(true);
@@ -128,17 +133,20 @@ export const Review: React.FC<ReviewProps> = ({ selectedGame }) => {
 	const hasBgmToken = Boolean(settings?.bgm_auth?.access_token);
 	const hasVndbToken = Boolean(settings?.vndb_token);
 	const hasHikarinagiToken = Boolean(settings?.hikarinagi_auth?.access_token);
+	const hasNextmoeToken = Boolean(settings?.nextmoe_auth?.access_token);
 	const canPushBgm = Boolean(bgmId && hasBgmToken);
 	const canPushVndb = Boolean(
 		vndbId && hasVndbToken && vndbProfile?.permissions.includes("listwrite"),
 	);
 	const canPushHikarinagi = Boolean(hikarinagiId && hasHikarinagiToken);
+	const canPushNextmoe = Boolean(nextmoeId && hasNextmoeToken);
 	const isPushCapabilityLoading =
 		isSettingsLoading ||
 		Boolean(hasVndbId && hasVndbToken && isVndbProfileLoading);
 	const effectivePushBgm = pushBgm && canPushBgm;
 	const effectivePushVndb = pushVndb && canPushVndb;
 	const effectivePushHikarinagi = pushHikarinagi && canPushHikarinagi;
+	const effectivePushNextmoe = pushNextmoe && canPushNextmoe;
 	const hikarinagiPlaytimeInputsDisabled =
 		!effectivePushHikarinagi || !pushHikarinagiPlaytime;
 
@@ -162,10 +170,12 @@ export const Review: React.FC<ReviewProps> = ({ selectedGame }) => {
 		setPushBgm(canPushBgm);
 		setPushVndb(canPushVndb);
 		setPushHikarinagi(canPushHikarinagi);
+		setPushNextmoe(canPushNextmoe);
 		setPushDefaultsApplied(true);
 	}, [
 		canPushBgm,
 		canPushHikarinagi,
+		canPushNextmoe,
 		canPushVndb,
 		isPushCapabilityLoading,
 		pushDefaultsApplied,
@@ -184,6 +194,7 @@ export const Review: React.FC<ReviewProps> = ({ selectedGame }) => {
 				: "";
 	const bgmRate = Math.round(parsedRating.value);
 	const hikarinagiRate = Math.round(parsedRating.value);
+	const nextmoeRate = Math.round(parsedRating.value);
 	const showBgmRoundNotice =
 		effectivePushBgm &&
 		parsedRating.value > 0 &&
@@ -192,9 +203,22 @@ export const Review: React.FC<ReviewProps> = ({ selectedGame }) => {
 		effectivePushHikarinagi &&
 		parsedRating.value > 0 &&
 		Math.abs(parsedRating.value - hikarinagiRate) > Number.EPSILON;
+	const showNextmoeRoundNotice =
+		effectivePushNextmoe &&
+		parsedRating.value > 0 &&
+		Math.abs(parsedRating.value - nextmoeRate) > Number.EPSILON;
 	const hasLocalChanges =
 		!ratingError &&
 		!isSameReviewState(selectedGame, parsedRating.value, reviewInput);
+
+	const nextmoePlaytimeMinutes = Math.max(
+		0,
+		Math.floor(gameStats?.totalMinutes ?? 0),
+	);
+	const nextmoePlaytimeHours = Math.floor(nextmoePlaytimeMinutes / 60);
+	const nextmoePlaytimeRemainderMinutes = nextmoePlaytimeMinutes % 60;
+	const isNextmoePlaytimeCapped =
+		nextmoePlaytimeMinutes > NEXTMOE_MAX_PLAYTIME_MINUTES;
 
 	const saveReviewDraft = useCallback(async () => {
 		const nextRating = parseRatingInput(ratingInput);
@@ -237,7 +261,12 @@ export const Review: React.FC<ReviewProps> = ({ selectedGame }) => {
 	}, [ratingInput, reviewInput, selectedGame, t, updateGameMutation]);
 
 	const handlePush = async () => {
-		if (!effectivePushBgm && !effectivePushVndb && !effectivePushHikarinagi) {
+		if (
+			!effectivePushBgm &&
+			!effectivePushVndb &&
+			!effectivePushHikarinagi &&
+			!effectivePushNextmoe
+		) {
 			return;
 		}
 
@@ -275,10 +304,12 @@ export const Review: React.FC<ReviewProps> = ({ selectedGame }) => {
 				pushBgm: effectivePushBgm,
 				pushVndb: effectivePushVndb,
 				pushHikarinagi: effectivePushHikarinagi,
+				pushNextmoe: effectivePushNextmoe,
 				bgmPrivate,
 				hikarinagiSpoiler,
 				hikarinagiTimeToFinishMinutes:
 					hikarinagiTimeToFinishMinutes ?? undefined,
+				nextmoePlaytimeMinutes: nextmoePlaytimeMinutes ?? undefined,
 			});
 			setPushResults(results);
 
@@ -536,6 +567,41 @@ export const Review: React.FC<ReviewProps> = ({ selectedGame }) => {
 								</Stack>
 							</Box>
 
+							<Box
+								sx={{
+									border: 1,
+									borderColor: "divider",
+									borderRadius: 1,
+									p: 1,
+								}}
+							>
+								<FormControlLabel
+									sx={{ m: 0 }}
+									control={
+										<Checkbox
+											checked={effectivePushNextmoe}
+											disabled={!canPushNextmoe}
+											onChange={(event) => setPushNextmoe(event.target.checked)}
+										/>
+									}
+									label="NextMoe"
+								/>
+								<Typography
+									variant="caption"
+									color="text.secondary"
+									sx={{ display: "block", mt: 0.5 }}
+								>
+									{t(
+										"pages.Detail.Review.nextmoePlaytimeValue",
+										"推送本地统计时长：{{hours}} 小时 {{minutes}} 分",
+										{
+											hours: nextmoePlaytimeHours,
+											minutes: nextmoePlaytimeRemainderMinutes,
+										},
+									)}
+								</Typography>
+							</Box>
+
 							<Button
 								variant="contained"
 								startIcon={
@@ -550,7 +616,8 @@ export const Review: React.FC<ReviewProps> = ({ selectedGame }) => {
 									updateGameMutation.isPending ||
 									(!effectivePushBgm &&
 										!effectivePushVndb &&
-										!effectivePushHikarinagi)
+										!effectivePushHikarinagi &&
+										!effectivePushNextmoe)
 								}
 								onClick={handlePush}
 							>
@@ -572,6 +639,23 @@ export const Review: React.FC<ReviewProps> = ({ selectedGame }) => {
 									"pages.Detail.Review.hikarinagiRoundNotice",
 									"Hikarinagi 将按 {{rating}} 分推送",
 									{ rating: hikarinagiRate },
+								)}
+							</Alert>
+						)}
+						{showNextmoeRoundNotice && (
+							<Alert severity="info" sx={{ mt: 2 }}>
+								{t(
+									"pages.Detail.Review.nextmoeRoundNotice",
+									"NextMoe 将按 {{rating}} 分推送",
+									{ rating: nextmoeRate },
+								)}
+							</Alert>
+						)}
+						{effectivePushNextmoe && isNextmoePlaytimeCapped && (
+							<Alert severity="warning" sx={{ mt: 2 }}>
+								{t(
+									"pages.Detail.Review.nextmoePlaytimeCapped",
+									"本地统计时长超过 NextMoe 的 60000 分钟上限，将按 60000 分钟推送",
 								)}
 							</Alert>
 						)}

@@ -1,6 +1,11 @@
 import { updateUserCollection } from "@/metadata/api/bgm";
 import { updateHikarinagiGameRate } from "@/metadata/api/hikarinagi";
 import {
+	deleteNextmoeRating,
+	updateNextmoePlaytime,
+	updateNextmoeRating,
+} from "@/metadata/api/nextmoe";
+import {
 	fetchVndbCurrentUserProfile,
 	updateVndbUserCollection,
 } from "@/metadata/api/vndb";
@@ -11,10 +16,14 @@ import {
 import { getVndbToken } from "@/services/cloudPlayStatus/shared";
 import { withBgmAuth } from "@/services/oauth/bgmAuthSession";
 import { withHikarinagiAuth } from "@/services/oauth/hikarinagiAuthSession";
+import { withNextmoeAuth } from "@/services/oauth/nextmoeAuthSession";
 import { getNetworkRequestContext } from "@/services/requestContext";
 import { AppError } from "@/utils/errors";
 
-export type UserReviewPushSource = "bgm" | "vndb" | "hikarinagi";
+export type UserReviewPushSource = "bgm" | "vndb" | "hikarinagi" | "nextmoe";
+
+export const NEXTMOE_MAX_PLAYTIME_MINUTES = 60000;
+export const NEXTMOE_MAX_SHORT_SUMMARY_LENGTH = 2000;
 
 export interface UserReviewPushPayload {
 	rating: number;
@@ -22,9 +31,11 @@ export interface UserReviewPushPayload {
 	pushBgm: boolean;
 	pushVndb: boolean;
 	pushHikarinagi: boolean;
+	pushNextmoe: boolean;
 	bgmPrivate: boolean;
 	hikarinagiSpoiler: boolean;
 	hikarinagiTimeToFinishMinutes?: number;
+	nextmoePlaytimeMinutes?: number;
 }
 
 export interface UserReviewPushResult {
@@ -175,6 +186,69 @@ export async function pushGameUserReviewToHikarinagi(
 	});
 }
 
+export function normalizeNextmoePlaytimeMinutes(minutes: number | undefined) {
+	if (typeof minutes !== "number" || !Number.isFinite(minutes)) return 0;
+	return Math.min(
+		NEXTMOE_MAX_PLAYTIME_MINUTES,
+		Math.max(0, Math.floor(minutes)),
+	);
+}
+
+export function normalizeNextmoeShortSummary(review: string) {
+	return getReviewText(review)
+		.trim()
+		.slice(0, NEXTMOE_MAX_SHORT_SUMMARY_LENGTH);
+}
+
+export async function pushGameUserReviewToNextmoe(
+	game: SourceIdentityPayload,
+	payload: UserReviewPushPayload,
+) {
+	const nextmoeId = getAnySourceId(game, "nextmoe");
+	if (!nextmoeId) {
+		throw new AppError({
+			code: "nextmoe_id_missing",
+			message: "当前游戏没有 NextMoe ID",
+		});
+	}
+
+	return withNextmoeAuth(async (token) => {
+		if (!token) {
+			throw new AppError({
+				code: "nextmoe_auth_missing",
+				message: "未配置 NextMoe 登录",
+			});
+		}
+
+		const context = getNetworkRequestContext();
+		const rating = Math.round(normalizeUserRating(payload.rating));
+		const shortSummary = normalizeNextmoeShortSummary(payload.review);
+		const minutes = normalizeNextmoePlaytimeMinutes(
+			payload.nextmoePlaytimeMinutes,
+		);
+
+		const tasks: Array<Promise<unknown>> = [
+			rating > 0
+				? updateNextmoeRating(
+						token,
+						nextmoeId,
+						{
+							overall: rating,
+							...(shortSummary ? { short_summary: shortSummary } : {}),
+						},
+						context,
+					)
+				: deleteNextmoeRating(token, nextmoeId, context),
+		];
+		if (minutes > 0) {
+			tasks.push(updateNextmoePlaytime(token, nextmoeId, minutes, context));
+		}
+
+		const results = await Promise.all(tasks);
+		return results.every(Boolean);
+	});
+}
+
 async function runPushTarget(
 	source: UserReviewPushSource,
 	push: () => Promise<boolean>,
@@ -207,6 +281,13 @@ export async function pushGameUserReviewToCloud(
 		tasks.push(
 			runPushTarget("hikarinagi", () =>
 				pushGameUserReviewToHikarinagi(game, payload),
+			),
+		);
+	}
+	if (payload.pushNextmoe) {
+		tasks.push(
+			runPushTarget("nextmoe", () =>
+				pushGameUserReviewToNextmoe(game, payload),
 			),
 		);
 	}

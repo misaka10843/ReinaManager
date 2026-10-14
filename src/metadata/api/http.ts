@@ -99,8 +99,17 @@ async function parseTauriResponse<T>(
 	}
 }
 
+async function parseErrorBody(response: Response): Promise<unknown> {
+	try {
+		const text = await response.text();
+		return text ? JSON.parse(text) : undefined;
+	} catch {
+		return undefined;
+	}
+}
+
 async function requestTauriHttp<T>(
-	method: "GET" | "POST" | "PATCH" | "PUT",
+	method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE",
 	url: string,
 	options?: TauriHttpOptions,
 	data?: unknown,
@@ -200,6 +209,7 @@ async function requestTauriHttp<T>(
 			url: fullUrl,
 			status: response.status,
 			statusText: response.statusText,
+			body: await parseErrorBody(response),
 		});
 	}
 	if (rateLimitSource) {
@@ -315,6 +325,10 @@ export const tauriHttp = {
 		options?: TauriHttpOptions,
 	) {
 		return requestTauriHttp<T>("PUT", url, options, data);
+	},
+
+	async delete<T = unknown>(url: string, options?: TauriHttpOptions) {
+		return requestTauriHttp<T>("DELETE", url, options);
 	},
 };
 

@@ -1,6 +1,6 @@
 import i18next from "i18next";
 import type { GameMetadataDraft, NextmoeData } from "@/types";
-import { AppError, isHttpStatus } from "@/utils/errors";
+import { AppError, HttpResponseError, isHttpStatus } from "@/utils/errors";
 import { isChineseLocale } from "@/utils/locale";
 import { USER_AGENT } from "../constants";
 import type { SourceDisplayFields } from "../sourceCandidate";
@@ -322,6 +322,79 @@ export async function updateNextmoeWorkState(
 		buildNextmoeUserOptions(token, context),
 	);
 
+	return Boolean(response.data);
+}
+
+function readNextmoeProblemPointer(body: unknown): string | undefined {
+	if (!body || typeof body !== "object") return undefined;
+	const errors = (body as { errors?: unknown }).errors;
+	if (!Array.isArray(errors) || errors.length === 0) return undefined;
+	const first: unknown = errors[0];
+	if (!first || typeof first !== "object") return undefined;
+	const pointer = (first as { pointer?: unknown }).pointer;
+	return typeof pointer === "string" ? pointer : undefined;
+}
+
+function toNextmoeRatingError(error: unknown) {
+	if (
+		error instanceof HttpResponseError &&
+		error.status === 422 &&
+		readNextmoeProblemPointer(error.body) === "/short_summary"
+	) {
+		return new AppError({
+			code: "nextmoe_rating_rejected",
+			message: "NextMoe 短评未通过内容检查，请修改后重试",
+			cause: error,
+		});
+	}
+	return error;
+}
+
+export interface NextmoeRatingPayload {
+	overall: number;
+	short_summary?: string;
+}
+
+export async function updateNextmoeRating(
+	token: string,
+	workId: string,
+	payload: NextmoeRatingPayload,
+	context: NetworkRequestContext = {},
+) {
+	try {
+		const response = await http.put<Record<string, unknown>>(
+			`${NEXTMOE_API_BASE_URL}/me/ratings/${workId}`,
+			payload,
+			buildNextmoeUserOptions(token, context),
+		);
+		return Boolean(response.data);
+	} catch (error) {
+		throw toNextmoeRatingError(error);
+	}
+}
+
+export async function deleteNextmoeRating(
+	token: string,
+	workId: string,
+	context: NetworkRequestContext = {},
+) {
+	await http.delete(`${NEXTMOE_API_BASE_URL}/me/ratings/${workId}`, {
+		...buildNextmoeUserOptions(token, context),
+		responseType: "text",
+	});
+}
+
+export async function updateNextmoePlaytime(
+	token: string,
+	workId: string,
+	minutes: number,
+	context: NetworkRequestContext = {},
+) {
+	const response = await http.put<Record<string, unknown>>(
+		`${NEXTMOE_API_BASE_URL}/me/playtimes/${workId}`,
+		{ minutes },
+		buildNextmoeUserOptions(token, context),
+	);
 	return Boolean(response.data);
 }
 

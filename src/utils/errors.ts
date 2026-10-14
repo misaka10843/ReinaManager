@@ -108,6 +108,7 @@ interface HttpResponseErrorOptions {
 	url: string;
 	status: number;
 	statusText: string;
+	body?: unknown;
 	cause?: unknown;
 }
 
@@ -116,12 +117,14 @@ export class HttpResponseError extends AppError {
 	url: string;
 	status: number;
 	statusText: string;
+	body?: unknown;
 
 	constructor({
 		method,
 		url,
 		status,
 		statusText,
+		body,
 		cause,
 	}: HttpResponseErrorOptions) {
 		super({
@@ -134,6 +137,7 @@ export class HttpResponseError extends AppError {
 		this.url = url;
 		this.status = status;
 		this.statusText = statusText;
+		this.body = body;
 	}
 }
 
@@ -326,6 +330,11 @@ export function getUserErrorMessage(
 				return t("errors.mixedSourcesFailed", "所有数据源请求均失败");
 			case "metadata_request_failed":
 				return t("errors.metadataRequestFailed", "获取元数据失败，请稍后重试");
+			case "nextmoe_rating_rejected":
+				return t(
+					"errors.nextmoeRatingRejected",
+					"NextMoe 短评未通过内容检查，请修改后重试",
+				);
 			case "api_rate_limited":
 				return t("errors.requestRateLimited", "请求过于频繁，请稍后重试");
 			case "http_response_parse_failed":
