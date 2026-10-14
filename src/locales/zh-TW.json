@@ -1070,7 +1070,6 @@
 			"skipCloseRemind": "不再提醒",
 			"skipCloseRemindDescription": "開啟後不再顯示關閉確認彈窗，直接執行下方選擇的預設行為。",
 			"sourceExpansion": {
-				"description": "只儲存 Mixed 中啟用來源的關聯 ID，供外部連結和同步使用。以下開關僅決定是否取得這些來源的中繼資料。",
 				"hikarinagi": "Hikarinagi 自動擴展為 Mixed",
 				"hikarinagiDescription": "開啟後，依關聯 ID 取得 Mixed 中啟用的其他來源中繼資料，並保留 Hikarinagi 自身的中繼資料。",
 				"kun": "Kungal 自動擴展為 Mixed",

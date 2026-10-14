@@ -1070,7 +1070,6 @@
 			"skipCloseRemind": "再度確認しない",
 			"skipCloseRemindDescription": "終了確認を表示せず、下で選択した既定動作をすぐに実行します。",
 			"sourceExpansion": {
-				"description": "Mixed で有効なソースの関連 ID のみ、外部リンクと同期用に保存します。以下の設定は、それらのソースのメタデータ取得のみを制御します。",
 				"hikarinagi": "Hikarinagi を Mixed に自動拡張",
 				"hikarinagiDescription": "有効にすると、関連 ID を使って Mixed で有効な他のソースを取得し、Hikarinagi 自身のメタデータは保持します。",
 				"kun": "Kungal を Mixed に自動拡張",

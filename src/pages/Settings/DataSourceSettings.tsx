@@ -107,10 +107,6 @@ export const SourceExpansionSettings = () => {
 	return (
 		<SettingsGroup
 			title={t("pages.Settings.sourceExpansion.title", "单源自动增强")}
-			description={t(
-				"pages.Settings.sourceExpansion.description",
-				"只保存 Mixed 中启用来源的关联 ID，供外链和同步使用。以下开关只决定是否获取这些来源的元数据。",
-			)}
 		>
 			<SettingsItem
 				title={t(

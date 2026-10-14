@@ -1070,7 +1070,6 @@
 			"skipCloseRemind": "不再提醒",
 			"skipCloseRemindDescription": "开启后不再显示关闭确认弹窗，直接执行下方选择的默认行为。",
 			"sourceExpansion": {
-				"description": "只保存 Mixed 中启用来源的关联 ID，供外链和同步使用。以下开关只决定是否获取这些来源的元数据。",
 				"hikarinagi": "Hikarinagi 自动扩展为 Mixed",
 				"hikarinagiDescription": "开启后，按关联 ID 获取 Mixed 中启用的其它源元数据，并保留 Hikarinagi 自身元数据。",
 				"kun": "Kungal 自动扩展为 Mixed",

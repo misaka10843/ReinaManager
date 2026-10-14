@@ -1094,7 +1094,6 @@
 			"skipCloseRemind": "Don't remind again",
 			"skipCloseRemindDescription": "Skip the close confirmation and immediately perform the selected default action.",
 			"sourceExpansion": {
-				"description": "Only linked IDs for sources enabled in Mixed are saved for external links and synchronization. These switches only control fetching metadata from those sources.",
 				"hikarinagi": "Automatically expand Hikarinagi to Mixed",
 				"hikarinagiDescription": "When enabled, linked IDs are used to fetch other sources enabled in Mixed, while Hikarinagi's own metadata is kept.",
 				"kun": "Automatically expand Kungal to Mixed",
