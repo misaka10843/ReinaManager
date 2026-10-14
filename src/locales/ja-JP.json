@@ -989,6 +989,7 @@
 				"title": "ログ設定"
 			},
 			"mixedSearchSources": {
+				"attribution": "NextMoe ソースのデータは「鲲 Galgame 论坛」(Kungal) のクレジット表示が必要です。",
 				"description": "この設定は Mixed モードに影響します。BGM と VNDB はデフォルトで有効、その他のソースは必要に応じて有効化できます。有効化できるソース数は 2-4 個です。",
 				"title": "Mixed 検索ソース"
 			},

@@ -84,6 +84,12 @@ export const MixedSearchSourceSettings = () => {
 					);
 				})}
 			</Stack>
+			<Typography variant="caption" color="text.secondary">
+				{t(
+					"pages.Settings.mixedSearchSources.attribution",
+					"NextMoe 源的数据来源署名：鲲 Galgame 论坛",
+				)}
+			</Typography>
 		</SettingsGroup>
 	);
 };
