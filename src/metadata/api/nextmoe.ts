@@ -2,6 +2,8 @@ import type { GameMetadataDraft, KunData, SourceType } from "@/types";
 import type {
 	NextmoeList,
 	NextmoePlayState,
+	NextmoeRatingInput,
+	NextmoeUserRating,
 	NextmoeUserWork,
 	NextmoeWork,
 	NextmoeWorkState,
@@ -467,6 +469,75 @@ export async function updateNextmoeWorkState(
 			...(previous?.completion ? { completion: previous.completion } : {}),
 		},
 		buildNextmoeOptions(token, context),
+	);
+	return true;
+}
+
+export async function updateNextmoePlaytime(
+	id: string,
+	minutes: number,
+	token: string,
+	context: NetworkRequestContext = {},
+): Promise<boolean> {
+	assertNextmoeWorkId(id);
+	if (!Number.isInteger(minutes) || minutes < 0 || minutes > 60000) {
+		throw new AppError({
+			code: "nextmoe_playtime_invalid",
+			message: "Kungal 游玩时长须为 0–60000 分钟（最多 1000 小时）。",
+		});
+	}
+	// 上报本应用的累计总分钟数；可以调小，不读取云端值相加。
+	await http.put(
+		`${NEXTMOE_USER_API_BASE_URL}/playtimes/${id}`,
+		{ minutes },
+		buildNextmoeOptions(token, context),
+	);
+	return true;
+}
+
+export async function updateNextmoeUserRating(
+	id: string,
+	rating: NextmoeRatingInput,
+	token: string,
+	context: NetworkRequestContext = {},
+): Promise<boolean> {
+	assertNextmoeWorkId(id);
+	if (
+		!Number.isInteger(rating.overall) ||
+		rating.overall < 1 ||
+		rating.overall > 10
+	) {
+		throw new AppError({
+			code: "nextmoe_rating_required",
+			message: "Kungal 暂不支持单独清空评分，请填写 1–10 分或取消勾选 Kungal。",
+		});
+	}
+	if (Array.from(rating.short_summary).length > 2000) {
+		throw new AppError({
+			code: "nextmoe_review_too_long",
+			message: "Kungal 短评不能超过 2000 字，请缩短后重试。",
+		});
+	}
+	const url = `${NEXTMOE_USER_API_BASE_URL}/ratings/${id}`;
+	const options = buildNextmoeOptions(token, context);
+	let previous: NextmoeUserRating | null;
+	try {
+		previous = (await http.get<NextmoeUserRating>(url, options)).data;
+	} catch (error) {
+		if (!isHttpStatus(error, 404)) throw error;
+		previous = null;
+	}
+	// PUT 整体替换评价；保留本地不编辑的字段，首次发布补齐接口要求的默认值。
+	await http.put<NextmoeUserRating>(
+		url,
+		{
+			...rating,
+			recommend: previous?.recommend ?? "neutral",
+			...(previous?.aspect_scores
+				? { aspect_scores: previous.aspect_scores }
+				: {}),
+		},
+		options,
 	);
 	return true;
 }

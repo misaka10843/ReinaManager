@@ -367,6 +367,21 @@ export function getUserErrorMessage(
 					"errors.nextmoeAuthMissing",
 					"请先在账号设置中登录 Kungal (NextMoe)。",
 				);
+			case "nextmoe_rating_required":
+				return t(
+					"errors.nextmoeRatingRequired",
+					"Kungal 暂不支持单独清空评分，请填写 1–10 分或取消勾选 Kungal。",
+				);
+			case "nextmoe_playtime_invalid":
+				return t(
+					"errors.nextmoePlaytimeInvalid",
+					"Kungal 游玩时长须为 0–60000 分钟（最多 1000 小时）。",
+				);
+			case "nextmoe_review_too_long":
+				return t(
+					"errors.nextmoeReviewTooLong",
+					"Kungal 短评不能超过 2000 字，请缩短后重试。",
+				);
 			case "nextmoe_auth_expired":
 				return t(
 					"errors.nextmoeAuthExpired",

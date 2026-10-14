@@ -1,6 +1,10 @@
 import { updateUserCollection } from "@/metadata/api/bgm";
 import { updateHikarinagiGameRate } from "@/metadata/api/hikarinagi";
 import {
+	updateNextmoePlaytime,
+	updateNextmoeUserRating,
+} from "@/metadata/api/nextmoe";
+import {
 	fetchVndbCurrentUserProfile,
 	updateVndbUserCollection,
 } from "@/metadata/api/vndb";
@@ -11,10 +15,11 @@ import {
 import { getVndbToken } from "@/services/cloudPlayStatus/shared";
 import { withBgmAuth } from "@/services/oauth/bgmAuthSession";
 import { withHikarinagiAuth } from "@/services/oauth/hikarinagiAuthSession";
+import { withNextmoeUserAuth } from "@/services/oauth/nextmoeAuthSession";
 import { getNetworkRequestContext } from "@/services/requestContext";
 import { AppError } from "@/utils/errors";
 
-export type UserReviewPushSource = "bgm" | "vndb" | "hikarinagi";
+export type UserReviewPushSource = "bgm" | "vndb" | "hikarinagi" | "kun";
 
 export interface UserReviewPushPayload {
 	rating: number;
@@ -22,13 +27,18 @@ export interface UserReviewPushPayload {
 	pushBgm: boolean;
 	pushVndb: boolean;
 	pushHikarinagi: boolean;
+	pushKun: boolean;
 	bgmPrivate: boolean;
+	hikarinagiPrivate: boolean;
 	hikarinagiSpoiler: boolean;
+	kunSpoiler: boolean;
 	hikarinagiTimeToFinishMinutes?: number;
+	kunPlaytimeMinutes?: number;
 }
 
 export interface UserReviewPushResult {
 	source: UserReviewPushSource;
+	kind: "review" | "playtime";
 	success: boolean;
 	error?: unknown;
 }
@@ -43,6 +53,14 @@ export function hasUserRating(
 	value: number | null | undefined,
 ): value is number {
 	return typeof value === "number" && value > 0;
+}
+
+export function shouldPushUserReview(
+	source: UserReviewPushSource,
+	rating: number,
+): boolean {
+	// Kungal 的评价必须带评分；其它站点仍允许用 0 清空云端评分。
+	return source !== "kun" || hasUserRating(normalizeUserRating(rating));
 }
 
 function mapRatingToBgmRate(rating: number) {
@@ -161,6 +179,7 @@ export async function pushGameUserReviewToHikarinagi(
 			rate: mapRatingToHikarinagiRate(normalizeUserRating(payload.rating)),
 			rate_content: getReviewText(payload.review),
 			is_spoiler: payload.hikarinagiSpoiler,
+			status_private: payload.hikarinagiPrivate,
 			...(payload.hikarinagiTimeToFinishMinutes !== undefined
 				? { time_to_finish_minutes: payload.hikarinagiTimeToFinishMinutes }
 				: {}),
@@ -175,15 +194,58 @@ export async function pushGameUserReviewToHikarinagi(
 	});
 }
 
+export async function pushGameUserReviewToKun(
+	game: SourceIdentityPayload,
+	payload: UserReviewPushPayload,
+) {
+	const kunId = getAnySourceId(game, "kun");
+	if (!kunId) {
+		throw new AppError({
+			code: "kun_id_missing",
+			message: "当前游戏没有 Kungal ID",
+		});
+	}
+	return withNextmoeUserAuth((token) =>
+		updateNextmoeUserRating(
+			kunId,
+			{
+				overall: Math.round(normalizeUserRating(payload.rating)),
+				short_summary: getReviewText(payload.review),
+				// 二态开关不区分剧透程度，开启时使用最严格的标记以免泄露剧情。
+				spoiler_level: payload.kunSpoiler ? "serious" : "none",
+			},
+			token,
+			getNetworkRequestContext(),
+		),
+	);
+}
+
+export async function pushGamePlaytimeToKun(
+	game: SourceIdentityPayload,
+	minutes: number,
+) {
+	const kunId = getAnySourceId(game, "kun");
+	if (!kunId) {
+		throw new AppError({
+			code: "kun_id_missing",
+			message: "当前游戏没有 Kungal ID",
+		});
+	}
+	return withNextmoeUserAuth((token) =>
+		updateNextmoePlaytime(kunId, minutes, token, getNetworkRequestContext()),
+	);
+}
+
 async function runPushTarget(
 	source: UserReviewPushSource,
 	push: () => Promise<boolean>,
+	kind: UserReviewPushResult["kind"] = "review",
 ): Promise<UserReviewPushResult> {
 	try {
 		const success = await push();
-		return { source, success };
+		return { source, kind, success };
 	} catch (error) {
-		return { source, success: false, error };
+		return { source, kind, success: false, error };
 	}
 }
 
@@ -209,6 +271,23 @@ export async function pushGameUserReviewToCloud(
 				pushGameUserReviewToHikarinagi(game, payload),
 			),
 		);
+	}
+	if (payload.pushKun) {
+		if (shouldPushUserReview("kun", payload.rating)) {
+			tasks.push(
+				runPushTarget("kun", () => pushGameUserReviewToKun(game, payload)),
+			);
+		}
+		const minutes = payload.kunPlaytimeMinutes;
+		if (minutes !== undefined) {
+			tasks.push(
+				runPushTarget(
+					"kun",
+					() => pushGamePlaytimeToKun(game, minutes),
+					"playtime",
+				),
+			);
+		}
 	}
 
 	return Promise.all(tasks);

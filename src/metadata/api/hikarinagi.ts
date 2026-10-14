@@ -115,6 +115,7 @@ export interface HikarinagiRatePage {
 
 export interface HikarinagiRateUpdatePayload {
 	is_spoiler?: boolean;
+	status_private?: boolean;
 	rate?: number | null;
 	rate_content?: string;
 	time_to_finish_minutes?: number;

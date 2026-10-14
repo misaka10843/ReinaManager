@@ -79,3 +79,26 @@ export interface NextmoeUserWork {
 	folder_ids: string[];
 	work_state: NextmoeWorkState | null;
 }
+
+export interface NextmoeRatingInput {
+	overall: number;
+	short_summary: string;
+	spoiler_level: "none" | "portion" | "serious";
+}
+
+export interface NextmoeUserRating extends NextmoeRatingInput {
+	recommend: "strong_no" | "no" | "neutral" | "yes" | "strong_yes";
+	aspect_scores: Partial<
+		Record<
+			| "art"
+			| "story"
+			| "music"
+			| "character"
+			| "route"
+			| "system"
+			| "voice"
+			| "replay_value",
+			number | null
+		>
+	>;
+}
