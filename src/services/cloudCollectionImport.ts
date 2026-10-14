@@ -262,6 +262,8 @@ async function loadKunCollection(signal?: AbortSignal) {
 				image: data?.image,
 				developer: data?.developer,
 				playStatus: mapNextmoeStateToPlayStatus(work.work_state?.state),
+				userRating: normalizeRating(work.rating?.overall),
+				userReview: normalizeReview(work.rating?.short_summary),
 			};
 		});
 	});

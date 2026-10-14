@@ -78,6 +78,7 @@ export interface NextmoeUserWork {
 	work_id: string;
 	folder_ids: string[];
 	work_state: NextmoeWorkState | null;
+	rating: NextmoeUserRating | null;
 }
 
 export interface NextmoeRatingInput {
