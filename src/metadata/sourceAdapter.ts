@@ -26,6 +26,7 @@ export interface MetadataRequestContext extends NetworkRequestContext {
 	spoilerLevel: number;
 	bgmToken?: string;
 	hikarinagiToken?: string;
+	nextmoeToken?: string;
 }
 
 export interface MetadataSourceContext extends MetadataRequestContext {

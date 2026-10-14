@@ -79,10 +79,15 @@ interface NextmoeListResponse {
 function buildNextmoeOptions(
 	context: NetworkRequestContext = {},
 	params: Record<string, unknown> = {},
+	token?: string,
 ): TauriHttpOptions {
 	return {
 		...context,
-		headers: { ...NEXTMOE_JSON_HEADERS },
+		headers: {
+			...NEXTMOE_JSON_HEADERS,
+			// 带用户令牌走 100 次/分、10000 次/天（按用户），匿名只有 30 次/分、1000 次/天（按 IP）。
+			...(token ? { Authorization: `Bearer ${token}` } : {}),
+		},
 		// 缺省闸会把 R18 作品静默并入 missing[]，因此统一在这里打开。
 		params: { ...params, nsfw: "true" },
 		rateLimit: { source: "nextmoe" },
@@ -166,11 +171,12 @@ function toNextmoeDraft(work: NextmoeWork): GameMetadataDraft {
 
 export async function fetchNextmoeById(
 	id: string,
+	token?: string,
 	context: NetworkRequestContext = {},
 ): Promise<GameMetadataDraft> {
 	const response = await http.get<NextmoeWork>(
 		`${NEXTMOE_API_BASE_URL}/catalog/works/${id}`,
-		buildNextmoeOptions(context, { include: NEXTMOE_WORK_INCLUDE }),
+		buildNextmoeOptions(context, { include: NEXTMOE_WORK_INCLUDE }, token),
 	);
 	const work = response.data;
 
@@ -186,16 +192,21 @@ export async function fetchNextmoeById(
 
 export async function fetchNextmoeByName(
 	name: string,
+	token?: string,
 	limit = 8,
 	context: NetworkRequestContext = {},
 ): Promise<SourceCandidate<NextmoeData>[]> {
 	const response = await http.get<NextmoeListResponse>(
 		`${NEXTMOE_API_BASE_URL}/catalog/works`,
-		buildNextmoeOptions(context, {
-			q: name.trim(),
-			limit,
-			include: NEXTMOE_WORK_INCLUDE,
-		}),
+		buildNextmoeOptions(
+			context,
+			{
+				q: name.trim(),
+				limit,
+				include: NEXTMOE_WORK_INCLUDE,
+			},
+			token,
+		),
 	);
 
 	return (response.data?.items ?? [])

@@ -17,6 +17,7 @@ export function getMetadataRequestContext(
 	options: {
 		bgmToken?: string;
 		hikarinagiToken?: string;
+		nextmoeToken?: string;
 		signal?: AbortSignal;
 	} = {},
 ): MetadataRequestContext {
@@ -28,6 +29,7 @@ export function getMetadataRequestContext(
 		spoilerLevel: state.spoilerLevel,
 		bgmToken: options.bgmToken,
 		hikarinagiToken: options.hikarinagiToken,
+		nextmoeToken: options.nextmoeToken,
 	};
 }
 
@@ -35,6 +37,7 @@ export function createMetadataSession(
 	options: {
 		bgmToken?: string;
 		hikarinagiToken?: string;
+		nextmoeToken?: string;
 		signal?: AbortSignal;
 	} = {},
 ): GameMetadataSession {

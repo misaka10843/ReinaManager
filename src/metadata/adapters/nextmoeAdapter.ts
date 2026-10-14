@@ -16,11 +16,12 @@ export const nextmoeAdapter: MetadataSourceAdapter<NextmoeData> = {
 	validateId: (id) => /^\d+$/.test(id),
 	getExternalUrl: (id) => `https://www.kungal.com/galgame/${id}`,
 	async fetchById(id, ctx) {
-		return fetchNextmoeById(id, ctx);
+		return fetchNextmoeById(id, ctx.nextmoeToken, ctx);
 	},
 	async searchByName(name, ctx) {
 		return fetchNextmoeByName(
 			name,
+			ctx.nextmoeToken,
 			ctx.limit ?? DEFAULT_METADATA_SEARCH_LIMIT,
 			ctx,
 		);
