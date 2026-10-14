@@ -994,6 +994,26 @@
 				"title": "Mixed 搜索源"
 			},
 			"navigation": "设置分类导航",
+			"nextmoeAuth": {
+				"connected": "已连接",
+				"description": "使用 NextMoe OAuth 登录以上报游玩状态、游玩时长和评分。",
+				"logout": "退出登录",
+				"logoutError": "退出 NextMoe 登录失败",
+				"logoutSuccess": "已退出 NextMoe 登录",
+				"notLoggedIn": "未登录",
+				"oauthCancel": "取消 NextMoe OAuth 登录",
+				"oauthCancelError": "取消 NextMoe OAuth 登录失败: {{error}}",
+				"oauthCancelled": "NextMoe OAuth 登录已取消",
+				"oauthError": "NextMoe OAuth 登录失败: {{error}}",
+				"oauthLogin": "OAuth 快捷登录",
+				"oauthStartError": "启动 NextMoe OAuth 登录失败: {{error}}",
+				"oauthSuccess": "NextMoe OAuth 登录成功",
+				"oauthWaiting": "请在浏览器中完成 NextMoe 授权...",
+				"reloginRequired": "NextMoe 登录已失效，请重新登录。",
+				"tokenExpiresAt": "Token 有效期至: {{date}}",
+				"tokenExpiryUnknown": "Token 有效期未知",
+				"userId": "用户 ID: {{id}}"
+			},
 			"nsfw": {
 				"coverReplace": "NSFW 封面替换",
 				"filter": "过滤 NSFW 内容",

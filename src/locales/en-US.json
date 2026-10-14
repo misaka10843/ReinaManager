@@ -1016,6 +1016,26 @@
 				"title": "Mixed Search Sources"
 			},
 			"navigation": "Settings category navigation",
+			"nextmoeAuth": {
+				"connected": "Connected",
+				"description": "Log in with NextMoe OAuth to push play status, playtime, and ratings.",
+				"logout": "Log out",
+				"logoutError": "Failed to log out of NextMoe",
+				"logoutSuccess": "Logged out of NextMoe",
+				"notLoggedIn": "Not logged in",
+				"oauthCancel": "Cancel NextMoe OAuth login",
+				"oauthCancelError": "Failed to cancel NextMoe OAuth login: {{error}}",
+				"oauthCancelled": "NextMoe OAuth login cancelled",
+				"oauthError": "NextMoe OAuth login failed: {{error}}",
+				"oauthLogin": "OAuth quick login",
+				"oauthStartError": "Failed to start NextMoe OAuth login: {{error}}",
+				"oauthSuccess": "NextMoe OAuth login succeeded",
+				"oauthWaiting": "Complete NextMoe authorization in your browser...",
+				"reloginRequired": "NextMoe login has expired. Please log in again.",
+				"tokenExpiresAt": "Token expires at: {{date}}",
+				"tokenExpiryUnknown": "Token expiry unknown",
+				"userId": "User ID: {{id}}"
+			},
 			"nsfw": {
 				"coverReplace": "NSFW cover replace",
 				"filter": "Filter NSFW content",

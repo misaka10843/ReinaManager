@@ -7,6 +7,7 @@ import type {
 	BgmAuth,
 	HikarinagiAuth,
 	LogLevel,
+	NextmoeAuth,
 	UpdateSettingsParams,
 } from "@/types";
 import { BaseService } from "./base";
@@ -14,6 +15,7 @@ import { BaseService } from "./base";
 export interface UserSettings {
 	bgm_auth?: BgmAuth | null;
 	hikarinagi_auth?: HikarinagiAuth | null;
+	nextmoe_auth?: NextmoeAuth | null;
 	vndb_token?: string | null;
 	save_root_path?: string | null;
 	db_backup_path?: string | null;
@@ -148,6 +150,30 @@ class SettingsService extends BaseService {
 		refreshToken: string,
 	): Promise<HikarinagiAuth> {
 		return this.invoke<HikarinagiAuth>("hikarinagi_oauth_refresh_token", {
+			refreshToken,
+		});
+	}
+
+	async nextmoeOAuthStartLogin(): Promise<string> {
+		return this.invoke<string>("nextmoe_oauth_start_login");
+	}
+
+	async nextmoeOAuthCancelLogin(): Promise<void> {
+		return this.invoke<void>("nextmoe_oauth_cancel_login");
+	}
+
+	async nextmoeOAuthExchangeCode(
+		code: string,
+		codeVerifier: string,
+	): Promise<NextmoeAuth> {
+		return this.invoke<NextmoeAuth>("nextmoe_oauth_exchange_code", {
+			code,
+			codeVerifier,
+		});
+	}
+
+	async nextmoeOAuthRefreshToken(refreshToken: string): Promise<NextmoeAuth> {
+		return this.invoke<NextmoeAuth>("nextmoe_oauth_refresh_token", {
 			refreshToken,
 		});
 	}

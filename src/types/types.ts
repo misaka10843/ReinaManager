@@ -76,6 +76,17 @@ export interface HikarinagiAuth extends OAuthAuth {
 	scope?: Nullable<string>;
 }
 
+/**
+ * NextMoe OAuth/PKCE 授权信息
+ *
+ * user_id 是 int64 十进制字符串，超出 JavaScript 安全整数范围，因此以字符串保存。
+ */
+export interface NextmoeAuth extends OAuthAuth {
+	user_id?: Nullable<string>;
+	name?: Nullable<string>;
+	scope?: Nullable<string>;
+}
+
 // ==================== 元数据结构 ====================
 
 /**
@@ -393,6 +404,7 @@ export interface UpdateGameParams {
 export interface UpdateSettingsParams {
 	bgmAuth?: Nullable<BgmAuth>;
 	hikarinagiAuth?: Nullable<HikarinagiAuth>;
+	nextmoeAuth?: Nullable<NextmoeAuth>;
 	vndbToken?: Nullable<string>;
 	dbBackupPath?: Nullable<string>;
 	installRootPath?: Nullable<string>;

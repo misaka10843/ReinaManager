@@ -994,6 +994,26 @@
 				"title": "Mixed 検索ソース"
 			},
 			"navigation": "設定カテゴリナビゲーション",
+			"nextmoeAuth": {
+				"connected": "接続済み",
+				"description": "NextMoe OAuth でログインしてプレイ状況、プレイ時間、評価を送信します。",
+				"logout": "ログアウト",
+				"logoutError": "NextMoe からのログアウトに失敗しました",
+				"logoutSuccess": "NextMoe からログアウトしました",
+				"notLoggedIn": "未ログイン",
+				"oauthCancel": "NextMoe OAuth ログインをキャンセル",
+				"oauthCancelError": "NextMoe OAuth ログインのキャンセルに失敗しました: {{error}}",
+				"oauthCancelled": "NextMoe OAuth ログインをキャンセルしました",
+				"oauthError": "NextMoe OAuth ログインに失敗しました: {{error}}",
+				"oauthLogin": "OAuth クイックログイン",
+				"oauthStartError": "NextMoe OAuth ログインを開始できませんでした: {{error}}",
+				"oauthSuccess": "NextMoe OAuth ログインに成功しました",
+				"oauthWaiting": "ブラウザで NextMoe の認証を完了してください...",
+				"reloginRequired": "NextMoe のログインが無効になりました。再度ログインしてください。",
+				"tokenExpiresAt": "Token の有効期限: {{date}}",
+				"tokenExpiryUnknown": "Token の有効期限は不明です",
+				"userId": "ユーザー ID: {{id}}"
+			},
 			"nsfw": {
 				"coverReplace": "NSFW表紙の置き換え",
 				"filter": "NSFWコンテンツのフィルタリング",

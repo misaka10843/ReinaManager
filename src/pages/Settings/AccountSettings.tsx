@@ -38,9 +38,10 @@ import type { HikarinagiUserProfile } from "@/metadata/api/hikarinagi";
 import { snackbar } from "@/providers/snackBar";
 import { hasHikarinagiScope } from "@/services/oauth/hikarinagiAuthSession";
 import { useStore } from "@/store/appStore";
-import type { BgmAuth, HikarinagiAuth } from "@/types";
+import type { BgmAuth, HikarinagiAuth, NextmoeAuth } from "@/types";
 import { useBgmAuthController } from "./useBgmAuthController";
 import { useHikarinagiAuthController } from "./useHikarinagiAuthController";
+import { useNextmoeAuthController } from "./useNextmoeAuthController";
 
 // ==================== 品牌字标 组件 ====================
 
@@ -69,6 +70,24 @@ const HikarinagiWordmarkSVG = () => (
 		}}
 	/>
 );
+
+/** NextMoe 字标 */
+const NextmoeWordmark = () => {
+	const resolveImageUrl = useProxyImageUrlResolver();
+
+	return (
+		<Stack direction="row" spacing={1} alignItems="center">
+			<Avatar
+				src={resolveImageUrl("https://www.kungal.com/favicon.ico")}
+				alt="NextMoe"
+				sx={{ width: 22, height: 22 }}
+			/>
+			<Typography variant="subtitle1" className="font-semibold">
+				NextMoe
+			</Typography>
+		</Stack>
+	);
+};
 
 /** VNDB 官方字标 */
 const VndbWordmarkSVG = () => (
@@ -680,6 +699,157 @@ export const HikarinagiProviderSection = () => {
 
 export const HikarinagiAuthSettings = HikarinagiProviderSection;
 
+// ==================== NextMoe 账号与同步板块 ====================
+
+const NextmoeAccountSummary = ({
+	auth,
+	onLogout,
+}: {
+	auth: NextmoeAuth;
+	onLogout: () => void;
+}) => {
+	const { t } = useTranslation();
+	if (!auth.access_token) return null;
+
+	const expiresAt = auth.expires_at ?? null;
+	const expiresDate = expiresAt
+		? new Date(expiresAt * 1000).toLocaleString()
+		: null;
+	const isExpired = expiresAt ? Date.now() / 1000 >= expiresAt : false;
+	const displayName =
+		auth.name ||
+		(auth.user_id != null
+			? `#${auth.user_id}`
+			: t("pages.Settings.nextmoeAuth.connected", "已连接"));
+
+	return (
+		<Stack direction="row" spacing={2} alignItems="flex-start" className="mb-2">
+			<Avatar alt={displayName} sx={{ width: 44, height: 44 }}>
+				{displayName.slice(0, 1).toUpperCase()}
+			</Avatar>
+			<Box className="min-w-0 flex-1">
+				<Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+					<Typography variant="body1" className="font-semibold">
+						{displayName}
+					</Typography>
+					<Chip label="OAuth" size="small" color="primary" variant="outlined" />
+				</Stack>
+				{auth.user_id != null && (
+					<Typography
+						variant="caption"
+						color="text.secondary"
+						className="block"
+					>
+						{t("pages.Settings.nextmoeAuth.userId", "用户 ID: {{id}}", {
+							id: auth.user_id,
+						})}
+					</Typography>
+				)}
+				<Typography
+					variant="caption"
+					color={isExpired ? "error.main" : "text.secondary"}
+					className="block mt-1"
+				>
+					{expiresDate
+						? t(
+								"pages.Settings.nextmoeAuth.tokenExpiresAt",
+								"Token 有效期至: {{date}}",
+								{ date: expiresDate },
+							)
+						: t(
+								"pages.Settings.nextmoeAuth.tokenExpiryUnknown",
+								"Token 有效期未知",
+							)}
+				</Typography>
+			</Box>
+			<Button variant="outlined" color="error" size="small" onClick={onLogout}>
+				{t("pages.Settings.nextmoeAuth.logout", "退出登录")}
+			</Button>
+		</Stack>
+	);
+};
+
+export const NextmoeProviderSection = () => {
+	const { t } = useTranslation();
+	const {
+		nextmoeAuth,
+		isOAuthLoading,
+		isSaving,
+		handleOAuthLogin,
+		handleCancelOAuth,
+		handleLogout,
+	} = useNextmoeAuthController();
+
+	const isConnected = Boolean(nextmoeAuth?.access_token);
+
+	return (
+		<Paper
+			variant="outlined"
+			sx={{
+				p: 2.5,
+				borderRadius: 1,
+				borderColor: "divider",
+			}}
+		>
+			<Stack
+				direction="row"
+				justifyContent="space-between"
+				alignItems="center"
+				className="mb-2"
+			>
+				<NextmoeWordmark />
+				{!isConnected && (
+					<Chip
+						label={t("pages.Settings.nextmoeAuth.notLoggedIn", "未登录")}
+						size="small"
+						variant="outlined"
+					/>
+				)}
+			</Stack>
+
+			<Typography variant="body2" color="text.secondary" className="mb-4">
+				{t(
+					"pages.Settings.nextmoeAuth.description",
+					"使用 NextMoe OAuth 登录以上报游玩状态、游玩时长和评分。",
+				)}
+			</Typography>
+
+			<Box className="space-y-4">
+				{isConnected && nextmoeAuth ? (
+					<NextmoeAccountSummary auth={nextmoeAuth} onLogout={handleLogout} />
+				) : (
+					<Stack spacing={2} alignItems="flex-start">
+						<Button
+							variant="contained"
+							color={isOAuthLoading ? "warning" : "primary"}
+							startIcon={
+								isSaving ? (
+									<CircularProgress size={18} />
+								) : isOAuthLoading ? (
+									<CancelIcon />
+								) : (
+									<LoginIcon />
+								)
+							}
+							onClick={isOAuthLoading ? handleCancelOAuth : handleOAuthLogin}
+							disabled={isSaving}
+						>
+							{isOAuthLoading
+								? t(
+										"pages.Settings.nextmoeAuth.oauthCancel",
+										"取消 NextMoe OAuth 登录",
+									)
+								: t("pages.Settings.nextmoeAuth.oauthLogin", "OAuth 快捷登录")}
+						</Button>
+					</Stack>
+				)}
+			</Box>
+		</Paper>
+	);
+};
+
+export const NextmoeAuthSettings = NextmoeProviderSection;
+
 // ==================== VNDB 账号与同步板块 ====================
 
 export const VndbProviderSection = () => {
@@ -949,6 +1119,7 @@ export const AccountSettings = () => {
 		<Stack spacing={2.5}>
 			<BgmProviderSection />
 			<HikarinagiProviderSection />
+			<NextmoeProviderSection />
 			<VndbProviderSection />
 		</Stack>
 	);
