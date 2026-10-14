@@ -1228,6 +1228,7 @@ mod tests {
                     id INTEGER PRIMARY KEY,
                     bgm_auth TEXT,
                     hikarinagi_auth TEXT,
+                    nextmoe_auth TEXT,
                     vndb_token TEXT,
                     save_root_path TEXT,
                     db_backup_path TEXT,

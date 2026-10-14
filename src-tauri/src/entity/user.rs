@@ -29,6 +29,20 @@ pub struct HikarinagiAuth {
     pub scope: Option<String>,
 }
 
+/// NextMoe OAuth/PKCE 授权信息。
+///
+/// NextMoe 的 user id 是 int64 十进制字符串，超出 JavaScript 安全整数范围，因此以字符串保存。
+#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize, FromJsonQueryResult)]
+#[serde(default)]
+pub struct NextmoeAuth {
+    pub access_token: String,
+    pub refresh_token: Option<String>,
+    pub expires_at: Option<i64>,
+    pub user_id: Option<String>,
+    pub name: Option<String>,
+    pub scope: Option<String>,
+}
+
 #[derive(Clone, Debug, PartialEq, DeriveEntityModel, Eq, Serialize, Deserialize)]
 #[sea_orm(table_name = "user")]
 pub struct Model {
@@ -38,6 +52,8 @@ pub struct Model {
     pub bgm_auth: Option<BgmAuth>,
     #[sea_orm(column_type = "Text", nullable)]
     pub hikarinagi_auth: Option<HikarinagiAuth>,
+    #[sea_orm(column_type = "Text", nullable)]
+    pub nextmoe_auth: Option<NextmoeAuth>,
     #[sea_orm(column_type = "Text", nullable)]
     pub vndb_token: Option<String>,
     #[sea_orm(column_type = "Text", nullable)]

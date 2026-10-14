@@ -31,6 +31,7 @@ impl SettingsRepository {
                 id: Set(1),
                 bgm_auth: Set(None),
                 hikarinagi_auth: Set(None),
+                nextmoe_auth: Set(None),
                 vndb_token: Set(None),
                 save_root_path: Set(None),
                 db_backup_path: Set(None),
@@ -127,6 +128,10 @@ impl SettingsRepository {
             active.hikarinagi_auth = Set(auth);
         }
 
+        if let Some(auth) = data.nextmoe_auth {
+            active.nextmoe_auth = Set(auth);
+        }
+
         if let Some(token) = data.vndb_token {
             active.vndb_token = Set(token);
         }
@@ -219,6 +224,7 @@ mod tests {
                 id INTEGER PRIMARY KEY,
                 bgm_auth TEXT,
                 hikarinagi_auth TEXT,
+                nextmoe_auth TEXT,
                 vndb_token TEXT,
                 save_root_path TEXT,
                 db_backup_path TEXT,

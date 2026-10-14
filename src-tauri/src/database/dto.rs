@@ -4,7 +4,7 @@
 //! 重构后采用单表架构，元数据以 JSON 列形式嵌入 games 表。
 
 use crate::entity::custom_data::CustomData;
-use crate::entity::user::{BgmAuth, HikarinagiAuth};
+use crate::entity::user::{BgmAuth, HikarinagiAuth, NextmoeAuth};
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 
@@ -98,6 +98,15 @@ fn clean_bgm_auth(mut auth: BgmAuth) -> Option<BgmAuth> {
 }
 
 fn clean_hikarinagi_auth(mut auth: HikarinagiAuth) -> Option<HikarinagiAuth> {
+    auth.access_token = auth.access_token.trim().to_string();
+    if auth.access_token.is_empty() {
+        None
+    } else {
+        Some(auth)
+    }
+}
+
+fn clean_nextmoe_auth(mut auth: NextmoeAuth) -> Option<NextmoeAuth> {
     auth.access_token = auth.access_token.trim().to_string();
     if auth.access_token.is_empty() {
         None
@@ -218,6 +227,8 @@ pub struct UpdateSettingsData {
     #[serde(default, deserialize_with = "double_option")]
     pub hikarinagi_auth: Option<Option<HikarinagiAuth>>,
     #[serde(default, deserialize_with = "double_option")]
+    pub nextmoe_auth: Option<Option<NextmoeAuth>>,
+    #[serde(default, deserialize_with = "double_option")]
     pub vndb_token: Option<Option<String>>,
     #[serde(default, deserialize_with = "double_option")]
     pub save_root_path: Option<Option<String>>,
@@ -241,6 +252,9 @@ impl UpdateSettingsData {
         self.hikarinagi_auth = self
             .hikarinagi_auth
             .map(|inner| inner.and_then(clean_hikarinagi_auth));
+        self.nextmoe_auth = self
+            .nextmoe_auth
+            .map(|inner| inner.and_then(clean_nextmoe_auth));
         self.vndb_token = clean_double_option_string(self.vndb_token);
         self.save_root_path = clean_double_option_local_path(self.save_root_path);
         self.db_backup_path = clean_double_option_local_path(self.db_backup_path);
