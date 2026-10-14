@@ -196,6 +196,22 @@ export interface HikarinagiData {
 }
 
 /**
+ * NextMoe 数据结构（JSON 列嵌入 games 表）
+ */
+export interface NextmoeData {
+	image?: string;
+	name?: string;
+	name_cn?: string;
+	aliases?: string[];
+	summary?: string;
+	tags?: string[];
+	score?: number | null;
+	developer?: string;
+	nsfw?: boolean;
+	date?: string;
+}
+
+/**
  * 自定义数据结构（JSON 列嵌入 games 表）
  *
  * 用于用户手动添加的游戏或自定义元数据
@@ -221,6 +237,7 @@ export interface SourceScores {
 	vndb?: number;
 	erogamescape?: number;
 	hikarinagi?: number;
+	nextmoe?: number;
 }
 
 // ==================== 游戏数据类型（DTO 三位一体） ====================
@@ -233,6 +250,7 @@ export const SOURCE_TYPES = [
 	"kun",
 	"dlsite",
 	"erogamescape",
+	"nextmoe",
 ] as const;
 export type SourceType = (typeof SOURCE_TYPES)[number];
 export type CloudCollectionSource = Extract<

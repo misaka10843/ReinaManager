@@ -232,6 +232,7 @@ function inferRateLimitSource(url: string): ApiRateLimitSource | undefined {
 		if (host === "www.dlsite.com") return "dlsite";
 		if (host === "erogamescape.org") return "erogamescape";
 		if (host === "www.hikarinagi.org") return "hikarinagi";
+		if (host === "api.nextmoe.dev") return "nextmoe";
 	} catch {
 		return undefined;
 	}
@@ -251,6 +252,8 @@ function getApiRateLimitErrorMessage(source: ApiRateLimitSource): string {
 			return "ErogameScape 请求被限速，请稍后重试";
 		case "hikarinagi":
 			return "Hikarinagi 请求被限速，请稍后重试";
+		case "nextmoe":
+			return "NextMoe 请求被限速，请稍后重试";
 	}
 }
 

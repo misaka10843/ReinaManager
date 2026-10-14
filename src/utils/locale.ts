@@ -9,3 +9,8 @@ export function getSafeLocale(locale?: string | null): SupportedLocale {
 		? (locale as SupportedLocale)
 		: DEFAULT_LOCALE;
 }
+
+export function isChineseLocale(locale: string): boolean {
+	const normalized = locale.toLowerCase();
+	return normalized === "zh" || normalized.startsWith("zh-");
+}

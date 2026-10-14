@@ -5,6 +5,7 @@ import type {
 	HikarinagiData,
 } from "@/types";
 import { AppError, isHttpStatus } from "@/utils/errors";
+import { isChineseLocale } from "@/utils/locale";
 import { USER_AGENT } from "../constants";
 import type { SourceDisplayFields } from "../sourceCandidate";
 import {
@@ -151,8 +152,7 @@ function normalizeDate(value?: string | null) {
 }
 
 function isChineseLanguage() {
-	const language = i18next.language.toLowerCase();
-	return language === "zh" || language.startsWith("zh-");
+	return isChineseLocale(i18next.language);
 }
 
 function toHikarinagiData(game: HikarinagiGameResponse): HikarinagiData {

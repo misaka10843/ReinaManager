@@ -59,6 +59,12 @@
 				},
 				{
 					"url": "https://api.hikarinagi.org"
+				},
+				{
+					"url": "https://api.nextmoe.dev"
+				},
+				{
+					"url": "https://image.kungal.iloveren.link"
 				}
 			]
 		}

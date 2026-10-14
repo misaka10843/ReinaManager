@@ -4,7 +4,8 @@ export type ApiRateLimitSource =
 	| "ymgal"
 	| "dlsite"
 	| "erogamescape"
-	| "hikarinagi";
+	| "hikarinagi"
+	| "nextmoe";
 
 interface ApiRateLimitPolicy {
 	source: ApiRateLimitSource;
@@ -98,6 +99,14 @@ const API_RATE_LIMIT_POLICIES: Record<ApiRateLimitSource, ApiRateLimitPolicy> =
 			max429Retries: 2,
 			stopOn429: false,
 		},
+		nextmoe: {
+			source: "nextmoe",
+			minIntervalMs: 2000,
+			defaultBackoffMs: 30 * 1000,
+			maxBackoffMs: 2 * 60 * 1000,
+			max429Retries: 2,
+			stopOn429: false,
+		},
 	};
 
 const rateLimitStates: Record<ApiRateLimitSource, ApiRateLimitState> = {
@@ -107,6 +116,7 @@ const rateLimitStates: Record<ApiRateLimitSource, ApiRateLimitState> = {
 	dlsite: createInitialState(),
 	erogamescape: createInitialState(),
 	hikarinagi: createInitialState(),
+	nextmoe: createInitialState(),
 };
 
 const listeners = new Set<ApiRateLimitListener>();
@@ -233,7 +243,9 @@ export function handleApiRateLimited(
 				? "VNDB 请求过于频繁，正在短暂退避"
 				: source === "hikarinagi"
 					? "Hikarinagi 请求过于频繁，正在等待配额恢复"
-					: "请求被限速，当前任务已停止";
+					: source === "nextmoe"
+						? "NextMoe 请求过于频繁，正在等待配额恢复"
+						: "请求被限速，当前任务已停止";
 
 	if (policy.stopOn429) {
 		notifyRateLimitListeners();
