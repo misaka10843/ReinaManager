@@ -1001,6 +1001,12 @@
 			},
 			"navigation": "設定カテゴリナビゲーション",
 			"nextmoeAuth": {
+				"bulkUpload": "NextMoe へ一括同期",
+				"bulkUploadCancel": "キャンセル",
+				"bulkUploadConfirm": "NextMoe ID を持つローカルの全ゲームを NextMoe へ送信します。プレイ状況があるものは状況を、ローカル集計のプレイ時間が 0 より大きいものは時間を、評価が 0 より大きいものは評価と短評を送信します。本アプリが NextMoe に記録した対応データは上書きされますが、何も削除しません。",
+				"bulkUploadConfirmAction": "同期を開始",
+				"bulkUploadPartialFailed_other": "{{count}} 件を同期しました。{{failed}} 件が失敗しました",
+				"bulkUploadSuccess_other": "NextMoe へ {{count}} 件のレコードを同期しました",
 				"connected": "接続済み",
 				"description": "NextMoe OAuth でログインしてプレイ状況、プレイ時間、評価を送信します。",
 				"logout": "ログアウト",

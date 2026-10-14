@@ -398,6 +398,60 @@ export async function updateNextmoePlaytime(
 	return Boolean(response.data);
 }
 
+export interface NextmoeWorkStateBatchItem {
+	state: NextmoeWorkState;
+	work_id: string;
+}
+
+export interface NextmoePlaytimeBatchItem {
+	minutes: number;
+	work_id: string;
+}
+
+export interface NextmoeBatchItemResult {
+	code?: string;
+	message?: string;
+	status?: number;
+	work_id?: string;
+}
+
+interface NextmoeBatchResponse {
+	items?: NextmoeBatchItemResult[];
+}
+
+async function postNextmoeBatch(
+	path: string,
+	items: readonly unknown[],
+	token: string,
+	context: NetworkRequestContext,
+): Promise<NextmoeBatchItemResult[]> {
+	const response = await http.post<NextmoeBatchResponse>(
+		`${NEXTMOE_API_BASE_URL}${path}`,
+		{ items },
+		buildNextmoeUserOptions(token, context),
+	);
+
+	return response.data?.items ?? [];
+}
+
+export async function batchUpdateNextmoeWorkStates(
+	token: string,
+	items: readonly NextmoeWorkStateBatchItem[],
+	context: NetworkRequestContext = {},
+) {
+	if (items.length === 0) return [];
+	return postNextmoeBatch("/me/work-states", items, token, context);
+}
+
+export async function batchUpdateNextmoePlaytimes(
+	token: string,
+	items: readonly NextmoePlaytimeBatchItem[],
+	context: NetworkRequestContext = {},
+) {
+	if (items.length === 0) return [];
+	return postNextmoeBatch("/me/playtimes", items, token, context);
+}
+
 export function getNextmoeDataDisplayFields(
 	data: NextmoeData,
 ): SourceDisplayFields {

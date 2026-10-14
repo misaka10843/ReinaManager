@@ -2,6 +2,7 @@ import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
 import CancelIcon from "@mui/icons-material/Cancel";
 import ClearIcon from "@mui/icons-material/Clear";
 import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import LoginIcon from "@mui/icons-material/Login";
 import SyncIcon from "@mui/icons-material/Sync";
 import VpnKeyIcon from "@mui/icons-material/VpnKey";
@@ -12,6 +13,11 @@ import {
 	Avatar,
 	Chip,
 	CircularProgress,
+	Dialog,
+	DialogActions,
+	DialogContent,
+	DialogContentText,
+	DialogTitle,
 	Divider,
 	IconButton,
 	InputAdornment,
@@ -28,6 +34,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useShallow } from "zustand/react/shallow";
 import { useProxyImageUrlResolver } from "@/hooks/common/useProxyImageUrlResolver";
+import { useAllGames } from "@/hooks/queries/useGames";
 import {
 	useAllSettings,
 	useUpdateSettings,
@@ -36,9 +43,12 @@ import {
 import { getBgmAvatarUrl } from "@/metadata/api/bgm";
 import type { HikarinagiUserProfile } from "@/metadata/api/hikarinagi";
 import { snackbar } from "@/providers/snackBar";
+import { syncGamesToNextmoe } from "@/services/cloudNextmoeBulkSync";
+import { getAllGameStatistics } from "@/services/game/gameStats";
 import { hasHikarinagiScope } from "@/services/oauth/hikarinagiAuthSession";
 import { useStore } from "@/store/appStore";
 import type { BgmAuth, HikarinagiAuth, NextmoeAuth } from "@/types";
+import { getUserErrorMessage } from "@/utils/errors";
 import { useBgmAuthController } from "./useBgmAuthController";
 import { useHikarinagiAuthController } from "./useHikarinagiAuthController";
 import { useNextmoeAuthController } from "./useNextmoeAuthController";
@@ -779,6 +789,9 @@ export const NextmoeProviderSection = () => {
 		handleCancelOAuth,
 		handleLogout,
 	} = useNextmoeAuthController();
+	const { data: allGames } = useAllGames();
+	const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
+	const [isBulkSyncing, setIsBulkSyncing] = useState(false);
 
 	const { syncNextmoeCollection, setSyncNextmoeCollection } = useStore(
 		useShallow((s) => ({
@@ -788,6 +801,43 @@ export const NextmoeProviderSection = () => {
 	);
 
 	const isConnected = Boolean(nextmoeAuth?.access_token);
+
+	const handleBulkSync = async () => {
+		setIsBulkSyncing(true);
+		try {
+			const statistics = await getAllGameStatistics();
+			const result = await syncGamesToNextmoe({
+				games: allGames ?? [],
+				statistics,
+			});
+			const pushed =
+				result.statePushed + result.playtimePushed + result.ratingPushed;
+
+			setIsBulkDialogOpen(false);
+			if (result.failures.length === 0) {
+				snackbar.success(
+					t(
+						"pages.Settings.nextmoeAuth.bulkUploadSuccess",
+						"已向 NextMoe 同步 {{count}} 条记录",
+						{ count: pushed },
+					),
+				);
+			} else {
+				snackbar.error(
+					t(
+						"pages.Settings.nextmoeAuth.bulkUploadPartialFailed",
+						"已同步 {{count}} 条，{{failed}} 条失败",
+						{ count: pushed, failed: result.failures.length },
+					),
+				);
+			}
+		} catch (error) {
+			console.error(error);
+			snackbar.error(getUserErrorMessage(error, t));
+		} finally {
+			setIsBulkSyncing(false);
+		}
+	};
 
 	return (
 		<Paper
@@ -878,6 +928,59 @@ export const NextmoeProviderSection = () => {
 					color="primary"
 				/>
 			</Stack>
+
+			{isConnected && (
+				<Stack direction="row" spacing={1} className="mt-3">
+					<Button
+						variant="outlined"
+						size="small"
+						startIcon={<CloudUploadIcon />}
+						onClick={() => setIsBulkDialogOpen(true)}
+						disabled={isBulkSyncing}
+					>
+						{t("pages.Settings.nextmoeAuth.bulkUpload", "批量同步到 NextMoe")}
+					</Button>
+				</Stack>
+			)}
+
+			<Dialog
+				open={isBulkDialogOpen}
+				onClose={() => {
+					if (!isBulkSyncing) setIsBulkDialogOpen(false);
+				}}
+			>
+				<DialogTitle>
+					{t("pages.Settings.nextmoeAuth.bulkUpload", "批量同步到 NextMoe")}
+				</DialogTitle>
+				<DialogContent>
+					<DialogContentText>
+						{t(
+							"pages.Settings.nextmoeAuth.bulkUploadConfirm",
+							"将把本地所有带 NextMoe ID 的游戏上报到 NextMoe：有游玩状态的推状态，本地统计时长大于 0 的推时长，评分大于 0 的推评分与短评。这会覆盖你在 NextMoe 上由本应用记录过的对应数据，且不会删除任何内容。",
+						)}
+					</DialogContentText>
+				</DialogContent>
+				<DialogActions>
+					<Button
+						onClick={() => setIsBulkDialogOpen(false)}
+						disabled={isBulkSyncing}
+					>
+						{t("pages.Settings.nextmoeAuth.bulkUploadCancel", "取消")}
+					</Button>
+					<Button
+						onClick={handleBulkSync}
+						disabled={isBulkSyncing}
+						startIcon={
+							isBulkSyncing ? <CircularProgress size={16} /> : undefined
+						}
+					>
+						{t(
+							"pages.Settings.nextmoeAuth.bulkUploadConfirmAction",
+							"开始同步",
+						)}
+					</Button>
+				</DialogActions>
+			</Dialog>
 		</Paper>
 	);
 };

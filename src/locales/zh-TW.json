@@ -1001,6 +1001,12 @@
 			},
 			"navigation": "設定分類導覽",
 			"nextmoeAuth": {
+				"bulkUpload": "批次同步到 NextMoe",
+				"bulkUploadCancel": "取消",
+				"bulkUploadConfirm": "將把本機所有帶 NextMoe ID 的遊戲上報到 NextMoe：有遊玩狀態的推狀態，本機統計時長大於 0 的推時長，評分大於 0 的推評分與短評。這會覆蓋你在 NextMoe 上由本應用記錄過的對應資料，且不會刪除任何內容。",
+				"bulkUploadConfirmAction": "開始同步",
+				"bulkUploadPartialFailed_other": "已同步 {{count}} 條，{{failed}} 條失敗",
+				"bulkUploadSuccess_other": "已向 NextMoe 同步 {{count}} 條記錄",
 				"connected": "已連接",
 				"description": "使用 NextMoe OAuth 登入以上報遊玩狀態、遊玩時長和評分。",
 				"logout": "登出",

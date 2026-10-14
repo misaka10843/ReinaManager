@@ -1001,6 +1001,12 @@
 			},
 			"navigation": "设置分类导航",
 			"nextmoeAuth": {
+				"bulkUpload": "批量同步到 NextMoe",
+				"bulkUploadCancel": "取消",
+				"bulkUploadConfirm": "将把本地所有带 NextMoe ID 的游戏上报到 NextMoe：有游玩状态的推状态，本地统计时长大于 0 的推时长，评分大于 0 的推评分与短评。这会覆盖你在 NextMoe 上由本应用记录过的对应数据，且不会删除任何内容。",
+				"bulkUploadConfirmAction": "开始同步",
+				"bulkUploadPartialFailed": "已同步 {{count}} 条，{{failed}} 条失败",
+				"bulkUploadSuccess": "已向 NextMoe 同步 {{count}} 条记录",
 				"connected": "已连接",
 				"description": "使用 NextMoe OAuth 登录以上报游玩状态、游玩时长和评分。",
 				"logout": "退出登录",
