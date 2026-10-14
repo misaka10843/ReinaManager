@@ -14,6 +14,7 @@ export const SOURCE_COVER_PRIORITY: readonly SourceType[] = [
 	"hikarinagi",
 	"bgm",
 	"vndb",
+	"nextmoe",
 	"erogamescape",
 	"dlsite",
 	"kun",
@@ -23,6 +24,7 @@ export const SOURCE_COVER_PRIORITY: readonly SourceType[] = [
 export const MIXED_BASIC_SOURCE_PRIORITY: readonly SourceType[] = [
 	"bgm",
 	"vndb",
+	"nextmoe",
 	"hikarinagi",
 	"dlsite",
 	"erogamescape",
@@ -35,10 +37,12 @@ const SUMMARY_PRIORITY: readonly SourceType[] = [
 	"bgm",
 	"kun",
 	"vndb",
+	"nextmoe",
 	"dlsite",
 ];
 const DEVELOPER_PRIORITY: readonly SourceType[] = [
 	"vndb",
+	"nextmoe",
 	"erogamescape",
 	"kun",
 	"dlsite",
@@ -52,11 +56,13 @@ const MIXED_TAG_SOURCES: readonly SourceType[] = [
 	"dlsite",
 	"erogamescape",
 	"vndb",
+	"nextmoe",
 	"kun",
 ];
 const MIXED_ALIAS_SOURCES: readonly SourceType[] = [
 	"bgm",
 	"vndb",
+	"nextmoe",
 	"hikarinagi",
 	"kun",
 	"ymgal",
@@ -224,6 +230,7 @@ export function applyMixedSourceDisplay(
 		displays.bgm?.score ??
 		displays.erogamescape?.score ??
 		displays.vndb?.score ??
+		displays.nextmoe?.score ??
 		displays.hikarinagi?.score;
 	target.rank = displays.bgm?.rank;
 	target.all_titles = mergeArrays(displays, MIXED_TITLE_SOURCES, "all_titles");

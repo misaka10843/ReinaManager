@@ -17,6 +17,7 @@ pub enum SourceType {
     Kun,
     Dlsite,
     Erogamescape,
+    Nextmoe,
 }
 
 /// 自定义元数据结构（存储为 JSON）

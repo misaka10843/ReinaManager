@@ -58,9 +58,10 @@ pub(crate) struct ToolLaunchDefaults {
 impl GamesRepository {
     /// 缺省游戏状态：想玩 / WISH
     const DEFAULT_PLAY_STATUS: i32 = 1;
-    const MIXED_BASIC_SOURCE_PRIORITY: [&str; 7] = [
+    const MIXED_BASIC_SOURCE_PRIORITY: [&str; 8] = [
         "bgm",
         "vndb",
+        "nextmoe",
         "hikarinagi",
         "dlsite",
         "erogamescape",

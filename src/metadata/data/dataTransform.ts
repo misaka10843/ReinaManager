@@ -81,6 +81,9 @@ export function getDisplayGameData(fullData: FullGameData): GameData {
 			hikarinagi: sourceDataMap.hikarinagi
 				? getSourceDisplayFields("hikarinagi", sourceDataMap.hikarinagi).score
 				: undefined,
+			nextmoe: sourceDataMap.nextmoe
+				? getSourceDisplayFields("nextmoe", sourceDataMap.nextmoe).score
+				: undefined,
 		},
 		developer: undefined,
 		all_titles: undefined,
